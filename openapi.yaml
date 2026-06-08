@@ -1,0 +1,969 @@
+openapi: 3.0.0
+paths:
+  /:
+    get:
+      operationId: AppController_getHello
+      parameters: []
+      responses:
+        "200":
+          description: ""
+  /users/{id}:
+    get:
+      operationId: UsersController_getProfile
+      summary: Get user profile
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+      tags:
+        - users
+      security:
+        - access-token: []
+  /auth/register/creator:
+    post:
+      operationId: AuthController_registerCreator
+      summary: Register a creator account
+      description: Sets access-token and refresh-token as httpOnly cookies.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterCreatorDto"
+      responses:
+        "201":
+          description: Creator registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+        "409":
+          description: Email already registered
+      tags: &a1
+        - auth
+  /auth/register/company:
+    post:
+      operationId: AuthController_registerCompany
+      summary: Register a company account
+      description: Sets access-token and refresh-token as httpOnly cookies.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterCompanyDto"
+      responses:
+        "201":
+          description: Company registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+        "409":
+          description: Email already registered
+      tags: *a1
+  /auth/login:
+    post:
+      operationId: AuthController_login
+      summary: Login with email and password
+      description: Sets access-token and refresh-token as httpOnly cookies.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginDto"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+        "401":
+          description: Invalid credentials
+      tags: *a1
+  /auth/recovery-password:
+    post:
+      operationId: AuthController_recoveryPassword
+      summary: Request password reset
+      description: Sends a password reset link to the email if the account exists.
+        Always returns success to prevent email enumeration.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestPasswordResetDto"
+      responses:
+        "200":
+          description: Reset email sent if account exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      tags: *a1
+  /auth/reset-password:
+    post:
+      operationId: AuthController_resetPassword
+      summary: Reset password with token
+      description: Sets a new password using the token from the reset email link.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordDto"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400":
+          description: Invalid or expired token
+      tags: *a1
+  /auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      summary: Refresh access token
+      description: Reads refresh-token cookie and issues a new access-token and
+        refresh-token pair.
+      parameters: []
+      responses:
+        "200":
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+        "401":
+          description: Invalid refresh token
+      tags: *a1
+  /auth/logout:
+    post:
+      operationId: AuthController_logout
+      summary: Logout and clear auth cookies
+      parameters: []
+      responses:
+        "204":
+          description: Logged out
+      tags: *a1
+  /chat/conversations:
+    get:
+      operationId: ChatController_listConversations
+      summary: List conversations for current user
+      parameters: []
+      responses:
+        "200":
+          description: Conversations with peer preview and last message
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatConversationResponse"
+      tags: &a2
+        - chat
+      security: &a3
+        - access-token: []
+    post:
+      operationId: ChatController_createConversation
+      summary: Create or get existing conversation
+      description: Creates a 1:1 conversation between creator and company, or returns
+        existing one.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationDto"
+      responses:
+        "201":
+          description: Conversation created or returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatConversationResponse"
+        "403":
+          description: Invalid participant roles
+        "404":
+          description: Recipient not found
+      tags: *a2
+      security: *a3
+  /chat/conversations/{id}/messages:
+    get:
+      operationId: ChatController_listMessages
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: cursor
+          required: false
+          in: query
+          description: Message id cursor for pagination (returns messages older than cursor)
+          schema:
+            format: uuid
+            type: string
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 50
+            type: number
+      responses:
+        "200":
+          description: Paginated message history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessageResponse"
+        "403":
+          description: Not a conversation participant
+      tags: *a2
+      security: *a3
+  /creator/profile:
+    get:
+      operationId: CreatorController_getProfile
+      summary: Get creator profile
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+      tags: &a4
+        - creator
+      security: &a5
+        - access-token: []
+    patch:
+      operationId: CreatorController_updateProfile
+      summary: Update creator profile
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCreatorProfileDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+      tags: *a4
+      security: *a5
+  /company/profile:
+    get:
+      operationId: CompanyController_getProfile
+      summary: Get company profile
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+      tags: &a6
+        - company
+      security: &a7
+        - access-token: []
+    patch:
+      operationId: CompanyController_updateProfile
+      summary: Update company profile
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCompanyProfileDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: user@example.com
+                      role:
+                        type: string
+                        enum:
+                          - CREATOR
+                          - COMPANY
+                      phone:
+                        type: string
+                        nullable: true
+                      location:
+                        type: string
+                        nullable: true
+                      avatar:
+                        type: string
+                        nullable: true
+                      bio:
+                        type: string
+                        nullable: true
+                      followers:
+                        type: number
+                        example: 0
+                      aboutMe:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                      lastName:
+                        type: string
+                      companyName:
+                        type: string
+      tags: *a6
+      security: *a7
+info:
+  title: Project Back API
+  description: >-
+    Backend API для фронтенда и AI-ассистентов.
+
+
+    ## Аутентификация
+
+
+    - После login/register/refresh сервер устанавливает httpOnly cookies:
+    `access-token`, `refresh-token`.
+
+    - Все защищённые запросы требуют cookie `access-token`.
+
+    - Фронт должен отправлять запросы с `credentials: 'include'` (fetch/axios).
+
+
+    ## Сброс пароля
+
+
+    1. `POST /auth/recovery-password` с `{ email }` — всегда возвращает успех
+    (защита от перебора email).
+
+    2. Письмо отправляется только если email существует в БД.
+
+    3. Ссылка в письме: `{FRONTEND_URL}/reset-password?token={jwt}`.
+
+    4. Фронт читает `token` из query-параметра URL.
+
+    5. `POST /auth/reset-password` с `{ token, newPassword }`.
+
+
+    ## CORS
+
+
+    - Origin фронта задаётся через `CORS_ORIGIN` (по умолчанию
+    http://localhost:3000).
+
+    - `credentials: true` — cookies передаются cross-origin.
+
+
+    ## Чат (WebSocket)
+
+
+    - Namespace: `/chat` (Socket.IO), URL: `http://localhost:3010/chat`.
+
+    - Подключение с `withCredentials: true` (cookie `access-token`) или `auth: {
+    token: accessToken }`.
+
+    - События клиент → сервер:
+      - `join_conversation` — `{ conversationId }`
+      - `send_message` — `{ conversationId, content }`
+    - События сервер → клиент:
+      - `message` — `{ id, conversationId, senderId, content, createdAt }`
+      - `error` — `{ message }`
+    - REST для списка диалогов и истории: `/chat/conversations`,
+    `/chat/conversations/:id/messages`.
+
+    - Диалоги только между creator и company (1:1).
+  version: "1.0"
+  contact: {}
+tags: []
+servers:
+  - url: http://localhost:3010
+    description: Local dev
+components:
+  securitySchemes:
+    cookie:
+      type: apiKey
+      in: cookie
+      name: access-token
+  schemas:
+    RegisterCreatorDto:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: "+79991234567"
+        location:
+          type: string
+          example: Moscow
+        avatar:
+          type: string
+          example: https://example.com/avatar.png
+        bio:
+          type: string
+          example: Short bio
+        aboutMe:
+          type: string
+          example: More about me
+        email:
+          type: string
+          example: creator@example.com
+        password:
+          type: string
+          example: password123
+          minLength: 8
+        name:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+      required:
+        - email
+        - password
+        - name
+        - lastName
+    RegisterCompanyDto:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: "+79991234567"
+        location:
+          type: string
+          example: Moscow
+        avatar:
+          type: string
+          example: https://example.com/avatar.png
+        bio:
+          type: string
+          example: Short bio
+        aboutMe:
+          type: string
+          example: More about me
+        email:
+          type: string
+          example: company@example.com
+        password:
+          type: string
+          example: password123
+          minLength: 8
+        companyName:
+          type: string
+          example: Acme Inc.
+      required:
+        - email
+        - password
+        - companyName
+    LoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          example: password123
+      required:
+        - email
+        - password
+    RequestPasswordResetDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+      required:
+        - email
+    ResetPasswordDto:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token from reset-password email link
+        newPassword:
+          type: string
+          example: newPassword123
+          minLength: 8
+      required:
+        - token
+        - newPassword
+    ChatPeerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - CREATOR
+            - COMPANY
+          example: CREATOR
+        avatar:
+          type: string
+          nullable: true
+          example: https://example.com/avatar.png
+        displayName:
+          type: string
+          example: John Doe
+      required:
+        - id
+        - role
+        - avatar
+        - displayName
+    ChatMessageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          example: Hello!
+        createdAt:
+          format: date-time
+          type: string
+      required:
+        - id
+        - conversationId
+        - senderId
+        - content
+        - createdAt
+    ChatConversationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        peer:
+          $ref: "#/components/schemas/ChatPeerResponse"
+        lastMessage:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ChatMessageResponse"
+        updatedAt:
+          format: date-time
+          type: string
+      required:
+        - id
+        - peer
+        - lastMessage
+        - updatedAt
+    CreateConversationDto:
+      type: object
+      properties:
+        recipientId:
+          type: string
+          format: uuid
+          description: User id of the chat recipient
+      required:
+        - recipientId
+    UpdateCreatorProfileDto:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: "+79991234567"
+        location:
+          type: string
+          example: Moscow
+        avatar:
+          type: string
+          example: https://example.com/avatar.png
+        bio:
+          type: string
+          example: Short bio
+        aboutMe:
+          type: string
+          example: More about me
+        name:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+    UpdateCompanyProfileDto:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: "+79991234567"
+        location:
+          type: string
+          example: Moscow
+        avatar:
+          type: string
+          example: https://example.com/avatar.png
+        bio:
+          type: string
+          example: Short bio
+        aboutMe:
+          type: string
+          example: More about me
+        companyName:
+          type: string
+          example: Acme Inc.

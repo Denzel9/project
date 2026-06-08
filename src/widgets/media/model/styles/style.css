@@ -1,0 +1,23 @@
+.thumbnail-slide-custom {
+  width: 50px !important;
+  height: 50px !important;
+}
+
+.thumbnail-slide-custom-fullscreen {
+  width: 100px !important;
+  height: 100px !important;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  color: #ffffffa1 !important;
+  padding: 12px !important;
+  width: 50px !important;
+  height: 50px !important;
+  background: #00000014;
+  border-radius: 50%;
+}
+
+.swiper-pagination-bullet-active {
+  background: rgb(77, 144, 142) !important;
+}

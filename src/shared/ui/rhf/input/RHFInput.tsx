@@ -1,0 +1,85 @@
+import { InputAdornment, TextField, type TextFieldProps } from '@mui/material';
+import { type ReactNode } from 'react';
+import {
+  type Control,
+  Controller,
+  type FieldPath,
+  type FieldValues,
+} from 'react-hook-form';
+
+type RHFInputProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> = {
+  name: TName;
+  regex?: RegExp;
+  maxLength?: number;
+  children?: ReactNode;
+  props: TextFieldProps;
+  endAdornment?: ReactNode;
+  startAdornment?: ReactNode;
+  control: Control<TFieldValues>;
+};
+
+export const RHFInput = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>({
+  name,
+  props,
+  regex,
+  control,
+  children,
+  maxLength,
+  endAdornment,
+  startAdornment,
+}: RHFInputProps<TFieldValues, TName>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    field: FieldValues
+  ) => {
+    if (regex && !regex.test(e.target.value)) {
+      return;
+    }
+    if (maxLength) {
+      if (e.target.value?.length <= maxLength) field.onChange(e);
+    } else {
+      field.onChange(e);
+    }
+  };
+
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field, fieldState }) => (
+        <TextField
+          {...field}
+          {...props}
+          slotProps={{
+            input: {
+              startAdornment: startAdornment && (
+                <InputAdornment position="start">
+                  {startAdornment}
+                </InputAdornment>
+              ),
+              endAdornment:
+                endAdornment ||
+                (maxLength && (
+                  <InputAdornment position="start">
+                    {endAdornment || maxLength - field?.value?.length}
+                  </InputAdornment>
+                )),
+            },
+          }}
+          disabled={field.disabled || props.disabled}
+          onChange={e => handleChange(e, field)}
+          children={children}
+          error={Boolean(fieldState.error)}
+          helperText={fieldState.error?.message || props.helperText}
+          sx={{ pointerEvents: props?.disabled ? 'none' : 'auto', ...props.sx }}
+        />
+      )}
+    />
+  );
+};

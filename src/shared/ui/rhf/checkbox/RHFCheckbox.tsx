@@ -20,6 +20,7 @@ type RHFCheckboxProps<
   label: string;
   props?: CheckboxProps;
   description?: string;
+  labelColor?: string;
   control: Control<TFieldValues>;
 };
 
@@ -31,6 +32,7 @@ export const RHFCheckbox = <
   label,
   props,
   control,
+  labelColor,
   description,
 }: RHFCheckboxProps<TFieldValues, TName>) => (
   <Controller
@@ -50,8 +52,13 @@ export const RHFCheckbox = <
           />
         }
         label={
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="body1">{label}</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', mt: 0.5 }}>
+            <Typography
+              variant="body1"
+              color={labelColor}
+            >
+              {label}
+            </Typography>
             <Typography
               color="textDisabled"
               variant="caption"

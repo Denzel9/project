@@ -4,13 +4,17 @@ import { useState } from 'react';
 
 import { useRecoveryPasswordMutation } from '../model';
 
+type RecoveryPasswordFormProps = {
+  onSuccess: () => void;
+  onBackToLogin: () => void;
+  onError: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
+};
+
 const RecoveryPasswordForm = ({
   onSuccess,
   onBackToLogin,
-}: {
-  onSuccess: () => void;
-  onBackToLogin: () => void;
-}) => {
+  onError,
+}: RecoveryPasswordFormProps) => {
   const [email, setEmail] = useState('');
 
   const { mutateAsync: recoveryPassword } = useRecoveryPasswordMutation();
@@ -22,13 +26,16 @@ const RecoveryPasswordForm = ({
       onSuccess();
     } catch (e) {
       if (axios.isAxiosError(e)) {
-        console.log(e);
+        onError?.({ message: e.response?.data.message, isOpen: true });
       }
     }
   };
   return (
     <Box>
-      <Typography variant="body1">
+      <Typography
+        variant="body1"
+        color="info"
+      >
         Мы отправим вам ссылку для восстановления пароля на вашу почту
       </Typography>
 

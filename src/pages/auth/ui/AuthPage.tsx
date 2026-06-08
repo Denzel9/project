@@ -28,7 +28,7 @@ export const AuthPage = () => {
 
   const navigate = useNavigate();
 
-  const handleSuccess = async () => {
+  const handleSuccessLogin = async () => {
     if (token) {
       const res = await acceptInvite(token);
 
@@ -45,113 +45,123 @@ export const AuthPage = () => {
     }
   };
 
+  const handleSuccessRecoveryPassword = () => {
+    setIsRecoveryPassword(false);
+    setSnackbar({
+      isOpen: true,
+      message: 'Ссылка для восстановления пароля отправлена на вашу почту',
+    });
+  };
+
   return (
     <Box
       sx={{
+        height: '100vh',
         display: 'flex',
-        justifyContent: 'space-between',
-        p: 4,
-        gap: 4,
-        backgroundColor: 'white',
+        flexDirection: 'row',
       }}
     >
       <Box
         sx={{
-          width: '35%',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          display: 'flex',
+          p: 4,
+          width: '50%',
+          height: '100%',
         }}
       >
-        <Box>
-          <Typography
-            variant="h1"
-            sx={{ mb: 4 }}
-          >
-            LOGO
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{ mb: 4 }}
-          >
-            Лучший способ создавать и управлять своим контентом
-          </Typography>
+        <Typography
+          variant="h3"
+          sx={{ mb: 1 }}
+        >
+          LOGO
+        </Typography>
 
-          {token && !isAuthFailed && <ResetPasswordForm />}
+        <Typography
+          variant="body1"
+          color="info"
+          sx={{ mb: 4 }}
+        >
+          Лучший способ создавать и управлять своим контентом
+        </Typography>
 
-          {token && isAuthFailed && (
-            <Box sx={{ mt: '50%', transform: 'translateY(-50%)' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            mt: '50%',
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <Box
+            sx={{
+              width: '60%',
+            }}
+          >
+            {token && !isAuthFailed && <ResetPasswordForm />}
+
+            {token && isAuthFailed && (
               <LoginForm
-                onSuccess={handleSuccess}
-                onError={() =>
-                  setSnackbar({
-                    isOpen: true,
-                    message: 'Неверный логин или пароль',
-                  })
-                }
+                onError={setSnackbar}
+                onSuccess={handleSuccessLogin}
               />
-            </Box>
-          )}
-
-          {isRecoveryPassword && (
-            <Box sx={{ mt: '50%', transform: 'translateY(-50%)' }}>
-              <RecoveryPasswordForm
-                onBackToLogin={() => setIsRecoveryPassword(false)}
-                onSuccess={() => {
-                  setIsRecoveryPassword(false);
-                  setSnackbar({
-                    isOpen: true,
-                    message:
-                      'Ссылка для восстановления пароля отправлена на вашу почту',
-                  });
-                }}
-              />
-            </Box>
-          )}
-        </Box>
-
-        {!token && !isRecoveryPassword && (
-          <Box>
-            {isResetPassword && (
-              <Typography variant="h6">
-                Пароль успешно изменен! Войдите в систему
-              </Typography>
             )}
 
-            <AuthForms
-              onError={() =>
-                setSnackbar({
-                  isOpen: true,
-                  message: 'Неверный логин или пароль',
-                })
-              }
-              onRecoveryPassword={() => setIsRecoveryPassword(true)}
-            />
-          </Box>
-        )}
+            {isRecoveryPassword && (
+              <RecoveryPasswordForm
+                onError={setSnackbar}
+                onSuccess={handleSuccessRecoveryPassword}
+                onBackToLogin={() => setIsRecoveryPassword(false)}
+              />
+            )}
 
-        {!token && !isRecoveryPassword && (
-          <Box>
-            <Divider sx={{ mb: 2 }}>или</Divider>
-            <Button
-              variant="contained"
-              fullWidth
-            >
-              Войти с Google
-            </Button>
+            {!token && !isRecoveryPassword && (
+              <Box>
+                {isResetPassword && (
+                  <Typography
+                    variant="h6"
+                    color="info"
+                  >
+                    Пароль успешно изменен! Войдите в систему
+                  </Typography>
+                )}
+
+                <AuthForms
+                  onError={setSnackbar}
+                  onRecoveryPassword={() => setIsRecoveryPassword(true)}
+                />
+              </Box>
+            )}
+
+            {!token && !isRecoveryPassword && (
+              <Box sx={{ mt: 2 }}>
+                <Divider sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body1"
+                    color="info"
+                  >
+                    или
+                  </Typography>
+                </Divider>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                >
+                  Войти с Google
+                </Button>
+              </Box>
+            )}
           </Box>
-        )}
+        </Box>
       </Box>
+
       <Box
         sx={{
-          backgroundImage: `url('auth.webp')`,
+          width: '50%',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          width: '65%',
-          height: `calc(100vh - 64px)`,
-          borderTopLeftRadius: 32,
-          borderBottomRightRadius: 32,
+          backgroundImage: `url('main-bg.jpg')`,
         }}
       />
 

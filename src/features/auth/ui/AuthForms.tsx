@@ -9,8 +9,8 @@ import RegistrationCreatorForm from './RegistrationCreatorForm';
 
 type AuthFormsProps = {
   onSuccess?: () => void;
-  onError?: () => void;
   onRecoveryPassword?: () => void;
+  onError?: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
 };
 
 export const AuthForms = ({
@@ -24,10 +24,7 @@ export const AuthForms = ({
   return (
     <Box>
       {!isLogin && (
-        <ButtonGroup
-          fullWidth
-          sx={{ mb: 4 }}
-        >
+        <ButtonGroup fullWidth>
           <Button
             onClick={() => setIsCreator(true)}
             variant={isCreator ? 'contained' : 'outlined'}
@@ -73,7 +70,8 @@ export const AuthForms = ({
         }}
       >
         <Typography
-          variant="body1"
+          variant="subtitle1"
+          color="info"
           sx={{ mt: 2 }}
         >
           {isLogin ? 'Нет аккаунта?' : 'Уже зарегистрированы?'}{' '}

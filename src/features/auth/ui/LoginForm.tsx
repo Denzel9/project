@@ -11,8 +11,8 @@ import { useLoginMutation } from '../model/api/api';
 
 type LoginFormProps = {
   onSuccess?: () => void;
-  onError?: () => void;
   onRecoveryPassword?: () => void;
+  onError?: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
 };
 
 const LoginForm = ({
@@ -48,7 +48,7 @@ const LoginForm = ({
       }
     } catch (e) {
       if (axios.isAxiosError(e)) {
-        onError?.();
+        onError?.({ message: e.response?.data.message, isOpen: true });
       }
     }
   };
@@ -86,6 +86,7 @@ const LoginForm = ({
               name="rememberMe"
               control={control}
               label="Запомнить меня"
+              labelColor="info"
               props={{
                 sx: { mt: 2 },
               }}

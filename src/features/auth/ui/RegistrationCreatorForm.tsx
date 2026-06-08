@@ -16,7 +16,7 @@ import { useAuthStore } from '../model/store/store';
 
 type RegistrationCreatorFormProps = {
   onSuccess?: () => void;
-  onError?: () => void;
+  onError?: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
 };
 
 const RegistrationCreatorForm = ({
@@ -51,7 +51,7 @@ const RegistrationCreatorForm = ({
       }
     } catch (e) {
       if (axios.isAxiosError(e)) {
-        onError?.();
+        onError?.({ message: e.response?.data.message, isOpen: true });
       }
     }
   };

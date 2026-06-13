@@ -1,10 +1,11 @@
 import { io, type Socket } from 'socket.io-client'
 
-import type { ChatMessage } from '@/entities/chat'
+import type { ChatMessage, ChatMessageMedia } from '@/entities/chat'
 
 type SendMessagePayload = {
   conversationId: string
-  content: string
+  content?: string
+  media?: ChatMessageMedia[]
 }
 
 type SocketErrorPayload = {
@@ -20,29 +21,45 @@ class ChatSocketService {
   private socket: Socket | null = null
   private onMessageCallback: ((message: ChatMessage) => void) | null = null
   private onErrorCallback: ((error: SocketErrorPayload) => void) | null = null
+  private onConnectCallback: (() => void) | null = null
+  private onDisconnectCallback: (() => void) | null = null
+  private pendingConversationId: string | null = null
 
   connect(): Socket | null {
     if (this.socket?.connected) {
       return this.socket
     }
 
-    const token = localStorage.getItem('token')
+    if (!this.socket) {
+      this.socket = io(getChatSocketUrl(), {
+        withCredentials: true,
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+      })
 
-    this.socket = io(getChatSocketUrl(), {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      ...(token ? { auth: { token } } : {}),
-    })
+      this.socket.on('connect', () => {
+        this.bindSocketEvents()
 
-    this.setupEventListeners()
+        if (this.pendingConversationId) {
+          this.emitJoinConversation(this.pendingConversationId)
+        }
+
+        this.onConnectCallback?.()
+      })
+
+      this.socket.on('disconnect', () => {
+        this.onDisconnectCallback?.()
+      })
+    } else if (!this.socket.connected) {
+      this.socket.connect()
+    }
 
     return this.socket
   }
 
-  private setupEventListeners() {
+  private bindSocketEvents() {
     if (!this.socket) return
 
     this.socket.off('message')
@@ -57,22 +74,43 @@ class ChatSocketService {
     })
   }
 
-  joinConversation(conversationId: string): void {
-    if (!this.socket?.connected) {
-      console.error('Chat socket not connected')
-      return
-    }
+  private emitJoinConversation(conversationId: string) {
+    this.socket?.emit('join_conversation', { conversationId })
+  }
 
-    this.socket.emit('join_conversation', { conversationId })
+  joinConversation(conversationId: string): void {
+    this.pendingConversationId = conversationId
+    this.connect()
+
+    if (this.socket?.connected) {
+      this.emitJoinConversation(conversationId)
+    }
   }
 
   sendMessage(payload: SendMessagePayload): void {
-    if (!this.socket?.connected) {
-      console.error('Chat socket not connected')
+    const hasContent = Boolean(payload.content?.trim())
+    const hasMedia = Boolean(payload.media?.length)
+
+    if (!hasContent && !hasMedia) {
       return
     }
 
-    this.socket.emit('send_message', payload)
+    this.connect()
+
+    const emit = () => {
+      this.socket?.emit('send_message', {
+        conversationId: payload.conversationId,
+        ...(hasContent ? { content: payload.content!.trim() } : {}),
+        ...(hasMedia ? { media: payload.media } : {}),
+      })
+    }
+
+    if (this.socket?.connected) {
+      emit()
+      return
+    }
+
+    this.socket?.once('connect', emit)
   }
 
   disconnect(): void {
@@ -80,6 +118,8 @@ class ChatSocketService {
       this.socket.disconnect()
       this.socket = null
     }
+
+    this.pendingConversationId = null
   }
 
   isConnected(): boolean {
@@ -94,12 +134,25 @@ class ChatSocketService {
     this.onErrorCallback = callback
   }
 
+  onConnect(callback: () => void) {
+    this.onConnectCallback = callback
+  }
+
+  onDisconnect(callback: () => void) {
+    this.onDisconnectCallback = callback
+  }
+
   removeListeners() {
     this.onMessageCallback = null
     this.onErrorCallback = null
+    this.onConnectCallback = null
+    this.onDisconnectCallback = null
+
     if (this.socket) {
       this.socket.off('message')
       this.socket.off('error')
+      this.socket.off('connect')
+      this.socket.off('disconnect')
     }
   }
 }

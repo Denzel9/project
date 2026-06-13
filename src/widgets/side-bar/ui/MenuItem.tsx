@@ -7,6 +7,7 @@ type MenuItemProps = {
   isOpenSideBar: boolean;
   pathname: string;
   navigate: (path: string) => void;
+  onNavigate?: () => void;
 };
 
 export const MenuItem = ({
@@ -14,18 +15,28 @@ export const MenuItem = ({
   isOpenSideBar,
   pathname,
   navigate,
+  onNavigate,
 }: MenuItemProps) => {
+  const getActivePath = () => {
+    if (pathname === '/' && route.path === '/') {
+      return '""';
+    }
+    return pathname.includes(route.path) && route.path !== '/' ? '""' : 'none';
+  };
   return (
     <ListItemButton
       key={route.path}
-      onClick={() => navigate(route.path)}
+      onClick={() => {
+        navigate(route.path);
+        onNavigate?.();
+      }}
       sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         px: '32px !important',
         ':after': {
-          content: pathname === route.path ? '""' : 'none',
+          content: getActivePath(),
           position: 'absolute',
           right: 0,
           width: '6px',

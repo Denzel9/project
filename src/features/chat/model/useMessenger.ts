@@ -1,11 +1,16 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { useMediaQuery, useTheme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import {
+  appendMessageToCache,
   invalidateConversations,
+  uploadConversationMediaBatch,
   useConversationsQuery,
   useCreateConversationMutation,
   useMessagesQuery,
+  validateChatMediaFile,
   type ChatMessage,
 } from '@/entities/chat'
 import { useAuthStore } from '@/features/auth'
@@ -27,7 +32,29 @@ const mergeMessages = (
   )
 }
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as { response?: { data?: { message?: string } } }).response
+      ?.data?.message === 'string'
+  ) {
+    return (error as { response: { data: { message: string } } }).response.data
+      .message
+  }
+
+  return null
+}
+
 export const useMessenger = () => {
+  const queryClient = useQueryClient()
+  const theme = useTheme()
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
   const currentUserId = useAuthStore(state => state.id)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -39,6 +66,9 @@ export const useMessenger = () => {
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([])
   const [socketError, setSocketError] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [isSendingMedia, setIsSendingMedia] = useState(false)
+  const [isSocketConnected, setIsSocketConnected] = useState(false)
 
   const handledRecipientRef = useRef<string | null>(null)
   const selectedConversationIdRef = useRef<string | null>(null)
@@ -72,6 +102,7 @@ export const useMessenger = () => {
   const selectConversation = useCallback((conversationId: string) => {
     setSelectedConversationId(conversationId)
     setLiveMessages([])
+    setPendingFiles([])
     setSocketError(null)
     chatSocket.joinConversation(conversationId)
   }, [])
@@ -80,15 +111,21 @@ export const useMessenger = () => {
     chatSocket.connect()
 
     const handleMessage = (message: ChatMessage) => {
+      const normalizedMessage = {
+        ...message,
+        media: message.media ?? [],
+      }
+
       invalidateConversations()
+      appendMessageToCache(queryClient, normalizedMessage.conversationId, normalizedMessage)
 
       setLiveMessages(prev => {
-        if (prev.some(m => m.id === message.id)) {
+        if (prev.some(item => item.id === normalizedMessage.id)) {
           return prev
         }
 
-        if (message.conversationId === selectedConversationIdRef.current) {
-          return [...prev, message]
+        if (normalizedMessage.conversationId === selectedConversationIdRef.current) {
+          return [...prev, normalizedMessage]
         }
 
         return prev
@@ -99,23 +136,53 @@ export const useMessenger = () => {
       setSocketError(error.message)
     }
 
+    const handleConnect = () => {
+      setIsSocketConnected(true)
+
+      if (selectedConversationIdRef.current) {
+        chatSocket.joinConversation(selectedConversationIdRef.current)
+      }
+    }
+
+    const handleDisconnect = () => {
+      setIsSocketConnected(false)
+    }
+
     chatSocket.onMessage(handleMessage)
     chatSocket.onError(handleError)
+    chatSocket.onConnect(handleConnect)
+    chatSocket.onDisconnect(handleDisconnect)
+    setIsSocketConnected(chatSocket.isConnected())
 
     return () => {
       chatSocket.removeListeners()
       chatSocket.disconnect()
     }
-  }, [])
+  }, [queryClient])
 
   useEffect(() => {
-    if (selectedConversationId && chatSocket.isConnected()) {
-      chatSocket.joinConversation(selectedConversationId)
+    if (
+      isDesktop &&
+      !selectedConversationId &&
+      conversations.length > 0 &&
+      !recipientIdParam
+    ) {
+      selectConversation(conversations[0].id)
     }
-  }, [selectedConversationId])
+  }, [
+    isDesktop,
+    conversations,
+    recipientIdParam,
+    selectConversation,
+    selectedConversationId,
+  ])
 
   useEffect(() => {
     if (!recipientIdParam || handledRecipientRef.current === recipientIdParam) {
+      return
+    }
+
+    if (conversationsLoading || createConversation.isPending) {
       return
     }
 
@@ -133,14 +200,12 @@ export const useMessenger = () => {
 
         selectConversation(conversation.id)
         navigate(ROUTES.CHAT, { replace: true })
-      } catch {
-        setSocketError('Не удалось открыть диалог')
+      } catch (error) {
+        setSocketError(getErrorMessage(error) ?? 'Не удалось открыть диалог')
       }
     }
 
-    if (!conversationsLoading) {
-      void openConversation()
-    }
+    void openConversation()
   }, [
     recipientIdParam,
     conversations,
@@ -150,23 +215,92 @@ export const useMessenger = () => {
     navigate,
   ])
 
-  const sendMessage = useCallback(() => {
-    const content = draft.trim()
-    if (!content || !selectedConversationId) return
+  const addPendingFiles = useCallback((files: File[]) => {
+    const validFiles: File[] = []
 
-    chatSocket.sendMessage({ conversationId: selectedConversationId, content })
-    setDraft('')
-  }, [draft, selectedConversationId])
+    for (const file of files) {
+      const validationError = validateChatMediaFile(file)
+
+      if (validationError) {
+        setSocketError(validationError)
+        continue
+      }
+
+      validFiles.push(file)
+    }
+
+    if (!validFiles.length) return
+
+    setPendingFiles(prev => [...prev, ...validFiles])
+    setSocketError(null)
+  }, [])
+
+  const removePendingFile = useCallback((index: number) => {
+    setPendingFiles(prev => prev.filter((_, fileIndex) => fileIndex !== index))
+  }, [])
+
+  const sendMessage = useCallback(async () => {
+    const content = draft.trim()
+    const hasContent = Boolean(content)
+    const hasFiles = pendingFiles.length > 0
+
+    if ((!hasContent && !hasFiles) || !selectedConversationId) {
+      return
+    }
+
+    if (!isSocketConnected) {
+      setSocketError('Нет соединения с чатом. Попробуйте ещё раз.')
+      chatSocket.connect()
+      return
+    }
+
+    try {
+      setIsSendingMedia(true)
+      setSocketError(null)
+
+      const media = hasFiles
+        ? await uploadConversationMediaBatch(
+            selectedConversationId,
+            pendingFiles,
+          )
+        : undefined
+
+      chatSocket.sendMessage({
+        conversationId: selectedConversationId,
+        content: hasContent ? content : undefined,
+        media,
+      })
+
+      setDraft('')
+      setPendingFiles([])
+    } catch (error) {
+      setSocketError(getErrorMessage(error) ?? 'Не удалось отправить сообщение')
+    } finally {
+      setIsSendingMedia(false)
+    }
+  }, [
+    draft,
+    isSocketConnected,
+    pendingFiles,
+    selectedConversationId,
+  ])
+
+  const isOpeningConversation =
+    Boolean(recipientIdParam) &&
+    (createConversation.isPending ||
+      conversationsLoading ||
+      (!selectedConversationId && !socketError))
 
   const isLoading =
     conversationsLoading ||
     messagesLoading ||
-    createConversation.isPending
+    isOpeningConversation ||
+    isSendingMedia
 
   const error =
     socketError ??
-    (conversationsError instanceof Error ? conversationsError.message : null) ??
-    (messagesError instanceof Error ? messagesError.message : null)
+    getErrorMessage(conversationsError) ??
+    getErrorMessage(messagesError)
 
   return {
     conversations,
@@ -177,9 +311,15 @@ export const useMessenger = () => {
     currentUserId,
     draft,
     setDraft,
+    pendingFiles,
+    addPendingFiles,
+    removePendingFile,
     sendMessage,
+    isSendingMedia,
     isLoading,
+    isOpeningConversation,
+    recipientIdParam,
     error,
-    isConnected: chatSocket.isConnected(),
+    isConnected: isSocketConnected,
   }
 }

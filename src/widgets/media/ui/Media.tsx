@@ -1,30 +1,19 @@
 import { Stack } from '@mui/material';
 import { useState } from 'react';
 
-import { BigImage } from './BigImage';
+import { BigMedia } from './BigMedia';
 import { FullScreenGallery } from './FullScreenGallery';
 import { Trumbnail } from './Trumbnail';
 
+import type { MediaItemType } from '../model/types';
 import type { Swiper } from 'swiper/types';
-
-const images = [
-  'caudalie.webp',
-  'auth.webp',
-  'caudalie.webp',
-  'auth.webp',
-  'caudalie.webp',
-  'auth.webp',
-  'caudalie.webp',
-  'caudalie.webp',
-  'auth.webp',
-  'caudalie.webp',
-];
 
 type MediaProps = {
   width: number;
+  items: MediaItemType[];
 };
 
-export const Media = ({ width }: MediaProps) => {
+export const Media = ({ width, items }: MediaProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState<Swiper | null>(null);
 
@@ -46,17 +35,20 @@ export const Media = ({ width }: MediaProps) => {
           maxWidth: `${width + 100}px`,
           maxHeight: `${width}px`,
         }}
-        onClick={e => e.preventDefault()}
+        onClick={e => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
       >
         <Trumbnail
           width={width}
-          images={images}
+          items={items}
           setThumbsSwiper={setThumbsSwiper}
         />
 
-        <BigImage
+        <BigMedia
           width={width}
-          images={images}
+          items={items}
           thumbsSwiper={thumbsSwiper}
           handleClickOpen={handleOpenDialog}
         />
@@ -64,7 +56,7 @@ export const Media = ({ width }: MediaProps) => {
 
       <FullScreenGallery
         initialSlide={thumbsSwiper?.clickedIndex}
-        images={images}
+        items={items}
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
       />

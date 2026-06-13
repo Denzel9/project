@@ -1,28 +1,30 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from '@tanstack/react-query'
 
-import { mainAxios } from "@/shared/api";
+import { uploadPostMedia, type UploadMediaResponse } from '@/entities/post'
+import { mainAxios } from '@/shared/api'
 
-import type { GetMultipleFilesResponse, GetPhotoUploadResponse, PhotoUploadParams, PhotoUploadResponse } from "../types/types";
+import type { PhotoUploadParams } from '../types/types'
 
-export const useUploadFileMutation = () => useMutation({
+export const useUploadFileMutation = () =>
+  useMutation({
     mutationKey: ['uploadFile'],
-    mutationFn: async (data: PhotoUploadParams) => await mainAxios.post<PhotoUploadResponse>('files/upload', data),
-});
+    mutationFn: async ({ data, id }: PhotoUploadParams) => {
+      const file = data.get('file')
 
-export const useDeleteFileMutation = () => useMutation({
-    mutationKey: ['deleteFile'],
-    mutationFn: async (data: { keys: string[] }) => await mainAxios.delete<void>('files', { data }),
-});
+      if (!(file instanceof File)) {
+        throw new Error('File is required')
+      }
 
-export const useGetFilesQuery = () => useQuery({
-    queryKey: ['files'],
-    queryFn: async () => await mainAxios.get<GetPhotoUploadResponse>('files/uploads'),
-});
+      if (id) {
+        return uploadPostMedia(id, file)
+      }
 
-export const useGetMultipleFilesQuery = () => useQuery({
-    queryKey: ['multipleFiles'],
-    queryFn: async () => await mainAxios.get<GetMultipleFilesResponse>('files/uploads'),
-});
+      const { data: response } = await mainAxios.post<UploadMediaResponse>(
+        '/media/upload',
+        data,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
 
-
-
+      return response
+    },
+  })

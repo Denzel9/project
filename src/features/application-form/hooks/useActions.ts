@@ -2,7 +2,7 @@
 import { type UseFormGetValues } from "react-hook-form"
 import { useNavigate } from "react-router"
 
-import { useDeleteApplicationMutation } from "@/entities/applications/model/api/api"
+import { useDeletePostMutation } from '@/entities/post'
 import { ROUTES } from "@/shared"
 
 import { type FormProductType } from "../model/schema/schema"
@@ -14,7 +14,7 @@ type Props = {
 
 export const useActions = ({ getValues, id }: Props) => {
 
-    const { mutate: deleteApplication } = useDeleteApplicationMutation()
+    const { mutate: deleteApplication } = useDeletePostMutation()
 
     const navigate = useNavigate()
 

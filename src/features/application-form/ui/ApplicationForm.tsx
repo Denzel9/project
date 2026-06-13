@@ -1,26 +1,25 @@
 'use client';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Button } from '@mui/material';
-// import 'react-calendar/dist/Calendar.css';
+import { Box, Button, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import {
-  useCreateApplicationMutation,
-  useUpdateApplicationMutation,
-} from '@/entities/applications/model/api/api';
-import {
-  useDeleteFileMutation,
-  useGetFilesQuery,
-  useUploadFileMutation,
-  type Photo,
-} from '@/entities/photo';
-import { useAuthStore } from '@/features/auth';
+  useCreatePostMutation,
+  useUpdatePostMutation,
+  uploadPostMediaBatch,
+  type Post,
+} from '@/entities/post';
 import { ROUTES } from '@/shared';
 
 import { useActions } from '../hooks/useActions';
+import {
+  mapFormToCreatePost,
+  mapFormToUpdatePost,
+  mapPostToForm,
+} from '../model/mappers';
 import {
   defaultValues,
   schema,
@@ -32,30 +31,28 @@ import Gallery from './Gallery';
 import { MainInfo } from './MainInfo';
 import { ProductInfo } from './ProductInfo';
 
-import type { Application } from '../model/types';
+import type { Photo } from '@/entities/photo';
 
 type ApplicationFormProps = {
   isEdit?: boolean;
-  data?: Application;
+  data?: Post;
+  isLoading?: boolean;
 };
 
 export const ApplicationForm = ({
   data,
   isEdit = false,
+  isLoading = false,
 }: ApplicationFormProps) => {
   const navigate = useNavigate();
 
   const [files, setFiles] = useState<File[]>([]);
   const [images, setImages] = useState<Photo[]>([]);
-  const [deletedFiles, setDeletedFiles] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { user } = useAuthStore();
-
-  const { mutate: create } = useCreateApplicationMutation();
-  const { mutate: update } = useUpdateApplicationMutation();
-  const { mutate: uploadFile } = useUploadFileMutation();
-  const { mutate: deletedUploadFiles } = useDeleteFileMutation();
-  const { data: photoData } = useGetFilesQuery();
+  const { mutateAsync: createPost } = useCreatePostMutation();
+  const { mutateAsync: updatePost } = useUpdatePostMutation();
 
   const methods = useForm<FormProductType>({
     defaultValues,
@@ -67,139 +64,109 @@ export const ApplicationForm = ({
 
   const { handleGoToPreview } = useActions({ getValues, id: data?.id || '' });
 
-  const handleDeletePhoto = (id: string) => {
-    setDeletedFiles([...deletedFiles, id]);
+  const handleDeletePhoto = (key: string) => {
+    setImages(prev => prev.filter(image => image.key !== key));
   };
 
-  const handleThenCreate = () => {
-    navigate(ROUTES.PROFILE);
+  const uploadFiles = async (postId: string) => {
+    if (!files.length) return;
+
+    await uploadPostMediaBatch(postId, files);
+    setFiles([]);
   };
 
-  const handleThenUpdate = () => {
-    navigate(ROUTES.PROFILE);
-  };
+  const onSubmit = async (formData: FormProductType) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-  const handleFileUpload = async () => {
     try {
-      if (files?.length) {
-        const uploadPromises = Array.from(files).map(async file => {
-          const formData = new FormData();
-          formData.append('file', file);
-
-          return await uploadFile({
-            data: formData,
-            folder: 'product',
-            id: data?.id || '',
-          });
+      if (isEdit && data?.id) {
+        const post = await updatePost({
+          id: data.id,
+          body: mapFormToUpdatePost(formData),
         });
 
-        return await Promise.all(uploadPromises);
+        await uploadFiles(post.id);
+        navigate(ROUTES.PROFILE);
+        return;
       }
 
-      if (deletedFiles?.length) {
-        await deletedUploadFiles({ keys: deletedFiles });
-      }
+      const post = await createPost(mapFormToCreatePost(formData));
+      await uploadFiles(post.id);
+      navigate(ROUTES.PROFILE);
     } catch (error) {
-      console.error('Upload error:', error);
-    }
-  };
-
-  const onSubmit = (formData: any) => {
-    if (user?.id) {
-      if (isEdit && data?.id) {
-        handleFileUpload()
-          .then(res => {
-            let mainImage = '';
-            if (!res) {
-              mainImage = images?.[0]?.key;
-            } else {
-              mainImage = res?.[0]?.key;
-            }
-
-            update({ ...formData, ownerId: user?.id, id: data?.id, mainImage });
-          })
-          .then(() => handleThenUpdate())
-          .catch(err => console.log(err));
-      } else {
-        handleFileUpload()
-          .then(res =>
-            create({ ...formData, ownerId: user?.id, mainImage: res?.[0]?.key })
-          )
-          .then(() => handleThenCreate())
-          .catch(err => console.log(err));
-      }
+      setSubmitError(
+        error instanceof Error ? error.message : 'Не удалось сохранить пост'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
-    const initialData = data;
+    if (!data) return;
 
-    if (initialData) {
-      schemaKeys.forEach(key => {
-        if (initialData?.[key]) {
-          setValue(key, initialData?.[key]);
-        }
-      });
-    }
+    const formValues = mapPostToForm(data);
+
+    schemaKeys.forEach(key => {
+      if (formValues[key] !== undefined) {
+        setValue(key, formValues[key] as FormProductType[typeof key]);
+      }
+    });
+
+    // setImages(mapPostMediaToPhotos(data.media));
   }, [data, setValue]);
 
-  useEffect(() => {
-    const newPhoto = [...Array.from(photoData?.data?.files || [])]?.sort(
-      (a, b) => {
-        if (a?.key === data?.mainImage) return -1;
-        if (b?.key === data?.mainImage) return 1;
-        return 0;
-      }
-    ) as Photo[];
-
-    setTimeout(() => {
-      setImages(newPhoto);
-    }, 0);
-  }, [data?.mainImage, photoData?.data?.files]);
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Box>
-          <MainInfo
-            id={data?.id || ''}
-            isEdit={isEdit}
-          />
+        <MainInfo isEdit={isEdit} />
 
-          <Gallery
-            files={files}
-            setFiles={setFiles}
-            images={images}
-            setImages={setImages}
-            mainImage={data?.mainImage}
-            setDeletedFiles={handleDeletePhoto}
-          />
+        <Gallery
+          files={files}
+          images={images}
+          setFiles={setFiles}
+          setImages={setImages}
+          setDeletedFiles={handleDeletePhoto}
+        />
 
-          <ProductInfo />
+        <ProductInfo />
 
-          <Box
-            sx={{
-              mt: 8,
-              gap: 2,
-              display: 'flex',
-            }}
+        {submitError && (
+          <Box sx={{ color: 'error.main', mt: 2 }}>{submitError}</Box>
+        )}
+
+        <Box
+          sx={{
+            mt: 8,
+            gap: 2,
+            display: 'flex',
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={handleGoToPreview}
+            sx={{ display: { xs: 'none', lg: 'block' } }}
           >
-            <Button
-              variant="outlined"
-              onClick={handleGoToPreview}
-              sx={{ display: { xs: 'none', lg: 'block' } }}
-            >
-              Назад
-            </Button>
+            Назад
+          </Button>
 
-            <Button
-              type="submit"
-              color="success"
-              variant="outlined"
-            >
-              Сохранить
-            </Button>
-          </Box>
+          <Button
+            type="submit"
+            color="success"
+            variant="outlined"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+          </Button>
         </Box>
       </form>
     </FormProvider>

@@ -1,7 +1,7 @@
 import { Stack, Avatar, Typography } from '@mui/material';
 import { format } from 'date-fns';
 
-import type { ChatConversation } from '@/entities/chat';
+import { getMessagePreview, type ChatConversation } from '@/entities/chat';
 
 export const ConversationItem = ({
   conversation,
@@ -13,7 +13,9 @@ export const ConversationItem = ({
   onSelect: () => void;
 }) => {
   const { peer, lastMessage, updatedAt } = conversation;
-  const preview = lastMessage?.content ?? 'Нет сообщений';
+  const preview = lastMessage
+    ? getMessagePreview(lastMessage.content, lastMessage.media ?? [])
+    : 'Нет сообщений';
   const timeLabel = format(new Date(updatedAt), 'HH:mm');
 
   return (

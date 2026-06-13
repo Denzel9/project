@@ -5,5 +5,6 @@ export type PageLayoutProps = {
     title?: string;
     withPadding?: boolean;
     sx?: SxProps<Theme>;
+    isFullHeight?: boolean;
 };
 

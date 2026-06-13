@@ -10,14 +10,11 @@ const AuthPage = lazy(() => import('./auth'));
 const ProfilePage = lazy(() => import('./profile'));
 const FavoritePage = lazy(() => import('./favorite'));
 const ChatPage = lazy(() => import('./chat'));
-const ApplicationPage = lazy(() => import('./application'));
+const PostPage = lazy(() => import('./post'));
 const ManageApplicationPage = lazy(() => import('./manage-application'));
 const MyResponsesPage = lazy(() => import('./my-responses'));
 const SettingsLayout = lazy(
-  () => import('@/widgets/layouts/ui/settings/SettingsLayout')
-);
-const SettingsAccountPage = lazy(
-  () => import('./settings/ui/account/SettingsAccountPage')
+  () => import('./settings/ui/layout/SettingsLayout')
 );
 const SettingsNotificationPage = lazy(
   () => import('./settings/ui/notification/SettingsNotificationPage')
@@ -33,6 +30,10 @@ const SettingsBillingPage = lazy(
   () => import('./settings/ui/billing/SettingsBillingPage')
 );
 const InvitePage = lazy(() => import('./invite'));
+const SettingsAccountPage = lazy(
+  () => import('./settings/ui/account/SettingsAccountPage')
+);
+const SecurityPage = lazy(() => import('./settings/ui/security/SecurityPage'));
 
 export const Router = () => {
   return (
@@ -68,8 +69,8 @@ export const Router = () => {
             />
 
             <Route
-              path={`${ROUTES.APPLICATION}/:id`}
-              element={<ApplicationPage />}
+              path={`${ROUTES.POST}/:id`}
+              element={<PostPage />}
             />
 
             <Route
@@ -99,6 +100,12 @@ export const Router = () => {
                 path="account"
                 element={<SettingsAccountPage />}
               />
+
+              <Route
+                path="security"
+                element={<SecurityPage />}
+              />
+
               <Route
                 path="notification"
                 element={<SettingsNotificationPage />}
@@ -108,10 +115,12 @@ export const Router = () => {
                 path="general"
                 element={<SettingsGeneralPage />}
               />
+
               <Route
                 path="members"
                 element={<SettingsMembersPage />}
               />
+
               <Route
                 path="billing"
                 element={<SettingsBillingPage />}

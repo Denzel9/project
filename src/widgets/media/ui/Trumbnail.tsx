@@ -3,18 +3,21 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 
 import '../model/styles/style.css';
 
+import { MediaItem } from './MediaItem';
+
+import type { MediaItemType } from '../model/types';
 import type { Swiper as SwiperType } from 'swiper/types';
 
 type TrumbnailProps = {
   width?: number;
-  images: string[];
+  items: MediaItemType[];
   isFullscreen?: boolean;
   setThumbsSwiper: (swiper: SwiperType | null) => void;
 };
 
 export const Trumbnail = ({
   width,
-  images,
+  items,
   setThumbsSwiper,
   isFullscreen = false,
 }: TrumbnailProps) => {
@@ -32,25 +35,23 @@ export const Trumbnail = ({
         height: isFullscreen ? '100%' : `${width}px`,
       }}
     >
-      {images?.map((image, index) => (
+      {items?.map((item, index) => (
         <SwiperSlide
-          key={index}
+          key={item.url}
           className={
             isFullscreen
               ? 'thumbnail-slide-custom-fullscreen'
               : 'thumbnail-slide-custom'
           }
         >
-          <img
-            src={image}
+          <MediaItem
+            src={item.url}
+            borderRadius="8px"
+            mimeType={item.mimeType}
             alt={`Thumbnail ${index}`}
-            style={{
-              cursor: 'pointer',
-              objectFit: 'cover',
-              borderRadius: '8px',
-              width: isFullscreen ? '100px' : '50px',
-              height: isFullscreen ? '100px' : '50px',
-            }}
+            style={{ cursor: 'pointer' }}
+            width={isFullscreen ? '100px' : '50px'}
+            height={isFullscreen ? '100px' : '50px'}
           />
         </SwiperSlide>
       ))}

@@ -1,15 +1,59 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
+
+import type { ChatMessageMedia } from '@/entities/chat';
+import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 import type { MessageSide } from '../model/types';
 
 type ChatMessageBubbleProps = {
   text: string;
+  media?: ChatMessageMedia[];
   side: MessageSide;
   time?: string;
+  highlight?: string;
 };
 
-export const ChatMessageBubble = ({ text, side, time }: ChatMessageBubbleProps) => {
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const renderHighlightedText = (text: string, highlight?: string) => {
+  const trimmedHighlight = highlight?.trim();
+
+  if (!trimmedHighlight) {
+    return text;
+  }
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'));
+
+  return parts.map((part, index) =>
+    part.toLowerCase() === trimmedHighlight.toLowerCase() ? (
+      <Box
+        key={`${part}-${index}`}
+        component="mark"
+        sx={{
+          bgcolor: 'warning.light',
+          color: 'inherit',
+          px: 0.25,
+          borderRadius: 0.5,
+        }}
+      >
+        {part}
+      </Box>
+    ) : (
+      part
+    ),
+  );
+};
+
+export const ChatMessageBubble = ({
+  text,
+  media = [],
+  side,
+  time,
+  highlight,
+}: ChatMessageBubbleProps) => {
   const isOutgoing = side === 'outgoing';
+  const hasText = Boolean(text.trim());
 
   return (
     <Box
@@ -24,7 +68,40 @@ export const ChatMessageBubble = ({ text, side, time }: ChatMessageBubbleProps) 
         boxShadow: isOutgoing ? 0 : 1,
       }}
     >
-      <Typography variant="body1">{text}</Typography>
+      {media.length > 0 && (
+        <Stack
+          spacing={1}
+          sx={{ mb: hasText ? 1 : 0 }}
+        >
+          {media.map(item => (
+            <Box
+              key={item.key}
+              sx={{
+                borderRadius: '12px',
+                overflow: 'hidden',
+                maxWidth: 280,
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <MediaItem
+                src={item.url}
+                mimeType={item.mimeType}
+                alt="Вложение"
+                width="100%"
+                height={180}
+                borderRadius="12px"
+              />
+            </Box>
+          ))}
+        </Stack>
+      )}
+
+      {hasText && (
+        <Typography variant="body1">
+          {renderHighlightedText(text, highlight)}
+        </Typography>
+      )}
+
       {time && (
         <Typography
           variant="caption"

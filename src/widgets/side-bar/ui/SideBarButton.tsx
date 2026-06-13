@@ -1,10 +1,25 @@
-import { SwitchRight, SwitchLeft } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
+import { Menu, SwitchLeft, SwitchRight } from '@mui/icons-material';
+import { IconButton, useMediaQuery, useTheme } from '@mui/material';
 
 import { useSideBarStore } from '../model/store';
 
 export const SideBarButton = () => {
-  const { isOpenSideBar, setIsOpenSideBar } = useSideBarStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isOpenSideBar, setIsOpenSideBar, setMobileDrawerOpen } =
+    useSideBarStore();
+
+  if (isMobile) {
+    return (
+      <IconButton
+        size="large"
+        color="primary"
+        onClick={() => setMobileDrawerOpen(true)}
+      >
+        <Menu />
+      </IconButton>
+    );
+  }
 
   return (
     <IconButton

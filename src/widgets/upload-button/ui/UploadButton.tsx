@@ -4,10 +4,10 @@ import type { Photo } from '@/entities/photo';
 import type { ChangeEvent } from 'react';
 
 interface UploadButtonProps {
-  images?: Photo[];
-  onChange?: (images: Photo[]) => void;
   files: File[];
+  images?: Photo[];
   setFiles: (files: File[]) => void;
+  onChange?: (images: Photo[]) => void;
 }
 
 const VisuallyHiddenInput = styled('input')({
@@ -48,10 +48,11 @@ export const UploadButton = ({
 
     const newFiles: Photo[] = Array.from(event.target.files || []).map(
       file => ({
-        filename: file.text.name,
-        key: URL.createObjectURL(file),
         lastModified: '',
-        size: 1,
+        filename: file.name,
+        mimeType: file.type,
+        size: String(file.size),
+        key: URL.createObjectURL(file),
         url: URL.createObjectURL(file),
       })
     );
@@ -67,7 +68,7 @@ export const UploadButton = ({
       max={6}
       multiple
       type="file"
-      accept="image/*"
+      accept="image/*, video/*"
       onChange={handleFileChange}
     />
   );

@@ -1,27 +1,13 @@
-import { Skeleton, Stack, type TextFieldProps } from '@mui/material';
-import { type ComponentType, type ReactNode } from 'react';
-
-import { EditTextField } from './EditTextField';
+import { Skeleton, Stack, Typography } from '@mui/material';
+import { type ReactNode } from 'react';
 
 type UserCardItemProps = {
-  isMe: boolean;
-  name: string;
-  icon: ReactNode;
-  isEdit: boolean;
+  value: string;
+  icon?: ReactNode;
   isLoading: boolean;
-  placeholder: string;
-  InputField?: ComponentType<TextFieldProps>;
 };
 
-export const UserCardItem = ({
-  isMe,
-  icon,
-  name,
-  isEdit,
-  isLoading,
-  InputField,
-  placeholder,
-}: UserCardItemProps) => {
+export const UserCardItem = ({ icon, value, isLoading }: UserCardItemProps) => {
   if (isLoading) {
     return (
       <Skeleton
@@ -38,15 +24,9 @@ export const UserCardItem = ({
       direction="row"
       sx={{ alignItems: 'center' }}
     >
-      {!isEdit && icon}
+      {icon && icon}
 
-      <EditTextField
-        name={name}
-        isMe={isMe}
-        isEdit={isEdit}
-        InputField={InputField}
-        placeholder={placeholder}
-      />
+      <Typography>{value}</Typography>
     </Stack>
   );
 };

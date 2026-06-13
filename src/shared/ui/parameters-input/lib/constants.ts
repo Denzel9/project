@@ -1,0 +1,1 @@
+export const PARAMETERS_PLACEHOLDER = '90/60/90';

@@ -41,11 +41,7 @@ export const RHFInput = <
     if (regex && !regex.test(e.target.value)) {
       return;
     }
-    if (maxLength) {
-      if (e.target.value?.length <= maxLength) field.onChange(e);
-    } else {
-      field.onChange(e);
-    }
+    field.onChange(e);
   };
 
   return (

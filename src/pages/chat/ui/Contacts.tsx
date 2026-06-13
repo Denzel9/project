@@ -38,9 +38,9 @@ export const Contacts = ({
   return (
     <Box
       sx={{
-        p: 4,
+        p: { xs: 2, md: 4 },
         mt: 2,
-        width: '30%',
+        width: { xs: '100%', md: '30%' },
         bgcolor: 'white',
         borderRadius: '32px',
         display: 'flex',

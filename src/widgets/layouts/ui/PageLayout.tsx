@@ -10,43 +10,71 @@ import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 import type { PageLayoutProps } from '../model/types';
 
 export const PageLayout = ({
+  sx = {},
   children,
   title = undefined,
-  sx = {},
+  isFullHeight = false,
 }: PropsWithChildren<PageLayoutProps>) => {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ p: 0, position: 'relative', ...sx }}>
+    <Box
+      sx={{
+        p: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        height: isFullHeight ? 'calc(100vh - 16px)' : 'auto',
+        ...sx,
+      }}
+    >
       <Stack
         direction="row"
-        spacing={2}
+        spacing={{ xs: 1, md: 2 }}
         sx={{
-          p: 4,
+          p: { xs: 2, md: 4 },
           bgcolor: 'white',
           alignItems: 'center',
-          borderTopLeftRadius: '32px',
-          borderBottomLeftRadius: '32px',
-          borderBottomRightRadius: '32px',
+          borderTopLeftRadius: { xs: '16px', md: '32px' },
+          borderBottomLeftRadius: { xs: '16px', md: '32px' },
+          borderBottomRightRadius: { xs: '16px', md: '32px' },
           justifyContent: 'space-between',
         }}
       >
         <Stack
-          spacing={2}
+          spacing={{ xs: 1, md: 2 }}
           direction="row"
-          sx={{ alignItems: 'center', zIndex: 2 }}
+          sx={{
+            alignItems: 'center',
+            zIndex: 2,
+            flex: 1,
+            minWidth: 0,
+          }}
         >
           <SideBarButton />
 
-          {title && <Typography variant="h4">{title}</Typography>}
+          {title && (
+            <Typography
+              noWrap
+              sx={{
+                fontSize: { xs: '1.25rem', md: '2.125rem' },
+                fontWeight: 500,
+                lineHeight: 1.2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {title}
+            </Typography>
+          )}
         </Stack>
 
         <Stack
           direction="row"
-          spacing={2}
+          spacing={{ xs: 1, md: 2 }}
           sx={{
             alignItems: 'center',
-            width: '100%',
+            flexShrink: 0,
             justifyContent: 'flex-end',
           }}
         >
@@ -58,7 +86,7 @@ export const PageLayout = ({
         </Stack>
       </Stack>
 
-      {children}
+      <Box sx={{ flex: 1, height: '100%' }}>{children}</Box>
     </Box>
   );
 };

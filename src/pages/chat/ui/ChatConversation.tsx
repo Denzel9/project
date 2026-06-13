@@ -14,7 +14,11 @@ type ChatConversationProps = {
   currentUserId: string | null;
   peer: ChatPeer | null;
   draft: string;
+  pendingFiles: File[];
+  isSending?: boolean;
   onDraftChange: (value: string) => void;
+  onAttachFiles: (files: File[]) => void;
+  onRemoveFile: (index: number) => void;
   onSend: () => void;
   isLoading?: boolean;
   error?: string | null;
@@ -31,7 +35,11 @@ export const ChatConversation = ({
   currentUserId,
   peer,
   draft,
+  pendingFiles,
+  isSending = false,
   onDraftChange,
+  onAttachFiles,
+  onRemoveFile,
   onSend,
   isLoading = false,
   error = null,
@@ -125,6 +133,7 @@ export const ChatConversation = ({
           <ChatMessageBubble
             key={message.id}
             text={message.content}
+            media={message.media}
             side={toMessageSide(message.senderId, currentUserId)}
             time={format(new Date(message.createdAt), 'HH:mm')}
           />
@@ -134,7 +143,12 @@ export const ChatConversation = ({
 
       <ChatInput
         value={draft}
+        pendingFiles={pendingFiles}
+        isSending={isSending}
+        disabled={!peer}
         onChange={onDraftChange}
+        onAttachFiles={onAttachFiles}
+        onRemoveFile={onRemoveFile}
         onSend={onSend}
       />
     </Stack>

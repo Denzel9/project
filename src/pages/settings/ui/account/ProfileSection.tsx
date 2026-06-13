@@ -1,152 +1,216 @@
-import { Add } from '@mui/icons-material';
-import { Avatar, Button, Snackbar, Stack, TextField } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Upload } from '@mui/icons-material';
+import {
+  Avatar,
+  Box,
+  Button,
+  IconButton,
+  Snackbar,
+  Typography,
+} from '@mui/material';
+import { useState } from 'react';
+import { Controller, useFormContext } from 'react-hook-form';
 
-import { useUpdateUserMutation, type User } from '@/entities/user';
+import { FormBlock, FormBlockRowItem, PhoneInput } from '@/shared';
+import { RHFInput } from '@/shared/ui/rhf';
 
-export const ProfileSection = ({ user }: { user: User }) => {
-  const { mutateAsync: updateUser } = useUpdateUserMutation();
+import { ContactsSection } from './ContactsSection';
+import { ParametersSection } from './ParametersSection';
 
-  const [isOpenSnackbar, setIsOpenSnackbar] = useState(false);
+import type { ProfileSectionProps } from '../../model/types';
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [companyName, setCompanyName] = useState('');
+export const ProfileSection = ({
+  user,
+  snackbar,
+  setSnackbar,
+}: ProfileSectionProps) => {
+  const [isOpenAddContacts, setIsOpenAddContacts] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      setTimeout(() => {
-        setFirstName(user?.creatorProfile?.name || '');
-        setLastName(user?.creatorProfile?.lastName || '');
-        setCompanyName(user?.companyProfile?.companyName || '');
-      }, 0);
-    }
-  }, [user]);
-
-  const handleSave = async () => {
-    try {
-      if (user?.companyProfile) {
-        const res = await updateUser({
-          companyProfile: {
-            ...user?.companyProfile,
-            companyName: companyName,
-          },
-        });
-        if (res.data) {
-          setIsOpenSnackbar(true);
-          setCompanyName(res.data?.companyProfile?.companyName || '');
-        }
-      } else {
-        const res = await updateUser({
-          creatorProfile: {
-            ...user?.creatorProfile,
-            name: firstName,
-            lastName: lastName,
-          },
-        });
-        if (res.data) {
-          setIsOpenSnackbar(true);
-          setFirstName(res.data?.creatorProfile?.name || '');
-          setLastName(res.data?.creatorProfile?.lastName || '');
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleCloseSnackbar = () => {
+    setSnackbar({ open: false, message: '' });
   };
 
-  const isSaveDisabled =
-    (user?.creatorProfile?.name === firstName &&
-      user?.creatorProfile?.lastName === lastName) ||
-    user?.companyProfile?.companyName === companyName;
+  const { control } = useFormContext();
 
   return (
-    <Stack spacing={3}>
-      <Stack
-        direction="row"
-        spacing={3}
-        sx={{ alignItems: 'end', mb: '16px !important' }}
+    <Box
+      sx={{
+        overflow: 'scroll',
+        position: 'relative',
+        scrollbarWidth: 'none',
+        height: 'calc(100vh - 200px)',
+      }}
+    >
+      <Typography
+        variant="h6"
+        sx={{ fontWeight: 600 }}
       >
+        Личная информация
+      </Typography>
+
+      {/* Аватар */}
+
+      <Box sx={{ position: 'relative', mt: 4, width: 'fit-content' }}>
         <Avatar
           src={user?.avatar}
-          sx={{ width: 80, height: 80 }}
+          sx={{ width: 100, height: 100 }}
+        />
+        <Box sx={{ position: 'absolute', bottom: -5, right: -5 }}>
+          <IconButton>
+            <Upload />
+          </IconButton>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          mt: 4,
+          width: '100%',
+          height: '250px',
+          borderRadius: '32px',
+          position: 'relative',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center ',
+          backgroundRepeat: 'no-repeat',
+          backgroundImage: 'url(/cosmetic.jpg)',
+        }}
+      >
+        <Box sx={{ position: 'absolute', bottom: 16, right: 16 }}>
+          <IconButton>
+            <Upload />
+          </IconButton>
+        </Box>
+      </Box>
+
+      {/* Название компании */}
+      {user?.companyProfile && (
+        <RHFInput
+          name="companyName"
+          control={control}
+          props={{
+            fullWidth: true,
+            label: 'Название компании',
+          }}
+        />
+      )}
+
+      {/* Имя и фамилия */}
+      {!user?.companyProfile && (
+        <FormBlock>
+          <RHFInput
+            name="name"
+            control={control}
+            props={{
+              fullWidth: true,
+              label: 'Имя',
+            }}
+          />
+
+          <RHFInput
+            name="lastName"
+            control={control}
+            props={{
+              fullWidth: true,
+              label: 'Фамилия',
+            }}
+          />
+
+          <FormBlockRowItem>
+            <RHFInput
+              name="bio"
+              control={control}
+              maxLength={300}
+              props={{
+                rows: 4,
+                multiline: true,
+                fullWidth: true,
+                label: 'О себе',
+              }}
+            />
+          </FormBlockRowItem>
+
+          <FormBlockRowItem>
+            <RHFInput
+              name="location"
+              control={control}
+              props={{
+                fullWidth: true,
+                label: 'Местоположение',
+              }}
+            />
+          </FormBlockRowItem>
+        </FormBlock>
+      )}
+
+      {/* Контактная информация */}
+      <FormBlock title="Контактная информация">
+        <RHFInput
+          name="email"
+          control={control}
+          props={{
+            fullWidth: true,
+            label: 'Основной email',
+          }}
         />
 
-        <Stack
-          direction="row"
-          spacing={1}
-        >
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<Add />}
-            sx={{ px: 2 }}
-          >
-            Изменить изображение
-          </Button>
+        <Controller
+          control={control}
+          name="phone"
+          render={({ field, fieldState }) => (
+            <PhoneInput
+              {...field}
+              label="Основной номер телефона"
+              onChange={field.onChange}
+              value={field.value}
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+            />
+          )}
+        />
+      </FormBlock>
 
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            sx={{ px: 2 }}
-          >
-            Удалить изображение
-          </Button>
-        </Stack>
-      </Stack>
+      {/* Дополнительные контакты */}
+      <ContactsSection
+        setSnackbar={setSnackbar}
+        isOpenAddContacts={isOpenAddContacts}
+        setIsOpenAddContacts={setIsOpenAddContacts}
+      />
 
-      {user?.companyProfile && (
-        <Stack
-          direction="row"
-          spacing={2}
-        >
-          <TextField
-            fullWidth
-            label="Название компании"
-            value={companyName}
-            onChange={e => setCompanyName(e.target.value)}
+      <FormBlock title="Основные данные">
+        <FormBlockRowItem>
+          <RHFInput
+            name="aboutMe"
+            control={control}
+            maxLength={2000}
+            props={{
+              rows: 4,
+              multiline: true,
+              fullWidth: true,
+              label: 'Обо мне',
+            }}
           />
-        </Stack>
-      )}
+        </FormBlockRowItem>
 
-      {!user?.companyProfile && (
-        <Stack
-          direction="row"
-          spacing={2}
+        <ParametersSection />
+      </FormBlock>
+
+      {/* Кнопка сохранения */}
+      <FormBlock>
+        <Button
+          size="small"
+          type="submit"
+          variant="outlined"
+          sx={{ maxWidth: '140px', flexShrink: 0 }}
         >
-          <TextField
-            fullWidth
-            label="Имя"
-            value={firstName}
-            onChange={e => setFirstName(e.target.value)}
-          />
-
-          <TextField
-            fullWidth
-            label="Фамилия"
-            value={lastName}
-            onChange={e => setLastName(e.target.value)}
-          />
-        </Stack>
-      )}
-
-      <Button
-        variant="outlined"
-        size="small"
-        sx={{ maxWidth: '140px', flexShrink: 0 }}
-        onClick={handleSave}
-        disabled={isSaveDisabled}
-      >
-        Сохранить
-      </Button>
+          Сохранить
+        </Button>
+      </FormBlock>
 
       <Snackbar
-        open={isOpenSnackbar}
-        onClose={() => setIsOpenSnackbar(false)}
-        message="Изменения сохранены"
+        open={snackbar.open}
         autoHideDuration={3000}
+        message={snackbar.message}
+        onClose={handleCloseSnackbar}
       />
-    </Stack>
+    </Box>
   );
 };

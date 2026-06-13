@@ -1,14 +1,22 @@
-import { Typography, Box, RadioGroup } from '@mui/material';
+import { Typography, Box, RadioGroup, Switch } from '@mui/material';
+import { useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { RHFInput, RHFRadio, RHFSwitch } from '@/shared/ui/rhf';
+import { PostContentTypeEnum } from '@/entities/post';
+import { RHFInput, RHFRadio } from '@/shared/ui/rhf';
 
 export const ProductInfo = () => {
-  const { control, setValue } = useFormContext();
+  const [isFinalPrice, setIsFinalPrice] = useState<boolean>(true);
 
-  const { contentType, finalPrice } = useWatch({
+  const { control } = useFormContext();
+
+  const { contentType } = useWatch({
     control,
   });
+
+  const handleChangeFinalPrice = () => {
+    setIsFinalPrice(!isFinalPrice);
+  };
 
   return (
     <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
@@ -47,7 +55,7 @@ export const ProductInfo = () => {
               label="Только фото"
               name="contentType"
               control={control}
-              props={{ value: 'photo' }}
+              props={{ value: PostContentTypeEnum.PHOTO }}
               description="Предполагается только фото контент."
             />
 
@@ -55,7 +63,7 @@ export const ProductInfo = () => {
               name="contentType"
               label="Только видео"
               control={control}
-              props={{ value: 'video' }}
+              props={{ value: PostContentTypeEnum.VIDEO }}
               description="Предполагается только видео контент."
             />
 
@@ -63,20 +71,20 @@ export const ProductInfo = () => {
               label="Видео и фото"
               name="contentType"
               control={control}
-              props={{ value: 'photoAndVideo' }}
+              props={{ value: PostContentTypeEnum.PHOTO_VIDEO }}
               description="Предполагается видео и фото контент."
             />
           </RadioGroup>
         </Box>
 
-        {contentType === 'photoAndVideo' ? (
+        {contentType === PostContentTypeEnum.PHOTO_VIDEO ? (
           <>
             <RHFInput
               name="photoCount"
               control={control}
               props={{
                 fullWidth: true,
-                label: `Кол-во фото`,
+                label: 'Кол-во фото',
                 sx: { width: { lg: '50%', xs: '100%' } },
               }}
             />
@@ -85,40 +93,48 @@ export const ProductInfo = () => {
               control={control}
               props={{
                 fullWidth: true,
-                label: `Кол-во видео`,
+                label: 'Кол-во видео',
                 sx: { width: { lg: '50%', xs: '100%' } },
               }}
             />
           </>
         ) : (
           <RHFInput
-            name={contentType === 'photo' ? 'photoCount' : 'videoCount'}
+            name={
+              contentType === PostContentTypeEnum.PHOTO
+                ? 'photoCount'
+                : 'videoCount'
+            }
             control={control}
             props={{
               fullWidth: true,
-              label: `Кол-во ${contentType === 'photo' ? 'фото' : 'видео'} `,
+              label: `Кол-во ${contentType === PostContentTypeEnum.PHOTO ? 'фото' : 'видео'} `,
               sx: { width: { lg: '50%', xs: '100%' } },
             }}
           />
         )}
       </Box>
 
-      <RHFSwitch
-        name="finalPrice"
-        control={control}
-        label="Окончательная цена"
-        props={{
-          sx: { width: { lg: '50%', xs: '100%' }, mt: 4, mb: 3 },
-          checked: finalPrice,
-          onChange: e => {
-            setValue('finalPrice', e.target.checked);
-          },
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          my: 4,
+          justifyContent: 'space-between',
+          width: { lg: '50%', xs: '100%' },
         }}
-      />
+      >
+        <Typography variant="body1">Окончательная цена</Typography>
+        <Switch
+          checked={isFinalPrice}
+          onChange={handleChangeFinalPrice}
+        />
+      </Box>
 
-      {finalPrice ? (
+      {isFinalPrice ? (
         <RHFInput
-          name="price"
+          name="finalPrice"
           control={control}
           endAdornment="₽"
           props={{
@@ -130,7 +146,7 @@ export const ProductInfo = () => {
       ) : (
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <RHFInput
-            name="price"
+            name="rangePrice"
             control={control}
             endAdornment="₽"
             startAdornment="от"
@@ -141,7 +157,7 @@ export const ProductInfo = () => {
           />
           -
           <RHFInput
-            name="price"
+            name="rangePrice"
             startAdornment="до"
             control={control}
             endAdornment="₽"

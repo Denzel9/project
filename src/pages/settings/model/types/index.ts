@@ -1,3 +1,4 @@
+import type { User } from '@/entities/user';
 import type { ReactNode } from 'react';
 
 export type SettingsMenuItem = {
@@ -9,4 +10,17 @@ export type SettingsMenuItem = {
 export type SettingsMenuSection = {
   title: string;
   items: SettingsMenuItem[];
+};
+
+
+export type Snackbar = {
+  open: boolean;
+  message: string;
+};
+
+
+export type ProfileSectionProps = {
+  user: User;
+  snackbar: Snackbar;
+  setSnackbar: (snackbar: Snackbar) => void;
 };

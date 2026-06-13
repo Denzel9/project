@@ -1,10 +1,10 @@
 import { ChevronLeft } from '@mui/icons-material';
 import {
-  Autocomplete,
   Box,
   Button,
   Chip,
   IconButton,
+  MenuItem,
   RadioGroup,
   Stack,
   TextField,
@@ -13,9 +13,12 @@ import {
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
+import { PostCooperationTypeEnum } from '@/entities/post';
 import { RHFInput, RHFRadio } from '@/shared/ui/rhf';
 
 import MenuButton from './MenuButton';
+
+import type { ChangeEvent } from 'react';
 
 const ADVANTAGE_OPTIONS = [
   'Удаленно',
@@ -25,16 +28,15 @@ const ADVANTAGE_OPTIONS = [
 ];
 
 type Props = {
-  id: string;
   isEdit?: boolean;
 };
 
 const options = ['Удалить', 'Сохранить как черновик'];
 
-export const MainInfo = ({ id, isEdit = false }: Props) => {
+export const MainInfo = ({ isEdit = false }: Props) => {
   const { control, setValue } = useFormContext();
 
-  const { advantage } = useWatch({
+  const { chips, typeCooperation } = useWatch({
     control,
   });
 
@@ -43,19 +45,32 @@ export const MainInfo = ({ id, isEdit = false }: Props) => {
   // const { handleOpenConfirmModal, handleDelete, handleGoToPreview } =
   //   useActions({ getValues, id });
 
-  const handleAction = (action: string) => {
+  const handleAction = () => {
     // if (action === 'Предпросмотр') handleGoToPreview();
     // if (action === 'Удалить') handleOpenConfirmModal();
   };
 
-  const handleSetAdvantage = (value: string) => {
-    if (advantage.includes(value)) {
+  const handleSetChips = (value: string) => {
+    if (chips.includes(value)) {
       setValue(
-        'advantage',
-        advantage.filter(type => type !== value)
+        'chips',
+        chips.filter(type => type !== value)
       );
     } else {
-      setValue('advantage', [...advantage, value]);
+      setValue('chips', [...chips, value]);
+    }
+  };
+
+  const handleChangeTypeCooperation = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    if (typeCooperation.includes(value)) {
+      setValue(
+        'typeCooperation',
+        typeCooperation.filter(type => type !== value)
+      );
+    } else {
+      setValue('typeCooperation', [...typeCooperation, value]);
     }
   };
 
@@ -90,6 +105,7 @@ export const MainInfo = ({ id, isEdit = false }: Props) => {
           >
             Расширенные настройки
           </Button>
+
           <MenuButton
             options={options}
             onAction={handleAction}
@@ -99,13 +115,13 @@ export const MainInfo = ({ id, isEdit = false }: Props) => {
 
       <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
         <RHFInput
-          name="name"
+          name="title"
           control={control}
           maxLength={40}
           props={{
             sx: { my: 4 },
             fullWidth: true,
-            label: 'Роль',
+            label: 'Название',
             helperText: 'Например, «UGС Creator», Bloger, «Model»',
           }}
         />
@@ -123,33 +139,32 @@ export const MainInfo = ({ id, isEdit = false }: Props) => {
             <Chip
               key={option}
               label={option}
-              onClick={() => handleSetAdvantage(option)}
-              color={advantage.includes(option) ? 'primary' : 'default'}
+              onClick={() => handleSetChips(option)}
+              color={chips.includes(option) ? 'primary' : 'default'}
             />
           ))}
         </Box>
 
         <Controller
-          name="cooperationType"
+          name="typeCooperation"
           control={control}
-          render={({ field: { value, onChange }, fieldState }) => (
-            <Autocomplete
-              multiple
-              value={value || []}
-              options={[]}
-              filterSelectedOptions
-              getOptionLabel={option => option || ''}
-              onChange={(_, newValue) => onChange(newValue)}
-              renderInput={params => (
-                <TextField
-                  {...params}
-                  label="Тип сотрудничества"
-                  error={!!fieldState?.error}
-                  helperText={fieldState?.error?.message}
-                  sx={{ width: { lg: '50%', xs: '100%' } }}
-                />
-              )}
-            />
+          render={({ fieldState }) => (
+            <TextField
+              select
+              label="Тип сотрудничества"
+              error={!!fieldState?.error}
+              value={typeCooperation || ''}
+              helperText={fieldState?.error?.message}
+              onChange={handleChangeTypeCooperation}
+              sx={{ width: { lg: '50%', xs: '100%' } }}
+            >
+              <MenuItem value={PostCooperationTypeEnum.ONE_TIME}>
+                Разовое сотрудничество
+              </MenuItem>
+              <MenuItem value={PostCooperationTypeEnum.LONG_TIME}>
+                Постоянное сотрудничество
+              </MenuItem>
+            </TextField>
           )}
         />
 
@@ -170,26 +185,18 @@ export const MainInfo = ({ id, isEdit = false }: Props) => {
           >
             <RHFRadio
               label="Срочно"
-              name="condition"
+              name="urgent"
               control={control}
-              props={{ value: 'Новое' }}
-              description="Срочно нужна помощь в выполнении задания."
+              props={{ value: true }}
+              description="Выполнение задания за 1-3 дня"
             />
 
             <RHFRadio
-              name="condition"
+              name="urgent"
               label="Не срочно"
               control={control}
-              props={{ value: 'Не срочно' }}
-              description="Не срочно нужна помощь в выполнении задания."
-            />
-
-            <RHFRadio
-              label="Другое"
-              name="condition"
-              control={control}
-              props={{ value: 'Другое' }}
-              description="Другой тип сотрудничества."
+              props={{ value: false }}
+              description="Выполнение задания по договоренности"
             />
           </RadioGroup>
         </Box>

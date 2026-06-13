@@ -14,7 +14,8 @@ import { CHAR, MASK, OPERATORS } from '../lib/constants';
 type PhoneInputProps = {
   value: string;
   label: string;
-  isError?: boolean;
+  error?: boolean;
+  helperText?: string;
   onChange: (e: ChangeEvent) => void;
 } & TextFieldProps;
 
@@ -22,7 +23,8 @@ export const PhoneInput = ({
   onChange,
   value,
   label,
-  isError,
+  error,
+  helperText,
   ...props
 }: PhoneInputProps) => {
   const inputRef = useMask({
@@ -34,6 +36,10 @@ export const PhoneInput = ({
   const validatePhone = (
     phone: string
   ): { isValid: boolean; message: string } => {
+    if (helperText) {
+      return { isValid: error, message: helperText };
+    }
+
     const cleanPhone = '7' + phone?.replace(/\D/g, '');
 
     if (cleanPhone.length === 11) {
@@ -89,17 +95,18 @@ export const PhoneInput = ({
       label={label}
       value={maskedValue}
       inputRef={inputRef}
-      onBlur={handleOnBlurClearValue}
-      helperText={validatePhone(value).message || ''}
-      error={!validatePhone(value).isValid || isError}
       onChange={handleChange}
       placeholder="999 999 99 99"
+      onBlur={handleOnBlurClearValue}
+      helperText={validatePhone(value).message || ''}
+      error={!validatePhone(value).isValid || error}
       sx={{
         '& .MuiInputBase-input::placeholder': {
           opacity: 1,
           fontSize: '16px',
           color: theme => theme.palette.info.main,
         },
+        ...props.sx,
       }}
       slotProps={{
         input: {

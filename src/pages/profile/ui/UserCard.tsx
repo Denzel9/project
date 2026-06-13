@@ -1,30 +1,17 @@
-import {
-  Verified,
-  Email,
-  Phone,
-  LocationOn,
-  Upload,
-} from '@mui/icons-material';
-import {
-  Box,
-  Avatar,
-  Stack,
-  Typography,
-  IconButton,
-  Skeleton,
-} from '@mui/material';
+import { Verified, Email, Phone, LocationOn } from '@mui/icons-material';
+import { Box, Avatar, Stack, Typography, Skeleton } from '@mui/material';
 
-import { getUserName } from '@/entities/user';
-import { PhoneInput } from '@/shared';
+import { getUserName, type User } from '@/entities/user';
 
-import { useProfileStore } from '../model/store';
-
-import { EditTextField } from './EditTextField';
 import { UserCardItem } from './UserCardItem';
 
-export const UserCard = ({ isLoading }: { isLoading: boolean }) => {
-  const { isEdit, isMe, user } = useProfileStore();
-
+export const UserCard = ({
+  isLoading,
+  user,
+}: {
+  isLoading: boolean;
+  user: User;
+}) => {
   return (
     <Box
       sx={{
@@ -53,21 +40,6 @@ export const UserCard = ({ isLoading }: { isLoading: boolean }) => {
             src={user?.avatar}
             sx={{ width: '200px', height: '200px' }}
           />
-
-          {isMe && isEdit && (
-            <IconButton
-              sx={{
-                bottom: 0,
-                right: 20,
-                opacity: 1,
-                position: 'absolute',
-                '&:hover': { opacity: 1 },
-                transition: 'all 0.3s ease',
-              }}
-            >
-              <Upload />
-            </IconButton>
-          )}
         </Box>
       </Box>
 
@@ -113,48 +85,39 @@ export const UserCard = ({ isLoading }: { isLoading: boolean }) => {
           width="100%"
           height={24}
         />
-      ) : (
-        <EditTextField
-          name="bio"
-          isMultiline
-          isMe={isMe}
-          isEdit={isEdit}
-          placeholder="Добавить описание"
+      ) : user?.bio ? (
+        <UserCardItem
+          value={user?.bio}
+          isLoading={isLoading}
         />
-      )}
+      ) : null}
 
       <Stack
         spacing={2}
         direction="column"
-        sx={{ mt: isEdit ? 5 : 4 }}
+        sx={{ mt: 4 }}
       >
         <UserCardItem
-          isMe={isMe}
-          name="email"
-          isEdit={isEdit}
+          value={user?.email}
+          isLoading={isLoading}
           icon={<Email />}
-          isLoading={isLoading}
-          placeholder="Добавить email"
         />
 
-        <UserCardItem
-          isMe={isMe}
-          name="phone"
-          isEdit={isEdit}
-          icon={<Phone />}
-          isLoading={isLoading}
-          InputField={PhoneInput}
-          placeholder="Добавить телефон"
-        />
+        {user?.phone && (
+          <UserCardItem
+            value={user?.phone}
+            isLoading={isLoading}
+            icon={<Phone />}
+          />
+        )}
 
-        <UserCardItem
-          isMe={isMe}
-          name="location"
-          isEdit={isEdit}
-          isLoading={isLoading}
-          icon={<LocationOn />}
-          placeholder="Добавить местоположение"
-        />
+        {user?.location && (
+          <UserCardItem
+            value={user?.location}
+            isLoading={isLoading}
+            icon={<LocationOn />}
+          />
+        )}
       </Stack>
     </Box>
   );

@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { UploadButton } from '@/widgets';
+import { BucketImage, UploadButton } from '@/widgets';
 
 import type { Photo } from '@/entities/photo';
 
@@ -93,14 +93,20 @@ const DraggableImage = ({
         </IconButton>
       )}
 
-      <img
-        src={image.url}
-        alt={image.key}
-        style={{ borderRadius: 20 }}
+      <Box
         onPointerDown={() => setIsShowDeleteBtn(isDragging)}
         onPointerUp={() => setIsShowDeleteBtn(!isDragging)}
         onDragEnd={() => setIsShowDeleteBtn(!isDragging)}
-      />
+      >
+        <BucketImage
+          src={image.url}
+          mimeType={image.mimeType}
+          alt={image.key}
+          width={100}
+          height={125}
+          borderRadius={20}
+        />
+      </Box>
     </Box>
   );
 };

@@ -1,5 +1,8 @@
 
+
 export type User = {
+  email: string;
+  person: Person;
   aboutMe: string;
   avatar: string;
   banner: string;
@@ -18,12 +21,21 @@ export type User = {
   updatedAt: string;
 };
 
+export type Person = {
+  height: string;
+  weight: string;
+  size: string;
+  birthday: string;
+  gender: string;
+  parameters: string
+};
+
 export type Contacts = { phone: string, telegram: string, whatsapp: string, instagram: string, youtube: string, vk: string, website: string, other: string }
 
 
 export type Contact = {
   id?: string;
-  label: string;
+  label?: string;
   type: ContactType;
   value: string;
 };

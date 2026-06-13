@@ -10,44 +10,6 @@ import {
 
 import { ContactType } from '@/entities/user';
 
-import type { ProfileSchemaType } from '../schema/schema';
-
-// const getPhone = (phone: string) => {
-//   if (!phone) return '';
-//   return phone.startsWith('+7')
-//     ? phone.split(' ').join('')
-//     : '+7' + phone.split(' ').join('');
-// };
-
-// const getContacts = (contacts: Contacts) => {
-//   return Object.entries(contacts)
-//     .map(([key, value]) => {
-//       return {
-//         label: key,
-//         value: value,
-//         type: key,
-//       };
-//     })
-//     .filter(contact => contact.value);
-// };
-
-export const parseRequestData = (data: ProfileSchemaType) =>
-  Object.fromEntries(
-    Object.entries({
-      bio: data.bio,
-      avatar: data.avatar,
-      banner: data.banner,
-      aboutMe: data.aboutMe,
-      location: data.location,
-      contacts: data.contacts,
-    }).filter(field => field[1])
-  );
-
-export const getMaskedPhone = (p?: string) =>
-  p
-    ? `${p[0]}${p[1]} ${p[2]}${p[3]}${p[4]} ${p[5]}${p[6]}${p[7]} ${p[8]}${p[9]} ${p[10]}${p[11]}`
-    : '';
-
 export const getContactIcon = (type: ContactType) => {
   switch (type) {
     case ContactType.PHONE:
@@ -66,6 +28,29 @@ export const getContactIcon = (type: ContactType) => {
       return <Web />;
     case ContactType.OTHER:
       return <OtherHouses />;
+    default:
+      return null;
+  }
+};
+
+export const getContactLink = (type: ContactType, value: string) => {
+  switch (type) {
+    case ContactType.PHONE:
+      return `tel:${value}`;
+    case ContactType.INSTAGRAM:
+      return `https://www.instagram.com/${value}`;
+    case ContactType.TELEGRAM:
+      return `https://t.me/${value}`;
+    case ContactType.WHATSAPP:
+      return `https://wa.me/${value}`;
+    case ContactType.YOUTUBE:
+      return `https://www.youtube.com/channel/${value}`;
+    case ContactType.VK:
+      return `https://vk.com/${value}`;
+    case ContactType.WEBSITE:
+      return value;
+    case ContactType.OTHER:
+      return value;
     default:
       return null;
   }

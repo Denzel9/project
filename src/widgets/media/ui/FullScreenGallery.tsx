@@ -2,22 +2,23 @@ import { Close } from '@mui/icons-material';
 import { Dialog, IconButton, Stack, Box } from '@mui/material';
 import { useState } from 'react';
 
-import { BigImage } from './BigImage';
+import { BigMedia } from './BigMedia';
 import { Trumbnail } from './Trumbnail';
 
+import type { MediaItemType } from '../model/types';
 import type { Swiper as SwiperType } from 'swiper/types';
 
 type FullScreenGalleryProps = {
   isOpen: boolean;
   initialSlide?: number;
-  images: string[];
+  items: MediaItemType[];
   onClose: () => void;
 };
 
 export const FullScreenGallery = ({
   isOpen,
   initialSlide,
-  images,
+  items,
   onClose,
 }: FullScreenGalleryProps) => {
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
@@ -67,16 +68,16 @@ export const FullScreenGallery = ({
         <Box sx={{ px: 4, pt: 4 }}>
           <Trumbnail
             isFullscreen
-            images={images}
+            items={items}
             setThumbsSwiper={setThumbsSwiper}
           />
         </Box>
 
-        <BigImage
+        <BigMedia
           isDialog
           isFullscreen
           initialSlide={initialSlide}
-          images={images}
+          items={items}
           thumbsSwiper={thumbsSwiper}
           handleClickOpen={handleClose}
         />

@@ -94,6 +94,11 @@ export const ChatPage = () => {
     setIsAttachmentsOpen(true);
   };
 
+  const handleOpenProfile = () => {
+    handleCloseMenu();
+    navigate(`${ROUTES.PROFILE}?userId=${peer?.id}`);
+  };
+
   const showContacts = !isMobile || !mobileShowChat;
   const showChatPanel = !isMobile || mobileShowChat;
 
@@ -219,7 +224,10 @@ export const ChatPage = () => {
                 <Stack
                   direction="row"
                   spacing={2}
-                  sx={{ alignItems: 'center', minWidth: 0 }}
+                  sx={{ alignItems: 'center', minWidth: 0, cursor: 'pointer' }}
+                  onClick={() =>
+                    navigate(`${ROUTES.PROFILE}?userId=${peer.id}`)
+                  }
                 >
                   {isMobile && (
                     <IconButton
@@ -242,9 +250,14 @@ export const ChatPage = () => {
                     <Typography
                       variant="body1"
                       noWrap
+                      sx={{
+                        transition: 'color 0.2s ease-in-out',
+                        ':hover': { color: 'primary.main' },
+                      }}
                     >
                       {peer.displayName}
                     </Typography>
+
                     {headerTime && (
                       <Typography
                         variant="body2"
@@ -274,6 +287,10 @@ export const ChatPage = () => {
                     open={Boolean(menuAnchor)}
                     onClose={handleCloseMenu}
                   >
+                    <MenuItem onClick={handleOpenProfile}>
+                      Перейти к профилю
+                    </MenuItem>
+
                     <MenuItem onClick={handleOpenAttachments}>
                       Вложения
                     </MenuItem>

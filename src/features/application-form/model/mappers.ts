@@ -54,4 +54,5 @@ export const mapPostToForm = (post: Post): Partial<FormProductType> => ({
   rangePrice: post.rangePrice ?? [],
   keyWords: post.keyWords ?? [],
   categories: post.categories ?? [],
+  typeCooperation: post.typeCooperation ?? [],
 })

@@ -191,9 +191,9 @@ export const ChatAttachmentsPanel = ({
         {hasMore && (
           <Button
             fullWidth
+            sx={{ mt: 2 }}
             variant="outlined"
             disabled={isFetching}
-            sx={{ mt: 2 }}
             onClick={handleLoadMore}
           >
             {isFetching ? 'Загрузка…' : 'Загрузить ещё'}

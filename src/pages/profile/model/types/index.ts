@@ -1,4 +1,5 @@
 export type MediaContentProps = {
+    userId?: string;
     mediaTabValue: MediaTabValue;
     setMediaTabValue: (value: MediaTabValue) => void;
 };

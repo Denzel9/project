@@ -22,6 +22,7 @@ export const Content = ({ tabValue, user }: ContentProps) => {
     <Box sx={{ width: '100%' }}>
       {tabValue === 0 && (
         <MediaContent
+          userId={user?.id}
           mediaTabValue={mediaTabValue}
           setMediaTabValue={setMediaTabValue}
         />

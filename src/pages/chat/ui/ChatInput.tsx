@@ -1,4 +1,4 @@
-import { AttachFile, Close, Mic, Mood, Send } from '@mui/icons-material';
+import { AttachFile, Close, Mood, Send } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -35,7 +35,8 @@ export const ChatInput = ({
 }: ChatInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasDraft = value.trim().length > 0;
-  const canSend = (hasDraft || pendingFiles.length > 0) && !isSending && !disabled;
+  const canSend =
+    (hasDraft || pendingFiles.length > 0) && !isSending && !disabled;
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -144,7 +145,7 @@ export const ChatInput = ({
             ),
             endAdornment: (
               <InputAdornment position="end">
-                {canSend ? (
+                {canSend && (
                   <IconButton
                     size="small"
                     color="primary"
@@ -152,14 +153,6 @@ export const ChatInput = ({
                     onClick={onSend}
                   >
                     <Send />
-                  </IconButton>
-                ) : (
-                  <IconButton
-                    size="small"
-                    color="inherit"
-                    disabled={disabled || isSending}
-                  >
-                    <Mic />
                   </IconButton>
                 )}
               </InputAdornment>

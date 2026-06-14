@@ -9,6 +9,7 @@ import { ACTION_BUTTONS_KEYS, PostItem, DeleteDialog } from '@/widgets';
 import { MEDIA_TAB_VALUES, type MediaContentProps } from '../model/types';
 
 export const MediaContent = ({
+  userId,
   mediaTabValue,
   setMediaTabValue,
 }: MediaContentProps) => {
@@ -17,7 +18,7 @@ export const MediaContent = ({
   const { id } = useAuthStore();
 
   const { data: posts } = usePostsQuery({
-    ownerId: id,
+    ownerId: userId || id,
     isArchived: mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED,
   });
 

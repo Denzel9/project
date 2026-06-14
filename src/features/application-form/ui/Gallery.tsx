@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { BucketImage, UploadButton } from '@/widgets';
+import { MediaItem, UploadButton } from '@/widgets';
 
 import type { Photo } from '@/entities/photo';
 
@@ -98,7 +98,7 @@ const DraggableImage = ({
         onPointerUp={() => setIsShowDeleteBtn(!isDragging)}
         onDragEnd={() => setIsShowDeleteBtn(!isDragging)}
       >
-        <BucketImage
+        <MediaItem
           src={image.url}
           mimeType={image.mimeType}
           alt={image.key}

@@ -3,7 +3,14 @@ import { Divider, Stack } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { useGetUserByIdQuery, useUpdateUserMutation } from '@/entities/user';
+import {
+  useGetUserByIdQuery,
+  useUpdateUserMutation,
+  type CompanyProfile,
+  type CreatorProfile,
+  type Person,
+  type User,
+} from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
 
 import {
@@ -42,25 +49,32 @@ export const SettingsAccountPage = () => {
 
   useEffect(() => {
     if (user) {
-      Object.keys(defaultAccountSchemaValues).forEach(
-        (key: keyof AccountSchemaFormType) => {
-          if (
-            CREATOR_PROFILE_KEYS.includes(key) &&
-            user?.data?.creatorProfile
-          ) {
-            setValue(key, user?.data?.creatorProfile?.[key]);
-          } else if (
-            COMPANY_PROFILE_KEYS.includes(key) &&
-            user.data?.companyProfile
-          ) {
-            setValue(key, user.data?.companyProfile?.[key]);
-          } else if (MY_PARAMETERS_KEYS.includes(key) && user.data?.person) {
-            setValue(key, user.data?.person?.[key]);
-          } else {
-            setValue(key, user.data?.[key]);
-          }
+      Object.keys(defaultAccountSchemaValues).forEach(key => {
+        if (CREATOR_PROFILE_KEYS.includes(key) && user?.data?.creatorProfile) {
+          setValue(
+            key as keyof AccountSchemaFormType,
+            user?.data?.creatorProfile?.[key as keyof CreatorProfile]
+          );
+        } else if (
+          COMPANY_PROFILE_KEYS.includes(key) &&
+          user.data?.companyProfile
+        ) {
+          setValue(
+            key as keyof AccountSchemaFormType,
+            user.data?.companyProfile?.[key as keyof CompanyProfile]
+          );
+        } else if (MY_PARAMETERS_KEYS.includes(key) && user.data?.person) {
+          setValue(
+            key as keyof AccountSchemaFormType,
+            user.data?.person?.[key as keyof Person]
+          );
+        } else {
+          setValue(
+            key as keyof AccountSchemaFormType,
+            user.data?.[key as keyof User & keyof AccountSchemaFormType]
+          );
         }
-      );
+      });
     }
   }, [setValue, user]);
 
@@ -72,7 +86,9 @@ export const SettingsAccountPage = () => {
           setSnackbar({ open: true, message: 'Данные успешно обновлены' });
         }
       } else {
-        const res = await updateUser(parseRequestCreatorData(data, user?.data));
+        const res = await updateUser(
+          parseRequestCreatorData(data, user?.data as User)
+        );
         if (res.data) {
           setSnackbar({ open: true, message: 'Данные успешно обновлены' });
         }

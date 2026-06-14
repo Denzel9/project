@@ -25,17 +25,17 @@ const CONTENT_FROM_API: Record<PostContentType, string> = {
 
 export const mapFormToCreatePost = (form: FormProductType): CreatePostDto => ({
   title: form.title,
-  chips: form.chips ?? [],
+  chips: (form.chips ?? []) as string[],
   description: form.description ?? '',
   urgent: form.urgent,
   typeCooperation: (form.typeCooperation || []) as PostCooperationType[],
   contentType: CONTENT_TO_API[form.contentType] ?? PostContentTypeEnum.PHOTO,
-  photoCount: form.photoCount || null,
-  videoCount: form.videoCount || null,
+  photoCount: form.photoCount || undefined,
+  videoCount: form.videoCount || undefined,
   finalPrice: form.finalPrice,
-  rangePrice: form.rangePrice ? form.rangePrice : [],
-  keyWords: form.keyWords ?? [],
-  categories: form.categories ?? [],
+  rangePrice: (form.rangePrice ? form.rangePrice : []) as string[],
+  keyWords: (form.keyWords ?? []) as string[],
+  categories: (form.categories ?? []) as string[],
 })
 
 export const mapFormToUpdatePost = (form: FormProductType): UpdatePostDto => ({

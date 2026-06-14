@@ -37,7 +37,7 @@ export const PhoneInput = ({
     phone: string
   ): { isValid: boolean; message: string } => {
     if (helperText) {
-      return { isValid: error, message: helperText };
+      return { isValid: error || false, message: helperText || '' };
     }
 
     const cleanPhone = '7' + phone?.replace(/\D/g, '');

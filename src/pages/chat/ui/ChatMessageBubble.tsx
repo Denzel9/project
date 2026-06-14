@@ -1,9 +1,9 @@
 import { Box, Stack, Typography } from '@mui/material';
 
-import type { ChatMessageMedia } from '@/entities/chat';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 import type { MessageSide } from '../model/types';
+import type { ChatMessageMedia } from '@/entities/chat';
 
 type ChatMessageBubbleProps = {
   text: string;
@@ -23,7 +23,9 @@ const renderHighlightedText = (text: string, highlight?: string) => {
     return text;
   }
 
-  const parts = text.split(new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'));
+  const parts = text.split(
+    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi')
+  );
 
   return parts.map((part, index) =>
     part.toLowerCase() === trimmedHighlight.toLowerCase() ? (
@@ -41,7 +43,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
       </Box>
     ) : (
       part
-    ),
+    )
   );
 };
 

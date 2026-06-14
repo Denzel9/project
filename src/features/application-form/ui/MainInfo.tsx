@@ -54,7 +54,7 @@ export const MainInfo = ({ isEdit = false }: Props) => {
     if (chips.includes(value)) {
       setValue(
         'chips',
-        chips.filter(type => type !== value)
+        chips.filter((type: string) => type !== value)
       );
     } else {
       setValue('chips', [...chips, value]);
@@ -67,7 +67,7 @@ export const MainInfo = ({ isEdit = false }: Props) => {
     if (typeCooperation.includes(value)) {
       setValue(
         'typeCooperation',
-        typeCooperation.filter(type => type !== value)
+        typeCooperation.filter((type: string) => type !== value)
       );
     } else {
       setValue('typeCooperation', [...typeCooperation, value]);

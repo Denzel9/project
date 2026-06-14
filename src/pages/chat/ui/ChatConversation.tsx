@@ -2,12 +2,11 @@ import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
 import { useCallback, useEffect, useRef } from 'react';
 
-import type { ChatMessage, ChatPeer } from '@/entities/chat';
-
 import { ChatInput } from './ChatInput';
 import { ChatMessageBubble } from './ChatMessageBubble';
 
 import type { MessageSide } from '../model/types';
+import type { ChatMessage, ChatPeer } from '@/entities/chat';
 
 type ChatConversationProps = {
   messages: ChatMessage[];
@@ -26,7 +25,7 @@ type ChatConversationProps = {
 
 const toMessageSide = (
   senderId: string,
-  currentUserId: string | null,
+  currentUserId: string | null
 ): MessageSide =>
   currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
 
@@ -57,13 +56,13 @@ export const ChatConversation = ({
   if (!peer) {
     return (
       <Stack
-        alignItems="center"
-        justifyContent="center"
         sx={{
           flex: 1,
           bgcolor: 'common.white',
           borderRadius: '32px',
           p: 4,
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <Typography

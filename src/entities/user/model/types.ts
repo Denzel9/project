@@ -1,12 +1,12 @@
 
 
 export type User = {
-  email: string;
+  email: string | null;
   person: Person;
-  aboutMe: string;
-  avatar: string;
-  banner: string;
-  bio: string;
+  aboutMe: string | null;
+  avatar: string | null;
+  banner: string | null;
+  bio: string | null;
   companyProfile: CompanyProfile;
   companyName: string;
   id: string;
@@ -14,23 +14,23 @@ export type User = {
   createdAt: string;
   creatorProfile: CreatorProfile;
   followers: number;
-  location: string;
+  location: string | null;
   contacts: Contact[];
-  phone: string;
+  phone: string | null;
   role: string;
   updatedAt: string;
 };
 
 export type Person = {
-  height: string;
-  weight: string;
-  size: string;
-  birthday: string;
-  gender: string;
-  parameters: string
+  height: string | null;
+  weight: string | null;
+  size: string | null;
+  birthday: string | null;
+  gender: string | null;
+  parameters: string | null;
 };
 
-export type Contacts = { phone: string, telegram: string, whatsapp: string, instagram: string, youtube: string, vk: string, website: string, other: string }
+export type Contacts = { phone: string | null, telegram: string | null, whatsapp: string | null, instagram: string | null, youtube: string | null, vk: string | null, website: string | null, other: string | null }
 
 
 export type Contact = {
@@ -64,7 +64,7 @@ export const CONTACT_LABELS = {
 
 
 export type CompanyProfile = {
-  companyName: string;
+  companyName: string | null;
   id: string;
   userId: string;
 };
@@ -72,6 +72,6 @@ export type CompanyProfile = {
 export type CreatorProfile = {
   id: string;
   userId: string;
-  name: string;
-  lastName: string;
+  name: string | null;
+  lastName: string | null;
 };

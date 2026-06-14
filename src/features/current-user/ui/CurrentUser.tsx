@@ -25,7 +25,7 @@ export const CurrentUser = () => {
   useEffect(() => {
     if (data?.data) {
       const tryCurrentUser = data.data.find(item => item.userId === id);
-      setCurrentUser(tryCurrentUser?.userId);
+      setCurrentUser(tryCurrentUser?.userId || '');
     }
   }, [data, id, setCurrentUser]);
 

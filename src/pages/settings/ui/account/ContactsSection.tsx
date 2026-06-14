@@ -17,6 +17,7 @@ import { RHFInput } from '@/shared/ui/rhf';
 
 import { useContactField } from '../../model/hooks/useContactField';
 
+import type { AccountSchemaFormType } from '../../model/schema/accountSchema';
 import type { Snackbar } from '../../model/types';
 
 type ContactsSectionProps = {
@@ -30,7 +31,7 @@ export const ContactsSection = ({
   isOpenAddContacts,
   setIsOpenAddContacts,
 }: ContactsSectionProps) => {
-  const { control, setValue } = useFormContext();
+  const { control, setValue } = useFormContext<AccountSchemaFormType>();
 
   const { fields, handleAddContact, handleRemoveContact } = useContactField({
     setSnackbar,
@@ -86,7 +87,7 @@ export const ContactsSection = ({
                 spacing={2}
                 direction="row"
                 sx={{ alignItems: 'start' }}
-                key={field.value + index.toString()}
+                key={field.id}
               >
                 {field.type === ContactType.PHONE ? (
                   <Controller

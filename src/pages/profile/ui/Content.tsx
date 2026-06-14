@@ -12,7 +12,7 @@ import { MediaContent } from './MediaContent';
 type ContentProps = {
   isLoading: boolean;
   tabValue: number;
-  user: User;
+  user?: User;
 };
 
 export const Content = ({ tabValue, user }: ContentProps) => {
@@ -35,7 +35,7 @@ export const Content = ({ tabValue, user }: ContentProps) => {
         />
       )}
 
-      {tabValue === 2 && <Contacts contacts={user?.contacts} />}
+      {tabValue === 2 && <Contacts contacts={user?.contacts || []} />}
     </Box>
   );
 };

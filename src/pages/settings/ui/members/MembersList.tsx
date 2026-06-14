@@ -78,7 +78,7 @@ export const MembersList = ({ members, onDelete }: MembersListProps) => {
         >
           <ListItemAvatar>
             <Avatar src={member.avatar}>
-              {getInitials(member.displayName)}
+              {getInitials(member.displayName || '')}
             </Avatar>
           </ListItemAvatar>
 
@@ -116,7 +116,11 @@ export const MembersList = ({ members, onDelete }: MembersListProps) => {
                   variant="body2"
                   color="primary"
                 >
-                  {MemberRoleLabels[member?.membershipRole]}
+                  {
+                    MemberRoleLabels[
+                      member?.membershipRole || MemberRole.VIEWER
+                    ]
+                  }
                 </Typography>
               </Stack>
             }

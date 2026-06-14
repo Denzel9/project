@@ -10,7 +10,7 @@ export const UserCard = ({
   user,
 }: {
   isLoading: boolean;
-  user: User;
+  user: User | undefined;
 }) => {
   return (
     <Box
@@ -37,7 +37,7 @@ export const UserCard = ({
       >
         <Box sx={{ position: 'relative' }}>
           <Avatar
-            src={user?.avatar}
+            src={user?.avatar || ''}
             sx={{ width: '200px', height: '200px' }}
           />
         </Box>
@@ -98,14 +98,14 @@ export const UserCard = ({
         sx={{ mt: 4 }}
       >
         <UserCardItem
-          value={user?.email}
+          value={user?.email || ''}
           isLoading={isLoading}
           icon={<Email />}
         />
 
         {user?.phone && (
           <UserCardItem
-            value={user?.phone}
+            value={user?.phone || ''}
             isLoading={isLoading}
             icon={<Phone />}
           />
@@ -113,7 +113,7 @@ export const UserCard = ({
 
         {user?.location && (
           <UserCardItem
-            value={user?.location}
+            value={user?.location || ''}
             isLoading={isLoading}
             icon={<LocationOn />}
           />

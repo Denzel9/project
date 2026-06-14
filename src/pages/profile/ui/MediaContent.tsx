@@ -18,7 +18,7 @@ export const MediaContent = ({
   const { id } = useAuthStore();
 
   const { data: posts } = usePostsQuery({
-    ownerId: userId || id,
+    ownerId: userId || id || '',
     isArchived: mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED,
   });
 

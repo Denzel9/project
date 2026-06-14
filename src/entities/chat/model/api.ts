@@ -5,7 +5,6 @@ import {
   type QueryClient,
 } from '@tanstack/react-query'
 
-import type { UploadMediaResponse } from '@/entities/post'
 import { mainAxios, queryClient } from '@/shared/api'
 
 import { toChatMessageMedia } from './utils'
@@ -20,6 +19,7 @@ import type {
   PaginatedResponse,
   SearchMessagesParams,
 } from './types'
+import type { UploadMediaResponse } from '@/entities/post'
 
 export { toChatMessageMedia, validateChatMediaFile, CHAT_MEDIA_ACCEPT, getMessagePreview } from './utils'
 

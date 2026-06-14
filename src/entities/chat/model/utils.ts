@@ -1,6 +1,5 @@
-import type { UploadMediaResponse } from '@/entities/post'
-
 import type { ChatMessageMedia } from './types'
+import type { UploadMediaResponse } from '@/entities/post'
 
 const IMAGE_MAX_BYTES = 10 * 1024 * 1024
 const VIDEO_MAX_BYTES = 100 * 1024 * 1024

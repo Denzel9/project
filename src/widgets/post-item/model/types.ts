@@ -1,7 +1,6 @@
+import type { ACTION_BUTTONS_ALLOWED, ACTION_BUTTONS_KEYS } from "./constants";
 import type { ApplicationStatus } from "@/entities/application";
 import type { Post } from "@/entities/post";
-
-import type { ACTION_BUTTONS_ALLOWED, ACTION_BUTTONS_KEYS } from "./constants";
 
 export type PostItemProps = {
     isCompact?: boolean;

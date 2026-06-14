@@ -52,6 +52,6 @@ export const getContactLink = (type: ContactType, value: string) => {
     case ContactType.OTHER:
       return value;
     default:
-      return null;
+      return '';
   }
 };

@@ -1,5 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useMediaQuery, useTheme } from '@mui/material'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
@@ -14,8 +14,8 @@ import {
   type ChatMessage,
 } from '@/entities/chat'
 import { useAuthStore } from '@/features/auth'
-import { ROUTES } from '@/shared/config/routes'
 import chatSocket from '@/shared/api/socket'
+import { ROUTES } from '@/shared/config/routes'
 
 const mergeMessages = (
   history: ChatMessage[],
@@ -73,7 +73,9 @@ export const useMessenger = () => {
   const handledRecipientRef = useRef<string | null>(null)
   const selectedConversationIdRef = useRef<string | null>(null)
 
-  selectedConversationIdRef.current = selectedConversationId
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId
+  }, [selectedConversationId])
 
   const {
     data: conversations = [],
@@ -152,7 +154,10 @@ export const useMessenger = () => {
     chatSocket.onError(handleError)
     chatSocket.onConnect(handleConnect)
     chatSocket.onDisconnect(handleDisconnect)
-    setIsSocketConnected(chatSocket.isConnected())
+
+    setTimeout(() => {
+      setIsSocketConnected(chatSocket.isConnected())
+    }, 0)
 
     return () => {
       chatSocket.removeListeners()
@@ -167,7 +172,9 @@ export const useMessenger = () => {
       conversations.length > 0 &&
       !recipientIdParam
     ) {
-      selectConversation(conversations[0].id)
+      setTimeout(() => {
+        selectConversation(conversations[0].id)
+      }, 0)
     }
   }, [
     isDesktop,
@@ -260,9 +267,9 @@ export const useMessenger = () => {
 
       const media = hasFiles
         ? await uploadConversationMediaBatch(
-            selectedConversationId,
-            pendingFiles,
-          )
+          selectedConversationId,
+          pendingFiles,
+        )
         : undefined
 
       chatSocket.sendMessage({

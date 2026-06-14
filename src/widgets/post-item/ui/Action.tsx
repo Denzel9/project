@@ -38,9 +38,11 @@ export const Action = ({
 
   const [isFavorite, setIsFavorite] = useState(isFavoriteProp);
   const [isApplied, setIsApplied] = useState(isAppliedProp);
-  const [currentApplicationId, setCurrentApplicationId] = useState(applicationId);
-  const [currentApplicationStatus, setCurrentApplicationStatus] =
-    useState<ApplicationStatus | undefined>(applicationStatus);
+  const [currentApplicationId, setCurrentApplicationId] =
+    useState(applicationId);
+  const [currentApplicationStatus, setCurrentApplicationStatus] = useState<
+    ApplicationStatus | undefined
+  >(applicationStatus);
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
   const { mutate: addFavorite, isPending: isAdding } = useAddFavoriteMutation();
@@ -52,19 +54,27 @@ export const Action = ({
     useWithdrawApplicationMutation();
 
   useEffect(() => {
-    setIsFavorite(isFavoriteProp);
+    setTimeout(() => {
+      setIsFavorite(isFavoriteProp);
+    }, 0);
   }, [isFavoriteProp]);
 
   useEffect(() => {
-    setIsApplied(isAppliedProp);
+    setTimeout(() => {
+      setIsApplied(isAppliedProp);
+    }, 0);
   }, [isAppliedProp]);
 
   useEffect(() => {
-    setCurrentApplicationId(applicationId);
+    setTimeout(() => {
+      setCurrentApplicationId(applicationId);
+    }, 0);
   }, [applicationId]);
 
   useEffect(() => {
-    setCurrentApplicationStatus(applicationStatus);
+    setTimeout(() => {
+      setCurrentApplicationStatus(applicationStatus);
+    }, 0);
   }, [applicationStatus]);
 
   const isFavoritePending = isAdding || isRemoving;
@@ -72,6 +82,7 @@ export const Action = ({
   const canWithdraw =
     Boolean(currentApplicationId) &&
     Boolean(currentApplicationStatus) &&
+    currentApplicationStatus &&
     canWithdrawApplication(currentApplicationStatus);
 
   const handleToggleFavorite = () => {
@@ -86,7 +97,7 @@ export const Action = ({
         { postId },
         {
           onSuccess: () => setIsFavorite(true),
-        },
+        }
       );
     }
   };
@@ -101,7 +112,7 @@ export const Action = ({
           setCurrentApplicationStatus(application.status);
           setIsApplyDialogOpen(false);
         },
-      },
+      }
     );
   };
 

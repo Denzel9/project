@@ -9,17 +9,17 @@ export const AboutMe = ({
   person,
   aboutMe,
 }: {
-  person: Person;
-  aboutMe: string;
+  person?: Person;
+  aboutMe?: string;
 }) => {
   const isLeastOneParameter = Object.entries(MY_PARAMETERS_LABELS).some(
-    ([key]) => person?.[key]
+    ([key]) => person?.[key as keyof Person]
   );
 
   return (
     <Box sx={{ mt: 4 }}>
       <UserCardItem
-        value={aboutMe}
+        value={aboutMe || ''}
         isLoading={false}
       />
 
@@ -31,9 +31,11 @@ export const AboutMe = ({
                 variant="body2"
                 color="info"
               >
-                {MY_PARAMETERS_LABELS[key]}
+                {MY_PARAMETERS_LABELS[key as keyof typeof MY_PARAMETERS_LABELS]}
               </Typography>
-              <Typography variant="body1">{person?.[key]}</Typography>
+              <Typography variant="body1">
+                {person?.[key as keyof Person]}
+              </Typography>
             </Stack>
           ))}
         </FormBlock>

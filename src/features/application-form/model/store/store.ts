@@ -9,7 +9,7 @@ type ApplicationFormStore = {
 }
 
 export const useApplicationFormStore = create<ApplicationFormStore>((set) => ({
-  application: undefined,
+  application: null,
   setApplication: (application: Application) => set({ application }),
-  removeApplication: () => set({ application: undefined }),
+  removeApplication: () => set({ application: null }),
 }))

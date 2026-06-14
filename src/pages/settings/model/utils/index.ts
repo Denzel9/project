@@ -3,13 +3,12 @@ import { getPhone, type Contact, type User } from "@/entities/user";
 import type { AccountSchemaFormType } from "../schema/accountSchema";
 
 export const parseRequestCreatorData = (data: AccountSchemaFormType, user: User) => {
-    console.log({ data });
 
     return {
         creatorProfile: {
             ...user?.creatorProfile,
-            name: data.name,
-            lastName: data.lastName,
+            name: data.name || null,
+            lastName: data.lastName || null,
         },
         person: {
             height: data.height || null,
@@ -22,7 +21,7 @@ export const parseRequestCreatorData = (data: AccountSchemaFormType, user: User)
         contacts: data.contacts as Contact[],
         bio: data.bio || null,
         location: data.location || null,
-        phone: getPhone(data.phone) || null,
+        phone: getPhone(data.phone || '') || null,
         avatar: data.avatar || null,
         banner: data.banner || null,
         companyProfile: {

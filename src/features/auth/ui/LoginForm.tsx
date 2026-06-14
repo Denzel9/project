@@ -6,7 +6,12 @@ import { useNavigate } from 'react-router';
 
 import { RHFCheckbox, RHFInput } from '@/shared/ui/rhf';
 
-import { defaultLoginValues, loginSchema, useAuthStore } from '../model';
+import {
+  defaultLoginValues,
+  loginSchema,
+  useAuthStore,
+  type LoginFormType,
+} from '../model';
 import { useLoginMutation } from '../model/api/api';
 
 type LoginFormProps = {
@@ -34,7 +39,7 @@ const LoginForm = ({
 
   const { handleSubmit, control } = methods;
 
-  const onSubmit = async (formData: typeof defaultLoginValues) => {
+  const onSubmit = async (formData: LoginFormType) => {
     try {
       const data = await login(formData);
 

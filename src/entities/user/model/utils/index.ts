@@ -27,7 +27,9 @@ export const validateContactValue = (
     }
 };
 
-export const getUserName = (user: User) => {
+export const getUserName = (user: User | undefined) => {
+    if (!user) return '';
+
     if (user?.companyProfile) {
         return user?.companyProfile?.companyName;
     }
@@ -35,7 +37,7 @@ export const getUserName = (user: User) => {
     return `${user?.creatorProfile?.name} ${user?.creatorProfile?.lastName}`;
 };
 
-export const validatePhone = (value: string) => {
+export const validatePhone = (value: string | undefined) => {
     if (!value) return true;
 
     const newValue = value?.startsWith('+7') ? value : '+7 ' + value;

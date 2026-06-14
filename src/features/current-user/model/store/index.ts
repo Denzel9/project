@@ -3,6 +3,6 @@ import { create } from "zustand";
 import type { CurrentUserStore } from "../types";
 
 export const useCurrentUserStore = create<CurrentUserStore>((set) => ({
-    currentUser: null,
+    currentUser: '',
     setCurrentUser: (currentUser) => set({ currentUser }),
 }))

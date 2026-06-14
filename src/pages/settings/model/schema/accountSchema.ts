@@ -20,7 +20,7 @@ export const accountSchema = yup.object().shape({
       .mixed<ContactType>()
       .oneOf(Object.values(ContactType), 'Неверный тип контакта')
       .required('Обязательно для заполнения'),
-  })).default([]).optional().nullable(),
+  })).default([]),
 
   companyName: yup.string().default('').optional().nullable(),
   name: yup.string().default('').optional().nullable(),

@@ -19,6 +19,8 @@ export const DeleteDialog = () => {
   const { mutateAsync: deletePost } = useDeletePostMutation();
 
   const handleDelete = async () => {
+    if (!id) return;
+
     await deletePost(id);
     setOpenDeleteDialog(false, null);
   };

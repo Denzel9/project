@@ -35,7 +35,7 @@ export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
               >
                 <Link
                   target="_blank"
-                  to={getContactLink(field.type as ContactType, field.value)}
+                  to={getContactLink(field.type, field.value)}
                   style={{
                     color: 'inherit',
                     textDecoration: 'none',

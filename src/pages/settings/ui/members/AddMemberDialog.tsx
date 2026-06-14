@@ -49,7 +49,7 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
       // TODO: add role selection
       await addMember({
         email: data.email,
-        userId: id,
+        userId: id || '',
         role: MemberRole.ADMIN,
       });
       handleClose();

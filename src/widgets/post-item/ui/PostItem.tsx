@@ -70,14 +70,14 @@ const PostItem = ({
     >
       <Box
         sx={{
-          p: { xs: 2, lg: 4 },
           gap: 2,
           width: '100%',
           display: 'flex',
-          flexDirection: { xs: 'column', lg: 'row' },
           cursor: 'pointer',
+          p: { xs: 2, lg: 4 },
           borderRadius: '32px',
           transition: 'all 0.3s ease',
+          flexDirection: { xs: 'column', lg: 'row' },
           border: theme => `1px solid ${theme.palette.secondary.main}`,
           borderLeft: theme =>
             isApplied
@@ -90,21 +90,21 @@ const PostItem = ({
       >
         {mediaItems.length > 0 && (
           <Box
+            sx={{
+              width: { xs: '100%', md: '550px' },
+              height: { xs: '450px', md: '450px' },
+            }}
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
             }}
           >
-            <Media
-              width={isCompact ? 350 : 400}
-              items={mediaItems}
-            />
+            <Media items={mediaItems} />
           </Box>
         )}
 
         <Box
           sx={{
-            width: '100%',
             display: 'flex',
             alignItems: 'start',
             flexDirection: 'column',

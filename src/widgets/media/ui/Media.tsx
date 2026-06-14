@@ -1,5 +1,7 @@
-import { Stack } from '@mui/material';
+import { Stack, useMediaQuery } from '@mui/material';
 import { useState } from 'react';
+
+import { theme } from '@/app/index';
 
 import { BigMedia } from './BigMedia';
 import { FullScreenGallery } from './FullScreenGallery';
@@ -9,13 +11,15 @@ import type { MediaItemType } from '../model/types';
 import type { Swiper } from 'swiper/types';
 
 type MediaProps = {
-  width: number;
+  // width: number;
   items: MediaItemType[];
 };
 
-export const Media = ({ width, items }: MediaProps) => {
+export const Media = ({ items }: MediaProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState<Swiper | null>(null);
+
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleOpenDialog = () => {
     setIsDialogOpen(true);
@@ -29,36 +33,32 @@ export const Media = ({ width, items }: MediaProps) => {
     <>
       <Stack
         spacing={2}
-        direction="row"
+        direction={{ xs: 'column-reverse', md: 'row' }}
         sx={{
-          height: 'fit-content',
-          maxWidth: `${width + 100}px`,
-          maxHeight: `${width}px`,
-        }}
-        onClick={e => {
-          e.preventDefault();
-          e.stopPropagation();
+          width: '100%',
+          height: '100%',
         }}
       >
         <Trumbnail
-          width={width}
           items={items}
+          isMobile={isMobile}
           setThumbsSwiper={setThumbsSwiper}
         />
 
         <BigMedia
-          width={width}
           items={items}
+          isMobile={isMobile}
           thumbsSwiper={thumbsSwiper}
           handleClickOpen={handleOpenDialog}
         />
       </Stack>
 
       <FullScreenGallery
-        initialSlide={thumbsSwiper?.clickedIndex}
         items={items}
+        isMobile={isMobile}
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
+        initialSlide={thumbsSwiper?.clickedIndex}
       />
     </>
   );

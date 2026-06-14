@@ -61,10 +61,18 @@ const LoginForm = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', mt: 4 }}>
+        <Box
+          sx={{
+            mt: 4,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <RHFInput
             name="email"
             control={control}
+            autoCapitalize="off"
             props={{
               label: 'Почта',
             }}
@@ -73,10 +81,11 @@ const LoginForm = ({
           <RHFInput
             name="password"
             control={control}
+            autoCapitalize="off"
             props={{
-              type: 'password',
               sx: { mt: 2 },
               label: 'Пароль',
+              type: 'password',
             }}
           />
 
@@ -90,19 +99,20 @@ const LoginForm = ({
             <RHFCheckbox
               name="rememberMe"
               control={control}
-              label="Запомнить меня"
               labelColor="info"
+              labelFontSize="13px"
+              label="Запомнить меня"
               props={{
                 sx: { mt: 2 },
               }}
             />
 
             <Button
-              variant="text"
-              color="primary"
               size="small"
-              sx={{ px: 2 }}
+              variant="text"
+              color="info"
               onClick={onRecoveryPassword}
+              sx={{ px: 2, textTransform: 'none' }}
             >
               Забыли пароль?
             </Button>

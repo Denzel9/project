@@ -18,6 +18,7 @@ type RHFCheckboxProps<
 > = {
   name: TName;
   label: string;
+  labelFontSize?: string;
   props?: CheckboxProps;
   description?: string;
   labelColor?: string;
@@ -34,6 +35,7 @@ export const RHFCheckbox = <
   control,
   labelColor,
   description,
+  labelFontSize = '13px',
 }: RHFCheckboxProps<TFieldValues, TName>) => (
   <Controller
     name={name}
@@ -56,6 +58,7 @@ export const RHFCheckbox = <
             <Typography
               variant="body1"
               color={labelColor}
+              sx={{ fontSize: labelFontSize }}
             >
               {label}
             </Typography>

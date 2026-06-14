@@ -36,14 +36,15 @@ export const HomePage = () => {
         sx={{
           gap: 2,
           width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
           height: '100%',
+          display: 'flex',
           bgcolor: 'white',
+          p: { xs: 0, md: 4 },
+          pt: { xs: 2, md: 0 },
+          alignItems: 'center',
+          flexDirection: 'column',
+          justifyContent: 'center',
           borderRadius: { xs: '16px', md: '32px' },
-          p: { xs: 2, md: 4 },
         }}
       >
         {isLoading && (
@@ -69,12 +70,12 @@ export const HomePage = () => {
 
             return (
               <PostItem
-                key={post.id}
                 post={post}
-                isFavorite={favoritePostIds.has(post.id)}
-                isApplied={Boolean(application)}
+                key={post.id}
                 applicationId={application?.id}
+                isApplied={Boolean(application)}
                 applicationStatus={application?.status}
+                isFavorite={favoritePostIds.has(post.id)}
                 permissions={[
                   ACTION_BUTTONS_KEYS.HIDE,
                   favoritePostIds.has(post.id)

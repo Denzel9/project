@@ -18,6 +18,7 @@ type RHFInputProps<
   props: TextFieldProps;
   endAdornment?: ReactNode;
   startAdornment?: ReactNode;
+  autoCapitalize?: 'off' | 'on';
   control: Control<TFieldValues>;
 };
 
@@ -29,10 +30,11 @@ export const RHFInput = <
   props,
   regex,
   control,
-  children,
   maxLength,
+  children,
   endAdornment,
   startAdornment,
+  autoCapitalize = 'on',
 }: RHFInputProps<TFieldValues, TName>) => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -52,6 +54,7 @@ export const RHFInput = <
         <TextField
           {...field}
           {...props}
+          autoCapitalize={autoCapitalize}
           slotProps={{
             input: {
               startAdornment: startAdornment && (

@@ -14,20 +14,20 @@ import type { Swiper as SwiperType } from 'swiper/types';
 
 type BigMediaProps = {
   isDialog?: boolean;
+  isMobile?: boolean;
   initialSlide?: number;
-  width?: number;
   items: MediaItemType[];
   isFullscreen?: boolean;
-  thumbsSwiper: SwiperType | null;
   handleClickOpen: () => void;
+  thumbsSwiper: SwiperType | null;
 };
 
 export const BigMedia = ({
-  width,
   items,
   thumbsSwiper,
   handleClickOpen,
   initialSlide = 0,
+  isMobile = false,
   isFullscreen = false,
 }: BigMediaProps) => {
   const loadingKey = `${items.map(item => item.url).join(',')}-${initialSlide}`;
@@ -65,10 +65,8 @@ export const BigMedia = ({
       navigation={!isLoading}
       modules={[Thumbs, Pagination, Navigation, Mousewheel]}
       style={{
-        minWidth: `${width}px`,
-        minHeight: `${width}px`,
-        width: isFullscreen ? 'auto' : `${width}px`,
-        height: isFullscreen ? 'auto' : `${width}px`,
+        height: '100%',
+        width: isMobile ? '100%' : isFullscreen ? '100%' : '80%',
       }}
       onClick={handleClick}
     >
@@ -76,30 +74,21 @@ export const BigMedia = ({
         <SwiperSlide
           key={item.url}
           style={{
+            width: '100%',
+            height: '100%',
             overflow: 'hidden',
             borderRadius: '32px',
             position: 'relative',
-            minWidth: `${width}px`,
-            minHeight: `${width}px`,
-            width: isFullscreen ? 'auto' : `${width}px`,
-            height: isFullscreen ? 'auto' : `${width}px`,
           }}
         >
           <MediaItem
             src={item.url}
-            borderRadius="32px"
             mimeType={item.mimeType}
             alt={`Media ${index + 1}`}
             onLoad={() => handleImageReady(index)}
             onError={() => handleImageReady(index)}
             key={`${item.url}-${item.mimeType ?? ''}`}
-            width={isFullscreen ? '100%' : `${width}px`}
-            height={isFullscreen ? '100%' : `${width}px`}
             loading={index === initialSlide ? 'eager' : 'lazy'}
-            style={{
-              minWidth: `${width}px`,
-              minHeight: `${width}px`,
-            }}
           />
         </SwiperSlide>
       ))}

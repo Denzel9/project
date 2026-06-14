@@ -10,16 +10,18 @@ import type { Swiper as SwiperType } from 'swiper/types';
 
 type FullScreenGalleryProps = {
   isOpen: boolean;
+  isMobile: boolean;
+  onClose: () => void;
   initialSlide?: number;
   items: MediaItemType[];
-  onClose: () => void;
 };
 
 export const FullScreenGallery = ({
-  isOpen,
-  initialSlide,
   items,
+  isOpen,
   onClose,
+  isMobile,
+  initialSlide,
 }: FullScreenGalleryProps) => {
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
@@ -35,11 +37,13 @@ export const FullScreenGallery = ({
       sx={{
         '& .MuiDialog-paper': {
           outline: 'none',
-          maxWidth: '60%',
-          maxHeight: '90%',
           overflow: 'visible',
           position: 'relative',
-          borderRadius: '32px',
+          bgcolor: 'transparent',
+          height: { xs: '50%', md: '100%' },
+          borderRadius: { xs: '32px', md: '32px' },
+          maxWidth: { xs: '100%', md: '60%' },
+          maxHeight: { xs: '100%', md: '90%' },
         },
       }}
     >
@@ -51,6 +55,7 @@ export const FullScreenGallery = ({
           right: -70,
           position: 'absolute',
           bgcolor: 'secondary.main',
+          display: { xs: 'none', md: 'block' },
           ':hover': {
             bgcolor: 'secondary.light',
           },
@@ -61,11 +66,21 @@ export const FullScreenGallery = ({
 
       <Stack
         direction="row"
+        spacing={isMobile ? 0 : 2}
         sx={{
-          overflow: 'hidden',
+          width: '100%',
+          height: '100%',
+          overflow: 'scroll',
+          justifyContent: 'space-between',
         }}
       >
-        <Box sx={{ px: 4, pt: 4 }}>
+        <Box
+          sx={{
+            pl: { xs: 0, md: 4 },
+            pt: { xs: 0, md: 4 },
+            display: { xs: 'none', md: 'block' },
+          }}
+        >
           <Trumbnail
             isFullscreen
             items={items}
@@ -76,8 +91,8 @@ export const FullScreenGallery = ({
         <BigMedia
           isDialog
           isFullscreen
-          initialSlide={initialSlide}
           items={items}
+          initialSlide={initialSlide}
           thumbsSwiper={thumbsSwiper}
           handleClickOpen={handleClose}
         />

@@ -74,7 +74,7 @@ const PostItem = ({
           width: '100%',
           display: 'flex',
           cursor: 'pointer',
-          p: { xs: 2, lg: 4 },
+          p: { xs: 3, lg: 4 },
           borderRadius: '32px',
           transition: 'all 0.3s ease',
           flexDirection: { xs: 'column', lg: 'row' },
@@ -91,8 +91,8 @@ const PostItem = ({
         {mediaItems.length > 0 && (
           <Box
             sx={{
-              width: { xs: '100%', md: '550px' },
-              height: { xs: '450px', md: '450px' },
+              width: { xs: '100%', md: isCompact ? '400px' : '500px' },
+              height: { xs: '400px', md: isCompact ? '350px' : '450px' },
             }}
             onClick={e => {
               e.preventDefault();

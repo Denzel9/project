@@ -47,7 +47,6 @@ export const Media = ({ items }: MediaProps) => {
 
         <BigMedia
           items={items}
-          isMobile={isMobile}
           thumbsSwiper={thumbsSwiper}
           handleClickOpen={handleOpenDialog}
         />

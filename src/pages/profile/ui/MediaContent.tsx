@@ -1,4 +1,14 @@
-import { Box, Stack, ButtonGroup, Button, Typography } from '@mui/material';
+import { Add } from '@mui/icons-material';
+import {
+  Box,
+  Stack,
+  ButtonGroup,
+  Button,
+  Typography,
+  IconButton,
+  TextField,
+  MenuItem,
+} from '@mui/material';
 import { useNavigate } from 'react-router';
 
 import { usePostsQuery } from '@/entities/post';
@@ -23,14 +33,26 @@ export const MediaContent = ({
   });
 
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box sx={{ mt: { xs: 2, md: 4 } }}>
       <Stack
         direction="row"
-        sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}
+        sx={{
+          mb: { xs: 4, md: 2 },
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
-        <Box>
-          <ButtonGroup size="small">
+        <Box
+          sx={{
+            gap: 2,
+            px: { xs: 2, md: 0 },
+            display: 'flex',
+            width: { xs: '100%', md: 'auto' },
+          }}
+        >
+          <ButtonGroup sx={{ display: { xs: 'none', md: 'block' } }}>
             <Button
+              size="small"
               onClick={() => setMediaTabValue(MEDIA_TAB_VALUES.ACTIVE)}
               color={
                 mediaTabValue === MEDIA_TAB_VALUES.ACTIVE ? 'primary' : 'info'
@@ -38,7 +60,9 @@ export const MediaContent = ({
             >
               Активные
             </Button>
+
             <Button
+              size="small"
               onClick={() => setMediaTabValue(MEDIA_TAB_VALUES.ARCHIVED)}
               color={
                 mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED ? 'primary' : 'info'
@@ -48,17 +72,40 @@ export const MediaContent = ({
             </Button>
           </ButtonGroup>
 
+          <TextField
+            fullWidth
+            select
+            size="small"
+            label="Поиск"
+            variant="outlined"
+            value={mediaTabValue}
+            sx={{ display: { xs: 'block', md: 'none' } }}
+            onChange={e => setMediaTabValue(e.target.value as MEDIA_TAB_VALUES)}
+          >
+            <MenuItem value={MEDIA_TAB_VALUES.ACTIVE}>Активные</MenuItem>
+            <MenuItem value={MEDIA_TAB_VALUES.ARCHIVED}>Архивные</MenuItem>
+          </TextField>
+
           <Button
             size="small"
-            sx={{ ml: 2 }}
             variant="contained"
+            sx={{ ml: 2, display: { xs: 'none', md: 'block' } }}
             onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
           >
             Добавить
           </Button>
+
+          <IconButton
+            size="small"
+            sx={{ display: { xs: 'block', md: 'none' } }}
+            onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
+          >
+            <Add />
+          </IconButton>
         </Box>
 
         <Typography
+          sx={{ display: { xs: 'none', md: 'block' } }}
           color="info"
           variant="subtitle1"
         >
@@ -66,27 +113,37 @@ export const MediaContent = ({
         </Typography>
       </Stack>
 
-      {mediaTabValue === MEDIA_TAB_VALUES.ACTIVE && (
-        <Stack
-          direction="column"
-          spacing={2}
-        >
-          {posts?.items?.map(post => (
-            <PostItem
-              isCompact
-              post={post}
-              key={post.id}
-              isMyPost
-              permissions={[
-                ACTION_BUTTONS_KEYS.EDIT,
-                ACTION_BUTTONS_KEYS.DELETE,
-                ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE,
-                ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
-              ]}
-            />
-          ))}
-        </Stack>
-      )}
+      <Box
+        sx={{
+          pt: { xs: 2, md: 0 },
+          pb: 4,
+          boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
+          borderRadius: '32px',
+          bgcolor: 'white',
+        }}
+      >
+        {mediaTabValue === MEDIA_TAB_VALUES.ACTIVE && (
+          <Stack
+            direction="column"
+            spacing={2}
+          >
+            {posts?.items?.map(post => (
+              <PostItem
+                isCompact
+                post={post}
+                key={post.id}
+                isMyPost
+                permissions={[
+                  ACTION_BUTTONS_KEYS.EDIT,
+                  ACTION_BUTTONS_KEYS.DELETE,
+                  ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE,
+                  ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
+                ]}
+              />
+            ))}
+          </Stack>
+        )}
+      </Box>
 
       {mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED && (
         <Stack

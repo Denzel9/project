@@ -14,10 +14,8 @@ import type { Swiper as SwiperType } from 'swiper/types';
 
 type BigMediaProps = {
   isDialog?: boolean;
-  isMobile?: boolean;
   initialSlide?: number;
   items: MediaItemType[];
-  isFullscreen?: boolean;
   handleClickOpen: () => void;
   thumbsSwiper: SwiperType | null;
 };
@@ -27,8 +25,6 @@ export const BigMedia = ({
   thumbsSwiper,
   handleClickOpen,
   initialSlide = 0,
-  isMobile = false,
-  isFullscreen = false,
 }: BigMediaProps) => {
   const loadingKey = `${items.map(item => item.url).join(',')}-${initialSlide}`;
   const [readyKey, setReadyKey] = useState<string | null>(null);
@@ -66,7 +62,7 @@ export const BigMedia = ({
       modules={[Thumbs, Pagination, Navigation, Mousewheel]}
       style={{
         height: '100%',
-        width: isMobile ? '100%' : isFullscreen ? '100%' : '80%',
+        width: '100%',
       }}
       onClick={handleClick}
     >

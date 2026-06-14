@@ -19,7 +19,7 @@ export const Content = ({ tabValue, user }: ContentProps) => {
   const [mediaTabValue, setMediaTabValue] = useState(MEDIA_TAB_VALUES.ACTIVE);
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', bgcolor: 'rgb(244, 244, 244)' }}>
       {tabValue === 0 && (
         <MediaContent
           userId={user?.id}

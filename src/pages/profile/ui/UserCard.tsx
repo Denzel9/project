@@ -30,17 +30,13 @@ export const UserCard = ({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: 2,
+          justifyContent: { xs: 'start', md: 'center' },
         }}
       >
-        <Box sx={{ position: 'relative' }}>
-          <Avatar
-            src={user?.avatar || ''}
-            sx={{ width: '200px', height: '200px' }}
-          />
-        </Box>
+        <Avatar
+          src={user?.avatar || ''}
+          sx={{ width: '200px', height: '200px' }}
+        />
       </Box>
 
       <Stack

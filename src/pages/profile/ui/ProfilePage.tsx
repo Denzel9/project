@@ -74,9 +74,9 @@ export const ProfilePage = () => {
       <Stack
         direction="row"
         sx={{
-          p: { xs: 2, md: 4 },
           mt: -10,
           width: '100%',
+          p: { xs: 0, md: 4 },
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
@@ -89,6 +89,7 @@ export const ProfilePage = () => {
             width: '100%',
             height: '100%',
             alignItems: 'start',
+            bgcolor: 'rgb(244, 244, 244)',
             justifyContent: 'space-between',
           }}
         >
@@ -109,6 +110,7 @@ export const ProfilePage = () => {
               direction="row"
               spacing={2}
               sx={{
+                p: { xs: 2, md: 0 },
                 alignItems: 'center',
                 mt: { xs: 6, md: '100px !important' },
                 justifyContent: 'space-between',

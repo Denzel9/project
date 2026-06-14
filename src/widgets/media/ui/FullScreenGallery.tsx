@@ -39,7 +39,6 @@ export const FullScreenGallery = ({
           outline: 'none',
           overflow: 'visible',
           position: 'relative',
-          bgcolor: 'transparent',
           height: { xs: '50%', md: '100%' },
           borderRadius: { xs: '32px', md: '32px' },
           maxWidth: { xs: '100%', md: '60%' },
@@ -90,7 +89,6 @@ export const FullScreenGallery = ({
 
         <BigMedia
           isDialog
-          isFullscreen
           items={items}
           initialSlide={initialSlide}
           thumbsSwiper={thumbsSwiper}

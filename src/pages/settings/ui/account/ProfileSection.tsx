@@ -51,7 +51,7 @@ export const ProfileSection = ({
 
       <Box sx={{ position: 'relative', mt: 4, width: 'fit-content' }}>
         <Avatar
-          src={user?.avatar}
+          src={user?.avatar || ''}
           sx={{ width: 100, height: 100 }}
         />
         <Box sx={{ position: 'absolute', bottom: -5, right: -5 }}>

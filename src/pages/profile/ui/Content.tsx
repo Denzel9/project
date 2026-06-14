@@ -31,7 +31,7 @@ export const Content = ({ tabValue, user }: ContentProps) => {
       {tabValue === 1 && (
         <AboutMe
           person={user?.person}
-          aboutMe={user?.aboutMe}
+          aboutMe={user?.aboutMe || ''}
         />
       )}
 

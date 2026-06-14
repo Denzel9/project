@@ -102,9 +102,6 @@ const DraggableImage = ({
           src={image.url}
           mimeType={image.mimeType}
           alt={image.key}
-          width={100}
-          height={125}
-          borderRadius={20}
         />
       </Box>
     </Box>

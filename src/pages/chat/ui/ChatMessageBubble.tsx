@@ -87,11 +87,8 @@ export const ChatMessageBubble = ({
             >
               <MediaItem
                 src={item.url}
-                mimeType={item.mimeType}
                 alt="Вложение"
-                width="100%"
-                height={180}
-                borderRadius="12px"
+                mimeType={item.mimeType}
               />
             </Box>
           ))}

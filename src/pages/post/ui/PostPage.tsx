@@ -8,8 +8,6 @@ import {
   Rating,
   Stack,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router';
 
@@ -26,8 +24,6 @@ import { IncomingApplications } from './IncomingApplications';
 
 export const PostPage = () => {
   const { id } = useParams<{ id: string }>();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const { id: currentUserId } = useAuthStore();
 
@@ -89,12 +85,7 @@ export const PostPage = () => {
               gap: 3,
             }}
           >
-            {mediaItems.length > 0 && (
-              <Media
-                width={isMobile ? 320 : 600}
-                items={mediaItems}
-              />
-            )}
+            {mediaItems.length > 0 && <Media items={mediaItems} />}
 
             <Box sx={{ flex: 1 }}>
               <Stack

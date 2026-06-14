@@ -170,11 +170,8 @@ export const ChatAttachmentsPanel = ({
               onClick={() => handleOpenAttachment(item.url)}
             >
               <MediaItem
-                width="100%"
-                height={120}
                 src={item.url}
                 alt="Вложение"
-                borderRadius="12px"
                 mimeType={item.mimeType}
               />
               <Typography

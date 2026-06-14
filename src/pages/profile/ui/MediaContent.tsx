@@ -115,24 +115,24 @@ export const MediaContent = ({
 
       <Box
         sx={{
-          pt: { xs: 2, md: 0 },
           pb: 4,
-          boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
-          borderRadius: '32px',
           bgcolor: 'white',
+          borderRadius: '32px',
+          pt: { xs: 4, md: 0 },
+          boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
         }}
       >
         {mediaTabValue === MEDIA_TAB_VALUES.ACTIVE && (
           <Stack
-            direction="column"
             spacing={2}
+            direction="column"
           >
             {posts?.items?.map(post => (
               <PostItem
+                isMyPost
                 isCompact
                 post={post}
                 key={post.id}
-                isMyPost
                 permissions={[
                   ACTION_BUTTONS_KEYS.EDIT,
                   ACTION_BUTTONS_KEYS.DELETE,

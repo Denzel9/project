@@ -1,4 +1,4 @@
-import { NorthEast, Share, Whatshot } from '@mui/icons-material';
+import { NorthEast, Whatshot } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -16,7 +16,7 @@ import { useFavoritePostIds } from '@/entities/favorite';
 import { usePostByIdQuery } from '@/entities/post';
 import { getUserName, useGetUserByIdQuery } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
-import { ROUTES } from '@/shared';
+import { ROUTES, ShareButton } from '@/shared';
 import { Media, PageLayout } from '@/widgets';
 import { Action } from '@/widgets/post-item/ui/Action';
 
@@ -108,9 +108,10 @@ export const PostPage = () => {
                   )}
                 </Stack>
 
-                <IconButton>
-                  <Share />
-                </IconButton>
+                <ShareButton
+                  postId={post.id}
+                  title={post.title}
+                />
               </Stack>
 
               <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>

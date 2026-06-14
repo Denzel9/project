@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { SideBar } from '@widgets/side-bar';
 
 import { AuthModal } from '@/features/auth';
+import { AddToCollectionDialog } from '@/widgets/post-item';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
 import type { ReactNode } from 'react';
@@ -28,6 +29,7 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
       </Box>
 
       <AuthModal />
+      <AddToCollectionDialog />
     </Box>
   );
 };

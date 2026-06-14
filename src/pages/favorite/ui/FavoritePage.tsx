@@ -1,26 +1,36 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { useState } from 'react';
 
 import { useFavoritesQuery } from '@/entities/favorite';
 import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
 
+import {
+  toFavoriteListParams,
+  type FavoriteGroupFilter,
+} from '../model/utils';
+
 import FavoriteFilter from './Filter';
 
 export const FavoritePage = () => {
-  const { data: favorites, isLoading } = useFavoritesQuery({
-    page: 1,
-    limit: 20,
-  });
+  const [groupFilter, setGroupFilter] = useState<FavoriteGroupFilter>('all');
+
+  const { data: favorites, isLoading } = useFavoritesQuery(
+    toFavoriteListParams(groupFilter),
+  );
 
   return (
     <PageLayout title="Избранное">
-      <FavoriteFilter />
+      <FavoriteFilter
+        value={groupFilter}
+        onChange={setGroupFilter}
+      />
 
       <Box
         sx={{
           gap: 2,
           bgcolor: 'white',
           borderRadius: '32px',
-          p: 4,
+          p: { xs: 0, md: 4 },
           display: 'flex',
           width: '100%',
           flexDirection: 'column',
@@ -47,7 +57,12 @@ export const FavoritePage = () => {
             key={favorite.postId}
             post={favorite.post}
             isFavorite
-            permissions={[ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION]}
+            permissions={[
+              ...(favorite.groupId === null
+                ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
+                : []),
+              ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
+            ]}
           />
         ))}
       </Box>

@@ -1,7 +1,18 @@
 import { Verified, Email, Phone, LocationOn } from '@mui/icons-material';
-import { Box, Avatar, Stack, Typography, Skeleton } from '@mui/material';
+import {
+  Box,
+  Avatar,
+  Stack,
+  Typography,
+  Skeleton,
+  Button,
+} from '@mui/material';
+import { useNavigate } from 'react-router';
 
 import { getUserName, type User } from '@/entities/user';
+import { useAuthStore } from '@/features/auth';
+import { ROUTES } from '@/shared';
+import { FavoriteButton } from '@/widgets';
 
 import { UserCardItem } from './UserCardItem';
 
@@ -12,6 +23,10 @@ export const UserCard = ({
   isLoading: boolean;
   user: User | undefined;
 }) => {
+  const navigate = useNavigate();
+
+  const { id: userId } = useAuthStore();
+
   return (
     <Box
       sx={{
@@ -115,6 +130,37 @@ export const UserCard = ({
           />
         )}
       </Stack>
+
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        {user?.id && user?.id !== userId ? (
+          <Stack
+            spacing={2}
+            direction="row"
+            sx={{ alignItems: 'center', mt: 4 }}
+          >
+            <Button
+              size="small"
+              sx={{ px: 0 }}
+              onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${user?.id}`)}
+            >
+              Написать сообщение
+            </Button>
+
+            <FavoriteButton
+              postId={'postId'}
+              isFavorite={false}
+            />
+          </Stack>
+        ) : (
+          <Button
+            size="small"
+            sx={{ px: 0, mt: 4 }}
+            onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
+          >
+            Редактировать
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 };

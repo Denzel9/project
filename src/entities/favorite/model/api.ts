@@ -5,10 +5,12 @@ import { mainAxios } from '@/shared/api'
 
 import type {
   AddFavoriteDto,
+  CreateFavoriteGroupDto,
   Favorite,
   FavoriteGroup,
   FavoriteList,
   FavoriteListParams,
+  SearchFavoritesParams,
 } from './types'
 
 export const favoriteKeys = {
@@ -16,6 +18,8 @@ export const favoriteKeys = {
   list: (params?: FavoriteListParams) =>
     [...favoriteKeys.all, 'list', params ?? {}] as const,
   groups: () => [...favoriteKeys.all, 'groups'] as const,
+  search: (params: SearchFavoritesParams) =>
+    [...favoriteKeys.all, 'search', params] as const,
 }
 
 export const useFavoritesQuery = (params?: FavoriteListParams) =>
@@ -28,6 +32,29 @@ export const useFavoritesQuery = (params?: FavoriteListParams) =>
       return data
     },
   })
+
+export const useSearchFavoritesQuery = (params: SearchFavoritesParams) => {
+  const trimmedQuery = params.q.trim()
+  const page = params.page ?? 1
+  const limit = params.limit ?? 20
+
+  return useQuery({
+    queryKey: favoriteKeys.search({ ...params, q: trimmedQuery, page, limit }),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<FavoriteList>('/favorites', {
+        params: {
+          q: trimmedQuery,
+          page,
+          limit,
+          ...(params.groupId && { groupId: params.groupId }),
+          ...(params.ungrouped && { ungrouped: params.ungrouped }),
+        },
+      })
+      return data
+    },
+    enabled: trimmedQuery.length >= 2,
+  })
+}
 
 export const useFavoriteGroupsQuery = () =>
   useQuery({
@@ -54,6 +81,36 @@ export const useAddFavoriteMutation = () => {
     mutationFn: async (dto: AddFavoriteDto) => {
       const { data } = await mainAxios.post<Favorite>('/favorites', dto)
       return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: favoriteKeys.all })
+    },
+  })
+}
+
+export const useCreateFavoriteGroupMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: CreateFavoriteGroupDto) => {
+      const { data } = await mainAxios.post<FavoriteGroup>(
+        '/favorites/groups',
+        body,
+      )
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: favoriteKeys.all })
+    },
+  })
+}
+
+export const useDeleteFavoriteGroupMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await mainAxios.delete(`/favorites/groups/${id}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoriteKeys.all })

@@ -60,9 +60,9 @@ export const CurrentUser = () => {
       value={currentUser}
       onChange={handleChangeUser}
       sx={{
-        width: '30%',
-        backgroundColor: 'white',
+        width: '100%',
         borderRadius: '16px',
+        backgroundColor: 'white',
       }}
     >
       {data?.data?.map(item => (

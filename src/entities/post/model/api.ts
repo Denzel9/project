@@ -6,6 +6,7 @@ import type {
   CreatePostDto,
   Post,
   PostListParams,
+  SearchPostsParams,
   UpdatePostDto,
   UploadMediaResponse,
   PostList,
@@ -15,6 +16,8 @@ export const postKeys = {
   all: ['posts'] as const,
   list: (params?: PostListParams) => [...postKeys.all, 'list', params ?? {}] as const,
   detail: (id: string) => [...postKeys.all, 'detail', id] as const,
+  search: (q: string, page: number, limit: number) =>
+    [...postKeys.all, 'search', q, page, limit] as const,
 }
 
 export const usePostsQuery = (params?: PostListParams) =>
@@ -25,6 +28,23 @@ export const usePostsQuery = (params?: PostListParams) =>
       return data
     },
   })
+
+export const useSearchPostsQuery = (params: SearchPostsParams) => {
+  const trimmedQuery = params.q.trim()
+  const page = params.page ?? 1
+  const limit = params.limit ?? 20
+
+  return useQuery({
+    queryKey: postKeys.search(trimmedQuery, page, limit),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<PostList>('/posts', {
+        params: { q: trimmedQuery, page, limit },
+      })
+      return data
+    },
+    enabled: trimmedQuery.length >= 2,
+  })
+}
 
 export const usePostByIdQuery = (id: string | null) =>
   useQuery({
@@ -110,3 +130,5 @@ export const useUploadPostMediaMutation = () => {
     },
   })
 }
+
+

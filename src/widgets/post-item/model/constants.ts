@@ -6,6 +6,7 @@ export enum ACTION_BUTTONS_KEYS {
     DELETE = 'DELETE',
     ADD_TO_ARCHIVE = 'ADD_TO_ARCHIVE',
     ADD_TO_COLLECTION = 'ADD_TO_COLLECTION',
+    ADD_TO_FAVORITE_GROUP = 'ADD_TO_FAVORITE_GROUP',
     REMOVE_FROM_ARCHIVE = 'REMOVE_FROM_ARCHIVE',
     REMOVE_FROM_COLLECTION = 'REMOVE_FROM_COLLECTION',
 }
@@ -23,6 +24,10 @@ export const ACTION_BUTTONS: ActionButton[] = [
     {
         label: 'Добавить в подборку',
         key: ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION,
+    },
+    {
+        label: 'Добавить в подборку',
+        key: ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP,
     },
     {
         label: 'Удалить из подборки',

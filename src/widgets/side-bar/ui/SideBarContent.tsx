@@ -20,6 +20,7 @@ import {
 } from '../model/routes';
 
 import { MenuItem } from './MenuItem';
+import { SettingsCollapseMenu } from './SettingsCollapseMenu';
 
 type SideBarContentProps = {
   isExpanded: boolean;
@@ -100,6 +101,16 @@ export const SideBarContent = ({
 
         {BOTTOM_MENU_ROUTES.map(route => {
           if (route.authType === AUTH_TYPES.ONLY_AUTH && !isAuth) return null;
+
+          if (route.path === ROUTES.SETTINGS && onNavigate) {
+            return (
+              <SettingsCollapseMenu
+                key={route.path}
+                pathname={pathname}
+                onNavigate={onNavigate}
+              />
+            );
+          }
 
           return (
             <MenuItem

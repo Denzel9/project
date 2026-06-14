@@ -57,11 +57,11 @@ export const PageLayout = ({
             <Typography
               noWrap
               sx={{
-                fontSize: { xs: '1.25rem', md: '2.125rem' },
                 fontWeight: 500,
                 lineHeight: 1.2,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                fontSize: { xs: '1.25rem', md: '2.125rem' },
               }}
             >
               {title}
@@ -74,8 +74,8 @@ export const PageLayout = ({
           spacing={{ xs: 1, md: 2 }}
           sx={{
             alignItems: 'center',
-            flexShrink: 0,
             justifyContent: 'flex-end',
+            width: { xs: '60%', md: '30%' },
           }}
         >
           <CurrentUser />

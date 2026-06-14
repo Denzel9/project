@@ -11,7 +11,7 @@ export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
       <Stack
         direction="column"
         spacing={2}
-        sx={{ mt: 4 }}
+        sx={{ mt: { xs: 0, md: 4 }, px: { xs: 3, md: 0 } }}
       >
         {contacts?.map(field => {
           return (

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 
-import { useAddFavoriteMutation, useRemoveFavoriteMutation } from "@/entities/favorite";
+import { useRemoveFavoriteMutation } from "@/entities/favorite";
 import { ROUTES } from "@/shared";
 
 import { ACTION_BUTTONS, ACTION_BUTTONS_KEYS } from "../constants";
@@ -10,10 +10,10 @@ import type { ActionButton } from "../types";
 import type { UseActionsProps } from "../types/index";
 
 export const useActions = ({ permissions, id }: UseActionsProps) => {
-    const { mutate: addFavorite } = useAddFavoriteMutation();
     const { mutate: removeFavorite } = useRemoveFavoriteMutation();
 
-    const { setOpenDeleteDialog } = useApplicationItemStore();
+    const { setOpenDeleteDialog, setOpenAddToCollectionDialog } =
+        useApplicationItemStore();
 
     const navigate = useNavigate();
 
@@ -24,7 +24,7 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
     };
 
     const handleAddToCollection = () => {
-        addFavorite({ postId: id });
+        setOpenAddToCollectionDialog(true, id);
     };
 
     const handleRemoveFromCollection = () => {
@@ -51,6 +51,8 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
         if (action === ACTION_BUTTONS_KEYS.HIDE) {
             handleHide();
         } else if (action === ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION) {
+            handleAddToCollection();
+        } else if (action === ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP) {
             handleAddToCollection();
         } else if (action === ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION) {
             handleRemoveFromCollection();

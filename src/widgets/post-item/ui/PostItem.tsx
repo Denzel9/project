@@ -1,4 +1,4 @@
-import { MoreVert, Share, Whatshot } from '@mui/icons-material';
+import { MoreVert, Whatshot } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -14,7 +14,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { BASE_COLOR } from '@/app/index';
 import { getUserName, useGetUserByIdQuery } from '@/entities/user';
-import { ROUTES } from '@/shared/index';
+import { ROUTES, ShareButton } from '@/shared/index';
 import { Media } from '@/widgets';
 
 import { useActions } from '../model/hooks/useActions';
@@ -141,11 +141,10 @@ const PostItem = ({
               </Box>
 
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Box>
-                  <IconButton onClick={e => e.preventDefault()}>
-                    <Share />
-                  </IconButton>
-                </Box>
+                <ShareButton
+                  postId={post.id}
+                  title={post.title}
+                />
 
                 <IconButton onClick={handleClick}>
                   <MoreVert />
@@ -162,6 +161,7 @@ const PostItem = ({
                       onClick={e => {
                         e.preventDefault();
                         handleAction(action.key);
+                        handleClose();
                       }}
                     >
                       {action.label}

@@ -28,7 +28,20 @@ export type AddFavoriteDto = {
   groupId?: string
 }
 
+export type CreateFavoriteGroupDto = {
+  name: string
+}
+
 export type FavoriteListParams = {
+  groupId?: string
+  ungrouped?: boolean
+  page?: number
+  limit?: number
+  q?: string
+}
+
+export type SearchFavoritesParams = {
+  q: string
   groupId?: string
   ungrouped?: boolean
   page?: number

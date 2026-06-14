@@ -3,15 +3,16 @@ import { Box, CircularProgress, Drawer, Stack } from '@mui/material';
 import { useMyApplicationsMap } from '@/entities/application';
 import { useFavoritePostIds } from '@/entities/favorite';
 import { usePostsQuery } from '@/entities/post';
-import { MainFilter, useMainFilterStore } from '@/features/main-filter';
+import { MainFilter, toPostListParams, useMainFilterStore } from '@/features/main-filter';
 import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
 import { EmptyBlock } from '@/shared';
 import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
 
 export const HomePage = () => {
-  const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
+  const { isOpenMainFilter, setIsOpenMainFilter, postsType } =
+    useMainFilterStore();
 
-  const { data: posts, isLoading } = usePostsQuery({ page: 1, limit: 20 });
+  const { data: posts, isLoading } = usePostsQuery(toPostListParams(postsType));
 
   const favoritePostIds = useFavoritePostIds();
 

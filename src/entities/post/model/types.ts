@@ -80,6 +80,13 @@ export type PostListParams = {
   isArchived?: boolean
   page?: number
   limit?: number
+  q?: string
+}
+
+export type SearchPostsParams = {
+  q: string
+  page?: number
+  limit?: number
 }
 
 export type UploadMediaResponse = {
@@ -87,4 +94,10 @@ export type UploadMediaResponse = {
   key: string
   mimeType: string
   size: number
+}
+
+export enum POST_TYPE_ENUM {
+  ALL = 'ALL',
+  CREATOR = 'CREATOR',
+  COMPANY = 'COMPANY',
 }

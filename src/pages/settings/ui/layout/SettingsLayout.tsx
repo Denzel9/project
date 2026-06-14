@@ -16,15 +16,17 @@ export const SettingsLayout = () => {
           display: 'flex',
         }}
       >
-        <SettingsSidebar />
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <SettingsSidebar />
+        </Box>
 
         <Box
           sx={{
             flex: 1,
             minWidth: 0,
-            p: 4,
+            p: { xs: 2, md: 4 },
             bgcolor: 'white',
-            borderRadius: '32px',
+            borderRadius: { xs: '16px', md: '32px' },
           }}
         >
           <Outlet />

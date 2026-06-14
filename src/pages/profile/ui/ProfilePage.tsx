@@ -51,23 +51,26 @@ export const ProfilePage = () => {
           height: '250px',
           position: 'relative',
           backgroundSize: 'cover',
-          borderTopLeftRadius: '32px',
           backgroundPosition: 'center ',
           backgroundRepeat: 'no-repeat',
           backgroundImage: 'url(cosmetic.jpg)',
+          borderTopLeftRadius: { xs: 0, md: '32px' },
         }}
       >
         <Stack
           spacing={2}
           direction="row"
           sx={{
+            width: '100%',
             padding: 4,
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
           <SideBarButton />
-          <CurrentUser />
+          <Box sx={{ width: { xs: '60%', md: '30%' } }}>
+            <CurrentUser />
+          </Box>
         </Stack>
       </Box>
 
@@ -125,23 +128,25 @@ export const ProfilePage = () => {
                 <Tab label="Контакты" />
               </Tabs>
 
-              {id && id !== userId ? (
-                <Button
-                  size="small"
-                  sx={{ px: 2 }}
-                  onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${id}`)}
-                >
-                  Написать сообщение
-                </Button>
-              ) : (
-                <Button
-                  size="small"
-                  sx={{ px: 2 }}
-                  onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
-                >
-                  Редактировать
-                </Button>
-              )}
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                {id && id !== userId ? (
+                  <Button
+                    size="small"
+                    sx={{ px: 2 }}
+                    onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${id}`)}
+                  >
+                    Написать сообщение
+                  </Button>
+                ) : (
+                  <Button
+                    size="small"
+                    sx={{ px: 2 }}
+                    onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
+                  >
+                    Редактировать
+                  </Button>
+                )}
+              </Box>
             </Stack>
 
             <Content

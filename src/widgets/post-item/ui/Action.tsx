@@ -1,4 +1,4 @@
-import { Favorite, FavoriteBorderOutlined } from '@mui/icons-material';
+import { Chat } from '@mui/icons-material';
 import { Box, Button, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -9,13 +9,11 @@ import {
   useWithdrawApplicationMutation,
   type ApplicationStatus,
 } from '@/entities/application';
-import {
-  useAddFavoriteMutation,
-  useRemoveFavoriteMutation,
-} from '@/entities/favorite';
 import { ROUTES } from '@/shared/config/routes';
+import { FavoriteButton } from '@/widgets';
 
 import { ApplyDialog } from './ApplyDialog';
+import { WithdrawDialog } from './WithdrawDialog';
 
 type ActionProps = {
   postId: string;
@@ -29,14 +27,13 @@ type ActionProps = {
 export const Action = ({
   postId,
   ownerId,
-  isFavorite: isFavoriteProp = false,
+  isFavorite = false,
   isApplied: isAppliedProp = false,
   applicationId,
   applicationStatus,
 }: ActionProps) => {
   const navigate = useNavigate();
 
-  const [isFavorite, setIsFavorite] = useState(isFavoriteProp);
   const [isApplied, setIsApplied] = useState(isAppliedProp);
   const [currentApplicationId, setCurrentApplicationId] =
     useState(applicationId);
@@ -44,20 +41,12 @@ export const Action = ({
     ApplicationStatus | undefined
   >(applicationStatus);
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
 
-  const { mutate: addFavorite, isPending: isAdding } = useAddFavoriteMutation();
-  const { mutate: removeFavorite, isPending: isRemoving } =
-    useRemoveFavoriteMutation();
   const { mutate: createApplication, isPending: isCreating } =
     useCreateApplicationMutation();
   const { mutate: withdrawApplication, isPending: isWithdrawing } =
     useWithdrawApplicationMutation();
-
-  useEffect(() => {
-    setTimeout(() => {
-      setIsFavorite(isFavoriteProp);
-    }, 0);
-  }, [isFavoriteProp]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -77,30 +66,12 @@ export const Action = ({
     }, 0);
   }, [applicationStatus]);
 
-  const isFavoritePending = isAdding || isRemoving;
   const isApplicationPending = isCreating || isWithdrawing;
   const canWithdraw =
     Boolean(currentApplicationId) &&
     Boolean(currentApplicationStatus) &&
     currentApplicationStatus &&
     canWithdrawApplication(currentApplicationStatus);
-
-  const handleToggleFavorite = () => {
-    if (isFavoritePending) return;
-
-    if (isFavorite) {
-      removeFavorite(postId, {
-        onSuccess: () => setIsFavorite(false),
-      });
-    } else {
-      addFavorite(
-        { postId },
-        {
-          onSuccess: () => setIsFavorite(true),
-        }
-      );
-    }
-  };
 
   const handleApply = (message: string) => {
     createApplication(
@@ -124,6 +95,7 @@ export const Action = ({
         setIsApplied(false);
         setCurrentApplicationId(undefined);
         setCurrentApplicationStatus(undefined);
+        setIsWithdrawDialogOpen(false);
       },
     });
   };
@@ -147,16 +119,10 @@ export const Action = ({
             Откликнуться
           </Button>
 
-          <IconButton
-            disabled={isFavoritePending}
-            onClick={handleToggleFavorite}
-          >
-            {isFavorite ? (
-              <Favorite color="primary" />
-            ) : (
-              <FavoriteBorderOutlined />
-            )}
-          </IconButton>
+          <FavoriteButton
+            postId={postId}
+            isFavorite={isFavorite}
+          />
         </Box>
       ) : (
         <Box
@@ -165,16 +131,19 @@ export const Action = ({
         >
           {canWithdraw && (
             <Button
-              variant="contained"
               color="error"
+              variant="contained"
+              onClick={() => setIsWithdrawDialogOpen(true)}
+              sx={{ textTransform: 'none' }}
               disabled={isApplicationPending}
-              onClick={handleWithdraw}
             >
               Отменить отклик
             </Button>
           )}
 
           <Button
+            sx={{ display: { xs: 'none', md: 'block' } }}
+            size="small"
             variant="contained"
             color="secondary"
             onClick={handleOpenChat}
@@ -183,15 +152,16 @@ export const Action = ({
           </Button>
 
           <IconButton
-            disabled={isFavoritePending}
-            onClick={handleToggleFavorite}
+            onClick={handleOpenChat}
+            sx={{ display: { xs: 'flex', md: 'none' } }}
           >
-            {isFavorite ? (
-              <Favorite color="primary" />
-            ) : (
-              <FavoriteBorderOutlined />
-            )}
+            <Chat />
           </IconButton>
+
+          <FavoriteButton
+            postId={postId}
+            isFavorite={isFavorite}
+          />
         </Box>
       )}
 
@@ -200,6 +170,13 @@ export const Action = ({
         isPending={isCreating}
         onClose={() => setIsApplyDialogOpen(false)}
         onSubmit={handleApply}
+      />
+
+      <WithdrawDialog
+        open={isWithdrawDialogOpen}
+        isPending={isWithdrawing}
+        onClose={() => setIsWithdrawDialogOpen(false)}
+        onConfirm={handleWithdraw}
       />
     </>
   );

@@ -19,9 +19,9 @@ export const UserCard = ({
         zIndex: 3,
         top: '16px',
         bgcolor: 'white',
-        maxWidth: '350px',
-        minWidth: '350px',
-        position: 'sticky',
+        maxWidth: { xs: '100%', md: '350px' },
+        minWidth: { xs: '100%', md: '350px' },
+        position: { xs: 'relative', md: 'sticky' },
         borderRadius: '32px',
         boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
       }}

@@ -74,7 +74,7 @@ export const ProfilePage = () => {
       <Stack
         direction="row"
         sx={{
-          p: 4,
+          p: { xs: 2, md: 4 },
           mt: -10,
           width: '100%',
           alignItems: 'center',
@@ -82,7 +82,7 @@ export const ProfilePage = () => {
         }}
       >
         <Stack
-          direction="row"
+          direction={{ xs: 'column', md: 'row' }}
           spacing={2}
           sx={{
             gap: 2,
@@ -110,7 +110,7 @@ export const ProfilePage = () => {
               spacing={2}
               sx={{
                 alignItems: 'center',
-                mt: '100px !important',
+                mt: { xs: 6, md: '100px !important' },
                 justifyContent: 'space-between',
               }}
             >

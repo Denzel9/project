@@ -11,7 +11,11 @@ export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
       <Stack
         direction="column"
         spacing={2}
-        sx={{ mt: { xs: 0, md: 4 }, px: { xs: 3, md: 0 } }}
+        sx={{
+          p: { xs: 3, md: 4 },
+          borderRadius: '32px',
+          bgcolor: 'white',
+        }}
       >
         {contacts?.map(field => {
           return (

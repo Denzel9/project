@@ -28,7 +28,7 @@ export const SettingsNavSections = ({
       {SETTINGS_MENU_SECTIONS.map(section => (
         <Box
           key={section.title}
-          sx={{ mb: isDrawer ? 2 : 3 }}
+          sx={{ mb: isDrawer ? 2 : 3, mt: isDrawer ? 2 : 0 }}
         >
           <Typography
             variant="caption"

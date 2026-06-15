@@ -1,9 +1,10 @@
 import { Box, Typography } from '@mui/material';
 
 type FormBlockProps = {
-  title?: string | React.ReactNode;
+  gap?: number;
   children: React.ReactNode;
   isSingleColumn?: boolean;
+  title?: string | React.ReactNode;
 };
 
 export const FormBlockRowItem = ({
@@ -16,6 +17,7 @@ export const FormBlockRowItem = ({
 
 export const FormBlock = ({
   title,
+  gap = 2,
   children,
   isSingleColumn = false,
 }: FormBlockProps) => {
@@ -36,7 +38,7 @@ export const FormBlock = ({
         sx={{
           display: 'grid',
           gridTemplateColumns: isSingleColumn ? '1fr' : '1fr 1fr',
-          gap: 2,
+          gap,
         }}
       >
         {children}

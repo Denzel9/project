@@ -25,7 +25,9 @@ export const SettingsCollapseMenu = ({
 
   useEffect(() => {
     if (isSettingsActive) {
-      setIsOpen(true);
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 0);
     }
   }, [isSettingsActive]);
 

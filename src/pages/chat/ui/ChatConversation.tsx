@@ -79,20 +79,19 @@ export const ChatConversation = ({
     <Stack
       direction="column"
       sx={{
-        p: 3,
+        p: 4,
         flex: 1,
         minHeight: 0,
         overflow: 'hidden',
-        bgcolor: 'common.white',
         borderRadius: '32px',
-        position: 'relative',
+        bgcolor: 'common.white',
       }}
     >
       {error && (
         <Typography
-          variant="body2"
           color="error"
           sx={{ mb: 1 }}
+          variant="body2"
         >
           {error}
         </Typography>
@@ -100,15 +99,16 @@ export const ChatConversation = ({
 
       <Box
         sx={{
+          flex: 1,
+          minHeight: 0,
           p: 3,
           mb: 2,
           gap: 2,
-          flex: 1,
-          minHeight: 0,
           display: 'flex',
           overflowY: 'auto',
           borderRadius: '24px',
           flexDirection: 'column',
+          scrollbarWidth: 'none',
           bgcolor: 'secondary.light',
         }}
       >
@@ -133,6 +133,7 @@ export const ChatConversation = ({
             key={message.id}
             text={message.content}
             media={message.media}
+            senderId={message.senderId}
             side={toMessageSide(message.senderId, currentUserId)}
             time={format(new Date(message.createdAt), 'HH:mm')}
           />
@@ -140,16 +141,18 @@ export const ChatConversation = ({
         <Box ref={bottomRef} />
       </Box>
 
-      <ChatInput
-        value={draft}
-        pendingFiles={pendingFiles}
-        isSending={isSending}
-        disabled={!peer}
-        onChange={onDraftChange}
-        onAttachFiles={onAttachFiles}
-        onRemoveFile={onRemoveFile}
-        onSend={onSend}
-      />
+      <Box sx={{ flexShrink: 0 }}>
+        <ChatInput
+          value={draft}
+          pendingFiles={pendingFiles}
+          isSending={isSending}
+          disabled={!peer}
+          onChange={onDraftChange}
+          onAttachFiles={onAttachFiles}
+          onRemoveFile={onRemoveFile}
+          onSend={onSend}
+        />
+      </Box>
     </Stack>
   );
 };

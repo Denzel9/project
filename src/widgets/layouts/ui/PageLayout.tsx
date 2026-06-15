@@ -13,7 +13,7 @@ export const PageLayout = ({
   sx = {},
   children,
   title = undefined,
-  isFullHeight = false,
+  isScreenHeight = false,
 }: PropsWithChildren<PageLayoutProps>) => {
   const navigate = useNavigate();
 
@@ -24,7 +24,13 @@ export const PageLayout = ({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        height: isFullHeight ? 'calc(100vh - 16px)' : 'auto',
+        gap: 2,
+        ...(isScreenHeight && {
+          height: '100%',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+        }),
         ...sx,
       }}
     >
@@ -39,6 +45,7 @@ export const PageLayout = ({
           borderBottomLeftRadius: { xs: '16px', md: '32px' },
           borderBottomRightRadius: { xs: '16px', md: '32px' },
           justifyContent: 'space-between',
+          ...(isScreenHeight && { flexShrink: 0 }),
         }}
       >
         <Stack
@@ -75,7 +82,7 @@ export const PageLayout = ({
           sx={{
             alignItems: 'center',
             justifyContent: 'flex-end',
-            width: { xs: '60%', md: '30%' },
+            width: { xs: '60%', md: '100%' },
           }}
         >
           <CurrentUser />
@@ -86,7 +93,18 @@ export const PageLayout = ({
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, height: '100%' }}>{children}</Box>
+      <Box
+        sx={{
+          flex: 1,
+          height: '100%',
+          ...(isScreenHeight && {
+            minHeight: 0,
+            overflow: 'hidden',
+          }),
+        }}
+      >
+        {children}
+      </Box>
     </Box>
   );
 };

@@ -101,3 +101,19 @@ export enum POST_TYPE_ENUM {
   CREATOR = 'CREATOR',
   COMPANY = 'COMPANY',
 }
+
+export enum POST_STATUS_ENUM {
+  NEW = 'NEW',
+  VIEWED = 'VIEWED',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  WITHDRAWN = 'WITHDRAWN',
+}
+
+export const POST_STATUS_LABELS: Record<POST_STATUS_ENUM, string> = {
+  NEW: 'Новый',
+  VIEWED: 'Просмотрен',
+  ACCEPTED: 'Принят',
+  REJECTED: 'Отклонён',
+  WITHDRAWN: 'Отозван',
+}

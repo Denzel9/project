@@ -1,29 +1,29 @@
 import {
   Backdrop,
   Box,
-  Button,
   CircularProgress,
   Stack,
-  Tab,
-  Tabs,
+  useMediaQuery,
 } from '@mui/material';
 import { useState, type SyntheticEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 
 import { useGetUserByIdQuery } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
 import { CurrentUser } from '@/features/current-user';
-import { ROUTES } from '@/shared/config/routes';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
+import { MEDIA_TAB_VALUES } from '../model/types';
+
 import { Content } from './Content';
+import { ProfileControl } from './ProfileControl';
 import { UserCard } from './UserCard';
 
 export const ProfilePage = () => {
-  const navigate = useNavigate();
-
   const [searchParams] = useSearchParams();
   const id = searchParams.get('userId');
+
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const { id: userId } = useAuthStore();
 
@@ -35,6 +35,8 @@ export const ProfilePage = () => {
     setTabValue(newValue);
   };
 
+  const [mediaTabValue, setMediaTabValue] = useState(MEDIA_TAB_VALUES.ACTIVE);
+
   return (
     <Box
       sx={{
@@ -43,18 +45,21 @@ export const ProfilePage = () => {
         borderTopLeftRadius: '32px',
         borderBottomLeftRadius: '32px',
         borderBottomRightRadius: '32px',
+        backgroundColor: 'secondary.light',
       }}
     >
       <Box
         sx={{
           width: '100%',
-          height: '250px',
+          height: '300px',
           position: 'relative',
           backgroundSize: 'cover',
+          bgcolor: 'secondary.main',
           backgroundPosition: 'center ',
           backgroundRepeat: 'no-repeat',
-          backgroundImage: 'url(cosmetic.jpg)',
           borderTopLeftRadius: { xs: 0, md: '32px' },
+          borderBottomLeftRadius: { xs: 0, md: '32px' },
+          backgroundImage: `url(${user?.data?.banner})`,
         }}
       >
         <Stack
@@ -68,16 +73,15 @@ export const ProfilePage = () => {
           }}
         >
           <SideBarButton />
-          <Box sx={{ width: { xs: '60%', md: '30%' } }}>
-            <CurrentUser />
-          </Box>
+
+          <CurrentUser isButton={isMobile} />
         </Stack>
       </Box>
 
       <Stack
         direction="row"
         sx={{
-          mt: -10,
+          mt: -7,
           width: '100%',
           p: { xs: 0, md: 4 },
           alignItems: 'center',
@@ -92,7 +96,6 @@ export const ProfilePage = () => {
             width: '100%',
             height: '100%',
             alignItems: 'start',
-            bgcolor: 'rgb(244, 244, 244)',
             justifyContent: 'space-between',
           }}
         >
@@ -106,53 +109,22 @@ export const ProfilePage = () => {
             direction="column"
             sx={{
               width: '100%',
-              minHeight: 'calc(100vh - 250px)',
             }}
           >
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{
-                p: { xs: 2, md: 0 },
-                alignItems: 'center',
-                mt: { xs: 6, md: '100px !important' },
-                justifyContent: 'space-between',
-              }}
-            >
-              <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
-              >
-                <Tab label="Медиа" />
-                <Tab label="Обо мне" />
-                <Tab label="Контакты" />
-              </Tabs>
-
-              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                {id && id !== userId ? (
-                  <Button
-                    size="small"
-                    sx={{ px: 2 }}
-                    onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${id}`)}
-                  >
-                    Написать сообщение
-                  </Button>
-                ) : (
-                  <Button
-                    size="small"
-                    sx={{ px: 2 }}
-                    onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
-                  >
-                    Редактировать
-                  </Button>
-                )}
-              </Box>
-            </Stack>
+            <ProfileControl
+              id={id || ''}
+              tabValue={tabValue}
+              userId={userId || ''}
+              mediaTabValue={mediaTabValue}
+              handleTabChange={handleTabChange}
+              setMediaTabValue={setMediaTabValue}
+            />
 
             <Content
-              isLoading={isLoading}
-              tabValue={tabValue}
               user={user?.data}
+              tabValue={tabValue}
+              isLoading={isLoading}
+              mediaTabValue={mediaTabValue}
             />
           </Stack>
         </Stack>

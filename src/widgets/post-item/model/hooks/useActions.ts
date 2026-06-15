@@ -19,10 +19,6 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
 
     const allowedActions: ActionButton[] = [];
 
-    const handleHide = () => {
-        console.log('hide');
-    };
-
     const handleAddToCollection = () => {
         setOpenAddToCollectionDialog(true, id);
     };
@@ -48,9 +44,7 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
     };
 
     const handleAction = (action: ACTION_BUTTONS_KEYS) => {
-        if (action === ACTION_BUTTONS_KEYS.HIDE) {
-            handleHide();
-        } else if (action === ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION) {
+        if (action === ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION) {
             handleAddToCollection();
         } else if (action === ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP) {
             handleAddToCollection();

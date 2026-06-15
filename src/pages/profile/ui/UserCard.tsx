@@ -1,4 +1,4 @@
-import { Verified, Email, Phone, LocationOn } from '@mui/icons-material';
+import { Verified, Email, Phone, LocationOn, Edit } from '@mui/icons-material';
 import {
   Box,
   Avatar,
@@ -6,6 +6,7 @@ import {
   Typography,
   Skeleton,
   Button,
+  IconButton,
 } from '@mui/material';
 import { useNavigate } from 'react-router';
 
@@ -48,16 +49,31 @@ export const UserCard = ({
           justifyContent: { xs: 'start', md: 'center' },
         }}
       >
-        <Avatar
-          src={user?.avatar || ''}
-          sx={{ width: '200px', height: '200px' }}
-        />
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: 'start',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <Avatar
+            src={user?.avatar || ''}
+            sx={{ width: '200px', height: '200px' }}
+          />
+          {user?.id && user?.id === userId && (
+            <IconButton onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}>
+              <Edit />
+            </IconButton>
+          )}
+        </Stack>
       </Box>
 
       <Stack
         direction="row"
         spacing={1}
-        sx={{ alignItems: 'center', mt: 4 }}
+        sx={{ alignItems: 'center', my: 4 }}
       >
         {isLoading ? (
           <Skeleton
@@ -70,23 +86,6 @@ export const UserCard = ({
             <Typography variant="h6">{getUserName(user)}</Typography>
             <Verified />
           </>
-        )}
-      </Stack>
-
-      <Stack
-        spacing={1}
-        direction="row"
-        sx={{ mb: 4, mt: 1, alignItems: 'center' }}
-      >
-        <Typography variant="body1">Подписчиков:</Typography>
-        {isLoading ? (
-          <Skeleton
-            variant="rounded"
-            width="50px"
-            height={24}
-          />
-        ) : (
-          <Typography variant="body1">{user?.followers || 0}</Typography>
         )}
       </Stack>
 
@@ -132,7 +131,7 @@ export const UserCard = ({
       </Stack>
 
       <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-        {user?.id && user?.id !== userId ? (
+        {user?.id && user?.id !== userId && (
           <Stack
             spacing={2}
             direction="row"
@@ -151,14 +150,6 @@ export const UserCard = ({
               isFavorite={false}
             />
           </Stack>
-        ) : (
-          <Button
-            size="small"
-            sx={{ px: 0, mt: 4 }}
-            onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
-          >
-            Редактировать
-          </Button>
         )}
       </Box>
     </Box>

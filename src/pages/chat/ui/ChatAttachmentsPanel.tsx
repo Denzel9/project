@@ -161,6 +161,7 @@ export const ChatAttachmentsPanel = ({
             display: 'grid',
             gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr' },
             gap: 1,
+            rowGap: 4,
           }}
         >
           {items.map(item => (

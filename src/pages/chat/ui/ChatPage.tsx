@@ -106,7 +106,10 @@ export const ChatPage = () => {
 
   if (isInitialLoading) {
     return (
-      <PageLayout title="Мессенджер">
+      <PageLayout
+        title="Мессенджер"
+        isScreenHeight
+      >
         <Box
           sx={{
             display: 'flex',
@@ -129,8 +132,8 @@ export const ChatPage = () => {
   ) {
     return (
       <PageLayout
-        isFullHeight
         title="Мессенджер"
+        isScreenHeight
       >
         <Box
           sx={{
@@ -176,14 +179,16 @@ export const ChatPage = () => {
   }
 
   return (
-    <PageLayout title="Мессенджер">
+    <PageLayout
+      title="Мессенджер"
+      isScreenHeight
+    >
       <Stack
         direction="row"
         spacing={2}
         sx={{
           width: '100%',
-          mt: 2,
-          height: { xs: 'calc(100dvh - 105px)', md: 'calc(100vh - 128px)' },
+          height: '100%',
           overflowY: 'hidden',
         }}
       >
@@ -199,12 +204,12 @@ export const ChatPage = () => {
         {showChatPanel && (
           <Stack
             sx={{
-              width: { xs: '100%', md: '70%' },
+              gap: 2,
               flex: 1,
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
-              gap: 1,
+              width: { xs: '100%', md: '70%' },
             }}
           >
             {peer && (
@@ -239,8 +244,8 @@ export const ChatPage = () => {
                   )}
 
                   <Avatar
-                    src={peer.avatar ?? undefined}
                     alt={peer.displayName}
+                    src={peer.avatar ?? undefined}
                     sx={{ width: 50, height: 50 }}
                   />
                   <Stack

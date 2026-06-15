@@ -1,5 +1,4 @@
 import { Box } from '@mui/material';
-import { useState } from 'react';
 
 import { type User } from '@/entities/user';
 
@@ -10,21 +9,19 @@ import { Contacts } from './Contacts';
 import { MediaContent } from './MediaContent';
 
 type ContentProps = {
-  isLoading: boolean;
-  tabValue: number;
   user?: User;
+  tabValue: number;
+  isLoading: boolean;
+  mediaTabValue: MEDIA_TAB_VALUES;
 };
 
-export const Content = ({ tabValue, user }: ContentProps) => {
-  const [mediaTabValue, setMediaTabValue] = useState(MEDIA_TAB_VALUES.ACTIVE);
-
+export const Content = ({ tabValue, user, mediaTabValue }: ContentProps) => {
   return (
-    <Box sx={{ width: '100%', bgcolor: 'rgb(244, 244, 244)' }}>
+    <Box sx={{ width: '100%' }}>
       {tabValue === 0 && (
         <MediaContent
           userId={user?.id}
           mediaTabValue={mediaTabValue}
-          setMediaTabValue={setMediaTabValue}
         />
       )}
 

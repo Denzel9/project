@@ -14,27 +14,30 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useFavoritePostIds } from '@/entities/favorite';
-import { useSearchPostsQuery, type Post } from '@/entities/post';
+import {
+  useSearchMyApplicationsQuery,
+  type Application,
+} from '@/entities/application';
 import { ROUTES } from '@/shared/config/routes';
 
-import { PostSearchResultItem } from './PostSearchResultItem';
+import { ApplicationSearchResultItem } from './ApplicationSearchResultItem';
 
-type PostSearchPanelProps = {
+type ApplicationSearchPanelProps = {
   open: boolean;
   onClose: () => void;
 };
 
-export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
+export const ApplicationSearchPanel = ({
+  open,
+  onClose,
+}: ApplicationSearchPanelProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const navigate = useNavigate();
-
-  const favoritePostIds = useFavoritePostIds();
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState<Post[]>([]);
+  const [items, setItems] = useState<Application[]>([]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -62,7 +65,7 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
     }
   }, [open]);
 
-  const { data, isLoading, isFetching, error } = useSearchPostsQuery({
+  const { data, isLoading, isFetching, error } = useSearchMyApplicationsQuery({
     q: debouncedQuery,
     page,
     limit: 20,
@@ -90,11 +93,6 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
     onClose();
   };
 
-  const handleOpenChat = (ownerId: string) => {
-    navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
-    onClose();
-  };
-
   return (
     <Drawer
       anchor="right"
@@ -115,7 +113,7 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
         direction="row"
         sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 4 }}
       >
-        <Typography variant="h6">Поиск</Typography>
+        <Typography variant="h6">Поиск по откликам</Typography>
 
         <IconButton onClick={onClose}>
           <Close />
@@ -126,7 +124,7 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
         autoFocus
         fullWidth
         value={query}
-        placeholder="Поиск по объявлениям…"
+        label="Поиск"
         onChange={event => setQuery(event.target.value)}
         slotProps={{
           input: {
@@ -188,18 +186,16 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
           </Typography>
         )}
 
-        {items.map(post => (
-          <PostSearchResultItem
-            key={post.id}
-            post={post}
+        {items.map(application => (
+          <ApplicationSearchResultItem
+            key={application.id}
+            application={application}
             highlightQuery={debouncedQuery}
-            isFavorite={favoritePostIds.has(post.id)}
             onOpen={handleOpenPost}
-            onOpenChat={handleOpenChat}
           />
         ))}
 
-        {hasMore && (
+        {canSearch && hasMore && (
           <Button
             variant="outlined"
             disabled={isFetching}

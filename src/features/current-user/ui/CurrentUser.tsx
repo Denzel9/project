@@ -1,6 +1,6 @@
-import { Add } from '@mui/icons-material';
-import { TextField, MenuItem, Skeleton } from '@mui/material';
-import { useEffect, type ChangeEvent } from 'react';
+import { Add, PersonAddAlt } from '@mui/icons-material';
+import { TextField, MenuItem, Skeleton, Menu, IconButton } from '@mui/material';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -12,8 +12,19 @@ import { ROUTES } from '@/shared';
 
 import { useCurrentUserStore } from '../model/store';
 
-export const CurrentUser = () => {
+export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
   const { data, isLoading } = useGetProfilesQuery();
+
   const { mutateAsync: switchProfile, isPending } = useSwitchProfileMutation();
 
   const { id, setAuth } = useAuthStore();
@@ -34,14 +45,14 @@ export const CurrentUser = () => {
     setAuth(res.data.user?.id);
   };
 
-  const handleChangeUser = async (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.value === '4') {
+  const handleChangeUser = async (value: string) => {
+    if (value === 'newUser') {
       navigate(ROUTES.SETTINGS_MEMBERS);
       return;
     }
 
-    await handleSwitchProfile(event.target.value);
-    setCurrentUser(event.target.value);
+    await handleSwitchProfile(value);
+    setCurrentUser(value);
   };
 
   if (isLoading || isPending) {
@@ -54,13 +65,52 @@ export const CurrentUser = () => {
     );
   }
 
+  if (isButton) {
+    return (
+      <>
+        <IconButton
+          color="primary"
+          onClick={handleClick}
+        >
+          <PersonAddAlt />
+        </IconButton>
+
+        <Menu
+          open={open}
+          anchorEl={anchorEl}
+          onClose={handleClose}
+        >
+          {data?.data?.map(item => (
+            <MenuItem
+              key={item.id}
+              onClick={() => handleChangeUser(item.userId || '')}
+            >
+              {item.displayName}
+            </MenuItem>
+          ))}
+
+          <MenuItem
+            value="newUser"
+            sx={{ color: 'primary.main' }}
+          >
+            <Add
+              sx={{ mr: 1 }}
+              color="primary"
+            />{' '}
+            Добавить пользователя
+          </MenuItem>
+        </Menu>
+      </>
+    );
+  }
+
   return (
     <TextField
       select
       value={currentUser}
-      onChange={handleChangeUser}
+      onChange={e => handleChangeUser(e.target.value)}
       sx={{
-        width: '100%',
+        width: { xs: '60%', md: '30%' },
         borderRadius: '16px',
         backgroundColor: 'white',
       }}
@@ -74,7 +124,7 @@ export const CurrentUser = () => {
         </MenuItem>
       ))}
       <MenuItem
-        value="4"
+        value="newUser"
         sx={{ color: 'primary.main' }}
       >
         <Add

@@ -3,7 +3,11 @@ import { Box, CircularProgress, Drawer, Stack } from '@mui/material';
 import { useMyApplicationsMap } from '@/entities/application';
 import { useFavoritePostIds } from '@/entities/favorite';
 import { usePostsQuery } from '@/entities/post';
-import { MainFilter, toPostListParams, useMainFilterStore } from '@/features/main-filter';
+import {
+  MainFilter,
+  toPostListParams,
+  useMainFilterStore,
+} from '@/features/main-filter';
 import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
 import { EmptyBlock } from '@/shared';
 import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
@@ -18,11 +22,12 @@ export const HomePage = () => {
 
   const myApplicationsMap = useMyApplicationsMap();
 
+  const removePostFromCollection = (postId: string) => {
+    myApplicationsMap.delete(postId);
+  };
+
   return (
-    <PageLayout
-      isFullHeight={!posts?.items?.length}
-      sx={{ minHeight: 'calc(100vh - 94px)' }}
-    >
+    <PageLayout>
       <Box
         sx={{
           top: 0,
@@ -41,7 +46,7 @@ export const HomePage = () => {
           display: 'flex',
           bgcolor: 'white',
           p: { xs: 0, md: 4 },
-          pt: { xs: 2, md: 0 },
+          pt: { xs: 2, md: 4 },
           alignItems: 'center',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -77,8 +82,8 @@ export const HomePage = () => {
                 isApplied={Boolean(application)}
                 applicationStatus={application?.status}
                 isFavorite={favoritePostIds.has(post.id)}
+                removePostFromCollection={removePostFromCollection}
                 permissions={[
-                  ACTION_BUTTONS_KEYS.HIDE,
                   favoritePostIds.has(post.id)
                     ? ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION
                     : ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION,
@@ -96,9 +101,9 @@ export const HomePage = () => {
         sx={{
           '& .MuiDrawer-paper': {
             p: { xs: 2, md: 4 },
+            borderTopLeftRadius: { xs: 0, md: 32 },
+            borderBottomLeftRadius: { xs: 0, md: 32 },
             width: { xs: '100%', sm: '80%', md: '25%' },
-            borderTopLeftRadius: 32,
-            borderBottomLeftRadius: 32,
           },
         }}
       >

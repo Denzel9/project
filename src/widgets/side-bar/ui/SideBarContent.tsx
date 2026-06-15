@@ -46,11 +46,11 @@ export const SideBarContent = ({
   return (
     <Box
       sx={{
+        py: 4,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        py: 4,
       }}
     >
       <List sx={{ gap: 1, display: 'flex', flexDirection: 'column' }}>

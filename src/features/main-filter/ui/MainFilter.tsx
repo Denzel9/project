@@ -48,7 +48,8 @@ const MainFilter = () => {
         spacing={2}
         direction="row"
         sx={{
-          p: 2,
+          px: 2,
+          pb: 2,
           alignItems: 'center',
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',

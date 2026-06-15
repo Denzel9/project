@@ -1,12 +1,4 @@
-import { Upload } from '@mui/icons-material';
-import {
-  Avatar,
-  Box,
-  Button,
-  IconButton,
-  Snackbar,
-  Typography,
-} from '@mui/material';
+import { Avatar, Box, Button, Snackbar, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
@@ -15,7 +7,9 @@ import { RHFInput } from '@/shared/ui/rhf';
 
 import { ContactsSection } from './ContactsSection';
 import { ParametersSection } from './ParametersSection';
+import { ProfileMediaUploadButton } from './ProfileMediaUploadButton';
 
+import type { ProfileMediaField } from '../../model/hooks/useProfileMediaUpload';
 import type { ProfileSectionProps } from '../../model/types';
 
 export const ProfileSection = ({
@@ -29,7 +23,22 @@ export const ProfileSection = ({
     setSnackbar({ open: false, message: '' });
   };
 
-  const { control } = useFormContext();
+  const { control, setValue, watch } = useFormContext();
+
+  const avatarUrl = watch('avatar') || user?.avatar || '';
+  const bannerUrl = watch('banner') || user?.banner || '';
+
+  const handleMediaUploaded = (field: ProfileMediaField, url: string) => {
+    setValue(field, url);
+    setSnackbar({
+      open: true,
+      message: field === 'avatar' ? 'Аватар обновлён' : 'Баннер обновлён',
+    });
+  };
+
+  const handleMediaError = (message: string) => {
+    setSnackbar({ open: true, message });
+  };
 
   return (
     <Box
@@ -37,7 +46,6 @@ export const ProfileSection = ({
         overflow: 'scroll',
         position: 'relative',
         scrollbarWidth: 'none',
-        height: 'calc(100vh - 200px)',
       }}
     >
       <Typography
@@ -48,16 +56,17 @@ export const ProfileSection = ({
       </Typography>
 
       {/* Аватар */}
-
       <Box sx={{ position: 'relative', mt: 4, width: 'fit-content' }}>
         <Avatar
-          src={user?.avatar || ''}
-          sx={{ width: 100, height: 100 }}
+          src={avatarUrl}
+          sx={{ width: 140, height: 140 }}
         />
         <Box sx={{ position: 'absolute', bottom: -5, right: -5 }}>
-          <IconButton>
-            <Upload />
-          </IconButton>
+          <ProfileMediaUploadButton
+            field="avatar"
+            onUploaded={url => handleMediaUploaded('avatar', url)}
+            onError={handleMediaError}
+          />
         </Box>
       </Box>
 
@@ -66,18 +75,34 @@ export const ProfileSection = ({
           mt: 4,
           width: '100%',
           height: '250px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           borderRadius: '32px',
           position: 'relative',
+          bgcolor: 'secondary.light',
           backgroundSize: 'cover',
-          backgroundPosition: 'center ',
+          backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          backgroundImage: 'url(/cosmetic.jpg)',
+          ...(bannerUrl && {
+            backgroundImage: `url(${bannerUrl})`,
+          }),
         }}
       >
+        {!bannerUrl && (
+          <Typography
+            variant="h6"
+            sx={{ opacity: 0.5 }}
+          >
+            Тут будет баннер
+          </Typography>
+        )}
         <Box sx={{ position: 'absolute', bottom: 16, right: 16 }}>
-          <IconButton>
-            <Upload />
-          </IconButton>
+          <ProfileMediaUploadButton
+            field="banner"
+            onUploaded={url => handleMediaUploaded('banner', url)}
+            onError={handleMediaError}
+          />
         </Box>
       </Box>
 

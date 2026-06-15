@@ -16,7 +16,8 @@ export const EmptyBlock = ({
       direction="column"
       spacing={2}
       sx={{
-        width: 'fit-content',
+        p: 10,
+        width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
       }}

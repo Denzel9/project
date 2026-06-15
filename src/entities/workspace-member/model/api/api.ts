@@ -4,7 +4,15 @@ import { mainAxios, queryClient } from '@/shared/api';
 
 import type { InviteUserRequest, WorkspaceMember } from '../types/types';
 
+const POSTS_KEY = ['posts'] as const;
+const APPLICATIONS_KEY = ['applications'] as const;
 const WORKSPACE_MEMBERS_KEY = ['workspace-members'] as const;
+
+const invalidateProfileScopedQueries = () => {
+  void queryClient.invalidateQueries({ queryKey: POSTS_KEY });
+  void queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+  void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
+};
 
 export const useGetProfilesQuery = () =>
   useQuery({
@@ -17,9 +25,7 @@ export const useSwitchProfileMutation = () =>
   useMutation({
     mutationFn: async (id: string) =>
       await mainAxios.post<{ user: WorkspaceMember }>('auth/switch-profile', { userId: id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
-    },
+    onSuccess: invalidateProfileScopedQueries,
   });
 
 export const useAddInviteMutation = () =>

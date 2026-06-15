@@ -4,10 +4,7 @@ import { useState } from 'react';
 import { useFavoritesQuery } from '@/entities/favorite';
 import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
 
-import {
-  toFavoriteListParams,
-  type FavoriteGroupFilter,
-} from '../model/utils';
+import { toFavoriteListParams, type FavoriteGroupFilter } from '../model/utils';
 
 import FavoriteFilter from './Filter';
 
@@ -15,15 +12,23 @@ export const FavoritePage = () => {
   const [groupFilter, setGroupFilter] = useState<FavoriteGroupFilter>('all');
 
   const { data: favorites, isLoading } = useFavoritesQuery(
-    toFavoriteListParams(groupFilter),
+    toFavoriteListParams(groupFilter)
   );
 
   return (
     <PageLayout title="Избранное">
-      <FavoriteFilter
-        value={groupFilter}
-        onChange={setGroupFilter}
-      />
+      <Box
+        sx={{
+          top: 0,
+          zIndex: 1000,
+          position: 'sticky',
+        }}
+      >
+        <FavoriteFilter
+          value={groupFilter}
+          onChange={setGroupFilter}
+        />
+      </Box>
 
       <Box
         sx={{

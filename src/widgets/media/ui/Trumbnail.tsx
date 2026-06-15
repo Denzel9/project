@@ -54,6 +54,7 @@ export const Trumbnail = ({
         width: getWidth(),
         height: getHeight(),
         minHeight: '50px',
+        minWidth: '50px',
       }}
     >
       {items?.map((item, index) => (

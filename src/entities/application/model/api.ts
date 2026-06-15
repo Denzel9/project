@@ -8,6 +8,7 @@ import type {
   ApplicationList,
   ApplicationListParams,
   CreateApplicationDto,
+  SearchApplicationsParams,
   UpdateApplicationStatusDto,
 } from './types'
 
@@ -19,6 +20,8 @@ export const applicationKeys = {
     [...applicationKeys.all, 'incoming', params ?? {}] as const,
   byPost: (postId: string, params?: ApplicationListParams) =>
     [...applicationKeys.all, 'post', postId, params ?? {}] as const,
+  search: (params: SearchApplicationsParams) =>
+    [...applicationKeys.all, 'search', params] as const,
 }
 
 export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
@@ -32,6 +35,24 @@ export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
       return data
     },
   })
+
+export const useSearchMyApplicationsQuery = (params: SearchApplicationsParams) => {
+  const trimmedQuery = params.q.trim()
+  const page = params.page ?? 1
+  const limit = params.limit ?? 20
+
+  return useQuery({
+    queryKey: applicationKeys.search({ ...params, q: trimmedQuery, page, limit }),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<ApplicationList>(
+        '/applications/mine',
+        { params: { q: trimmedQuery, page, limit } },
+      )
+      return data
+    },
+    enabled: trimmedQuery.length >= 2,
+  })
+}
 
 export const useIncomingApplicationsQuery = (params?: ApplicationListParams) =>
   useQuery({
@@ -68,9 +89,7 @@ export const useMyApplicationsMap = () => {
     const map = new Map<string, Application>()
 
     data?.items?.forEach(application => {
-      if (application.status !== 'WITHDRAWN') {
-        map.set(application.postId, application)
-      }
+      map.set(application.postId, application)
     })
 
     return map

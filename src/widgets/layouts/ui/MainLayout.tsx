@@ -9,7 +9,13 @@ import type { ReactNode } from 'react';
 
 export const MainLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <Box sx={{ display: 'flex', gap: { xs: 0, md: 2 }, bgcolor: 'rgb(244, 244, 244)' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        gap: { xs: 0, md: 2 },
+        bgcolor: 'rgb(244, 244, 244)',
+      }}
+    >
       <SideBar />
       <MobileNavDrawer />
 
@@ -25,7 +31,9 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           overflow: 'hidden',
         }}
       >
-        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>{children}</Box>
+        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          {children}
+        </Box>
       </Box>
 
       <AuthModal />

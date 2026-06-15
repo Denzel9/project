@@ -37,6 +37,10 @@ export const PostPage = () => {
 
   const myApplicationsMap = useMyApplicationsMap();
 
+  const removePostFromCollection = (postId: string) => {
+    myApplicationsMap.delete(postId);
+  };
+
   const isOwner = Boolean(
     post && currentUserId && post.ownerId === currentUserId
   );
@@ -161,6 +165,7 @@ export const PostPage = () => {
                   isApplied={Boolean(application)}
                   applicationStatus={application?.status}
                   isFavorite={favoritePostIds.has(post.id)}
+                  removePostFromCollection={removePostFromCollection}
                 />
               )}
             </Box>

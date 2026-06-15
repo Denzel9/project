@@ -17,6 +17,7 @@ import {
 } from '@/entities/favorite';
 import { useMainFilterStore } from '@/features/main-filter';
 import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
+import { useScroll } from '@/shared/hooks/useScroll';
 
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog';
 import { FavoriteSearchPanel } from './FavoriteSearchPanel';
@@ -29,6 +30,8 @@ type FavoriteFilterProps = {
 };
 
 const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
+  const { isScrolled, ref } = useScroll(150);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
@@ -90,12 +93,18 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
   return (
     <>
       <Stack
+        ref={ref}
         direction="row"
         sx={{
-          p: 2,
+          px: 2,
+          pb: 2,
           alignItems: 'center',
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
+          bgcolor: isScrolled ? 'white' : 'transparent',
+          borderBottomLeftRadius: isScrolled ? '32px' : '0',
+          borderBottomRightRadius: isScrolled ? '32px' : '0',
+          boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
         <TextField

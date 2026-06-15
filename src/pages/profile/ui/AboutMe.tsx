@@ -17,7 +17,13 @@ export const AboutMe = ({
   );
 
   return (
-    <Box sx={{ mt: { xs: 0, md: 4 }, px: { xs: 3, md: 0 } }}>
+    <Box
+      sx={{
+        bgcolor: 'white',
+        p: { xs: 3, md: 4 },
+        borderRadius: '32px',
+      }}
+    >
       <UserCardItem
         value={aboutMe || ''}
         isLoading={false}

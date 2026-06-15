@@ -5,6 +5,7 @@ export {
   useMyApplicationsMap,
   useMyApplicationsQuery,
   usePostApplicationsQuery,
+  useSearchMyApplicationsQuery,
   useUpdateApplicationStatusMutation,
   useWithdrawApplicationMutation,
 } from './model/api'
@@ -23,5 +24,6 @@ export type {
   ApplicationPostSummary,
   ApplicationStatus,
   CreateApplicationDto,
+  SearchApplicationsParams,
   UpdateApplicationStatusDto,
 } from './model/types'

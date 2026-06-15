@@ -10,17 +10,16 @@ export const SideBar = () => {
   return (
     <Box
       sx={{
-        display: { xs: 'none', md: 'flex' },
-        bgcolor: 'white',
-        width: '100%',
-        transition: 'all 0.3s ease',
-        maxWidth: isOpenSideBar ? 280 : 70,
-        height: '100vh',
-        borderTopRightRadius: 32,
-        borderBottomRightRadius: 32,
-        position: 'sticky',
         top: 0,
+        width: '100%',
+        bgcolor: 'white',
+        position: 'sticky',
         flexDirection: 'column',
+        borderTopRightRadius: 32,
+        transition: 'all 0.3s ease',
+        borderBottomRightRadius: 32,
+        maxWidth: isOpenSideBar ? 280 : 70,
+        display: { xs: 'none', md: 'flex' },
       }}
     >
       <SideBarContent isExpanded={isOpenSideBar} />

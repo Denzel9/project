@@ -47,6 +47,7 @@ export const SettingsAccountPage = () => {
 
   const { handleSubmit, setValue } = methods;
 
+  // TODO: need to refactor this
   useEffect(() => {
     if (user) {
       Object.keys(defaultAccountSchemaValues).forEach(key => {

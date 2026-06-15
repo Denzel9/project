@@ -51,6 +51,14 @@ export type UpdateApplicationStatusDto = {
 export type ApplicationListParams = {
   postId?: string
   status?: ApplicationStatus
+  type?: ApplicationPostSummary['type']
+  page?: number
+  limit?: number
+  q?: string
+}
+
+export type SearchApplicationsParams = {
+  q: string
   page?: number
   limit?: number
 }

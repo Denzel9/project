@@ -1,5 +1,5 @@
 import { Chat } from '@mui/icons-material';
-import { Box, Button, IconButton } from '@mui/material';
+import { Box, Button, IconButton, Tooltip } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -22,6 +22,7 @@ type ActionProps = {
   isApplied?: boolean;
   applicationId?: string;
   applicationStatus?: ApplicationStatus;
+  removePostFromCollection?: (postId: string) => void;
 };
 
 export const Action = ({
@@ -31,6 +32,7 @@ export const Action = ({
   isApplied: isAppliedProp = false,
   applicationId,
   applicationStatus,
+  removePostFromCollection,
 }: ActionProps) => {
   const navigate = useNavigate();
 
@@ -96,6 +98,7 @@ export const Action = ({
         setCurrentApplicationId(undefined);
         setCurrentApplicationStatus(undefined);
         setIsWithdrawDialogOpen(false);
+        removePostFromCollection?.(postId);
       },
     });
   };
@@ -106,7 +109,7 @@ export const Action = ({
 
   return (
     <>
-      {!isApplied ? (
+      {!isApplied && !applicationStatus ? (
         <Box
           sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 4 }}
           onClick={e => e.preventDefault()}
@@ -141,11 +144,22 @@ export const Action = ({
             </Button>
           )}
 
+          {!canWithdraw && (
+            <Tooltip title="Повторный отклик недоступен. Вы можете написать заказчику в чат">
+              <Button
+                variant="contained"
+                disabled
+                sx={{ pointerEvents: 'auto !important' }}
+              >
+                Откликнуться
+              </Button>
+            </Tooltip>
+          )}
+
           <Button
             sx={{ display: { xs: 'none', md: 'block' } }}
             size="small"
-            variant="contained"
-            color="secondary"
+            variant="outlined"
             onClick={handleOpenChat}
           >
             В чат

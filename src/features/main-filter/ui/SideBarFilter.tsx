@@ -1,4 +1,12 @@
-import { Button, MenuItem, Stack, TextField } from '@mui/material';
+import { Close } from '@mui/icons-material';
+import {
+  Button,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 
 import { PostContentTypeEnum, PostCooperationTypeEnum } from '@/entities/post';
 
@@ -16,6 +24,17 @@ export const SideBarFilter = () => {
       spacing={3}
       direction="column"
     >
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <Typography variant="h6">Фильтры</Typography>
+        <IconButton onClick={() => setIsOpenMainFilter(false)}>
+          <Close />
+        </IconButton>
+      </Stack>
+
       <TextField
         label="Название"
         fullWidth

@@ -8,11 +8,13 @@ import {
   Rating,
   Stack,
   Typography,
+  type Theme,
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { BASE_COLOR } from '@/app/index';
+import { POST_STATUS_ENUM } from '@/entities/post';
 import { getUserName, useGetUserByIdQuery } from '@/entities/user';
 import { ROUTES, ShareButton } from '@/shared/index';
 import { Media } from '@/widgets';
@@ -32,6 +34,7 @@ const PostItem = ({
   isApplied = false,
   applicationId,
   applicationStatus,
+  removePostFromCollection,
 }: PostItemProps) => {
   const navigate = useNavigate();
 
@@ -57,10 +60,18 @@ const PostItem = ({
   };
 
   const mediaItems =
-    post?.media?.map(media => ({
-      url: media.url,
-      mimeType: media.mimeType,
+    post?.media?.map(({ url, mimeType }) => ({
+      url,
+      mimeType,
     })) ?? [];
+
+  const isWithdraw = applicationStatus === POST_STATUS_ENUM.WITHDRAWN;
+
+  const getBorderColor = (theme: Theme) => {
+    if (isWithdraw) return theme.palette.secondary.main;
+    if (isApplied) return theme.palette.primary.main;
+    return theme.palette.secondary.main;
+  };
 
   return (
     <Link
@@ -81,11 +92,8 @@ const PostItem = ({
           border: theme => `1px solid ${theme.palette.secondary.main}`,
           borderLeft: theme =>
             isApplied
-              ? `4px solid ${theme.palette.primary.main}`
+              ? `4px solid ${getBorderColor(theme)}`
               : `1px solid ${theme.palette.secondary.main}`,
-          '&:hover': {
-            bgcolor: 'secondary.light',
-          },
         }}
       >
         {mediaItems.length > 0 && (
@@ -105,6 +113,7 @@ const PostItem = ({
 
         <Box
           sx={{
+            width: '100%',
             display: 'flex',
             alignItems: 'start',
             flexDirection: 'column',
@@ -230,6 +239,7 @@ const PostItem = ({
               isApplied={isApplied}
               applicationId={applicationId}
               applicationStatus={applicationStatus}
+              removePostFromCollection={removePostFromCollection}
             />
           )}
         </Box>

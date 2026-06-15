@@ -8,9 +8,17 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useRef, type ChangeEvent, type KeyboardEvent } from 'react';
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 
 import { CHAT_MEDIA_ACCEPT } from '@/entities/chat';
+
+import { ChatEmojiPicker } from './ChatEmojiPicker';
 
 type ChatInputProps = {
   value: string;
@@ -34,6 +42,9 @@ export const ChatInput = ({
   onSend,
 }: ChatInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
+  const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
+
   const hasDraft = value.trim().length > 0;
   const canSend =
     (hasDraft || pendingFiles.length > 0) && !isSending && !disabled;
@@ -56,6 +67,25 @@ export const ChatInput = ({
     }
 
     event.target.value = '';
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const input = textInputRef.current;
+    const start = input?.selectionStart ?? value.length;
+    const end = input?.selectionEnd ?? value.length;
+    const newValue = `${value.slice(0, start)}${emoji}${value.slice(end)}`;
+
+    onChange(newValue);
+
+    requestAnimationFrame(() => {
+      input?.focus();
+      const cursorPosition = start + emoji.length;
+      input?.setSelectionRange(cursorPosition, cursorPosition);
+    });
+  };
+
+  const handleOpenEmojiPicker = (event: MouseEvent<HTMLButtonElement>) => {
+    setEmojiAnchor(event.currentTarget);
   };
 
   return (
@@ -102,6 +132,7 @@ export const ChatInput = ({
         fullWidth
         multiline
         maxRows={4}
+        inputRef={textInputRef}
         disabled={disabled || isSending}
         value={value}
         placeholder="Введите сообщение…"
@@ -111,9 +142,9 @@ export const ChatInput = ({
           input: {
             sx: {
               py: 1.5,
-              bgcolor: 'common.white',
-              borderRadius: '999px',
               boxShadow: 1,
+              borderRadius: '999px',
+              bgcolor: 'common.white',
               '& fieldset': { border: 'none' },
             },
             startAdornment: (
@@ -122,9 +153,11 @@ export const ChatInput = ({
                   size="small"
                   color="inherit"
                   disabled={disabled || isSending}
+                  onClick={handleOpenEmojiPicker}
                 >
                   <Mood />
                 </IconButton>
+
                 <IconButton
                   size="small"
                   color="inherit"
@@ -133,11 +166,12 @@ export const ChatInput = ({
                 >
                   <AttachFile />
                 </IconButton>
+
                 <input
-                  ref={fileInputRef}
                   hidden
                   multiple
                   type="file"
+                  ref={fileInputRef}
                   accept={CHAT_MEDIA_ACCEPT}
                   onChange={handleFileChange}
                 />
@@ -159,6 +193,13 @@ export const ChatInput = ({
             ),
           },
         }}
+      />
+
+      <ChatEmojiPicker
+        anchorEl={emojiAnchor}
+        open={Boolean(emojiAnchor)}
+        onClose={() => setEmojiAnchor(null)}
+        onEmojiSelect={insertEmoji}
       />
 
       {isSending && (

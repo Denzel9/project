@@ -46,13 +46,13 @@ export const BigMedia = ({
   return (
     <Swiper
       loop
-      mousewheel={!isLoading}
-      preventClicks={false}
-      preventClicksPropagation={false}
       slidesPerView={1}
       spaceBetween={10}
+      preventClicks={false}
+      mousewheel={!isLoading}
       lazyPreloadPrevNext={2}
       initialSlide={initialSlide}
+      preventClicksPropagation={false}
       thumbs={{ swiper: thumbsSwiper }}
       pagination={{
         clickable: true,

@@ -11,7 +11,6 @@ import type { MediaItemType } from '../model/types';
 import type { Swiper } from 'swiper/types';
 
 type MediaProps = {
-  // width: number;
   items: MediaItemType[];
 };
 

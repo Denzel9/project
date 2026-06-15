@@ -1,52 +1,58 @@
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { Link, useNavigate } from 'react-router';
+import { Box, CircularProgress, Grid } from '@mui/material';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
-  APPLICATION_STATUS_LABELS,
-  canWithdrawApplication,
   useMyApplicationsQuery,
   useWithdrawApplicationMutation,
 } from '@/entities/application';
+import { POST_TYPE_ENUM } from '@/entities/post';
 import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { PageLayout } from '@/widgets';
 
+import {
+  toMyApplicationsParams,
+  type ApplicationStatusFilter,
+} from '../model/utils';
+
+import MyResponsesFilter from './Filter';
+import { MyResponseItem } from './MyResponseItem';
+
 export const MyResponses = () => {
-  const { data: applications, isLoading } = useMyApplicationsQuery({
-    page: 1,
-    limit: 20,
-  });
+  const [postType, setPostType] = useState(POST_TYPE_ENUM.ALL);
+  const [status, setStatus] = useState<ApplicationStatusFilter>('all');
+
+  const { data: applications, isLoading } = useMyApplicationsQuery(
+    toMyApplicationsParams({ status, postType })
+  );
 
   const { mutate: withdrawApplication, isPending: isWithdrawing } =
     useWithdrawApplicationMutation();
 
   const navigate = useNavigate();
 
+  const isEmpty = !isLoading && !applications?.items?.length;
+
   return (
-    <PageLayout
-      title="Мои отклики"
-      isFullHeight
-    >
+    <PageLayout title="Мои отклики">
+      <MyResponsesFilter
+        postType={postType}
+        onPostTypeChange={setPostType}
+        status={status}
+        onStatusChange={setStatus}
+      />
+
       <Box
         sx={{
-          p: 4,
-          mt: 2,
           gap: 2,
           width: '100%',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           bgcolor: 'white',
+          p: { xs: 3, md: 4 },
           borderRadius: '32px',
-          flexDirection: 'column',
-          height: '100%',
+          alignItems: isEmpty ? 'center' : 'start',
+          justifyContent: isEmpty ? 'center' : 'start',
         }}
       >
         {isLoading && (
@@ -54,8 +60,7 @@ export const MyResponses = () => {
             <CircularProgress />
           </Box>
         )}
-
-        {!isLoading && !applications?.items?.length && (
+        {isEmpty && (
           <EmptyBlock
             buttonText="На главную"
             title="У вас пока нет откликов"
@@ -63,91 +68,27 @@ export const MyResponses = () => {
           />
         )}
 
-        {applications?.items?.map(application => (
-          <Box
-            key={application.id}
-            sx={{
-              p: 3,
-              borderRadius: '24px',
-              border: theme => `1px solid ${theme.palette.secondary.main}`,
-            }}
+        {!isEmpty && (
+          <Grid
+            container
+            spacing={2}
+            sx={{ width: '100%' }}
           >
-            <Stack
-              direction="row"
-              sx={{
-                alignItems: 'start',
-                justifyContent: 'space-between',
-                gap: 2,
-              }}
-            >
-              <Box>
-                <Link
-                  to={`${ROUTES.POST}/${application.postId}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <Typography variant="h6">
-                    {application.post?.title ?? 'Пост'}
-                  </Typography>
-                </Link>
-
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  {new Date(application.createdAt).toLocaleDateString('ru-RU')}
-                </Typography>
-
-                <Typography
-                  variant="body1"
-                  sx={{ mt: 2, maxWidth: 700 }}
-                >
-                  {application.message}
-                </Typography>
-              </Box>
-
-              <Stack
-                spacing={1}
-                sx={{ alignItems: 'flex-end', flexShrink: 0 }}
+            {applications?.items?.map(application => (
+              <Grid
+                key={application.id}
+                size={{ xs: 12, md: 4 }}
               >
-                <Chip
-                  size="small"
-                  label={APPLICATION_STATUS_LABELS[application.status]}
-                  color={
-                    application.status === 'ACCEPTED'
-                      ? 'success'
-                      : application.status === 'REJECTED'
-                        ? 'error'
-                        : application.status === 'WITHDRAWN'
-                          ? 'default'
-                          : 'primary'
-                  }
+                <MyResponseItem
+                  key={application.id}
+                  application={application}
+                  isWithdrawing={isWithdrawing}
+                  onWithdraw={withdrawApplication}
                 />
-
-                {canWithdrawApplication(application.status) && (
-                  <Button
-                    size="small"
-                    color="error"
-                    disabled={isWithdrawing}
-                    onClick={() => withdrawApplication(application.id)}
-                  >
-                    Отозвать
-                  </Button>
-                )}
-
-                {application.post?.ownerId && (
-                  <Button
-                    size="small"
-                    component={Link}
-                    to={`${ROUTES.CHAT}?recipientId=${application.post.ownerId}`}
-                  >
-                    В чат
-                  </Button>
-                )}
-              </Stack>
-            </Stack>
-          </Box>
-        ))}
+              </Grid>
+            ))}
+          </Grid>
+        )}
       </Box>
     </PageLayout>
   );

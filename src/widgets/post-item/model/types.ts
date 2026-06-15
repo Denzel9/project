@@ -3,6 +3,7 @@ import type { ApplicationStatus } from "@/entities/application";
 import type { Post } from "@/entities/post";
 
 export type PostItemProps = {
+    removePostFromCollection?: (postId: string) => void;
     isCompact?: boolean;
     post: Post;
     permissions?: ACTION_BUTTONS_KEYS[];

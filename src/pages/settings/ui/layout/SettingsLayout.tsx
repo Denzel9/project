@@ -7,16 +7,21 @@ import { SettingsSidebar } from './SettingsSidebar';
 
 export const SettingsLayout = () => {
   return (
-    <PageLayout isFullHeight>
+    <PageLayout>
       <Box
         sx={{
-          mt: 2,
           gap: 2,
           width: '100%',
           display: 'flex',
         }}
       >
-        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Box
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            position: 'sticky',
+            top: 0,
+          }}
+        >
           <SettingsSidebar />
         </Box>
 
@@ -24,9 +29,11 @@ export const SettingsLayout = () => {
           sx={{
             flex: 1,
             minWidth: 0,
-            p: { xs: 2, md: 4 },
             bgcolor: 'white',
+            overflowY: 'auto',
+            p: { xs: 3, md: 4 },
             borderRadius: { xs: '16px', md: '32px' },
+            height: { xs: 'auto', md: 'calc(100vh - 136px)' },
           }}
         >
           <Outlet />

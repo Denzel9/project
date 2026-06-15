@@ -1,11 +1,14 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
+import { useNavigate } from 'react-router';
 
+import { ROUTES } from '@/shared';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 import type { MessageSide } from '../model/types';
 import type { ChatMessageMedia } from '@/entities/chat';
 
 type ChatMessageBubbleProps = {
+  senderId: string;
   text: string;
   media?: ChatMessageMedia[];
   side: MessageSide;
@@ -48,14 +51,17 @@ const renderHighlightedText = (text: string, highlight?: string) => {
 };
 
 export const ChatMessageBubble = ({
+  senderId,
   text,
   media = [],
   side,
   time,
   highlight,
 }: ChatMessageBubbleProps) => {
+  const navigate = useNavigate();
   const isOutgoing = side === 'outgoing';
   const hasText = Boolean(text.trim());
+  const hasResponse = text === 'Новый отклик';
 
   return (
     <Box
@@ -64,10 +70,10 @@ export const ChatMessageBubble = ({
         py: 1.5,
         maxWidth: '70%',
         borderRadius: '16px',
+        boxShadow: isOutgoing ? 0 : 1,
         alignSelf: isOutgoing ? 'flex-end' : 'flex-start',
         bgcolor: isOutgoing ? 'primary.main' : 'common.white',
         color: isOutgoing ? 'common.white' : 'text.primary',
-        boxShadow: isOutgoing ? 0 : 1,
       }}
     >
       {media.length > 0 && (
@@ -95,7 +101,25 @@ export const ChatMessageBubble = ({
         </Stack>
       )}
 
-      {hasText && (
+      {/* TODO: докрутить */}
+      {hasResponse && (
+        <Stack
+          direction="column"
+          spacing={2}
+        >
+          <Typography variant="body1">{text}</Typography>
+
+          <Button
+            color="primary"
+            variant="contained"
+            onClick={() => navigate(`${ROUTES.MY_RESPONSES}/${senderId}`)}
+          >
+            Посмотреть
+          </Button>
+        </Stack>
+      )}
+
+      {!hasResponse && hasText && (
         <Typography variant="body1">
           {renderHighlightedText(text, highlight)}
         </Typography>
@@ -105,9 +129,9 @@ export const ChatMessageBubble = ({
         <Typography
           variant="caption"
           sx={{
-            display: 'block',
             mt: 0.5,
             opacity: 0.8,
+            display: 'block',
             textAlign: isOutgoing ? 'right' : 'left',
           }}
         >

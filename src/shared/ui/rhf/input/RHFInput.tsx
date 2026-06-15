@@ -66,7 +66,7 @@ export const RHFInput = <
                 endAdornment ||
                 (maxLength && (
                   <InputAdornment position="start">
-                    {endAdornment || maxLength - field?.value?.length}
+                    {endAdornment || maxLength - (field?.value?.length || 0)}
                   </InputAdornment>
                 )),
             },

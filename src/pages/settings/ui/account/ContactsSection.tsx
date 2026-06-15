@@ -1,4 +1,4 @@
-import { Delete } from '@mui/icons-material';
+import { Add, Close, Delete } from '@mui/icons-material';
 import {
   Stack,
   Typography,
@@ -53,14 +53,16 @@ export const ContactsSection = ({
   return (
     <>
       <FormBlock
+        gap={4}
         isSingleColumn
         title={
           <Stack
             direction="row"
             sx={{
+              width: '100%',
               alignItems: 'center',
-              justifyContent: 'space-between',
               mb: isOpenAddContacts ? 4 : 0,
+              justifyContent: 'space-between',
             }}
           >
             <Typography
@@ -72,11 +74,24 @@ export const ContactsSection = ({
 
             <Button
               size="small"
-              sx={{ width: 'fit-content' }}
+              sx={{
+                display: { xs: 'none', md: 'block' },
+                px: 2,
+              }}
               onClick={handleCloseAddContacts}
             >
               {isOpenAddContacts ? 'Закрыть' : 'Добавить контакты'}
             </Button>
+
+            <Box
+              sx={{
+                display: { xs: 'block', md: 'none' },
+              }}
+            >
+              <IconButton onClick={handleCloseAddContacts}>
+                {isOpenAddContacts ? <Close /> : <Add />}
+              </IconButton>
+            </Box>
           </Stack>
         }
       >
@@ -85,48 +100,57 @@ export const ContactsSection = ({
             return (
               <Stack
                 spacing={2}
+                key={field.id}
                 direction="row"
                 sx={{ alignItems: 'start' }}
-                key={field.id}
               >
-                {field.type === ContactType.PHONE ? (
-                  <Controller
-                    control={control}
-                    name={`contacts.${index}.value`}
-                    render={({ field: f }) => (
-                      <PhoneInput
-                        {...f}
-                        sx={{ width: '40%' }}
-                        label={CONTACT_LABELS[field.type]}
-                      />
-                    )}
-                  />
-                ) : (
+                <Stack
+                  spacing={2}
+                  direction={{ xs: 'column', md: 'row' }}
+                  sx={{ alignItems: 'start', width: '100%' }}
+                >
+                  {field.type === ContactType.PHONE ? (
+                    <Controller
+                      control={control}
+                      name={`contacts.${index}.value`}
+                      render={({ field: f }) => (
+                        <PhoneInput
+                          {...f}
+                          sx={{ width: { xs: '100%', md: '40%' } }}
+                          label={CONTACT_LABELS[field.type]}
+                        />
+                      )}
+                    />
+                  ) : (
+                    <RHFInput
+                      control={control}
+                      name={`contacts.${index}.value`}
+                      props={{
+                        sx: { width: { xs: '100%', md: '40%' } },
+                        label: CONTACT_LABELS[field.type],
+                        helperText:
+                          field.type !== ContactType.WEBSITE
+                            ? 'Только никнейм, без ссылки'
+                            : undefined,
+                      }}
+                    />
+                  )}
+
                   <RHFInput
                     control={control}
-                    name={`contacts.${index}.value`}
+                    name={`contacts.${index}.label`}
                     props={{
-                      sx: { width: '40%' },
-                      label: CONTACT_LABELS[field.type],
-                      helperText:
-                        field.type !== ContactType.WEBSITE
-                          ? 'Только никнейм, без ссылки'
-                          : undefined,
+                      label: 'Описание',
+                      sx: { width: { xs: '100%', md: '60%' } },
                     }}
                   />
-                )}
-
-                <RHFInput
-                  control={control}
-                  name={`contacts.${index}.label`}
-                  props={{
-                    label: 'Описание',
-                    sx: { width: '60%' },
-                  }}
-                />
+                </Stack>
 
                 <Box>
-                  <IconButton onClick={() => handleRemoveContact(index)}>
+                  <IconButton
+                    sx={{ mt: 1 }}
+                    onClick={() => handleRemoveContact(index)}
+                  >
                     <Delete />
                   </IconButton>
                 </Box>
@@ -139,7 +163,7 @@ export const ContactsSection = ({
         <TextField
           select
           label="Добавить контакт"
-          sx={{ mt: fields.length ? 4 : 0, width: '30%' }}
+          sx={{ mt: fields.length ? 4 : 0, width: { xs: '100%', md: '30%' } }}
         >
           {Object.entries(CONTACT_LABELS).map(([key, value]) => (
             <MenuItem

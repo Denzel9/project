@@ -68,10 +68,12 @@ export const useFavoriteGroupsQuery = () =>
 export const useFavoritePostIds = () => {
   const { data } = useFavoritesQuery({ page: 1, limit: 100 })
 
-  return useMemo(
+  const favoritePostIds = useMemo(
     () => new Set(data?.items?.map(item => item.postId) ?? []),
     [data],
   )
+
+  return { favoritePostIds }
 }
 
 export const useAddFavoriteMutation = () => {

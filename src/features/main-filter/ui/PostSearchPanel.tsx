@@ -29,7 +29,7 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const navigate = useNavigate();
 
-  const favoritePostIds = useFavoritePostIds();
+  const { favoritePostIds } = useFavoritePostIds();
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');

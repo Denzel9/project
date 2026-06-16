@@ -2,7 +2,7 @@ import { Box, Stack, Typography } from '@mui/material';
 
 import { usePostsQuery } from '@/entities/post';
 import { useAuthStore } from '@/features/auth';
-import { ACTION_BUTTONS_KEYS, PostItem, DeleteDialog } from '@/widgets';
+import { ACTION_BUTTONS_KEYS, PostItem } from '@/widgets';
 
 import { MEDIA_TAB_VALUES, type MediaContentProps } from '../model/types';
 
@@ -80,7 +80,6 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
         </Typography>
       )}
 
-      <DeleteDialog />
     </Box>
   );
 };

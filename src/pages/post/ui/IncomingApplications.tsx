@@ -1,33 +1,52 @@
+import { ChatOutlined } from '@mui/icons-material';
 import {
   Avatar,
   Box,
   Button,
   Chip,
   CircularProgress,
+  IconButton,
   Stack,
   Typography,
 } from '@mui/material';
-import { Link } from 'react-router';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
 
 import {
   APPLICATION_STATUS_LABELS,
   getApplicantName,
-  usePostApplicationsQuery,
   useUpdateApplicationStatusMutation,
+  type ApplicationList,
 } from '@/entities/application';
+import { POST_STATUS_ENUM } from '@/entities/post';
 import { ROUTES } from '@/shared/config/routes';
 
 type IncomingApplicationsProps = {
-  postId: string;
+  applications?: ApplicationList;
+  isLoading: boolean;
 };
 
-export const IncomingApplications = ({ postId }: IncomingApplicationsProps) => {
-  const { data: applications, isLoading } = usePostApplicationsQuery(postId, {
-    page: 1,
-    limit: 20,
-  });
-  const { mutate: updateStatus, isPending } =
+export const IncomingApplications = ({
+  applications,
+  isLoading,
+}: IncomingApplicationsProps) => {
+  const navigate = useNavigate();
+
+  const { mutateAsync: updateStatus, isPending } =
     useUpdateApplicationStatusMutation();
+
+  useEffect(() => {
+    if (applications?.items?.length) {
+      applications.items.forEach(application => {
+        if (application.status === POST_STATUS_ENUM.NEW) {
+          updateStatus({
+            id: application.id,
+            body: { status: POST_STATUS_ENUM.VIEWED },
+          });
+        }
+      });
+    }
+  }, [applications?.items, updateStatus]);
 
   if (isLoading) {
     return (
@@ -50,133 +69,161 @@ export const IncomingApplications = ({ postId }: IncomingApplicationsProps) => {
   }
 
   return (
-    <Stack
-      spacing={2}
-      sx={{ mt: 4 }}
-    >
-      <Typography variant="h6">Отклики на пост</Typography>
-
+    <Stack spacing={2}>
       {applications.items.map(application => (
         <Box
           key={application.id}
           sx={{
             p: 3,
-            borderRadius: '24px',
-            border: theme => `1px solid ${theme.palette.secondary.main}`,
+            bgcolor: 'common.white',
+            borderRadius: '32px',
           }}
         >
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: 'start' }}
-          >
-            <Avatar src={application.applicant?.avatar ?? undefined} />
-
-            <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1 }}>
+            <Stack
+              direction="row"
+              sx={{ alignItems: 'start', justifyContent: 'space-between' }}
+            >
               <Stack
                 direction="row"
-                sx={{
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                }}
+                spacing={2}
+                sx={{ alignItems: 'center', cursor: 'pointer' }}
+                onClick={() =>
+                  navigate(
+                    `${ROUTES.PROFILE}?userId=${application.applicant?.id}`
+                  )
+                }
               >
-                <Typography variant="subtitle1">
-                  {getApplicantName(application.applicant)}
-                </Typography>
-
-                <Chip
-                  size="small"
-                  label={APPLICATION_STATUS_LABELS[application.status]}
-                  color={
-                    application.status === 'ACCEPTED'
-                      ? 'success'
-                      : application.status === 'REJECTED'
-                        ? 'error'
-                        : 'primary'
-                  }
+                <Avatar
+                  src={application.applicant?.avatar ?? undefined}
+                  sx={{ width: 60, height: 60 }}
                 />
+
+                <Stack
+                  direction="column"
+                  spacing={1}
+                >
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="subtitle1">
+                      {getApplicantName(application.applicant)}
+                    </Typography>
+                  </Stack>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    {new Date(application.createdAt).toLocaleDateString(
+                      'ru-RU'
+                    )}
+                  </Typography>
+                </Stack>
               </Stack>
+              <Chip
+                size="small"
+                label={APPLICATION_STATUS_LABELS[application.status]}
+                color={
+                  application.status === POST_STATUS_ENUM.ACCEPTED
+                    ? 'success'
+                    : application.status === POST_STATUS_ENUM.REJECTED
+                      ? 'error'
+                      : 'primary'
+                }
+              />
+            </Stack>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                {new Date(application.createdAt).toLocaleDateString('ru-RU')}
-              </Typography>
+            <Typography
+              variant="body1"
+              sx={{ mt: 4 }}
+            >
+              {application.message}
+            </Typography>
 
-              <Typography
-                variant="body1"
-                sx={{ mt: 2 }}
-              >
-                {application.message}
-              </Typography>
-
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{ mt: 2 }}
-              >
-                {application.applicant?.id && (
+            <Stack
+              direction={{ xs: 'row-reverse', md: 'row' }}
+              sx={{
+                width: '100%',
+                mt: 4,
+                mr: { xs: 0, md: 4 },
+                justifyContent: { xs: 'space-between', md: 'flex-start' },
+              }}
+            >
+              {application.applicant?.id && (
+                <>
                   <Button
                     size="small"
+                    variant="contained"
                     component={Link}
+                    sx={{
+                      mr: { xs: 0, md: 4 },
+                      display: { xs: 'none', md: 'block' },
+                    }}
                     to={`${ROUTES.CHAT}?recipientId=${application.applicant.id}`}
                   >
                     В чат
                   </Button>
-                )}
 
-                {application.status === 'NEW' && (
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    component={Link}
+                    sx={{ display: { xs: 'flex', md: 'none' } }}
+                    to={`${ROUTES.CHAT}?recipientId=${application.applicant.id}`}
+                  >
+                    <ChatOutlined />
+                  </IconButton>
+                </>
+              )}
+
+              {(application.status === POST_STATUS_ENUM.NEW ||
+                application.status === POST_STATUS_ENUM.VIEWED) && (
+                <Stack
+                  direction="row"
+                  spacing={4}
+                >
                   <Button
                     size="small"
+                    color="error"
                     disabled={isPending}
+                    sx={{ px: { xs: 0, md: 'auto' } }}
                     onClick={() =>
                       updateStatus({
                         id: application.id,
-                        body: { status: 'VIEWED' },
+                        body: { status: POST_STATUS_ENUM.REJECTED },
                       })
                     }
                   >
-                    Просмотрен
+                    Отклонить
                   </Button>
-                )}
 
-                {(application.status === 'NEW' ||
-                  application.status === 'VIEWED') && (
-                  <>
-                    <Button
-                      size="small"
-                      color="success"
-                      disabled={isPending}
-                      onClick={() =>
-                        updateStatus({
-                          id: application.id,
-                          body: { status: 'ACCEPTED' },
-                        })
-                      }
-                    >
-                      Принять
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      disabled={isPending}
-                      onClick={() =>
-                        updateStatus({
-                          id: application.id,
-                          body: { status: 'REJECTED' },
-                        })
-                      }
-                    >
-                      Отклонить
-                    </Button>
-                  </>
-                )}
-              </Stack>
-            </Box>
-          </Stack>
+                  <Button
+                    size="small"
+                    color="success"
+                    disabled={isPending}
+                    sx={{ px: { xs: 0, md: 'auto' } }}
+                    onClick={() =>
+                      updateStatus({
+                        id: application.id,
+                        body: { status: POST_STATUS_ENUM.ACCEPTED },
+                      }).then(() => {
+                        navigate(ROUTES.MY_TASKS);
+                      })
+                    }
+                  >
+                    Принять
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          </Box>
         </Box>
       ))}
     </Stack>

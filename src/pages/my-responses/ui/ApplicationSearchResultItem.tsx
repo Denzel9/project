@@ -1,4 +1,4 @@
-import { Box, Chip, Stack, Typography, type ReactNode } from '@mui/material';
+import { Box, Chip, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
 
 import {
@@ -15,7 +15,7 @@ type ApplicationSearchResultItemProps = {
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const renderHighlightedText = (text: string, highlight?: string): ReactNode => {
+const renderHighlightedText = (text: string, highlight?: string) => {
   const trimmedHighlight = highlight?.trim();
 
   if (!trimmedHighlight) {
@@ -23,7 +23,7 @@ const renderHighlightedText = (text: string, highlight?: string): ReactNode => {
   }
 
   const parts = text.split(
-    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'),
+    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi')
   );
 
   return parts.map((part, index) =>
@@ -42,7 +42,7 @@ const renderHighlightedText = (text: string, highlight?: string): ReactNode => {
       </Box>
     ) : (
       part
-    ),
+    )
   );
 };
 
@@ -88,7 +88,7 @@ export const ApplicationSearchResultItem = ({
       >
         {renderHighlightedText(
           application.post?.title ?? 'Пост',
-          highlightQuery,
+          highlightQuery
         )}
       </Typography>
 

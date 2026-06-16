@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 
 import { useRemoveFavoriteMutation } from "@/entities/favorite";
+import { useDeletePostDialogStore } from "@/features/delete-post";
 import { ROUTES } from "@/shared";
 
 import { ACTION_BUTTONS, ACTION_BUTTONS_KEYS } from "../constants";
@@ -12,8 +13,8 @@ import type { UseActionsProps } from "../types/index";
 export const useActions = ({ permissions, id }: UseActionsProps) => {
     const { mutate: removeFavorite } = useRemoveFavoriteMutation();
 
-    const { setOpenDeleteDialog, setOpenAddToCollectionDialog } =
-        useApplicationItemStore();
+    const { openDeletePostDialog } = useDeletePostDialogStore();
+    const { setOpenAddToCollectionDialog } = useApplicationItemStore();
 
     const navigate = useNavigate();
 
@@ -27,8 +28,8 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
         removeFavorite(id);
     };
 
-    const handleDelete = async () => {
-        setOpenDeleteDialog(true, id);
+    const handleDelete = () => {
+        openDeletePostDialog(id);
     };
 
     const handleEdit = () => {

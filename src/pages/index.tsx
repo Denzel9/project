@@ -34,6 +34,8 @@ const SettingsAccountPage = lazy(
   () => import('./settings/ui/account/SettingsAccountPage')
 );
 const SecurityPage = lazy(() => import('./settings/ui/security/SecurityPage'));
+const MyTaskPage = lazy(() => import('./my-task'));
+const TaskPage = lazy(() => import('./task'));
 
 export const Router = () => {
   return (
@@ -81,6 +83,16 @@ export const Router = () => {
             <Route
               path={`${ROUTES.MY_RESPONSES}`}
               element={<MyResponsesPage />}
+            />
+
+            <Route
+              path={`${ROUTES.MY_TASKS}`}
+              element={<MyTaskPage />}
+            />
+
+            <Route
+              path={`${ROUTES.TASK}/:id`}
+              element={<TaskPage />}
             />
 
             <Route

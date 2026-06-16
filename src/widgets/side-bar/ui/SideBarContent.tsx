@@ -125,6 +125,25 @@ export const SideBarContent = ({
         })}
       </List>
 
+      <Box
+        sx={{ bgcolor: 'secondary.light', borderRadius: '32px', p: 2, mx: 2 }}
+      >
+        <Typography variant="body1">Оформить Prime аккаунт</Typography>
+        <Typography
+          variant="body2"
+          sx={{ mt: 1 }}
+        >
+          Получите доступ к более мощным функциям и возможностям.
+        </Typography>
+        <Button
+          size="small"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          Оформить
+        </Button>
+      </Box>
+
       {isExpanded ? (
         <Button
           size="large"

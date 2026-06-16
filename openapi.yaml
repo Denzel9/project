@@ -557,9 +557,8 @@ paths:
       operationId: ChatController_createConversation
       summary: Начать или открыть диалог
       description:
-        Создаёт 1:1 диалог с recipientId или возвращает существующий. Участники
-        должны быть CREATOR и COMPANY (разные роли). Нельзя написать самому
-        себе. recipientId — userId собеседника.
+        Создаёт 1:1 диалог с recipientId или возвращает существующий. Нельзя
+        написать самому себе. recipientId — userId собеседника.
       parameters: []
       requestBody:
         required: true
@@ -575,7 +574,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatConversationResponse'
         '403':
-          description: Нельзя создать диалог (одинаковые роли или с самим собой)
+          description: Нельзя создать диалог с самим собой
         '404':
           description: Получатель не найден
       tags: *a4
@@ -945,6 +944,23 @@ paths:
           schema:
             example: реклама
             type: string
+        - name: type
+          required: false
+          in: query
+          description: Фильтр по типу поста (CREATOR / COMPANY)
+          schema:
+            enum:
+              - CREATOR
+              - COMPANY
+            type: string
+        - name: updatedDate
+          required: false
+          in: query
+          description: Фильтр по дате обновления отклика (календарный день, UTC)
+          schema:
+            format: date
+            example: 2026-06-14
+            type: string
         - name: page
           required: false
           in: query
@@ -1048,8 +1064,9 @@ paths:
       operationId: ApplicationsController_create
       summary: Откликнуться на пост
       description:
-        CREATOR → посты COMPANY, COMPANY → посты CREATOR. Один отклик на пост.
-        Нельзя откликнуться на свой или архивный пост.
+        Один отклик на пост. Нельзя откликнуться на свой или архивный пост.
+        ACCEPTED создаёт задачу. Создаёт сообщение «Новый отклик» в диалоге с
+        владельцем поста.
       parameters: []
       requestBody:
         required: true
@@ -1079,8 +1096,9 @@ paths:
       operationId: ApplicationsController_listMine
       summary: Мои отклики
       description:
-        'Отклики активного профиля с краткой информацией о посте. Поиск: `q` —
-        по названию поста или названию компании.'
+        'Отклики активного профиля с краткой информацией о посте. Фильтры:
+        `type` (CREATOR / COMPANY), `status`, `updatedDate` (YYYY-MM-DD). Поиск:
+        `q` — по названию поста или названию компании.'
       parameters:
         - name: postId
           required: false
@@ -1106,6 +1124,23 @@ paths:
           description: Поиск по названию поста или названию компании-автора
           schema:
             example: реклама
+            type: string
+        - name: type
+          required: false
+          in: query
+          description: Фильтр по типу поста (CREATOR / COMPANY)
+          schema:
+            enum:
+              - CREATOR
+              - COMPANY
+            type: string
+        - name: updatedDate
+          required: false
+          in: query
+          description: Фильтр по дате обновления отклика (календарный день, UTC)
+          schema:
+            format: date
+            example: 2026-06-14
             type: string
         - name: page
           required: false
@@ -1159,6 +1194,23 @@ paths:
           description: Поиск по названию поста или названию компании-автора
           schema:
             example: реклама
+            type: string
+        - name: type
+          required: false
+          in: query
+          description: Фильтр по типу поста (CREATOR / COMPANY)
+          schema:
+            enum:
+              - CREATOR
+              - COMPANY
+            type: string
+        - name: updatedDate
+          required: false
+          in: query
+          description: Фильтр по дате обновления отклика (календарный день, UTC)
+          schema:
+            format: date
+            example: 2026-06-14
             type: string
         - name: page
           required: false
@@ -1240,6 +1292,216 @@ paths:
           description: Отклик не найден
       tags: *a8
       security: *a9
+  /tasks:
+    get:
+      operationId: TasksController_list
+      summary: Список задач
+      description:
+        'Задачи, где пользователь owner или executor. Фильтры: `role`, `status`.
+        Создание задачи — автоматически при ACCEPTED отклика.'
+      parameters:
+        - name: role
+          required: false
+          in: query
+          description:
+            owner — задачи на мои посты; executor — задачи где я исполнитель
+          schema:
+            enum:
+              - owner
+              - executor
+            type: string
+        - name: status
+          required: false
+          in: query
+          schema:
+            enum:
+              - PREPARING
+              - PENDING_APPROVAL
+              - IN_PROGRESS
+              - REVISION
+              - COMPLETED
+              - CANCELLED
+            type: string
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            type: number
+      responses:
+        '200':
+          description: Список задач с пагинацией
+      tags: &a10
+        - tasks
+      security: &a11
+        - access-token: []
+  /tasks/{id}:
+    get:
+      operationId: TasksController_findById
+      summary: Задача по id
+      description: С комментариями
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponseDto'
+        '403':
+          description: Нет доступа
+        '404':
+          description: Задача не найдена
+      tags: *a10
+      security: *a11
+    patch:
+      operationId: TasksController_update
+      summary: Обновить задачу
+      description: owner — все поля. executor — только `status`. VIEWER → 403.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponseDto'
+        '403':
+          description: Нет доступа или недопустимые поля
+        '404':
+          description: Задача не найдена
+      tags: *a10
+      security: *a11
+  /tasks/{id}/comments:
+    get:
+      operationId: TasksController_listComments
+      summary: Комментарии задачи
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            type: number
+      responses:
+        '200':
+          description: Список комментариев с пагинацией
+      tags: *a10
+      security: *a11
+    post:
+      operationId: TasksController_createComment
+      summary: Добавить комментарий
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskCommentDto'
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskCommentResponseDto'
+      tags: *a10
+      security: *a11
+  /tasks/{id}/comments/{commentId}:
+    patch:
+      operationId: TasksController_updateComment
+      summary: Редактировать комментарий
+      description: owner — любой; executor — только свой
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: commentId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskCommentDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskCommentResponseDto'
+      tags: *a10
+      security: *a11
+    delete:
+      operationId: TasksController_deleteComment
+      summary: Удалить комментарий
+      description: owner — любой; executor — только свой
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: commentId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Комментарий удалён
+      tags: *a10
+      security: *a11
   /favorites/groups:
     get:
       operationId: FavoritesController_listGroups
@@ -1255,9 +1517,9 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FavoriteGroupResponseDto'
-      tags: &a10
+      tags: &a12
         - favorites
-      security: &a11
+      security: &a13
         - access-token: []
     post:
       operationId: FavoritesController_createGroup
@@ -1279,8 +1541,8 @@ paths:
                 $ref: '#/components/schemas/FavoriteGroupResponseDto'
         '409':
           description: Группа с таким названием уже существует
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
   /favorites/groups/{id}:
     patch:
       operationId: FavoritesController_updateGroup
@@ -1308,8 +1570,8 @@ paths:
           description: Группа не найдена
         '409':
           description: Группа с таким названием уже существует
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
     delete:
       operationId: FavoritesController_deleteGroup
       summary: Удалить группу
@@ -1325,8 +1587,8 @@ paths:
           description: Группа удалена
         '404':
           description: Группа не найдена
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
   /favorites:
     get:
       operationId: FavoritesController_listFavorites
@@ -1374,8 +1636,8 @@ paths:
       responses:
         '200':
           description: Избранное с пагинацией
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
     post:
       operationId: FavoritesController_addFavorite
       summary: Добавить пост в избранное
@@ -1397,8 +1659,8 @@ paths:
                 $ref: '#/components/schemas/FavoriteResponseDto'
         '404':
           description: Пост или группа не найдены
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
   /favorites/{postId}:
     patch:
       operationId: FavoritesController_moveFavorite
@@ -1425,8 +1687,8 @@ paths:
                 $ref: '#/components/schemas/FavoriteResponseDto'
         '404':
           description: Пост не найден в избранном или группа не найдена
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
     delete:
       operationId: FavoritesController_removeFavorite
       summary: Убрать пост из избранного
@@ -1441,8 +1703,8 @@ paths:
           description: Пост убран из избранного
         '404':
           description: Пост не найден в избранном
-      tags: *a10
-      security: *a11
+      tags: *a12
+      security: *a13
 info:
   title: Project Back API
   description: >-
@@ -1551,18 +1813,31 @@ info:
 
     ### Отклики на посты
 
-    1. `POST /applications` — отклик (postId + message). CREATOR → COMPANY,
-    COMPANY → CREATOR.
+    1. `POST /applications` — отклик (postId + message); создаёт сообщение в
+    чате с владельцем поста.
 
-    2. `GET /applications/mine` — мои отклики; `?q=` — поиск по title или
-    companyName.
+    2. `GET /applications/mine` — мои отклики; `?type=`, `?q=`, `?status=`.
 
     3. `GET /applications/incoming` — входящие на мои посты.
 
     4. `GET /posts/:id/applications` — отклики на конкретный пост (владелец).
 
-    5. `PATCH /applications/:id/status` — ACCEPTED / REJECTED / VIEWED
-    (владелец).
+    5. `PATCH /applications/:id/status` — ACCEPTED создаёт задачу; REJECTED /
+    VIEWED (владелец).
+
+
+    ### Задачи
+
+    1. Создаются автоматически при `PATCH /applications/:id/status` → ACCEPTED.
+
+    2. `GET /tasks` — список (`?role=owner|executor`, `?status=`).
+
+    3. `GET /tasks/:id` — задача с комментариями.
+
+    4. `PATCH /tasks/:id` — owner: все поля; executor: только status.
+
+    5. Комментарии: `GET/POST /tasks/:id/comments`, `PATCH/DELETE
+    .../comments/:commentId`.
 
 
     ### Чат
@@ -1573,7 +1848,7 @@ info:
 
     - Медиа: `POST /media/upload?conversationId=` → `send_message` с media[].
 
-    - Только 1:1 между CREATOR и COMPANY.
+    - 1:1 диалог между любыми пользователями.
 
 
     ### Сброс пароля
@@ -1623,6 +1898,9 @@ tags:
   - name: applications
     description:
       'Отклики на посты: mine, incoming, статусы NEW/VIEWED/ACCEPTED/REJECTED'
+  - name: tasks
+    description:
+      'Задачи: автосоздание при ACCEPTED, owner/executor, комментарии'
 servers:
   - url: http://localhost:3010
     description: Локальная разработка
@@ -2078,8 +2356,7 @@ components:
         recipientId:
           type: string
           format: uuid
-          description:
-            userId собеседника (CREATOR или COMPANY, противоположная ваша роль)
+          description: userId собеседника
       required:
         - recipientId
     SearchMessagesResponse:
@@ -2193,12 +2470,12 @@ components:
           type: string
           example: Заголовок поста
         permissions:
-          default: &a12 []
+          default: &a14 []
           type: array
           items:
             type: string
         chips:
-          default: &a13 []
+          default: &a15 []
           type: array
           items:
             type: string
@@ -2208,9 +2485,9 @@ components:
           default: ''
         typeCooperation:
           type: array
-          example: &a14
+          example: &a16
             - ONE_TIME
-          items: &a15
+          items: &a17
             type: string
             enum:
               - ONE_TIME
@@ -2220,7 +2497,7 @@ components:
           default: false
         contentType:
           type: string
-          enum: &a16
+          enum: &a18
             - PHOTO
             - VIDEO
             - PHOTO_VIDEO
@@ -2238,17 +2515,17 @@ components:
           example: '5000'
           default: ''
         rangePrice:
-          default: &a17 []
+          default: &a19 []
           type: array
           items:
             type: string
         keyWords:
-          default: &a18 []
+          default: &a20 []
           type: array
           items:
             type: string
         categories:
-          default: &a19 []
+          default: &a21 []
           type: array
           items:
             type: string
@@ -2396,12 +2673,12 @@ components:
           type: string
           example: Заголовок поста
         permissions:
-          default: *a12
+          default: *a14
           type: array
           items:
             type: string
         chips:
-          default: *a13
+          default: *a15
           type: array
           items:
             type: string
@@ -2411,14 +2688,14 @@ components:
           default: ''
         typeCooperation:
           type: array
-          example: *a14
-          items: *a15
+          example: *a16
+          items: *a17
         urgent:
           type: boolean
           default: false
         contentType:
           type: string
-          enum: *a16
+          enum: *a18
           example: PHOTO
         photoCount:
           type: string
@@ -2433,17 +2710,17 @@ components:
           example: '5000'
           default: ''
         rangePrice:
-          default: *a17
+          default: *a19
           type: array
           items:
             type: string
         keyWords:
-          default: *a18
+          default: *a20
           type: array
           items:
             type: string
         categories:
-          default: *a19
+          default: *a21
           type: array
           items:
             type: string
@@ -2566,6 +2843,149 @@ components:
           description: VIEWED, ACCEPTED или REJECTED
       required:
         - status
+    TaskCommentResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - taskId
+        - authorId
+        - content
+        - createdAt
+        - updatedAt
+    TaskResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        applicationId:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        executorId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PREPARING
+            - PENDING_APPROVAL
+            - IN_PROGRESS
+            - REVISION
+            - COMPLETED
+            - CANCELLED
+        media:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        finalDate:
+          type: string
+          format: date-time
+          nullable: true
+        photoCount:
+          type: string
+        videoCount:
+          type: string
+        urgent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskCommentResponseDto'
+      required:
+        - id
+        - applicationId
+        - postId
+        - ownerId
+        - executorId
+        - status
+        - media
+        - description
+        - finalDate
+        - photoCount
+        - videoCount
+        - urgent
+        - createdAt
+        - updatedAt
+    UpdateTaskDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - PREPARING
+            - PENDING_APPROVAL
+            - IN_PROGRESS
+            - REVISION
+            - COMPLETED
+            - CANCELLED
+        media:
+          description: URL медиа
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          maxLength: 5000
+        finalDate:
+          type: string
+          format: date-time
+          nullable: true
+        photoCount:
+          type: string
+        videoCount:
+          type: string
+        urgent:
+          type: boolean
+    CreateTaskCommentDto:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - content
+    UpdateTaskCommentDto:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - content
     FavoriteGroupResponseDto:
       type: object
       properties:

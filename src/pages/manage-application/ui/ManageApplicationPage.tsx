@@ -16,7 +16,6 @@ export const ManageApplicationPage = () => {
       <Box
         sx={{
           p: 4,
-          mt: 2,
           width: '100%',
           bgcolor: 'white',
           borderRadius: '32px',

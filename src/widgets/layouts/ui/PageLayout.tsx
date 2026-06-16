@@ -62,7 +62,6 @@ export const PageLayout = ({
 
           {title && (
             <Typography
-              noWrap
               sx={{
                 fontWeight: 500,
                 lineHeight: 1.2,
@@ -82,7 +81,7 @@ export const PageLayout = ({
           sx={{
             alignItems: 'center',
             justifyContent: 'flex-end',
-            width: { xs: '60%', md: '100%' },
+            width: { xs: '100%', md: '100%' },
           }}
         >
           <CurrentUser />

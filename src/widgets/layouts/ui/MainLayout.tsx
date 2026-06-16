@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { SideBar } from '@widgets/side-bar';
 
 import { AuthModal } from '@/features/auth';
+import { GlobalDeletePostDialog } from '@/features/delete-post';
 import { AddToCollectionDialog } from '@/widgets/post-item';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
@@ -38,6 +39,7 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
 
       <AuthModal />
       <AddToCollectionDialog />
+      <GlobalDeletePostDialog />
     </Box>
   );
 };

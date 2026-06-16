@@ -1,16 +1,10 @@
 import { MessageOutlined, Whatshot } from '@mui/icons-material';
-import {
-  Box,
-  Chip,
-  IconButton,
-  Stack,
-  Typography,
-  type ReactNode,
-} from '@mui/material';
+import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
 
-import type { Post } from '@/entities/post';
 import { FavoriteButton } from '@/widgets';
+
+import type { Post } from '@/entities/post';
 
 type PostSearchResultItemProps = {
   post: Post;
@@ -23,7 +17,7 @@ type PostSearchResultItemProps = {
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const renderHighlightedText = (text: string, highlight?: string): ReactNode => {
+const renderHighlightedText = (text: string, highlight?: string) => {
   const trimmedHighlight = highlight?.trim();
 
   if (!trimmedHighlight) {
@@ -31,7 +25,7 @@ const renderHighlightedText = (text: string, highlight?: string): ReactNode => {
   }
 
   const parts = text.split(
-    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'),
+    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi')
   );
 
   return parts.map((part, index) =>
@@ -50,7 +44,7 @@ const renderHighlightedText = (text: string, highlight?: string): ReactNode => {
       </Box>
     ) : (
       part
-    ),
+    )
   );
 };
 

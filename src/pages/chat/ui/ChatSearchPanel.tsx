@@ -185,6 +185,7 @@ export const ChatSearchPanel = ({
               {format(new Date(message.createdAt), 'dd.MM.yyyy HH:mm')}
             </Typography>
             <ChatMessageBubble
+              senderId={message.senderId}
               text={message.content}
               media={message.media}
               highlight={debouncedQuery}

@@ -3,7 +3,8 @@ import type { PostMedia, UploadMediaResponse } from '@/entities/post'
 export type PhotoUploadParams = {
   data: FormData
   folder?: string
-  id?: string
+  postId?: string
+  taskId?: string
 }
 
 export type PhotoUploadResponse = UploadMediaResponse

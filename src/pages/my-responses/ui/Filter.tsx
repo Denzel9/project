@@ -1,12 +1,16 @@
-import { Search } from '@mui/icons-material';
+import { CalendarMonthOutlined, Search } from '@mui/icons-material';
 import {
+  Button,
   Drawer,
   IconButton,
   MenuItem,
+  Popover,
   Stack,
   TextField,
   useMediaQuery,
 } from '@mui/material';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities/application';
@@ -24,6 +28,8 @@ type MyResponsesFilterProps = {
   onPostTypeChange: (value: POST_TYPE_ENUM) => void;
   status: ApplicationStatusFilter;
   onStatusChange: (value: ApplicationStatusFilter) => void;
+  updatedDate: string | null;
+  onUpdatedDateChange: (value: string | null) => void;
 };
 
 const MyResponsesFilter = ({
@@ -31,14 +37,27 @@ const MyResponsesFilter = ({
   onPostTypeChange,
   status,
   onStatusChange,
+  updatedDate,
+  onUpdatedDateChange,
 }: MyResponsesFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
 
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+
+  const handleDateChange = (date: Dayjs | null) => {
+    onUpdatedDateChange(date ? date.format('YYYY-MM-DD') : null);
+    setAnchorEl(null);
+  };
+
+  const handleClearDate = () => {
+    onUpdatedDateChange(null);
+    setAnchorEl(null);
+  };
 
   return (
     <>
@@ -97,6 +116,13 @@ const MyResponsesFilter = ({
           </TextField>
         </Stack>
 
+        <IconButton
+          color={updatedDate ? 'primary' : 'default'}
+          onClick={event => setAnchorEl(event.currentTarget)}
+        >
+          <CalendarMonthOutlined />
+        </IconButton>
+
         <IconButton onClick={() => setIsSearchOpen(true)}>
           <Search />
         </IconButton>
@@ -106,6 +132,34 @@ const MyResponsesFilter = ({
         open={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
       />
+
+      <Popover
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        sx={{
+          '& .MuiPopover-paper': {
+            borderRadius: '32px',
+          },
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        <DateCalendar
+          value={updatedDate ? dayjs(updatedDate) : null}
+          onChange={handleDateChange}
+          views={['year', 'month', 'day']}
+        />
+        {updatedDate && (
+          <Button
+            fullWidth
+            onClick={handleClearDate}
+            sx={{ mb: 2, mx: 2, width: 'calc(100% - 32px)' }}
+          >
+            Все даты
+          </Button>
+        )}
+      </Popover>
 
       <Drawer
         anchor="right"

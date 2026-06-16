@@ -10,25 +10,33 @@ import {
 
 import { useDeletePostMutation } from '@/entities/post';
 
-import { useApplicationItemStore } from '../model/store';
+type DeletePostDialogProps = {
+  open: boolean;
+  postId: string | null;
+  onClose: () => void;
+  onSuccess?: () => void;
+};
 
-export const DeleteDialog = () => {
-  const { isOpenDeleteDialog, id, setOpenDeleteDialog } =
-    useApplicationItemStore();
-
-  const { mutateAsync: deletePost } = useDeletePostMutation();
+export const DeletePostDialog = ({
+  open,
+  postId,
+  onClose,
+  onSuccess,
+}: DeletePostDialogProps) => {
+  const { mutateAsync: deletePost, isPending } = useDeletePostMutation();
 
   const handleDelete = async () => {
-    if (!id) return;
+    if (!postId || isPending) return;
 
-    await deletePost(id);
-    setOpenDeleteDialog(false, null);
+    await deletePost(postId);
+    onClose();
+    onSuccess?.();
   };
 
   return (
     <Dialog
-      open={isOpenDeleteDialog}
-      onClose={() => setOpenDeleteDialog(false, null)}
+      open={open}
+      onClose={onClose}
       sx={{
         '& .MuiDialog-paper': {
           outline: 'none',
@@ -39,7 +47,7 @@ export const DeleteDialog = () => {
       }}
     >
       <IconButton
-        onClick={() => setOpenDeleteDialog(false, null)}
+        onClick={onClose}
         color="primary"
         sx={{
           top: 0,
@@ -53,6 +61,7 @@ export const DeleteDialog = () => {
       >
         <Close />
       </IconButton>
+
       <Box sx={{ p: 4 }}>
         <Typography variant="h6">Удалить</Typography>
 
@@ -67,12 +76,16 @@ export const DeleteDialog = () => {
           direction="row"
           sx={{ mt: 4, justifyContent: 'flex-end' }}
         >
-          <Button onClick={() => setOpenDeleteDialog(false, null)}>
+          <Button
+            onClick={onClose}
+            disabled={isPending}
+          >
             Отменить
           </Button>
           <Button
-            onClick={() => handleDelete()}
+            onClick={() => void handleDelete()}
             color="error"
+            disabled={isPending}
           >
             Удалить
           </Button>

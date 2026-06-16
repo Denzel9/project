@@ -1,6 +1,6 @@
 import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 
 import { ChatInput } from './ChatInput';
 import { ChatMessageBubble } from './ChatMessageBubble';
@@ -43,15 +43,90 @@ export const ChatConversation = ({
   isLoading = false,
   error = null,
 }: ChatConversationProps) => {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesContentRef = useRef<HTMLDivElement>(null);
+  const prevPeerIdRef = useRef<string | null>(null);
+  const prevMessagesLengthRef = useRef(0);
 
-  const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
+  }, []);
+
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+
+    if (!container) return true;
+
+    const threshold = 80;
+
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      threshold
+    );
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (!peer) {
+      prevPeerIdRef.current = null;
+      prevMessagesLengthRef.current = 0;
+      return;
+    }
+
+    if (prevPeerIdRef.current !== peer.id) {
+      prevMessagesLengthRef.current = 0;
+      prevPeerIdRef.current = null;
+    }
+  }, [peer]);
+
+  useLayoutEffect(() => {
+    if (!peer || isLoading || messages.length === 0) return;
+
+    const peerChanged = prevPeerIdRef.current !== peer.id;
+    const messagesAdded = messages.length > prevMessagesLengthRef.current;
+
+    prevPeerIdRef.current = peer.id;
+    prevMessagesLengthRef.current = messages.length;
+
+    if (peerChanged) {
+      scrollToBottom('auto');
+      return;
+    }
+
+    if (messagesAdded && (peerChanged || isNearBottom())) {
+      scrollToBottom(peerChanged ? 'auto' : 'smooth');
+    }
+  }, [peer, messages, isLoading, isNearBottom, scrollToBottom]);
+
+  useEffect(() => {
+    const content = messagesContentRef.current;
+
+    if (!content || !peer) return;
+
+    let frameId = 0;
+
+    const observer = new ResizeObserver(() => {
+      if (!isNearBottom()) return;
+
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        scrollToBottom('auto');
+      });
+    });
+
+    observer.observe(content);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frameId);
+    };
+  }, [peer?.id, isNearBottom, scrollToBottom]);
 
   if (!peer) {
     return (
@@ -98,12 +173,12 @@ export const ChatConversation = ({
       )}
 
       <Box
+        ref={messagesContainerRef}
         sx={{
           flex: 1,
           minHeight: 0,
           p: 3,
           mb: 2,
-          gap: 2,
           display: 'flex',
           overflowY: 'auto',
           borderRadius: '24px',
@@ -112,33 +187,41 @@ export const ChatConversation = ({
           bgcolor: 'secondary.light',
         }}
       >
-        {isLoading && messages.length === 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
+        <Box
+          ref={messagesContentRef}
+          sx={{
+            gap: 2,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {isLoading && messages.length === 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={32} />
+            </Box>
+          )}
 
-        {!isLoading && messages.length === 0 && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: 'center', py: 2 }}
-          >
-            Начните переписку
-          </Typography>
-        )}
+          {!isLoading && messages.length === 0 && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ textAlign: 'center', py: 2 }}
+            >
+              Начните переписку
+            </Typography>
+          )}
 
-        {messages.map(message => (
-          <ChatMessageBubble
-            key={message.id}
-            text={message.content}
-            media={message.media}
-            senderId={message.senderId}
-            side={toMessageSide(message.senderId, currentUserId)}
-            time={format(new Date(message.createdAt), 'HH:mm')}
-          />
-        ))}
-        <Box ref={bottomRef} />
+          {messages.map(message => (
+            <ChatMessageBubble
+              key={message.id}
+              text={message.content}
+              media={message.media}
+              senderId={message.senderId}
+              side={toMessageSide(message.senderId, currentUserId)}
+              time={format(new Date(message.createdAt), 'HH:mm')}
+            />
+          ))}
+        </Box>
       </Box>
 
       <Box sx={{ flexShrink: 0 }}>

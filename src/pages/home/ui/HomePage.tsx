@@ -18,9 +18,9 @@ export const HomePage = () => {
 
   const { data: posts, isLoading } = usePostsQuery(toPostListParams(postsType));
 
-  const favoritePostIds = useFavoritePostIds();
+  const { favoritePostIds } = useFavoritePostIds();
 
-  const myApplicationsMap = useMyApplicationsMap();
+  const { map: myApplicationsMap } = useMyApplicationsMap();
 
   const removePostFromCollection = (postId: string) => {
     myApplicationsMap.delete(postId);
@@ -44,9 +44,6 @@ export const HomePage = () => {
           width: '100%',
           height: '100%',
           display: 'flex',
-          bgcolor: 'white',
-          p: { xs: 0, md: 4 },
-          pt: { xs: 2, md: 4 },
           alignItems: 'center',
           flexDirection: 'column',
           justifyContent: 'center',

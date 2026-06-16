@@ -7,6 +7,7 @@ export const toMyApplicationsParams = (
   filters: {
     status: ApplicationStatusFilter;
     postType: POST_TYPE_ENUM;
+    updatedDate: string | null;
   },
   pagination?: { page?: number; limit?: number },
 ): ApplicationListParams => ({
@@ -14,4 +15,5 @@ export const toMyApplicationsParams = (
   limit: pagination?.limit ?? 20,
   ...(filters.status !== 'all' && { status: filters.status }),
   ...(filters.postType !== POST_TYPE_ENUM.ALL && { type: filters.postType }),
+  ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
 });

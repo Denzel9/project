@@ -52,6 +52,7 @@ export type ApplicationListParams = {
   postId?: string
   status?: ApplicationStatus
   type?: ApplicationPostSummary['type']
+  updatedDate?: string
   page?: number
   limit?: number
   q?: string

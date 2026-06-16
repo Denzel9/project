@@ -11,6 +11,7 @@ const WORKSPACE_MEMBERS_KEY = ['workspace-members'] as const;
 const invalidateProfileScopedQueries = () => {
   void queryClient.invalidateQueries({ queryKey: POSTS_KEY });
   void queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+  void queryClient.invalidateQueries({ queryKey: ['tasks'] });
   void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
 };
 

@@ -6,6 +6,7 @@ import {
   TopicOutlined,
   SettingsOutlined,
   PersonOutlined,
+  TaskOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
@@ -41,6 +42,12 @@ export const TOP_MENU_ROUTES: MenuRoute[] = [
     path: ROUTES.MY_RESPONSES,
     icon: <TopicOutlined />,
     label: 'Мои отклики',
+  },
+  {
+    authType: AUTH_TYPES.ALWAYS,
+    path: ROUTES.MY_TASKS,
+    icon: <TaskOutlined />,
+    label: 'Мои задачи',
   },
 ];
 

@@ -22,9 +22,10 @@ import { MyResponseItem } from './MyResponseItem';
 export const MyResponses = () => {
   const [postType, setPostType] = useState(POST_TYPE_ENUM.ALL);
   const [status, setStatus] = useState<ApplicationStatusFilter>('all');
+  const [updatedDate, setUpdatedDate] = useState<string | null>(null);
 
   const { data: applications, isLoading } = useMyApplicationsQuery(
-    toMyApplicationsParams({ status, postType })
+    toMyApplicationsParams({ status, postType, updatedDate }),
   );
 
   const { mutate: withdrawApplication, isPending: isWithdrawing } =
@@ -37,10 +38,12 @@ export const MyResponses = () => {
   return (
     <PageLayout title="Мои отклики">
       <MyResponsesFilter
-        postType={postType}
-        onPostTypeChange={setPostType}
         status={status}
+        postType={postType}
+        updatedDate={updatedDate}
         onStatusChange={setStatus}
+        onPostTypeChange={setPostType}
+        onUpdatedDateChange={setUpdatedDate}
       />
 
       <Box

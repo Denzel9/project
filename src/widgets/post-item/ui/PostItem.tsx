@@ -14,6 +14,7 @@ import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { BASE_COLOR } from '@/app/index';
+import { usePostApplicationsQuery } from '@/entities/application';
 import { POST_STATUS_ENUM } from '@/entities/post';
 import { getUserName, useGetUserByIdQuery } from '@/entities/user';
 import { ROUTES, ShareButton } from '@/shared/index';
@@ -45,6 +46,11 @@ const PostItem = ({
 
   // Заменить на легковесный запрос(имя, рейтинг, количество отзывов)
   const { data: user } = useGetUserByIdQuery(post.ownerId);
+
+  const { data: postApplications } = usePostApplicationsQuery(post.id, {
+    page: 1,
+    limit: 20,
+  });
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -84,6 +90,7 @@ const PostItem = ({
           gap: 2,
           width: '100%',
           display: 'flex',
+          bgcolor: 'white',
           cursor: 'pointer',
           p: { xs: 3, lg: 4 },
           borderRadius: '32px',
@@ -132,10 +139,23 @@ const PostItem = ({
                 <Stack
                   direction="row"
                   spacing={1}
+                  sx={{ alignItems: 'center' }}
                 >
                   <Typography variant="h6">{post?.title}</Typography>
 
                   {post?.urgent && <Whatshot color="error" />}
+
+                  {isMyPost && (
+                    <Chip
+                      size="small"
+                      color="primary"
+                      onClick={e => {
+                        e.preventDefault();
+                        navigate(`${ROUTES.POST}/${post.id}?tab=1`);
+                      }}
+                      label={`${postApplications?.items?.length} отклик`}
+                    />
+                  )}
                 </Stack>
 
                 <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>

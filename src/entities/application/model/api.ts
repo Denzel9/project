@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
+import { taskKeys } from '@/entities/task'
 import { mainAxios } from '@/shared/api'
 
 import type {
@@ -92,7 +93,7 @@ export const useMyApplicationsMap = () => {
       map.set(application.postId, application)
     })
 
-    return map
+    return { map }
   }, [data])
 }
 
@@ -145,6 +146,7 @@ export const useUpdateApplicationStatusMutation = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.all })
+      queryClient.invalidateQueries({ queryKey: taskKeys.all })
     },
   })
 }

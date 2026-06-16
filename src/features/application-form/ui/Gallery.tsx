@@ -123,7 +123,7 @@ const Gallery = ({
   };
 
   return (
-    <Box sx={{ mb: 6, width: { lg: '50%', xs: '100%' } }}>
+    <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
       <DndProvider backend={HTML5Backend}>
         <Typography
           color="textDisabled"

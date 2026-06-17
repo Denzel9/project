@@ -6,7 +6,9 @@ import {
   useMyApplicationsQuery,
   useWithdrawApplicationMutation,
 } from '@/entities/application';
+import { useFavoritePostIds } from '@/entities/favorite';
 import { POST_TYPE_ENUM } from '@/entities/post';
+import { useAuthStore } from '@/features/auth';
 import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { PageLayout } from '@/widgets';
@@ -20,16 +22,22 @@ import MyResponsesFilter from './Filter';
 import { MyResponseItem } from './MyResponseItem';
 
 export const MyResponses = () => {
-  const [postType, setPostType] = useState(POST_TYPE_ENUM.ALL);
+  const { role: userRole } = useAuthStore();
+
+  const [postType, setPostType] = useState(
+    userRole === 'CREATOR' ? POST_TYPE_ENUM.COMPANY : POST_TYPE_ENUM.CREATOR
+  );
   const [status, setStatus] = useState<ApplicationStatusFilter>('all');
   const [updatedDate, setUpdatedDate] = useState<string | null>(null);
 
   const { data: applications, isLoading } = useMyApplicationsQuery(
-    toMyApplicationsParams({ status, postType, updatedDate }),
+    toMyApplicationsParams({ status, postType, updatedDate })
   );
 
   const { mutate: withdrawApplication, isPending: isWithdrawing } =
     useWithdrawApplicationMutation();
+
+  const { favoritePostIds } = useFavoritePostIds();
 
   const navigate = useNavigate();
 
@@ -51,8 +59,6 @@ export const MyResponses = () => {
           gap: 2,
           width: '100%',
           display: 'flex',
-          bgcolor: 'white',
-          p: { xs: 3, md: 4 },
           borderRadius: '32px',
           alignItems: isEmpty ? 'center' : 'start',
           justifyContent: isEmpty ? 'center' : 'start',
@@ -87,6 +93,7 @@ export const MyResponses = () => {
                   application={application}
                   isWithdrawing={isWithdrawing}
                   onWithdraw={withdrawApplication}
+                  isFavorite={favoritePostIds.has(application.post?.id ?? '')}
                 />
               </Grid>
             ))}

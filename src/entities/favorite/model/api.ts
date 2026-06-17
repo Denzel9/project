@@ -56,13 +56,15 @@ export const useSearchFavoritesQuery = (params: SearchFavoritesParams) => {
   })
 }
 
-export const useFavoriteGroupsQuery = () =>
+export const useFavoriteGroupsQuery = (enabled: boolean = false) =>
   useQuery({
     queryKey: favoriteKeys.groups(),
     queryFn: async () => {
       const { data } = await mainAxios.get<FavoriteGroup[]>('/favorites/groups')
       return data
     },
+    enabled,
+
   })
 
 export const useFavoritePostIds = () => {

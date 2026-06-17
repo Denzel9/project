@@ -1,6 +1,7 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useState } from 'react';
 
+import { useMyApplicationsMap } from '@/entities/application';
 import { useFavoritesQuery } from '@/entities/favorite';
 import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
 
@@ -14,6 +15,8 @@ export const FavoritePage = () => {
   const { data: favorites, isLoading } = useFavoritesQuery(
     toFavoriteListParams(groupFilter)
   );
+
+  const { map: myApplicationsMap } = useMyApplicationsMap();
 
   return (
     <PageLayout title="Избранное">
@@ -57,19 +60,26 @@ export const FavoritePage = () => {
           </Typography>
         )}
 
-        {favorites?.items?.map(favorite => (
-          <PostItem
-            key={favorite.postId}
-            post={favorite.post}
-            isFavorite
-            permissions={[
-              ...(favorite.groupId === null
-                ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
-                : []),
-              ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
-            ]}
-          />
-        ))}
+        {favorites?.items?.map(favorite => {
+          const application = myApplicationsMap.get(favorite.postId);
+
+          return (
+            <PostItem
+              key={favorite.postId}
+              post={favorite.post}
+              isFavorite
+              isApplied={Boolean(application)}
+              applicationStatus={application?.status}
+              applicationId={application?.id}
+              permissions={[
+                ...(favorite.groupId === null
+                  ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
+                  : []),
+                ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
+              ]}
+            />
+          );
+        })}
       </Box>
     </PageLayout>
   );

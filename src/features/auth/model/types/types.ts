@@ -26,14 +26,16 @@ export type ResetPasswordRequest = {
 }
 
 export type AuthResponse = {
-  user: { id: string }
+  user: { id: string, role: string, membershipRole: string }
 }
 
 export type AuthSliceState = {
   id: string | null
+  role: string | null
+  membershipRole: string | null
   isAuth: boolean
   isAuthModalOpen: boolean
-  setAuth: (id: string,) => void
+  setAuth: (id: string, role: string, membershipRole: string) => void
   removeAuth: () => void
   setAuthModalOpen: (isOpen: boolean) => void
 }

@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query'
 
 import { mainAxios, queryClient } from '@/shared/api'
+import { prepareFileForUpload } from '@/shared/lib/media'
 
 import { toChatMessageMedia } from './utils'
 
@@ -119,8 +120,9 @@ export const uploadConversationMedia = async (
   conversationId: string,
   file: File,
 ) => {
+  const prepared = await prepareFileForUpload(file)
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', prepared)
 
   const { data } = await mainAxios.post<UploadMediaResponse>(
     '/media/upload',

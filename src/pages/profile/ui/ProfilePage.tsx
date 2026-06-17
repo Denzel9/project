@@ -23,19 +23,17 @@ export const ProfilePage = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get('userId');
 
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+  const [mediaTabValue, setMediaTabValue] = useState(MEDIA_TAB_VALUES.ACTIVE);
+  const [tabValue, setTabValue] = useState(0);
 
   const { id: userId } = useAuthStore();
-
   const { data: user, isLoading } = useGetUserByIdQuery(id || userId);
 
-  const [tabValue, setTabValue] = useState(0);
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const handleTabChange = (_: SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
-
-  const [mediaTabValue, setMediaTabValue] = useState(MEDIA_TAB_VALUES.ACTIVE);
 
   return (
     <Box
@@ -83,7 +81,8 @@ export const ProfilePage = () => {
         sx={{
           mt: -7,
           width: '100%',
-          p: { xs: 0, md: 4 },
+          py: { xs: 0, md: 4 },
+          px: { xs: 0, md: 2 },
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
@@ -92,7 +91,6 @@ export const ProfilePage = () => {
           direction={{ xs: 'column', md: 'row' }}
           spacing={2}
           sx={{
-            gap: 2,
             width: '100%',
             height: '100%',
             alignItems: 'start',
@@ -100,8 +98,8 @@ export const ProfilePage = () => {
           }}
         >
           <UserCard
-            isLoading={isLoading}
             user={user?.data}
+            isLoading={isLoading}
           />
 
           <Stack
@@ -114,7 +112,6 @@ export const ProfilePage = () => {
             <ProfileControl
               id={id || ''}
               tabValue={tabValue}
-              userId={userId || ''}
               mediaTabValue={mediaTabValue}
               handleTabChange={handleTabChange}
               setMediaTabValue={setMediaTabValue}

@@ -1,4 +1,4 @@
-import { Cyclone, ExitToApp } from '@mui/icons-material';
+import { Cyclone, WorkspacesOutlined } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router';
 
-import { useAuthStore, useLogoutMutation } from '@/features/auth';
+import { useAuthStore } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 
 import {
@@ -31,17 +31,9 @@ export const SideBarContent = ({
   isExpanded,
   onNavigate,
 }: SideBarContentProps) => {
-  const { mutateAsync: logout } = useLogoutMutation();
-  const { removeAuth, isAuth } = useAuthStore();
+  const { isAuth } = useAuthStore();
   const navigate = useNavigate();
   const pathname = useLocation()?.pathname;
-
-  const handleLogout = async () => {
-    await logout();
-    removeAuth();
-    onNavigate?.();
-    navigate(ROUTES.AUTH);
-  };
 
   return (
     <Box
@@ -125,44 +117,41 @@ export const SideBarContent = ({
         })}
       </List>
 
-      <Box
-        sx={{ bgcolor: 'secondary.light', borderRadius: '32px', p: 2, mx: 2 }}
-      >
-        <Typography variant="body1">Оформить Prime аккаунт</Typography>
-        <Typography
-          variant="body2"
-          sx={{ mt: 1 }}
-        >
-          Получите доступ к более мощным функциям и возможностям.
-        </Typography>
-        <Button
-          size="small"
-          color="primary"
-          sx={{ mt: 2 }}
-        >
-          Оформить
-        </Button>
-      </Box>
-
       {isExpanded ? (
-        <Button
-          size="large"
-          sx={{ mx: 2 }}
-          variant="outlined"
-          onClick={handleLogout}
+        <Box
+          sx={{ bgcolor: 'secondary.light', borderRadius: '32px', p: 2, mx: 2 }}
         >
-          {isAuth ? 'Выйти' : 'Войти'}
-        </Button>
+          <Typography variant="body1">Prime-аккаунт</Typography>
+
+          <Typography
+            variant="body2"
+            sx={{ mt: 1 }}
+          >
+            Получите доступ к более мощным функциям и возможностям.
+          </Typography>
+
+          <Box
+            sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+          >
+            <Button
+              size="small"
+              color="primary"
+              sx={{ mt: 2 }}
+            >
+              Оформить
+            </Button>
+          </Box>
+        </Box>
       ) : (
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'center',
             alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <IconButton onClick={handleLogout}>
-            <ExitToApp sx={{ width: 28, height: 28 }} />
+          <IconButton>
+            <WorkspacesOutlined />
           </IconButton>
         </Box>
       )}

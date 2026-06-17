@@ -1,7 +1,9 @@
 import { useMutation } from '@tanstack/react-query'
 
 import { uploadPostMedia, type UploadMediaResponse } from '@/entities/post'
+import { uploadTaskMedia } from '@/entities/task'
 import { mainAxios } from '@/shared/api'
+import { prepareFileForUpload } from '@/shared/lib/media'
 
 import type { PhotoUploadParams } from '../types/types'
 
@@ -20,12 +22,16 @@ export const useUploadFileMutation = () =>
       }
 
       if (taskId) {
-        return uploadPostMedia(taskId, file)
+        return uploadTaskMedia(taskId, file)
       }
+
+      const prepared = await prepareFileForUpload(file)
+      const formData = new FormData()
+      formData.append('file', prepared)
 
       const { data: response } = await mainAxios.post<UploadMediaResponse>(
         '/media/upload',
-        data,
+        formData,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       )
 

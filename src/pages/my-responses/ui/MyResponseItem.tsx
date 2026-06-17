@@ -1,4 +1,5 @@
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
+import { format } from 'date-fns';
 import { Link } from 'react-router';
 
 import {
@@ -6,25 +7,35 @@ import {
   canWithdrawApplication,
   type Application,
 } from '@/entities/application';
+import { getUserName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
+import { FavoriteButton } from '@/widgets';
+import { MediaPreview } from '@/widgets/media/ui/MediaPreview';
 
 type MyResponseItemProps = {
-  application: Application;
+  isFavorite?: boolean;
   isWithdrawing?: boolean;
+  application: Application;
   onWithdraw: (applicationId: string) => void;
 };
 
 export const MyResponseItem = ({
-  application,
-  isWithdrawing = false,
   onWithdraw,
+  application,
+  isFavorite = false,
+  isWithdrawing = false,
 }: MyResponseItemProps) => (
   <Box
     sx={{
-      p: 3,
+      p: 2,
       height: '100%',
+      bgcolor: 'white',
       borderRadius: '24px',
       border: theme => `1px solid ${theme.palette.secondary.main}`,
+      transition: 'box-shadow 0.2s ease',
+      ':hover': {
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+      },
     }}
   >
     <Stack
@@ -33,6 +44,7 @@ export const MyResponseItem = ({
         alignItems: 'start',
         justifyContent: 'space-between',
         gap: 2,
+        mb: 4,
       }}
     >
       <Box>
@@ -40,39 +52,55 @@ export const MyResponseItem = ({
           to={`${ROUTES.POST}/${application.postId}`}
           style={{ textDecoration: 'none', color: 'inherit' }}
         >
-          <Typography variant="h6">
-            {application.post?.title ?? 'Пост'}
+          <Typography
+            variant="h6"
+            sx={{
+              cursor: 'pointer',
+              transition: 'color 0.2s ease',
+              '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+            }}
+          >
+            {application.post?.title}
           </Typography>
         </Link>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mt: 1 }}
+        <Link
+          to={`${ROUTES.PROFILE}?userId=${application.post?.ownerId}`}
+          style={{ textDecoration: 'none', color: 'inherit' }}
         >
-          {new Date(application.createdAt).toLocaleDateString('ru-RU')}
-        </Typography>
+          <Typography
+            variant="body2"
+            color="info"
+            sx={{
+              cursor: 'pointer',
+              transition: 'color 0.2s ease',
+              '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+            }}
+          >
+            {getUserName(application.post?.owner as Partial<User>)}
+          </Typography>
+        </Link>
       </Box>
 
-      <Stack
-        spacing={1}
-        sx={{ alignItems: 'flex-end', flexShrink: 0 }}
-      >
-        <Chip
-          size="small"
-          label={APPLICATION_STATUS_LABELS[application.status]}
-          color={
-            application.status === 'ACCEPTED'
-              ? 'success'
-              : application.status === 'REJECTED'
-                ? 'error'
-                : application.status === 'WITHDRAWN'
-                  ? 'default'
-                  : 'primary'
-          }
-        />
-      </Stack>
+      {/* TODO: refactor */}
+      <Chip
+        size="small"
+        label={`${APPLICATION_STATUS_LABELS[application.status]} ${format(new Date(application.updatedAt), 'dd.MM.yyyy')}`}
+        color={
+          application.status === 'ACCEPTED'
+            ? 'success'
+            : application.status === 'REJECTED'
+              ? 'error'
+              : application.status === 'WITHDRAWN'
+                ? 'default'
+                : 'primary'
+        }
+      />
     </Stack>
+
+    {Boolean(application.post?.media?.length) && (
+      <MediaPreview media={application.post?.media ?? []} />
+    )}
 
     <Stack
       direction="row"
@@ -91,16 +119,21 @@ export const MyResponseItem = ({
         </Button>
       )}
 
-      {application.post?.ownerId && (
+      {application.status === 'ACCEPTED' && (
         <Button
           size="small"
-          variant="outlined"
           component={Link}
-          to={`${ROUTES.CHAT}?recipientId=${application.post.ownerId}`}
+          variant="outlined"
+          to={`${ROUTES.CHAT}?recipientId=${application.post?.ownerId}`}
         >
           В чат
         </Button>
       )}
+
+      <FavoriteButton
+        isFavorite={isFavorite}
+        postId={application.post?.id ?? ''}
+      />
     </Stack>
   </Box>
 );

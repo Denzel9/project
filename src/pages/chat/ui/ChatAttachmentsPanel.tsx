@@ -1,4 +1,4 @@
-import { Close } from '@mui/icons-material';
+import { Close, Delete } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -15,6 +15,8 @@ import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 import { useAttachmentsQuery, type ChatAttachment } from '@/entities/chat';
+import { useDeleteMediaMutation } from '@/entities/media';
+import { useAuthStore } from '@/features/auth';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 type AttachmentFilter = 'all' | 'image' | 'video';
@@ -32,10 +34,14 @@ export const ChatAttachmentsPanel = ({
 }: ChatAttachmentsPanelProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const currentUserId = useAuthStore(state => state.id);
 
   const [filter, setFilter] = useState<AttachmentFilter>('all');
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<ChatAttachment[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { mutateAsync: deleteMedia } = useDeleteMediaMutation();
 
   const typeParam = filter === 'all' ? undefined : filter;
 
@@ -79,6 +85,29 @@ export const ChatAttachmentsPanel = ({
 
   const handleOpenAttachment = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDeleteAttachment = async (
+    event: React.MouseEvent,
+    item: ChatAttachment,
+  ) => {
+    event.stopPropagation();
+
+    if (!conversationId || deletingId) return;
+
+    setDeletingId(item.id);
+
+    try {
+      await deleteMedia({
+        mediaId: item.id,
+        conversationId,
+      });
+      setItems(prev => prev.filter(attachment => attachment.id !== item.id));
+    } catch {
+      // keep attachment on error
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -164,26 +193,53 @@ export const ChatAttachmentsPanel = ({
             rowGap: 4,
           }}
         >
-          {items.map(item => (
-            <Box
-              key={item.id}
-              sx={{ cursor: 'pointer' }}
-              onClick={() => handleOpenAttachment(item.url)}
-            >
-              <MediaItem
-                src={item.url}
-                alt="Вложение"
-                mimeType={item.mimeType}
-              />
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', mt: 0.5 }}
+          {items.map(item => {
+            const canDelete =
+              Boolean(currentUserId) && item.senderId === currentUserId;
+
+            return (
+              <Box
+                key={item.id}
+                sx={{ position: 'relative', cursor: 'pointer' }}
+                onClick={() => handleOpenAttachment(item.url)}
               >
-                {format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm')}
-              </Typography>
-            </Box>
-          ))}
+                {canDelete && (
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={deletingId === item.id}
+                    onClick={event => handleDeleteAttachment(event, item)}
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      zIndex: 1,
+                      bgcolor: 'background.paper',
+                    }}
+                  >
+                    {deletingId === item.id ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <Delete fontSize="small" />
+                    )}
+                  </IconButton>
+                )}
+
+                <MediaItem
+                  src={item.url}
+                  alt="Вложение"
+                  mimeType={item.mimeType}
+                />
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mt: 0.5 }}
+                >
+                  {format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm')}
+                </Typography>
+              </Box>
+            );
+          })}
         </Box>
 
         {hasMore && (

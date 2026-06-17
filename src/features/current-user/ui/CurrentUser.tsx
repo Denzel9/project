@@ -42,7 +42,11 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
 
   const handleSwitchProfile = async (id: string) => {
     const res = await switchProfile(id);
-    setAuth(res.data.user?.id);
+    setAuth(
+      res.data.user?.id,
+      res.data.user?.role as string,
+      res.data.user?.membershipRole as string
+    );
   };
 
   const handleChangeUser = async (value: string) => {

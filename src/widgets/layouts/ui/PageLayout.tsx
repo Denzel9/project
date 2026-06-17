@@ -1,10 +1,7 @@
-import { PersonOutlined } from '@mui/icons-material';
-import { Box, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { type PropsWithChildren } from 'react';
-import { useNavigate } from 'react-router';
 
 import { CurrentUser } from '@/features/current-user';
-import { ROUTES } from '@/shared/config/routes';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
 import type { PageLayoutProps } from '../model/types';
@@ -15,12 +12,10 @@ export const PageLayout = ({
   title = undefined,
   isScreenHeight = false,
 }: PropsWithChildren<PageLayoutProps>) => {
-  const navigate = useNavigate();
-
   return (
     <Box
       sx={{
-        p: 0,
+        pr: 2,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -75,21 +70,7 @@ export const PageLayout = ({
           )}
         </Stack>
 
-        <Stack
-          direction="row"
-          spacing={{ xs: 1, md: 2 }}
-          sx={{
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            width: { xs: '100%', md: '100%' },
-          }}
-        >
-          <CurrentUser />
-
-          <IconButton onClick={() => navigate(ROUTES.PROFILE)}>
-            <PersonOutlined sx={{ width: 28, height: 28 }} />
-          </IconButton>
-        </Stack>
+        <CurrentUser />
       </Stack>
 
       <Box

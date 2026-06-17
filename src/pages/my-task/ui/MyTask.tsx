@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useTasksQuery } from '@/entities/task';
+import { useAuthStore } from '@/features/auth';
 import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { PageLayout } from '@/widgets';
@@ -17,10 +18,16 @@ import { MyTaskFilter } from './Filter';
 import { TaskItem } from './TaskItem';
 
 export const MyTask = () => {
-  const [role, setRole] = useState<TaskRoleFilter>('all');
+  const { role: userRole } = useAuthStore();
+
+  const [role, setRole] = useState<TaskRoleFilter>(
+    userRole === 'CREATOR' ? 'executor' : 'owner'
+  );
   const [status, setStatus] = useState<TaskStatusFilter>('all');
 
-  const { data: tasks, isLoading } = useTasksQuery(toTasksParams({ role, status }));
+  const { data: tasks, isLoading } = useTasksQuery(
+    toTasksParams({ role, status })
+  );
 
   const navigate = useNavigate();
 
@@ -40,8 +47,6 @@ export const MyTask = () => {
           gap: 2,
           width: '100%',
           display: 'flex',
-          bgcolor: 'white',
-          p: { xs: 3, md: 4 },
           borderRadius: '32px',
           alignItems: isEmpty ? 'center' : 'start',
           justifyContent: isEmpty ? 'center' : 'start',
@@ -67,10 +72,14 @@ export const MyTask = () => {
             spacing={2}
             sx={{ width: '100%' }}
           >
-            {tasks?.items?.map(task => (
+            {[
+              ...(tasks?.items ?? []),
+              ...(tasks?.items ?? []),
+              ...(tasks?.items ?? []),
+            ]?.map(task => (
               <Grid
                 key={task.id}
-                size={{ xs: 12, md: 4 }}
+                size={{ xs: 12, sm: 6, md: 4 }}
               >
                 <TaskItem task={task} />
               </Grid>

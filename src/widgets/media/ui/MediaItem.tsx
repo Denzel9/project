@@ -11,12 +11,13 @@ import { getMediaKind } from '../lib/getMediaKind';
 
 type MediaItemProps = {
   src: string;
-  mimeType?: string;
   alt?: string;
-  loading?: ImgHTMLAttributes<HTMLImageElement>['loading'];
+  mimeType?: string;
+  withControls?: boolean;
   errorMessage?: string;
   onLoad?: () => void;
   onError?: () => void;
+  loading?: ImgHTMLAttributes<HTMLImageElement>['loading'];
 };
 
 const mediaStyle = {
@@ -29,12 +30,13 @@ const mediaStyle = {
 
 export const MediaItem = ({
   src,
-  mimeType,
-  alt = '',
-  loading = 'lazy',
-  errorMessage = 'Не удалось загрузить медиа',
   onLoad,
   onError,
+  alt = '',
+  mimeType,
+  loading = 'lazy',
+  withControls = false,
+  errorMessage = 'Не удалось загрузить медиа',
 }: MediaItemProps) => {
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -132,12 +134,12 @@ export const MediaItem = ({
       ) : (
         <video
           src={src}
-          controls
           playsInline
           ref={videoRef}
           preload="metadata"
           onError={handleError}
           onCanPlay={handleLoad}
+          controls={withControls}
           onLoadedData={handleLoad}
           className="swiper-no-swiping"
           onClick={e => e.stopPropagation()}

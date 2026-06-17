@@ -1,4 +1,4 @@
-import { Menu, SwitchLeft, SwitchRight } from '@mui/icons-material';
+import { FirstPage, LastPage, Menu } from '@mui/icons-material';
 import { IconButton, useMediaQuery, useTheme } from '@mui/material';
 
 import { useSideBarStore } from '../model/store';
@@ -27,7 +27,7 @@ export const SideBarButton = () => {
       color="primary"
       onClick={() => setIsOpenSideBar(!isOpenSideBar)}
     >
-      {isOpenSideBar ? <SwitchRight /> : <SwitchLeft />}
+      {isOpenSideBar ? <FirstPage /> : <LastPage />}
     </IconButton>
   );
 };

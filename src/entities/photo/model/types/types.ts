@@ -9,7 +9,8 @@ export type PhotoUploadParams = {
 
 export type PhotoUploadResponse = UploadMediaResponse
 
-export type Photo = PostMedia & {
+export type Photo = Omit<PostMedia, 'id'> & {
+  id?: string
   filename?: string
   lastModified?: string
 }

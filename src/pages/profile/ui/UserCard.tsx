@@ -28,6 +28,8 @@ export const UserCard = ({
 
   const { id: userId } = useAuthStore();
 
+  const isMe = user?.id !== userId;
+
   return (
     <Box
       sx={{
@@ -35,10 +37,10 @@ export const UserCard = ({
         zIndex: 3,
         top: '16px',
         bgcolor: 'white',
+        borderRadius: '32px',
         maxWidth: { xs: '100%', md: '350px' },
         minWidth: { xs: '100%', md: '350px' },
         position: { xs: 'relative', md: 'sticky' },
-        borderRadius: '32px',
         boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
       }}
     >
@@ -53,17 +55,21 @@ export const UserCard = ({
           direction="row"
           spacing={2}
           sx={{
-            alignItems: 'start',
-            justifyContent: 'space-between',
             width: '100%',
+            alignItems: 'start',
+            justifyContent: { xs: 'space-between', md: 'center' },
           }}
         >
           <Avatar
             src={user?.avatar || ''}
             sx={{ width: '200px', height: '200px' }}
           />
-          {user?.id && user?.id === userId && (
-            <IconButton onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}>
+
+          {isMe && (
+            <IconButton
+              sx={{ display: { xs: 'block', md: 'none' } }}
+              onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
+            >
               <Edit />
             </IconButton>
           )}
@@ -131,7 +137,7 @@ export const UserCard = ({
       </Stack>
 
       <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-        {user?.id && user?.id !== userId && (
+        {!isMe && (
           <Stack
             spacing={2}
             direction="row"

@@ -28,8 +28,9 @@ export const AddToCollectionDialog = () => {
     setOpenAddToCollectionDialog,
   } = useApplicationItemStore();
 
-  const { data: groups, isLoading: isGroupsLoading } =
-    useFavoriteGroupsQuery();
+  const { data: groups, isLoading: isGroupsLoading } = useFavoriteGroupsQuery(
+    isOpenAddToCollectionDialog
+  );
 
   const { mutateAsync: addFavorite, isPending: isAddingFavorite } =
     useAddFavoriteMutation();
@@ -55,7 +56,9 @@ export const AddToCollectionDialog = () => {
 
   useEffect(() => {
     if (!isOpenAddToCollectionDialog) {
-      resetState();
+      setTimeout(() => {
+        resetState();
+      }, 0);
     }
   }, [isOpenAddToCollectionDialog]);
 

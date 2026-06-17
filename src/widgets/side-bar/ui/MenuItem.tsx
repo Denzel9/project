@@ -50,7 +50,7 @@ export const MenuItem = ({
       <ListItemIcon
         sx={{
           minWidth: isOpenSideBar ? 40 : 0,
-          color: pathname === route.path ? 'primary.main' : 'secondary.dark',
+          color: 'info.main',
 
           svg: {
             width: isOpenSideBar ? 24 : 28,
@@ -65,7 +65,7 @@ export const MenuItem = ({
         <ListItemText
           primary={route.label}
           sx={{
-            color: pathname === route.path ? 'primary.main' : 'secondary.dark',
+            color: 'info.main',
           }}
         />
       )}

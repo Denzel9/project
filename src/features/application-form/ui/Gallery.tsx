@@ -16,6 +16,7 @@ type DraggableImageProps = {
   setImages: (images: Photo[]) => void;
   setDeletedFiles: (key: string) => void;
   moveImage: (fromIndex: number, toIndex: number) => void;
+  canDeleteImage: (image: Photo) => boolean;
 };
 
 type GalleryProps = {
@@ -25,6 +26,8 @@ type GalleryProps = {
   setFiles: (files: File[]) => void;
   setImages: (images: Photo[]) => void;
   setDeletedFiles: (key: string) => void;
+  canDeleteImage?: (image: Photo) => boolean;
+  canUpload?: boolean;
 };
 
 const DraggableImage = ({
@@ -34,6 +37,7 @@ const DraggableImage = ({
   images,
   setImages,
   setDeletedFiles,
+  canDeleteImage,
 }: DraggableImageProps) => {
   const [isShowDeleteBtn, setIsShowDeleteBtn] = useState(true);
 
@@ -72,18 +76,17 @@ const DraggableImage = ({
     <Box
       ref={ref}
       sx={{
+        width: 100,
         cursor: 'grab',
+        borderRadius: 4,
         position: 'relative',
+        bgcolor: 'transparent',
+        boxSizing: 'border-box',
         transition: 'all 0.2s ease',
         opacity: isDragging ? 0.5 : 1,
-        borderRadius: 4,
-        bgcolor: 'transparent',
-        height: 125,
-        width: 100,
-        boxSizing: 'border-box',
       }}
     >
-      {isShowDeleteBtn && (
+      {isShowDeleteBtn && canDeleteImage(image) && (
         <IconButton
           color="error"
           onClick={handleDelete}
@@ -94,6 +97,10 @@ const DraggableImage = ({
       )}
 
       <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+        }}
         onPointerDown={() => setIsShowDeleteBtn(isDragging)}
         onPointerUp={() => setIsShowDeleteBtn(!isDragging)}
         onDragEnd={() => setIsShowDeleteBtn(!isDragging)}
@@ -114,6 +121,8 @@ const Gallery = ({
   setDeletedFiles,
   images,
   setImages,
+  canDeleteImage = () => true,
+  canUpload = true,
 }: GalleryProps) => {
   const moveImage = (fromIndex: number, toIndex: number) => {
     const newImages = [...images];
@@ -123,7 +132,7 @@ const Gallery = ({
   };
 
   return (
-    <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
+    <Box sx={{ width: '100%' }}>
       <DndProvider backend={HTML5Backend}>
         <Typography
           color="textDisabled"
@@ -141,10 +150,11 @@ const Gallery = ({
               setImages={setImages}
               moveImage={moveImage}
               setDeletedFiles={setDeletedFiles}
+              canDeleteImage={canDeleteImage}
             />
           ))}
 
-          {images.length < 6 && (
+          {canUpload && images.length < 10 && (
             <Button
               component="label"
               size="small"

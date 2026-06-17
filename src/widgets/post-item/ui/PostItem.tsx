@@ -47,10 +47,14 @@ const PostItem = ({
   // Заменить на легковесный запрос(имя, рейтинг, количество отзывов)
   const { data: user } = useGetUserByIdQuery(post.ownerId);
 
-  const { data: postApplications } = usePostApplicationsQuery(post.id, {
-    page: 1,
-    limit: 20,
-  });
+  const { data: postApplications } = usePostApplicationsQuery(
+    post.id,
+    {
+      page: 1,
+      limit: 20,
+    },
+    isMyPost
+  );
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 

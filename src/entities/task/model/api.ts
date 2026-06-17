@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
+import { prepareFileForUpload } from '@/shared/lib/media'
 
 import type {
   CreateTaskCommentDto,
   Task,
+  TaskActivityList,
+  TaskActivityListParams,
   TaskComment,
   TaskCommentList,
   TaskCommentListParams,
@@ -22,6 +25,8 @@ export const taskKeys = {
   detail: (id: string) => [...taskKeys.all, 'detail', id] as const,
   comments: (taskId: string, params?: TaskCommentListParams) =>
     [...taskKeys.all, 'comments', taskId, params ?? {}] as const,
+  activities: (taskId: string, params?: TaskActivityListParams) =>
+    [...taskKeys.all, 'activities', taskId, params ?? {}] as const,
 }
 
 export const useTasksQuery = (params?: TaskListParams) =>
@@ -54,6 +59,9 @@ export const useUpdateTaskMutation = () => {
     onSuccess: task => {
       queryClient.setQueryData(taskKeys.detail(task.id), task)
       queryClient.invalidateQueries({ queryKey: taskKeys.all })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'activities', task.id],
+      })
     },
   })
 }
@@ -67,6 +75,22 @@ export const useTaskCommentsQuery = (
     queryFn: async () => {
       const { data } = await mainAxios.get<TaskCommentList>(
         `/tasks/${taskId}/comments`,
+        { params },
+      )
+      return data
+    },
+    enabled: Boolean(taskId),
+  })
+
+export const useTaskActivitiesQuery = (
+  taskId: string | null,
+  params?: TaskActivityListParams,
+) =>
+  useQuery({
+    queryKey: taskKeys.activities(taskId ?? '', params),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<TaskActivityList>(
+        `/tasks/${taskId}/activities`,
         { params },
       )
       return data
@@ -144,9 +168,10 @@ export const useUpdateTaskCommentMutation = () => {
   })
 }
 
-export const uploadPostMedia = async (taskId: string, file: File) => {
+export const uploadTaskMedia = async (taskId: string, file: File) => {
+  const prepared = await prepareFileForUpload(file)
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', prepared)
 
   const { data } = await mainAxios.post<UploadMediaResponse>(
     '/media/upload',
@@ -158,6 +183,29 @@ export const uploadPostMedia = async (taskId: string, file: File) => {
   )
 
   return data
+}
+
+export const uploadTaskMediaBatch = async (taskId: string, files: File[]) =>
+  Promise.all(files.map(file => uploadTaskMedia(taskId, file)))
+
+export const useUploadTaskMediaMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      files,
+    }: {
+      taskId: string
+      files: File[]
+    }) => uploadTaskMediaBatch(taskId, files),
+    onSuccess: (_, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'activities', taskId],
+      })
+    },
+  })
 }
 
 export const useDeleteTaskCommentMutation = () => {
@@ -175,7 +223,7 @@ export const useDeleteTaskCommentMutation = () => {
       return commentId
     },
     onSuccess: (commentId, { taskId }) => {
-      queryClient.setQueryData<Task | undefined>(
+      queryClient.setQueryData<Task>(
         taskKeys.detail(taskId),
         old =>
           old

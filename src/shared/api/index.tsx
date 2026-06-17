@@ -34,7 +34,13 @@ mainAxios.interceptors.response.use(
           },
         });
 
-        useAuthStore.getState().setAuth(refreshResult?.data?.user?.id);
+        useAuthStore
+          .getState()
+          .setAuth(
+            refreshResult?.data?.user?.id,
+            refreshResult?.data?.user?.role,
+            refreshResult?.data?.user?.membershipRole
+          );
       } else {
         if (originalRequest.url.includes('invites/accept')) {
           window.location.href = `${ROUTES.AUTH}?isAuthFailed=true&token=${window.location.search.split('=')[1]}`;

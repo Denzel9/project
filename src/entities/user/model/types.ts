@@ -48,6 +48,7 @@ export enum ContactType {
   YOUTUBE = 'youtube',
   VK = 'vk',
   WEBSITE = 'website',
+  EMAIL = 'email',
   OTHER = 'other',
 }
 
@@ -60,6 +61,7 @@ export const CONTACT_LABELS = {
   [ContactType.VK]: 'VK',
   [ContactType.WEBSITE]: 'Website',
   [ContactType.OTHER]: 'Другое',
+  [ContactType.EMAIL]: 'Email',
 }
 
 

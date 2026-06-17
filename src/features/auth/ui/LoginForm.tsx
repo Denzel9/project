@@ -44,7 +44,11 @@ const LoginForm = ({
       const data = await login(formData);
 
       if (data.data.user) {
-        setAuth(data.data.user.id);
+        setAuth(
+          data.data.user.id,
+          data.data.user.role,
+          data.data.user.membershipRole
+        );
         if (onSuccess) {
           onSuccess();
         } else {

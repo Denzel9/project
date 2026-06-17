@@ -1,9 +1,13 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { Link } from 'react-router';
 
-import { ContactType, getPhone, type Contact } from '@/entities/user';
-
-import { getContactIcon, getContactLink } from '../model/utils/helpers';
+import {
+  ContactType,
+  getContactIcon,
+  getContactLink,
+  getPhone,
+  type Contact,
+} from '@/entities/user';
 
 export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
   return (

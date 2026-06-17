@@ -98,6 +98,7 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
         sx={{
           px: 2,
           pb: 2,
+          pt: isScrolled ? 2 : 0,
           alignItems: 'center',
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',

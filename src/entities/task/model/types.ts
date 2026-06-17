@@ -1,3 +1,4 @@
+
 export type TaskStatus =
   | 'PREPARING'
   | 'PENDING_APPROVAL'
@@ -26,6 +27,14 @@ export type TaskComment = {
   updatedAt: string
 }
 
+export type TaskMedia = {
+  id: string
+  url: string
+  key: string
+  size: string
+  mimeType: string
+}
+
 export type Task = {
   id: string
   applicationId: string
@@ -33,7 +42,7 @@ export type Task = {
   ownerId: string
   executorId: string
   status: TaskStatus
-  media: string[]
+  media: TaskMedia[]
   description: string
   finalDate: string | null
   photoCount: string
@@ -42,6 +51,23 @@ export type Task = {
   createdAt: string
   updatedAt: string
   comments?: TaskComment[]
+  post: {
+    id: string
+    ownerId: string
+    title: string
+    type: string
+  }
+  owner: {
+    id: string
+    avatar: string
+    creatorProfile: {
+      name: string
+      lastName: string
+    }
+    companyProfile: {
+      companyName: string
+    }
+  }
 }
 
 export type TaskList = {
@@ -69,6 +95,49 @@ export type TaskCommentListParams = {
   page?: number
   limit?: number
 }
+
+export type TaskActivityPayload = {
+  to: string
+  from: string
+  field: string
+}
+
+
+export type TaskActivity = {
+  actorId: string
+  createdAt: string
+  id: string
+  payload: TaskActivityPayload
+  taskId: string
+  type: TaskActivityType
+}
+
+export type TaskActivityList = {
+  items: TaskActivity[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type TaskActivityListParams = {
+  page?: number
+  limit?: number
+  type?: TaskActivityType
+}
+
+export enum TaskActivityType {
+  STATUS_CHANGED = 'STATUS_CHANGED',
+  FIELD_UPDATED = 'FIELD_UPDATED',
+  MEDIA_ADDED = 'MEDIA_ADDED',
+  MEDIA_REMOVED = 'MEDIA_REMOVED',
+}
+
+export const TASK_ACTIVITY_LABELS: Record<TaskActivityType, string> = {
+  [TaskActivityType.STATUS_CHANGED]: 'Изменен статус',
+  [TaskActivityType.FIELD_UPDATED]: 'Изменено поле',
+  [TaskActivityType.MEDIA_ADDED]: 'Загружено медиа',
+  [TaskActivityType.MEDIA_REMOVED]: 'Удалено медиа',
+} as const
 
 export type UpdateTaskDto = {
   status?: TaskStatus

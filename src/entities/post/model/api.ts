@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
+import { prepareFileForUpload } from '@/shared/lib/media'
 
 import type {
   CreatePostDto,
@@ -99,8 +100,9 @@ export const useDeletePostMutation = () => {
 }
 
 export const uploadPostMedia = async (postId: string, file: File) => {
+  const prepared = await prepareFileForUpload(file)
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', prepared)
 
   const { data } = await mainAxios.post<UploadMediaResponse>(
     '/media/upload',

@@ -7,11 +7,13 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import {
+  mapPostMediaToPhotos,
   useCreatePostMutation,
   useUpdatePostMutation,
   uploadPostMediaBatch,
   type Post,
 } from '@/entities/post';
+import { useDeleteMediaMutation } from '@/entities/media';
 import { ROUTES } from '@/shared';
 
 import { useActions } from '../hooks/useActions';
@@ -33,6 +35,8 @@ import { ProductInfo } from './ProductInfo';
 
 import type { Photo } from '@/entities/photo';
 
+const isLocalPreview = (photo: Photo) => photo.url.startsWith('blob:');
+
 type ApplicationFormProps = {
   isEdit?: boolean;
   data?: Post;
@@ -53,6 +57,7 @@ export const ApplicationForm = ({
 
   const { mutateAsync: createPost } = useCreatePostMutation();
   const { mutateAsync: updatePost } = useUpdatePostMutation();
+  const { mutateAsync: deleteMedia } = useDeleteMediaMutation();
 
   const methods = useForm<FormProductType>({
     defaultValues,
@@ -64,8 +69,28 @@ export const ApplicationForm = ({
 
   const { handleGoToPreview } = useActions({ getValues, id: data?.id || '' });
 
-  const handleDeletePhoto = (key: string) => {
-    setImages(prev => prev.filter(image => image.key !== key));
+  const handleDeletePhoto = async (key: string) => {
+    const photo = images.find(image => image.key === key);
+    if (!photo) return;
+
+    if (isLocalPreview(photo)) {
+      setImages(prev => prev.filter(image => image.key !== key));
+
+      if (photo.filename) {
+        setFiles(prev => prev.filter(file => file.name !== photo.filename));
+      }
+
+      return;
+    }
+
+    if (!photo.id || !data?.id) return;
+
+    try {
+      await deleteMedia({ mediaId: photo.id, postId: data.id });
+      setImages(prev => prev.filter(image => image.key !== key));
+    } catch {
+      // keep image in list on error
+    }
   };
 
   const uploadFiles = async (postId: string) => {
@@ -114,8 +139,10 @@ export const ApplicationForm = ({
       }
     });
 
-    // setImages(mapPostMediaToPhotos(data.media));
-  }, [data, setValue]);
+    if (files.length === 0) {
+      setImages(mapPostMediaToPhotos(data.media));
+    }
+  }, [data, setValue, files.length]);
 
   if (isLoading) {
     return (

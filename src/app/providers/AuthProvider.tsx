@@ -35,7 +35,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await refreshToken();
 
         if (res?.data?.user) {
-          setAuth(res.data.user.id);
+          setAuth(
+            res.data.user.id,
+            res.data.user.role,
+            res.data.user.membershipRole
+          );
           return;
         }
 

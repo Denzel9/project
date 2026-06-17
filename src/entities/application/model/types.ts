@@ -1,3 +1,5 @@
+import type { TaskMedia } from "@/entities/task"
+
 export type ApplicationStatus =
   | 'NEW'
   | 'VIEWED'
@@ -10,6 +12,18 @@ export type ApplicationPostSummary = {
   title: string
   type: 'CREATOR' | 'COMPANY'
   ownerId: string
+  owner: {
+    id: string
+    creatorProfile: {
+      name: string
+      lastName: string
+    }
+    companyProfile: {
+      companyName: string
+    }
+  }
+  media?: TaskMedia[]
+
 }
 
 export type ApplicationApplicant = {

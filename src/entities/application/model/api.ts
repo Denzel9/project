@@ -70,6 +70,7 @@ export const useIncomingApplicationsQuery = (params?: ApplicationListParams) =>
 export const usePostApplicationsQuery = (
   postId: string | null,
   params?: ApplicationListParams,
+  isMinePost = false,
 ) =>
   useQuery({
     queryKey: applicationKeys.byPost(postId ?? '', params),
@@ -80,7 +81,7 @@ export const usePostApplicationsQuery = (
       )
       return data
     },
-    enabled: Boolean(postId),
+    enabled: Boolean(postId) && isMinePost,
   })
 
 export const useMyApplicationsMap = () => {

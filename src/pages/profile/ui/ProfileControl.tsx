@@ -20,8 +20,7 @@ import { MEDIA_TAB_VALUES } from '../model/types';
 import type { SyntheticEvent } from 'react';
 
 type ProfileControlProps = {
-  id: string;
-  userId: string;
+  id?: string;
   tabValue: number;
   mediaTabValue: MEDIA_TAB_VALUES;
   setMediaTabValue: (value: MEDIA_TAB_VALUES) => void;
@@ -30,7 +29,6 @@ type ProfileControlProps = {
 
 export const ProfileControl = ({
   id,
-  userId,
   tabValue,
   mediaTabValue,
   handleTabChange,
@@ -68,7 +66,7 @@ export const ProfileControl = ({
         </Tabs>
 
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-          {id !== userId ? (
+          {id ? (
             <Button
               size="small"
               sx={{ px: 2 }}
@@ -88,7 +86,7 @@ export const ProfileControl = ({
         </Box>
       </Stack>
 
-      {tabValue === 0 && (
+      {!id && tabValue === 0 && (
         <Stack
           direction="row"
           sx={{
@@ -130,8 +128,8 @@ export const ProfileControl = ({
             </ButtonGroup>
 
             <TextField
-              fullWidth
               select
+              fullWidth
               size="small"
               label="Поиск"
               variant="outlined"
@@ -145,16 +143,14 @@ export const ProfileControl = ({
               <MenuItem value={MEDIA_TAB_VALUES.ARCHIVED}>Архивные</MenuItem>
             </TextField>
 
-            {id !== userId && (
-              <Button
-                size="small"
-                variant="contained"
-                sx={{ ml: 2, display: { xs: 'none', md: 'block' } }}
-                onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
-              >
-                Добавить
-              </Button>
-            )}
+            <Button
+              size="small"
+              variant="contained"
+              sx={{ ml: 2, display: { xs: 'none', md: 'block' } }}
+              onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
+            >
+              Добавить
+            </Button>
 
             <IconButton
               size="small"
@@ -166,9 +162,9 @@ export const ProfileControl = ({
           </Box>
 
           <Typography
-            sx={{ display: { xs: 'none', md: 'block' } }}
             color="info"
             variant="subtitle1"
+            sx={{ display: { xs: 'none', md: 'block' } }}
           >
             Доступно: 5
           </Typography>

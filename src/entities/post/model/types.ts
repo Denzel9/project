@@ -15,6 +15,7 @@ export enum PostCooperationTypeEnum {
 }
 
 export type PostMedia = {
+  id: string
   url: string
   key: string
   size: string

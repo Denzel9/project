@@ -29,6 +29,18 @@ export type PostList = {
   limit: number
 }
 
+export type PostOwner = {
+  id: string
+  avatar: string
+  creatorProfile: {
+    name: string
+    lastName: string
+  }
+  companyProfile: {
+    companyName: string
+  }
+}
+
 export type Post = {
   id: string
   permissions: string[]
@@ -49,17 +61,7 @@ export type Post = {
   type: PostType
   createdAt: string
   updatedAt: string
-  owner: {
-    id: string
-    avatar: string
-    creatorProfile: {
-      name: string
-      lastName: string
-    }
-    companyProfile: {
-      companyName: string
-    }
-  }
+  owner: PostOwner
 }
 
 export type CreatePostDto = {

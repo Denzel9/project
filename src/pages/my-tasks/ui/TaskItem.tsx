@@ -64,7 +64,7 @@ export const TaskItem = ({ task }: TaskItemProps) => {
                   },
                 }}
               >
-                {task.post.title}
+                {task.post?.title}
               </Typography>
             </Link>
 

@@ -32,7 +32,10 @@ type TaskCommentAttachmentsPanelProps = {
   open: boolean;
   onClose: () => void;
   taskId: string;
-  onOpenGallery: (items: { url: string; mimeType: string }[], initialSlide: number) => void;
+  onOpenGallery: (
+    items: { url: string; mimeType: string }[],
+    initialSlide: number
+  ) => void;
 };
 
 export const TaskCommentAttachmentsPanel = ({
@@ -69,7 +72,7 @@ export const TaskCommentAttachmentsPanel = ({
 
   const { data, isLoading, isFetching, error } = useTaskCommentAttachmentsQuery(
     open ? taskId : null,
-    { type: typeParam, page, limit: 20 },
+    { type: typeParam, page, limit: 20 }
   );
 
   useEffect(() => {
@@ -91,7 +94,11 @@ export const TaskCommentAttachmentsPanel = ({
   const handleOpenAttachment = (item: TaskCommentAttachment, index: number) => {
     if (isGalleryMedia(item.mimeType)) {
       const galleryItems = toGalleryItems(items);
-      onOpenGallery(galleryItems, getAttachmentGalleryIndex(items, index));
+      // TODO: fix type
+      onOpenGallery(
+        galleryItems as { url: string; mimeType: string }[],
+        getAttachmentGalleryIndex(items, index)
+      );
       return;
     }
 

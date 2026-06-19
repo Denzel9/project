@@ -137,7 +137,7 @@ export const PostSearchResultItem = ({
 
         <IconButton
           size="small"
-          onClick={() => onOpenChat(post.ownerId)}
+          onClick={() => onOpenChat(post?.owner?.id || '')}
         >
           <MessageOutlined />
         </IconButton>

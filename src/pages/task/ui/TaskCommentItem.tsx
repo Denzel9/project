@@ -14,7 +14,6 @@ import {
   canManageComment,
   type TaskComment,
 } from '@/entities/task';
-import type { User } from '@/entities/user';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 import {
@@ -52,7 +51,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
   }
 
   const parts = text.split(
-    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'),
+    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi')
   );
 
   return parts.map((part, index) =>
@@ -71,7 +70,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
       </Box>
     ) : (
       part
-    ),
+    )
   );
 };
 
@@ -179,7 +178,9 @@ export const TaskCommentItem = ({
                     borderRadius: '12px',
                     overflow: 'hidden',
                     maxWidth: 280,
-                    cursor: isGalleryMedia(item.mimeType) ? 'pointer' : 'default',
+                    cursor: isGalleryMedia(item.mimeType)
+                      ? 'pointer'
+                      : 'default',
                   }}
                   onClick={() => handleMediaClick(index)}
                 >

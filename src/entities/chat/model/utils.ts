@@ -5,7 +5,7 @@ const IMAGE_MAX_BYTES = 10 * 1024 * 1024
 const VIDEO_MAX_BYTES = 100 * 1024 * 1024
 
 export const CHAT_MEDIA_ACCEPT =
-  'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime'
+  'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.sheet,application/vnd.openxmlformats-officedocument.presentationml.sheet'
 
 export const toChatMessageMedia = (
   upload: UploadMediaResponse,
@@ -17,18 +17,11 @@ export const toChatMessageMedia = (
 })
 
 export const validateChatMediaFile = (file: File): string | null => {
-  const isVideo = file.type.startsWith('video/')
-  const isImage = file.type.startsWith('image/')
-
-  if (!isVideo && !isImage) {
-    return 'Поддерживаются только фото (JPEG, PNG, WebP, GIF) и видео (MP4, WebM, MOV)'
-  }
-
-  if (isImage && file.size > IMAGE_MAX_BYTES) {
+  if (file.size > IMAGE_MAX_BYTES) {
     return 'Размер фото не должен превышать 10 МБ'
   }
 
-  if (isVideo && file.size > VIDEO_MAX_BYTES) {
+  if (file.size > VIDEO_MAX_BYTES) {
     return 'Размер видео не должен превышать 100 МБ'
   }
 
@@ -44,10 +37,18 @@ export const getMessagePreview = (content: string, media: ChatMessageMedia[]) =>
 
   const hasVideo = media.some(item => item.mimeType.startsWith('video/'))
   const hasImage = media.some(item => item.mimeType.startsWith('image/'))
+  const hasPdf = media.some(item => item.mimeType.startsWith('application/pdf'))
+  const hasSpreadsheet = media.some(item => item.mimeType.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))
+  const hasWord = media.some(item => item.mimeType.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml.sheet'))
+  const hasPresentation = media.some(item => item.mimeType.startsWith('application/vnd.openxmlformats-officedocument.presentationml.sheet'))
 
-  if (hasVideo && hasImage) return 'Медиа'
+  if (hasVideo && hasImage && hasPdf && hasSpreadsheet && hasWord && hasPresentation) return 'Медиа'
   if (hasVideo) return 'Видео'
   if (hasImage) return 'Фото'
+  if (hasPdf) return 'PDF'
+  if (hasSpreadsheet) return 'Spreadsheet'
+  if (hasWord) return 'Word'
+  if (hasPresentation) return 'Presentation'
 
   return 'Медиа'
 }

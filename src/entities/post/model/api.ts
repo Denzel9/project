@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
 import { prepareFileForUpload } from '@/shared/lib/media'
@@ -16,10 +21,17 @@ import type {
 export const postKeys = {
   all: ['posts'] as const,
   list: (params?: PostListParams) => [...postKeys.all, 'list', params ?? {}] as const,
+  infiniteList: (params?: Omit<PostListParams, 'page'>) =>
+    [...postKeys.all, 'infiniteList', params ?? {}] as const,
   detail: (id: string) => [...postKeys.all, 'detail', id] as const,
   search: (q: string, page: number, limit: number) =>
     [...postKeys.all, 'search', q, page, limit] as const,
+  infiniteSearch: (params: Omit<SearchPostsParams, 'page'>) =>
+    [...postKeys.all, 'infiniteSearch', params] as const,
 }
+
+const getPostListNextPageParam = (lastPage: PostList) =>
+  lastPage.page * lastPage.limit < lastPage.total ? lastPage.page + 1 : undefined
 
 export const usePostsQuery = (params?: PostListParams) =>
   useQuery({
@@ -29,6 +41,24 @@ export const usePostsQuery = (params?: PostListParams) =>
       return data
     },
   })
+
+export const usePostsInfiniteQuery = (
+  params?: Omit<PostListParams, 'page'>,
+) => {
+  const limit = params?.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: postKeys.infiniteList(params),
+    queryFn: async ({ pageParam }) => {
+      const { data } = await mainAxios.get<PostList>('/posts', {
+        params: { ...params, page: pageParam, limit },
+      })
+      return data
+    },
+    initialPageParam: 1,
+    getNextPageParam: getPostListNextPageParam,
+  })
+}
 
 export const useSearchPostsQuery = (params: SearchPostsParams) => {
   const trimmedQuery = params.q.trim()
@@ -43,6 +73,26 @@ export const useSearchPostsQuery = (params: SearchPostsParams) => {
       })
       return data
     },
+    enabled: trimmedQuery.length >= 2,
+  })
+}
+
+export const useSearchPostsInfiniteQuery = (
+  params: Omit<SearchPostsParams, 'page'>,
+) => {
+  const trimmedQuery = params.q.trim()
+  const limit = params.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: postKeys.infiniteSearch({ ...params, q: trimmedQuery, limit }),
+    queryFn: async ({ pageParam }) => {
+      const { data } = await mainAxios.get<PostList>('/posts', {
+        params: { q: trimmedQuery, page: pageParam, limit },
+      })
+      return data
+    },
+    initialPageParam: 1,
+    getNextPageParam: getPostListNextPageParam,
     enabled: trimmedQuery.length >= 2,
   })
 }

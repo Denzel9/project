@@ -1,9 +1,12 @@
 import {
+  TASK_STATUS_ENUM,
   TaskActivityType,
   type Task,
   type TaskActivity,
   type TaskMedia,
   type TaskStatus,
+  type UploadMediaResponse,
+  type TaskCommentMedia,
 } from './types'
 
 import type { Photo } from '@/entities/photo'
@@ -24,6 +27,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   REVISION: 'На доработке',
   COMPLETED: 'Завершена',
   CANCELLED: 'Отменена',
+  CHECKING: 'На проверке',
 }
 
 export const TASK_ROLE_LABELS = {
@@ -88,14 +92,14 @@ export const formatTaskActivityText = (activity: TaskActivity) => {
     const label = TASK_FIELD_LABELS[activity.payload.field] ?? activity.payload.field
     const from = formatActivityValue(activity.payload.field, activity.payload.from)
     const to = formatActivityValue(activity.payload.field, activity.payload.to)
-    return `${label}: ${from} → ${to}`
+    return `Изменено поле "${label}": с ${from?.slice(0, 20)} на ${to?.slice(0, 20)}`
   }
 
   return 'Изменение задачи'
 }
 
-export const isTaskOwner = (task: Pick<Task, 'ownerId'>, userId: string | null) =>
-  Boolean(userId && task.ownerId === userId)
+export const isTaskOwner = (task: Task, userId: string | null) =>
+  Boolean(userId && task.ownerId === userId) && [TASK_STATUS_ENUM.PREPARING, TASK_STATUS_ENUM.REVISION].includes(task?.status as TASK_STATUS_ENUM)
 
 export const isTaskExecutor = (
   task: Pick<Task, 'executorId'>,
@@ -112,3 +116,17 @@ export const canManageComment = (
   commentAuthorId: string,
   userId: string | null,
 ) => Boolean(userId && commentAuthorId === userId)
+
+const COMMENT_DELETE_WINDOW_MS = 5 * 60 * 1000
+
+export const canDeleteComment = (createdAt: string) =>
+  Date.now() - new Date(createdAt).getTime() < COMMENT_DELETE_WINDOW_MS
+
+export const toTaskCommentMedia = (
+  upload: UploadMediaResponse,
+): TaskCommentMedia => ({
+  url: upload.url,
+  key: upload.key,
+  mimeType: upload.mimeType,
+  size: String(upload.size),
+})

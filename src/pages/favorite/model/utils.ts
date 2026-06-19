@@ -11,3 +11,12 @@ export const toFavoriteListParams = (
   ...(filter === 'ungrouped' && { ungrouped: true }),
   ...(filter !== 'all' && filter !== 'ungrouped' && { groupId: filter }),
 });
+
+export const toFavoriteInfiniteListParams = (
+  filter: FavoriteGroupFilter,
+  pagination?: { limit?: number },
+): Omit<FavoriteListParams, 'page'> => ({
+  limit: pagination?.limit ?? 20,
+  ...(filter === 'ungrouped' && { ungrouped: true }),
+  ...(filter !== 'all' && filter !== 'ungrouped' && { groupId: filter }),
+});

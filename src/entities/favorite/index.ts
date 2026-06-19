@@ -5,8 +5,11 @@ export {
   useDeleteFavoriteGroupMutation,
   useFavoriteGroupsQuery,
   useFavoritePostIds,
+  useFavoritePostIdsForPosts,
+  useFavoritesInfiniteQuery,
   useFavoritesQuery,
   useRemoveFavoriteMutation,
+  useSearchFavoritesInfiniteQuery,
   useSearchFavoritesQuery,
 } from './model/api'
 

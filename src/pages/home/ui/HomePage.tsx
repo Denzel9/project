@@ -1,30 +1,49 @@
-import { Box, CircularProgress, Drawer, Stack } from '@mui/material';
+import { Box, Drawer, Stack } from '@mui/material';
+import { useMemo } from 'react';
 
-import { useMyApplicationsMap } from '@/entities/application';
-import { useFavoritePostIds } from '@/entities/favorite';
-import { usePostsQuery } from '@/entities/post';
+import { useMyApplicationsMapForPosts } from '@/entities/application';
+import { useFavoritePostIdsForPosts } from '@/entities/favorite';
+import { usePostsInfiniteQuery } from '@/entities/post';
 import {
   MainFilter,
-  toPostListParams,
+  toPostInfiniteListParams,
   useMainFilterStore,
 } from '@/features/main-filter';
 import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
-import { EmptyBlock } from '@/shared';
-import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
+import { EmptyBlock, InfiniteScrollSentinel } from '@/shared';
+import {
+  ACTION_BUTTONS_KEYS,
+  PostItem,
+  PostItemSkeletonList,
+  PageLayout,
+} from '@/widgets';
 
 export const HomePage = () => {
   const { isOpenMainFilter, setIsOpenMainFilter, postsType } =
     useMainFilterStore();
 
-  const { data: posts, isLoading } = usePostsQuery(toPostListParams(postsType));
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    usePostsInfiniteQuery(toPostInfiniteListParams(postsType));
 
-  const { favoritePostIds } = useFavoritePostIds();
+  const posts = useMemo(
+    () => data?.pages.flatMap(page => page.items) ?? [],
+    [data]
+  );
+  const postIds = useMemo(() => posts.map(post => post.id), [posts]);
 
-  const { map: myApplicationsMap } = useMyApplicationsMap();
+  const { favoritePostIds, isLoading: isFavoritesLoading } =
+    useFavoritePostIdsForPosts(postIds);
 
-  const removePostFromCollection = (postId: string) => {
-    myApplicationsMap.delete(postId);
-  };
+  const {
+    map: myApplicationsMap,
+    isLoading: isApplicationsLoading,
+    removePostFromCollection,
+  } = useMyApplicationsMapForPosts(postIds);
+
+  const isInitialPostsLoading = isLoading && !posts.length;
+  const isMetaLoading =
+    postIds.length > 0 && (isFavoritesLoading || isApplicationsLoading);
+  const isFeedReady = !isInitialPostsLoading && !isMetaLoading;
 
   return (
     <PageLayout>
@@ -50,45 +69,51 @@ export const HomePage = () => {
           borderRadius: { xs: '16px', md: '32px' },
         }}
       >
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-            <CircularProgress />
-          </Box>
-        )}
+        {!isFeedReady && <PostItemSkeletonList count={5} />}
 
-        {!isLoading && !posts?.items?.length && (
+        {isFeedReady && !posts.length && (
           <EmptyBlock title="Пока нет объявлений" />
         )}
 
-        <Stack
-          direction="column"
-          spacing={2}
-          sx={{
-            width: '100%',
-            alignItems: 'start',
-          }}
-        >
-          {posts?.items?.map(post => {
-            const application = myApplicationsMap.get(post.id);
+        {isFeedReady && posts.length > 0 && (
+          <Stack
+            direction="column"
+            spacing={2}
+            sx={{
+              width: '100%',
+              alignItems: 'start',
+            }}
+          >
+            {posts.map(post => {
+              const application = myApplicationsMap.get(post.id);
 
-            return (
-              <PostItem
-                post={post}
-                key={post.id}
-                applicationId={application?.id}
-                isApplied={Boolean(application)}
-                applicationStatus={application?.status}
-                isFavorite={favoritePostIds.has(post.id)}
-                removePostFromCollection={removePostFromCollection}
-                permissions={[
-                  favoritePostIds.has(post.id)
-                    ? ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION
-                    : ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION,
-                ]}
-              />
-            );
-          })}
-        </Stack>
+              // console.log(post.id, myApplicationsMap);
+
+              return (
+                <PostItem
+                  post={post}
+                  key={post.id}
+                  applicationId={application?.id}
+                  isApplied={Boolean(application)}
+                  applicationStatus={application?.status}
+                  isFavorite={favoritePostIds.has(post.id)}
+                  removePostFromCollection={removePostFromCollection}
+                  permissions={[
+                    favoritePostIds.has(post.id)
+                      ? ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION
+                      : ACTION_BUTTONS_KEYS.ADD_TO_COLLECTION,
+                  ]}
+                />
+              );
+            })}
+
+            <InfiniteScrollSentinel
+              hasMore={Boolean(hasNextPage)}
+              isLoading={isFetchingNextPage}
+              onLoadMore={fetchNextPage}
+            />
+          </Stack>
+        )}
       </Box>
 
       <Drawer

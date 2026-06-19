@@ -70,9 +70,9 @@ export const ChatMessageBubble = ({
         py: 1.5,
         maxWidth: '70%',
         borderRadius: '16px',
-        boxShadow: isOutgoing ? 0 : 1,
+        // boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         alignSelf: isOutgoing ? 'flex-end' : 'flex-start',
-        bgcolor: isOutgoing ? 'primary.main' : 'common.white',
+        bgcolor: isOutgoing ? 'primary.light' : 'secondary.light',
         color: isOutgoing ? 'common.white' : 'text.primary',
       }}
     >

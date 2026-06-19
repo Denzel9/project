@@ -1,10 +1,4 @@
-import {
-  Box,
-  CircularProgress,
-  Divider,
-  Stack,
-  TextField,
-} from '@mui/material';
+import { Box, CircularProgress, Stack, TextField } from '@mui/material';
 import { useMemo, useState } from 'react';
 
 import { ConversationItem } from './ConversationItem';
@@ -55,10 +49,9 @@ export const Contacts = ({
         onChange={e => setSearch(e.target.value)}
       />
 
-      <Divider sx={{ my: 2 }} />
-
       <Stack
         sx={{
+          mt: 4,
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',

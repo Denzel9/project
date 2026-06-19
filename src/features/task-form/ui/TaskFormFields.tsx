@@ -1,57 +1,127 @@
-import { FormControl, FormLabel, Stack, Typography } from '@mui/material';
+import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import { Box, IconButton, Stack, Typography } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import dayjs, { type Dayjs } from 'dayjs';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 
 import { BASE_COLOR } from '@/app/index';
+import { scrollMainToTop } from '@/shared';
+import { MarkdownContent, RHFRichTextEditor } from '@/shared/ui/markdown';
 import { RHFInput } from '@/shared/ui/rhf';
+
+import { EditField } from './EditField';
 
 import type { TaskFormType } from '../model/schema/schema';
 
 type TaskFormFieldsProps = {
-  isOwner?: boolean;
+  isEdit: boolean;
+  isOpenDescription: boolean;
+  setIsEdit: (isEdit: boolean) => void;
+  setIsOpenDescription: (isOpen: boolean) => void;
 };
 
-export const TaskFormFields = ({ isOwner = false }: TaskFormFieldsProps) => {
-  const { control } = useFormContext<TaskFormType>();
+export const TaskFormFields = ({
+  setIsEdit,
+  isEdit,
+  isOpenDescription,
+  setIsOpenDescription,
+}: TaskFormFieldsProps) => {
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<TaskFormType>();
 
-  const { description, photoCount, videoCount, finalDate } = useWatch({
+  const { description } = useWatch({
     control,
   });
+
+  const handleOpenDescription = () => {
+    const willCollapse = isOpenDescription;
+
+    setIsOpenDescription(!isOpenDescription);
+
+    if (willCollapse) {
+      requestAnimationFrame(() => {
+        scrollMainToTop();
+      });
+    }
+  };
 
   return (
     <Stack
       spacing={4}
-      sx={{ mb: 8 }}
+      sx={{
+        mb: 8,
+      }}
     >
-      {isOwner ? (
-        <RHFInput
+      {isEdit ? (
+        <RHFRichTextEditor
           name="description"
           control={control}
-          props={{
-            minRows: 6,
-            fullWidth: true,
-            multiline: true,
-            label: 'Описание',
-          }}
+          maxLength={5000}
+          minHeight={isOpenDescription ? 320 : 160}
         />
-      ) : (
-        <FormControl
-          fullWidth
-          disabled={!isOwner}
+      ) : description ? (
+        <Stack
+          spacing={1}
+          direction="column"
         >
-          <FormLabel sx={{ mb: 2, fontWeight: 600, fontSize: '24px' }}>
-            Описание
-          </FormLabel>
-          <Typography variant="body1">{description}</Typography>
-        </FormControl>
+          <MarkdownContent
+            content={description}
+            sx={{
+              overflowY: isOpenDescription ? 'visible' : 'auto',
+              maxHeight: isOpenDescription
+                ? 'none'
+                : description?.length > 1000
+                  ? '300px'
+                  : 'none',
+            }}
+          />
+
+          {description && description?.length > 1000 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <IconButton
+                color="primary"
+                onClick={handleOpenDescription}
+              >
+                {isOpenDescription ? (
+                  <KeyboardArrowUp />
+                ) : (
+                  <KeyboardArrowDown />
+                )}
+              </IconButton>
+            </Box>
+          )}
+        </Stack>
+      ) : (
+        <Typography
+          onClick={() => setIsEdit(true)}
+          sx={{
+            color: errors.description ? 'error.main' : 'info.main',
+            fontWeight: 500,
+            fontSize: '16px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            ':hover': {
+              color: 'primary.main',
+              textDecoration: 'underline',
+            },
+          }}
+        >
+          Добавить описание
+        </Typography>
       )}
 
       <Stack
-        direction={isOwner ? 'column' : 'row'}
+        direction="row"
         spacing={2}
       >
-        {isOwner ? (
+        <EditField
+          name="photoCount"
+          label="Кол-во фото"
+          isEdit={isEdit}
+          setIsEdit={setIsEdit}
+        >
           <RHFInput
             name="photoCount"
             control={control}
@@ -60,19 +130,14 @@ export const TaskFormFields = ({ isOwner = false }: TaskFormFieldsProps) => {
               sx: { width: '50%' },
             }}
           />
-        ) : (
-          <FormControl
-            fullWidth
-            disabled={!isOwner}
-          >
-            <FormLabel sx={{ mb: 2, fontWeight: 600, fontSize: '18px' }}>
-              Кол-во фото
-            </FormLabel>
-            <Typography variant="body1">{photoCount}</Typography>
-          </FormControl>
-        )}
+        </EditField>
 
-        {isOwner ? (
+        <EditField
+          name="videoCount"
+          label="Кол-во видео"
+          isEdit={isEdit}
+          setIsEdit={setIsEdit}
+        >
           <RHFInput
             name="videoCount"
             control={control}
@@ -81,19 +146,15 @@ export const TaskFormFields = ({ isOwner = false }: TaskFormFieldsProps) => {
               sx: { width: '50%' },
             }}
           />
-        ) : (
-          <FormControl
-            fullWidth
-            disabled={!isOwner}
-          >
-            <FormLabel sx={{ mb: 2, fontWeight: 600, fontSize: '18px' }}>
-              Кол-во видео
-            </FormLabel>
-            <Typography variant="body1">{videoCount}</Typography>
-          </FormControl>
-        )}
+        </EditField>
 
-        {isOwner ? (
+        <EditField
+          isDate
+          name="finalDate"
+          label="Дедлайн"
+          isEdit={isEdit}
+          setIsEdit={setIsEdit}
+        >
           <Controller
             name="finalDate"
             control={control}
@@ -129,17 +190,7 @@ export const TaskFormFields = ({ isOwner = false }: TaskFormFieldsProps) => {
               />
             )}
           />
-        ) : (
-          <FormControl
-            fullWidth
-            disabled={!isOwner}
-          >
-            <FormLabel sx={{ mb: 2, fontWeight: 600, fontSize: '18px' }}>
-              Дедлайн
-            </FormLabel>
-            <Typography variant="body1">{finalDate}</Typography>
-          </FormControl>
-        )}
+        </EditField>
       </Stack>
     </Stack>
   );

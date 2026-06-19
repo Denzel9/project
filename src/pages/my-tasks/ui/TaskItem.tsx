@@ -1,13 +1,7 @@
-import { OpenInNew, Whatshot } from '@mui/icons-material';
-import {
-  Avatar,
-  Box,
-  Chip,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { Link, useNavigate } from 'react-router';
+import { Whatshot } from '@mui/icons-material';
+import { Avatar, Box, Chip, Stack, Typography } from '@mui/material';
+import { format } from 'date-fns';
+import { Link } from 'react-router';
 
 import { TASK_STATUS_LABELS, type Task } from '@/entities/task';
 import { getUserName, type User } from '@/entities/user';
@@ -19,7 +13,6 @@ type TaskItemProps = {
 };
 
 export const TaskItem = ({ task }: TaskItemProps) => {
-  const navigate = useNavigate();
   return (
     <Box
       component={Link}
@@ -56,18 +49,43 @@ export const TaskItem = ({ task }: TaskItemProps) => {
             direction="column"
             spacing={0}
           >
-            <Typography
-              variant="h6"
-              noWrap
+            <Link
+              to={`${ROUTES.POST}/${task?.post?.id}`}
+              style={{ textDecoration: 'none', color: 'inherit' }}
             >
-              {task.post.title}
-            </Typography>
-            {/* <Typography
-              variant="h6"
-              noWrap
+              <Typography
+                variant="h6"
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'text-decoration 0.2s ease',
+                  ':hover': {
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                {task.post.title}
+              </Typography>
+            </Link>
+
+            <Link
+              to={`${ROUTES.PROFILE}?userId=${task.ownerId}`}
+              style={{ textDecoration: 'none', color: 'inherit' }}
             >
-              {task.executor.lastName}
-            </Typography> */}
+              <Typography
+                variant="body1"
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'text-decoration 0.2s ease',
+                  ':hover': {
+                    color: 'primary.main',
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                {getUserName(task.owner as Partial<User>)}
+              </Typography>
+            </Link>
           </Stack>
         </Stack>
 
@@ -87,40 +105,17 @@ export const TaskItem = ({ task }: TaskItemProps) => {
 
       <Stack
         direction="row"
-        spacing={1}
-        sx={{ alignItems: 'center', mt: 4 }}
-      >
-        <Typography
-          variant="body1"
-          onClick={() => navigate(`${ROUTES.TASK}/${task.id}`)}
-          sx={{
-            cursor: 'pointer',
-            transition: 'text-decoration 0.2s ease',
-            ':hover': { textDecoration: 'underline', color: 'primary.main' },
-          }}
-        >
-          {getUserName(task.owner as Partial<User>)}
-        </Typography>
-
-        <IconButton>
-          <OpenInNew />
-        </IconButton>
-      </Stack>
-
-      <Stack
-        direction="row"
         sx={{ justifyContent: 'space-between', alignItems: 'end', mt: 4 }}
       >
         <MediaPreview media={task?.media} />
 
-        {!task.finalDate && (
+        {task.finalDate && (
           <Typography
             variant="body2"
             color="info"
             sx={{ fontSize: '12px', textAlign: 'right' }}
           >
-            Дедлайн:{' '}
-            {new Date(task.finalDate ?? '').toLocaleDateString('ru-RU')}
+            Дедлайн: {format(new Date(task.finalDate ?? ''), 'dd.MM.yyyy')}
           </Typography>
         )}
       </Stack>

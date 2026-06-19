@@ -137,15 +137,15 @@ export const ChatPage = () => {
       >
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            bgcolor: 'white',
-            borderRadius: { xs: '16px', md: '32px' },
-            p: { xs: 2, md: 4 },
             mt: 2,
             width: '100%',
+            height: '100%',
+            display: 'flex',
+            bgcolor: 'white',
+            p: { xs: 2, md: 4 },
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: { xs: '16px', md: '32px' },
           }}
         >
           <Stack

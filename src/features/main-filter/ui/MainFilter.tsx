@@ -49,7 +49,7 @@ const MainFilter = () => {
         sx={{
           px: 2,
           pb: 2,
-          pt: isScrolled ? 2 : 0,
+          pt: isScrolled ? 4 : 1,
           alignItems: 'center',
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
@@ -62,8 +62,9 @@ const MainFilter = () => {
         <TextField
           select
           value={postsType}
+          label="Тип заказчика"
           size={isMobile ? 'small' : 'medium'}
-          sx={{ width: { xs: '90%', md: '50%' } }}
+          sx={{ width: { xs: '90%', md: '30%' } }}
           onChange={e => setPostsType(e.target.value as POST_TYPE_ENUM)}
         >
           <MenuItem value={POST_TYPE_ENUM.ALL}>Все</MenuItem>

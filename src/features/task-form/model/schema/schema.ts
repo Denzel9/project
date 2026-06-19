@@ -1,7 +1,11 @@
 import * as yup from 'yup'
 
 export const schema = yup.object().shape({
-  description: yup.string().default(''),
+  description: yup
+    .string()
+    .default('')
+    .required('Описание обязательно для заполнения')
+    .max(5000, 'Описание не должно превышать 5000 символов'),
   photoCount: yup.string().default(''),
   videoCount: yup.string().default(''),
   finalDate: yup.string().nullable().default(null),

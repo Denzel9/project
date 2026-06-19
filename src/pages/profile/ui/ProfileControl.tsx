@@ -47,13 +47,13 @@ export const ProfileControl = ({
         p: { xs: 3, md: 4 },
         alignItems: 'start',
         borderRadius: '32px',
-        mt: { xs: 6, md: 20 },
+        mt: { xs: 2, md: 20 },
         justifyContent: 'space-between',
       }}
     >
       <Stack
-        direction="row"
         spacing={2}
+        direction="row"
         sx={{ width: '100%', justifyContent: 'space-between' }}
       >
         <Tabs

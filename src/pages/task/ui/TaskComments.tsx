@@ -1,25 +1,35 @@
-import { Delete, Edit } from '@mui/icons-material';
+import { MoreVert, Search } from '@mui/icons-material';
 import {
-  Avatar,
   Box,
-  Button,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
-  TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { validateChatMediaFile } from '@/entities/chat';
 import {
-  canManageComment,
+  uploadTaskCommentMediaBatch,
   useCreateTaskCommentMutation,
   useUpdateTaskCommentMutation,
   type Task,
+  type TaskCommentMedia,
 } from '@/entities/task';
 import { useGetUserByIdQuery, type User } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
+import { ChatInput } from '@/shared/ui/messenger';
+import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
+
+import { COMMENT_MEDIA_PLACEHOLDER, toGalleryItems } from '../lib/commentMedia';
 
 import { DeleteCommentDialog } from './DeleteCommentDialog';
+import { TaskCommentAttachmentsPanel } from './TaskCommentAttachmentsPanel';
+import { TaskCommentItem } from './TaskCommentItem';
+import { TaskCommentSearchPanel } from './TaskCommentSearchPanel';
 
 type TaskCommentsProps = {
   task: Task;
@@ -27,30 +37,136 @@ type TaskCommentsProps = {
 };
 
 export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const currentUserId = useAuthStore(state => state.id);
-  const [content, setContent] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
-  const [deletingId, setDeletingId] = useState('');
 
-  const { mutate: createComment, isPending: isCreating } =
+  const [content, setContent] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isSendingMedia, setIsSendingMedia] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryItems, setGalleryItems] = useState<
+    ReturnType<typeof toGalleryItems>
+  >([]);
+  const [galleryInitialSlide, setGalleryInitialSlide] = useState(0);
+
+  const { data: user } = useGetUserByIdQuery(currentUserId || '');
+  const { mutateAsync: createComment, isPending: isCreating } =
     useCreateTaskCommentMutation();
   const { mutate: updateComment, isPending: isUpdating } =
     useUpdateTaskCommentMutation();
-  const { data: user } = useGetUserByIdQuery(currentUserId || '');
 
   const comments = task.comments ?? [];
-  const isPending = isCreating || isUpdating;
+  const isPending = isCreating || isUpdating || isSendingMedia;
 
-  const handleCreate = () => {
+  const commentsListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (comments.length === 0) return;
+
+    const timer = window.setTimeout(() => {
+      const listEl = commentsListRef.current;
+
+      if (!listEl) return;
+
+      listEl.scrollTo({
+        top: listEl.scrollHeight,
+        behavior: 'auto',
+      });
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [task.id, comments.length]);
+
+  const openGallery = useCallback(
+    (
+      media: TaskCommentMedia[] | undefined,
+      initialSlide: number,
+    ) => {
+      const items = toGalleryItems(media ?? []);
+
+      if (!items.length) return;
+
+      setGalleryItems(items);
+      setGalleryInitialSlide(initialSlide);
+      setGalleryOpen(true);
+    },
+    [],
+  );
+
+  const openGalleryFromItems = useCallback(
+    (items: ReturnType<typeof toGalleryItems>, initialSlide: number) => {
+      if (!items.length) return;
+
+      setGalleryItems(items);
+      setGalleryInitialSlide(initialSlide);
+      setGalleryOpen(true);
+    },
+    [],
+  );
+
+  const addPendingFiles = useCallback((files: File[]) => {
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      const validationError = validateChatMediaFile(file);
+
+      if (validationError) {
+        setSendError(validationError);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    if (!validFiles.length) return;
+
+    setPendingFiles(prev => [...prev, ...validFiles]);
+    setSendError(null);
+  }, []);
+
+  const removePendingFile = useCallback((index: number) => {
+    setPendingFiles(prev => prev.filter((_, fileIndex) => fileIndex !== index));
+  }, []);
+
+  const handleCreate = async () => {
     const trimmed = content.trim();
-    if (!trimmed) return;
+    const hasContent = Boolean(trimmed);
+    const hasFiles = pendingFiles.length > 0;
 
-    createComment(
-      { taskId: task.id, body: { content: trimmed } },
-      { onSuccess: () => setContent('') }
-    );
+    if (!hasContent && !hasFiles) return;
+
+    try {
+      setIsSendingMedia(true);
+      setSendError(null);
+
+      const media = hasFiles
+        ? await uploadTaskCommentMediaBatch(task.id, pendingFiles)
+        : undefined;
+
+      await createComment({
+        taskId: task.id,
+        body: {
+          content: hasContent ? trimmed : COMMENT_MEDIA_PLACEHOLDER,
+          media,
+        },
+      });
+
+      setContent('');
+      setPendingFiles([]);
+    } catch {
+      setSendError('Не удалось отправить комментарий');
+    } finally {
+      setIsSendingMedia(false);
+    }
   };
 
   const handleStartEdit = (commentId: string, text: string) => {
@@ -69,7 +185,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
           setEditingId(null);
           setEditContent('');
         },
-      }
+      },
     );
   };
 
@@ -78,19 +194,54 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
     setIsOpenDeleteDialog(true);
   };
 
+  const handleCloseMenu = () => setMenuAnchor(null);
+
+  const handleOpenAttachments = () => {
+    handleCloseMenu();
+    setIsAttachmentsOpen(true);
+  };
+
   return (
     <Box sx={{ bgcolor: 'white', p: { xs: 3, md: 4 }, borderRadius: '32px' }}>
-      <Typography
-        variant="h6"
-        sx={{ mb: 2 }}
+      <Stack
+        direction="row"
+        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
       >
-        Комментарии
-      </Typography>
+        <Typography variant="h6">Комментарии</Typography>
+
+        <Stack
+          direction="row"
+          spacing={1}
+        >
+          <IconButton onClick={() => setIsSearchOpen(true)}>
+            <Search />
+          </IconButton>
+
+          <IconButton onClick={event => setMenuAnchor(event.currentTarget)}>
+            <MoreVert />
+          </IconButton>
+
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={handleCloseMenu}
+          >
+            <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
+          </Menu>
+        </Stack>
+      </Stack>
 
       <Stack
+        ref={commentsListRef}
         spacing={2}
-        sx={{ mb: 3 }}
         direction="column"
+        sx={{
+          minHeight: '200px',
+          maxHeight: '500px',
+          overflowY: 'auto',
+          mb: 3,
+          width: '100%',
+        }}
       >
         {comments.length === 0 && (
           <Typography
@@ -101,162 +252,77 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
           </Typography>
         )}
 
-        {comments.map(comment => {
-          const canManage = canManageComment(comment.authorId, currentUserId);
-          const isEditing = editingId === comment.id;
-
-          return (
-            <Box
-              key={comment.id}
-              sx={{
-                p: 2,
-                width: '70%',
-                borderRadius: '16px',
-                alignSelf: canManage ? 'end' : 'start',
-                bgcolor: canManage ? 'primary.light' : 'secondary.light',
-              }}
-            >
-              {isEditing ? (
-                <Stack spacing={1}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    value={editContent}
-                    disabled={isPending}
-                    onChange={e => setEditContent(e.target.value)}
-                  />
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                  >
-                    <Button
-                      size="small"
-                      variant="contained"
-                      disabled={isPending}
-                      onClick={() => handleSaveEdit(comment.id)}
-                    >
-                      Сохранить
-                    </Button>
-                    <Button
-                      size="small"
-                      disabled={isPending}
-                      onClick={() => setEditingId(null)}
-                    >
-                      Отмена
-                    </Button>
-                  </Stack>
-                </Stack>
-              ) : (
-                <Stack
-                  direction="row"
-                  spacing={2}
-                >
-                  <Avatar
-                    src={
-                      (canManage ? user?.data?.avatar : contact?.avatar) || ''
-                    }
-                  />
-                  <Box sx={{ width: '100%' }}>
-                    <Stack
-                      direction="row"
-                      sx={{ justifyContent: 'space-between' }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{ color: canManage ? 'white' : 'black' }}
-                      >
-                        {comment.content}
-                      </Typography>
-
-                      {comment?.createdAt !== comment?.updatedAt && (
-                        <Typography
-                          variant="caption"
-                          sx={{ color: canManage ? 'white' : 'black' }}
-                        >
-                          Изменено
-                        </Typography>
-                      )}
-                    </Stack>
-
-                    <Stack
-                      direction="row"
-                      sx={{
-                        mt: 1,
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{ color: canManage ? 'white' : 'black' }}
-                      >
-                        {new Date(comment.createdAt).toLocaleString('ru-RU')}
-                      </Typography>
-
-                      {canManage && (
-                        <Stack direction="row">
-                          <IconButton
-                            size="small"
-                            disabled={isPending}
-                            onClick={() =>
-                              handleStartEdit(comment.id, comment.content)
-                            }
-                          >
-                            <Edit
-                              fontSize="small"
-                              sx={{
-                                color: 'white',
-                              }}
-                            />
-                          </IconButton>
-
-                          <IconButton
-                            size="small"
-                            color="error"
-                            disabled={isPending}
-                            onClick={() => handleDelete(comment?.id)}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      )}
-                    </Stack>
-                  </Box>
-                </Stack>
-              )}
-            </Box>
-          );
-        })}
+        {comments.map(comment => (
+          <TaskCommentItem
+            key={comment.id}
+            comment={comment}
+            currentUserId={currentUserId}
+            userAvatar={user?.data?.avatar ?? undefined}
+            contactAvatar={contact?.avatar ?? undefined}
+            isPending={isPending}
+            isEditing={editingId === comment.id}
+            editContent={editContent}
+            onEditContentChange={setEditContent}
+            onStartEdit={handleStartEdit}
+            onSaveEdit={handleSaveEdit}
+            onCancelEdit={() => setEditingId(null)}
+            onDelete={handleDelete}
+            onOpenGallery={openGallery}
+          />
+        ))}
       </Stack>
 
-      <Stack spacing={2}>
-        <TextField
-          fullWidth
-          multiline
-          minRows={2}
-          placeholder="Написать комментарий…"
-          value={content}
-          disabled={isPending}
-          onChange={e => setContent(e.target.value)}
-        />
+      {sendError && (
+        <Typography
+          color="error"
+          variant="body2"
+          sx={{ mb: 1 }}
+        >
+          {sendError}
+        </Typography>
+      )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button
-            variant="contained"
-            onClick={handleCreate}
-            disabled={isPending || !content.trim()}
-          >
-            Отправить
-          </Button>
-        </Box>
-      </Stack>
+      <ChatInput
+        value={content}
+        pendingFiles={pendingFiles}
+        isSending={isPending}
+        placeholder="Написать комментарий…"
+        onChange={setContent}
+        onAttachFiles={addPendingFiles}
+        onRemoveFile={removePendingFile}
+        onSend={() => void handleCreate()}
+      />
 
       <DeleteCommentDialog
         taskId={task?.id}
         commentId={deletingId}
         open={isOpenDeleteDialog}
         onClose={() => setIsOpenDeleteDialog(false)}
+      />
+
+      <TaskCommentSearchPanel
+        open={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        taskId={task.id}
+        currentUserId={currentUserId}
+        userAvatar={user?.data?.avatar ?? undefined}
+        contact={contact}
+        onOpenGallery={openGallery}
+      />
+
+      <TaskCommentAttachmentsPanel
+        open={isAttachmentsOpen}
+        onClose={() => setIsAttachmentsOpen(false)}
+        taskId={task.id}
+        onOpenGallery={openGalleryFromItems}
+      />
+
+      <FullScreenGallery
+        isOpen={galleryOpen}
+        isMobile={isMobile}
+        items={galleryItems}
+        initialSlide={galleryInitialSlide}
+        onClose={() => setGalleryOpen(false)}
       />
     </Box>
   );

@@ -11,6 +11,7 @@ import { useSearchParams } from 'react-router';
 import { useGetUserByIdQuery } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
 import { CurrentUser } from '@/features/current-user';
+import { PageFooter } from '@/widgets';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
@@ -49,10 +50,10 @@ export const ProfilePage = () => {
       <Box
         sx={{
           width: '100%',
-          height: '300px',
           position: 'relative',
           backgroundSize: 'cover',
           bgcolor: 'secondary.main',
+          height: { xs: 250, md: 300 },
           backgroundPosition: 'center ',
           backgroundRepeat: 'no-repeat',
           borderTopLeftRadius: { xs: 0, md: '32px' },
@@ -65,7 +66,7 @@ export const ProfilePage = () => {
           direction="row"
           sx={{
             width: '100%',
-            padding: 4,
+            p: { xs: 2, md: 4 },
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
@@ -79,9 +80,11 @@ export const ProfilePage = () => {
       <Stack
         direction="row"
         sx={{
+          mb: 2,
           mt: -7,
+          pb: 0,
           width: '100%',
-          py: { xs: 0, md: 4 },
+          pt: { xs: 0, md: 4 },
           px: { xs: 0, md: 2 },
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -89,7 +92,7 @@ export const ProfilePage = () => {
       >
         <Stack
           direction={{ xs: 'column', md: 'row' }}
-          spacing={2}
+          spacing={{ xs: 4, md: 2 }}
           sx={{
             width: '100%',
             height: '100%',
@@ -126,6 +129,8 @@ export const ProfilePage = () => {
           </Stack>
         </Stack>
       </Stack>
+
+      <PageFooter />
 
       <Backdrop
         open={isLoading}

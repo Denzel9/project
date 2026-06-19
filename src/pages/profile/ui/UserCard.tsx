@@ -41,7 +41,7 @@ export const UserCard = ({
         maxWidth: { xs: '100%', md: '350px' },
         minWidth: { xs: '100%', md: '350px' },
         position: { xs: 'relative', md: 'sticky' },
-        boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
+        boxShadow: { xs: 'none', md: '0 0 10px 0 rgba(0, 0, 0, 0.1)' },
       }}
     >
       <Box

@@ -89,7 +89,7 @@ export const ChatAttachmentsPanel = ({
 
   const handleDeleteAttachment = async (
     event: React.MouseEvent,
-    item: ChatAttachment,
+    item: ChatAttachment
   ) => {
     event.stopPropagation();
 
@@ -117,12 +117,12 @@ export const ChatAttachmentsPanel = ({
       onClose={onClose}
       sx={{
         '& .MuiDrawer-paper': {
-          borderTopLeftRadius: 32,
-          borderBottomLeftRadius: 32,
-          p: 4,
-          width: isMobile ? '100%' : 420,
           display: 'flex',
+          p: { xs: 2, md: 4 },
           flexDirection: 'column',
+          width: isMobile ? '100%' : 420,
+          borderTopLeftRadius: { xs: 0, md: 32 },
+          borderBottomLeftRadius: { xs: 0, md: 32 },
         },
       }}
     >
@@ -254,6 +254,19 @@ export const ChatAttachmentsPanel = ({
           </Button>
         )}
       </Box>
+
+      <Button
+        sx={{
+          width: 'fit-content',
+          position: 'fixed',
+          bottom: { xs: 16, md: 32 },
+          right: { xs: 16, md: 32 },
+        }}
+        variant="outlined"
+        onClick={onClose}
+      >
+        Закрыть
+      </Button>
     </Drawer>
   );
 };

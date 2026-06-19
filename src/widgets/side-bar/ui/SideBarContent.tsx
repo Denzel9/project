@@ -39,10 +39,10 @@ export const SideBarContent = ({
     <Box
       sx={{
         py: 4,
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        height: { xs: 'auto', md: '100%' },
       }}
     >
       <List sx={{ gap: 1, display: 'flex', flexDirection: 'column' }}>
@@ -119,7 +119,13 @@ export const SideBarContent = ({
 
       {isExpanded ? (
         <Box
-          sx={{ bgcolor: 'secondary.light', borderRadius: '32px', p: 2, mx: 2 }}
+          sx={{
+            p: 2,
+            mx: 2,
+            borderRadius: '32px',
+            mt: { xs: 4, md: 0 },
+            bgcolor: 'secondary.light',
+          }}
         >
           <Typography variant="body1">Prime-аккаунт</Typography>
 

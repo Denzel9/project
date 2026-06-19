@@ -4,6 +4,8 @@ import { type PropsWithChildren } from 'react';
 import { CurrentUser } from '@/features/current-user';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
+import { PageFooter } from './PageFooter';
+
 import type { PageLayoutProps } from '../model/types';
 
 export const PageLayout = ({
@@ -15,7 +17,8 @@ export const PageLayout = ({
   return (
     <Box
       sx={{
-        pr: 2,
+        pr: { xs: 0, md: 2 },
+        minHeight: '100%',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -62,6 +65,7 @@ export const PageLayout = ({
                 lineHeight: 1.2,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
+                display: { xs: 'none', md: 'block' },
                 fontSize: { xs: '1.25rem', md: '2.125rem' },
               }}
             >
@@ -76,7 +80,8 @@ export const PageLayout = ({
       <Box
         sx={{
           flex: 1,
-          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           ...(isScreenHeight && {
             minHeight: 0,
             overflow: 'hidden',
@@ -85,6 +90,8 @@ export const PageLayout = ({
       >
         {children}
       </Box>
+
+      {!isScreenHeight && <PageFooter />}
     </Box>
   );
 };

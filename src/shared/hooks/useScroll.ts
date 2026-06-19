@@ -1,31 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { getScrollableParent } from './getScrollableParent';
+
 const getScrollTop = (target: HTMLElement | Window) =>
     target instanceof Window ? target.scrollY : target.scrollTop;
-
-const getScrollableParent = (
-    element: HTMLElement | null,
-): HTMLElement | Window => {
-    if (!element) return window;
-
-    let parent = element.parentElement;
-
-    while (parent) {
-        const { overflowY } = getComputedStyle(parent);
-
-        if (
-            overflowY === 'auto' ||
-            overflowY === 'scroll' ||
-            overflowY === 'overlay'
-        ) {
-            return parent;
-        }
-
-        parent = parent.parentElement;
-    }
-
-    return window;
-};
 
 export const useScroll = (
     threshold = 0,

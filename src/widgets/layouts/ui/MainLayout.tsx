@@ -1,14 +1,19 @@
 import { Box } from '@mui/material';
 import { SideBar } from '@widgets/side-bar';
+import { useRef } from 'react';
 
 import { AuthModal } from '@/features/auth';
 import { GlobalDeletePostDialog } from '@/features/delete-post';
+import { useScrollToTop } from '@/shared';
 import { AddToCollectionDialog } from '@/widgets/post-item';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
 import type { ReactNode } from 'react';
 
 export const MainLayout = ({ children }: { children: ReactNode }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useScrollToTop(scrollRef);
+
   return (
     <Box
       sx={{
@@ -32,7 +37,11 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           overflow: 'hidden',
         }}
       >
-        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        <Box
+          ref={scrollRef}
+          data-main-scroll
+          sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+        >
           {children}
         </Box>
       </Box>

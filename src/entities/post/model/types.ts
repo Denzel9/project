@@ -34,7 +34,6 @@ export type Post = {
   permissions: string[]
   media: PostMedia[]
   title: string
-  ownerId: string
   chips: string[]
   description: string
   typeCooperation: PostCooperationType[]
@@ -50,6 +49,17 @@ export type Post = {
   type: PostType
   createdAt: string
   updatedAt: string
+  owner: {
+    id: string
+    avatar: string
+    creatorProfile: {
+      name: string
+      lastName: string
+    }
+    companyProfile: {
+      companyName: string
+    }
+  }
 }
 
 export type CreatePostDto = {

@@ -24,12 +24,12 @@ export const ConversationItem = ({
       spacing={2}
       onClick={onSelect}
       sx={{
-        bgcolor: isSelected ? 'primary.light' : 'secondary.main',
-        p: 2,
-        borderRadius: '16px',
-        width: '100%',
         mb: 1,
+        p: 2,
+        width: '100%',
         cursor: 'pointer',
+        borderRadius: '16px',
+        bgcolor: isSelected ? 'primary.light' : 'secondary.main',
       }}
     >
       <Avatar
@@ -43,22 +43,20 @@ export const ConversationItem = ({
       >
         <Typography
           variant="body1"
-          noWrap
+          sx={{ ...(isSelected && { color: 'common.white' }) }}
         >
           {peer.displayName}
         </Typography>
         <Typography
           variant="body2"
-          color="text.secondary"
-          noWrap
+          sx={{ ...(isSelected && { color: 'common.white' }) }}
         >
           {preview}
         </Typography>
       </Stack>
       <Typography
         variant="body2"
-        color="text.secondary"
-        sx={{ flexShrink: 0 }}
+        sx={{ ...(isSelected && { color: 'common.white' }) }}
       >
         {timeLabel}
       </Typography>

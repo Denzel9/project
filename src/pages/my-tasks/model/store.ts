@@ -1,0 +1,129 @@
+import { create } from 'zustand';
+
+import { ALL_TASK_STATUSES } from './kanbanColumns';
+
+import type { TaskRoleFilter, TaskStatusFilter } from './utils';
+import type { TaskStatus } from '@/entities/task';
+
+export type TaskViewMode = 'grid' | 'kanban' | 'table';
+
+const VIEW_MODE_KEY = 'my-tasks-view-mode';
+const KANBAN_COLUMNS_KEY = 'my-tasks-kanban-columns';
+
+const VIEW_MODES: TaskViewMode[] = ['grid', 'kanban', 'table'];
+
+const readStoredViewMode = (): TaskViewMode => {
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_KEY);
+
+    if (stored && VIEW_MODES.includes(stored as TaskViewMode)) {
+      return stored as TaskViewMode;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return 'grid';
+};
+
+const readStoredKanbanColumns = (): TaskStatus[] => {
+  try {
+    const stored = localStorage.getItem(KANBAN_COLUMNS_KEY);
+
+    if (!stored) return ALL_TASK_STATUSES;
+
+    const parsed = JSON.parse(stored) as TaskStatus[];
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return ALL_TASK_STATUSES;
+    }
+
+    return parsed.filter(status => ALL_TASK_STATUSES.includes(status));
+  } catch {
+    return ALL_TASK_STATUSES;
+  }
+};
+
+type MyTaskFilterStore = {
+  role: TaskRoleFilter;
+  status: TaskStatusFilter;
+  viewMode: TaskViewMode;
+  updatedDate: string | null;
+  visibleKanbanColumns: TaskStatus[];
+  isRoleInitialized: boolean;
+
+  resetKanbanColumns: () => void;
+  setRole: (role: TaskRoleFilter) => void;
+  initRole: (userRole: string | null) => void;
+  setStatus: (status: TaskStatusFilter) => void;
+  setViewMode: (viewMode: TaskViewMode) => void;
+  toggleKanbanColumn: (status: TaskStatus) => void;
+  setUpdatedDate: (updatedDate: string | null) => void;
+
+  isChangedFilters: () => boolean;
+};
+
+export const useMyTaskFilterStore = create<MyTaskFilterStore>((set, get) => ({
+  role: 'all',
+  status: 'all',
+  updatedDate: null,
+  isRoleInitialized: false,
+  viewMode: readStoredViewMode(),
+  visibleKanbanColumns: readStoredKanbanColumns(),
+
+  isChangedFilters: () => {
+    return (
+      get().role !== 'all' ||
+      get().status !== 'all' ||
+      get().updatedDate !== null ||
+      get().visibleKanbanColumns.length !== ALL_TASK_STATUSES.length
+    );
+  },
+
+  setRole: role => set({ role }),
+  setStatus: status => set({ status }),
+  setViewMode: viewMode => set({ viewMode }),
+  setUpdatedDate: updatedDate => set({ updatedDate }),
+
+  initRole: userRole => {
+    if (get().isRoleInitialized) return;
+
+    set({
+      isRoleInitialized: true,
+      role: userRole === 'CREATOR' ? 'executor' : 'owner',
+    });
+  },
+
+  toggleKanbanColumn: status => {
+    set(state => {
+      if (state.visibleKanbanColumns.includes(status)) {
+        if (state.visibleKanbanColumns.length <= 1) return state;
+
+        return {
+          visibleKanbanColumns: state.visibleKanbanColumns.filter(
+            item => item !== status,
+          ),
+        };
+      }
+
+      return {
+        visibleKanbanColumns: [...state.visibleKanbanColumns, status],
+      };
+    });
+  },
+
+  resetKanbanColumns: () => set({ visibleKanbanColumns: ALL_TASK_STATUSES }),
+}));
+
+useMyTaskFilterStore.subscribe((state, prev) => {
+  if (state.viewMode !== prev.viewMode) {
+    localStorage.setItem(VIEW_MODE_KEY, state.viewMode);
+  }
+
+  if (state.visibleKanbanColumns !== prev.visibleKanbanColumns) {
+    localStorage.setItem(
+      KANBAN_COLUMNS_KEY,
+      JSON.stringify(state.visibleKanbanColumns),
+    );
+  }
+});

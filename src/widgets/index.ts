@@ -5,3 +5,4 @@ export * from './post-item';
 export * from './media';
 export * from './upload-button';
 export * from './favorite-button';
+export * from './confirm-dialog';

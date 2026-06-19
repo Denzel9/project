@@ -45,39 +45,59 @@ export const MyResponses = () => {
 
   return (
     <PageLayout title="Мои отклики">
-      <MyResponsesFilter
-        status={status}
-        postType={postType}
-        updatedDate={updatedDate}
-        onStatusChange={setStatus}
-        onPostTypeChange={setPostType}
-        onUpdatedDateChange={setUpdatedDate}
-      />
-
       <Box
         sx={{
-          gap: 2,
-          width: '100%',
-          display: 'flex',
-          borderRadius: '32px',
-          alignItems: isEmpty ? 'center' : 'start',
-          justifyContent: isEmpty ? 'center' : 'start',
+          top: 0,
+          zIndex: 1000,
+          position: 'sticky',
         }}
       >
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-            <CircularProgress />
-          </Box>
-        )}
-        {isEmpty && (
+        <MyResponsesFilter
+          status={status}
+          postType={postType}
+          updatedDate={updatedDate}
+          onStatusChange={setStatus}
+          onPostTypeChange={setPostType}
+          onUpdatedDateChange={setUpdatedDate}
+        />
+      </Box>
+
+      {isEmpty && (
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            bgcolor: 'white',
+            borderRadius: '32px',
+            height: '100%',
+          }}
+        >
           <EmptyBlock
             buttonText="На главную"
             title="У вас пока нет откликов"
             buttonOnClick={() => navigate(ROUTES.INDEX)}
           />
-        )}
+        </Box>
+      )}
 
-        {!isEmpty && (
+      {!isEmpty && !isLoading && (
+        <Box
+          sx={{
+            gap: 2,
+            width: '100%',
+            display: 'flex',
+            borderRadius: '32px',
+            alignItems: isEmpty ? 'center' : 'start',
+            justifyContent: isEmpty ? 'center' : 'start',
+          }}
+        >
+          {isLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress />
+            </Box>
+          )}
+
           <Grid
             container
             spacing={2}
@@ -98,8 +118,8 @@ export const MyResponses = () => {
               </Grid>
             ))}
           </Grid>
-        )}
-      </Box>
+        </Box>
+      )}
     </PageLayout>
   );
 };

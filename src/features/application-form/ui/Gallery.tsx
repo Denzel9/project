@@ -15,29 +15,29 @@ type DraggableImageProps = {
   images: Photo[];
   setImages: (images: Photo[]) => void;
   setDeletedFiles: (key: string) => void;
-  moveImage: (fromIndex: number, toIndex: number) => void;
   canDeleteImage: (image: Photo) => boolean;
+  moveImage: (fromIndex: number, toIndex: number) => void;
 };
 
 type GalleryProps = {
   files: File[];
   images: Photo[];
   mainImage?: string;
+  canUpload?: boolean;
   setFiles: (files: File[]) => void;
   setImages: (images: Photo[]) => void;
   setDeletedFiles: (key: string) => void;
   canDeleteImage?: (image: Photo) => boolean;
-  canUpload?: boolean;
 };
 
 const DraggableImage = ({
   image,
   index,
-  moveImage,
   images,
   setImages,
-  setDeletedFiles,
+  moveImage,
   canDeleteImage,
+  setDeletedFiles,
 }: DraggableImageProps) => {
   const [isShowDeleteBtn, setIsShowDeleteBtn] = useState(true);
 

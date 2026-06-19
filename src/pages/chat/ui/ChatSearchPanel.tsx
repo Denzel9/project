@@ -100,9 +100,9 @@ export const ChatSearchPanel = ({
       onClose={onClose}
       sx={{
         '& .MuiDrawer-paper': {
-          borderTopLeftRadius: 32,
-          borderBottomLeftRadius: 32,
-          p: 4,
+          borderTopLeftRadius: { xs: 0, md: 32 },
+          borderBottomLeftRadius: { xs: 0, md: 32 },
+          p: { xs: 2, md: 4 },
           display: 'flex',
           flexDirection: 'column',
           width: isMobile ? '100%' : 400,
@@ -203,6 +203,19 @@ export const ChatSearchPanel = ({
             {isFetching ? 'Загрузка…' : 'Загрузить ещё'}
           </Button>
         )}
+
+        <Button
+          sx={{
+            width: 'fit-content',
+            position: 'fixed',
+            bottom: { xs: 16, md: 32 },
+            right: { xs: 16, md: 32 },
+          }}
+          variant="outlined"
+          onClick={onClose}
+        >
+          Закрыть
+        </Button>
       </Box>
     </Drawer>
   );

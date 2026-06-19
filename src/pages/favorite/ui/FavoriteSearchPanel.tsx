@@ -1,7 +1,6 @@
 import { Close } from '@mui/icons-material';
 import {
   Box,
-  Button,
   CircularProgress,
   Drawer,
   IconButton,
@@ -14,8 +13,12 @@ import { format } from 'date-fns';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useSearchFavoritesQuery, type Favorite } from '@/entities/favorite';
+import {
+  useSearchFavoritesInfiniteQuery,
+  type Favorite,
+} from '@/entities/favorite';
 import type { Post } from '@/entities/post';
+import { InfiniteScrollSentinel } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 
 import { partitionFavoriteSearchResults } from '../model/searchFavorites';
@@ -122,8 +125,6 @@ export const FavoriteSearchPanel = ({
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [items, setItems] = useState<Favorite[]>([]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -134,30 +135,33 @@ export const FavoriteSearchPanel = ({
   }, [query]);
 
   useEffect(() => {
-    setPage(1);
-    setItems([]);
-  }, [debouncedQuery]);
-
-  useEffect(() => {
     if (!open) {
       setQuery('');
       setDebouncedQuery('');
-      setPage(1);
-      setItems([]);
     }
   }, [open]);
 
-  const { data, isLoading, isFetching, error } = useSearchFavoritesQuery({
-    q: debouncedQuery,
-    page,
-    limit: 20,
-  });
+  const searchParams = useMemo(
+    () => ({
+      q: debouncedQuery,
+      limit: 20,
+      ...(groupFilter === 'ungrouped' && { ungrouped: true }),
+      ...(groupFilter !== 'all' &&
+        groupFilter !== 'ungrouped' && { groupId: groupFilter }),
+    }),
+    [debouncedQuery, groupFilter],
+  );
 
-  useEffect(() => {
-    if (!data) return;
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useSearchFavoritesInfiniteQuery(searchParams);
 
-    setItems(prev => (page === 1 ? data.items : [...prev, ...data.items]));
-  }, [data, page]);
+  const items = data?.pages.flatMap(page => page.items) ?? [];
 
   const { inCurrentGroup, otherGroups } = useMemo(
     () => partitionFavoriteSearchResults(items, groupFilter),
@@ -166,13 +170,6 @@ export const FavoriteSearchPanel = ({
 
   const canSearch = debouncedQuery.length >= 2;
   const hasResults = inCurrentGroup.length > 0 || otherGroups.length > 0;
-  const hasMore = Boolean(data && data.page * data.limit < data.total);
-
-  const handleLoadMore = () => {
-    if (hasMore && !isFetching) {
-      setPage(prev => prev + 1);
-    }
-  };
 
   const handleOpenPost = (postId: string) => {
     navigate(`${ROUTES.POST}/${postId}`);
@@ -300,14 +297,12 @@ export const FavoriteSearchPanel = ({
             </Box>
           ))}
 
-        {canSearch && hasMore && (
-          <Button
-            variant="outlined"
-            disabled={isFetching}
-            onClick={handleLoadMore}
-          >
-            {isFetching ? 'Загрузка…' : 'Загрузить ещё'}
-          </Button>
+        {canSearch && (
+          <InfiniteScrollSentinel
+            hasMore={Boolean(hasNextPage)}
+            isLoading={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+          />
         )}
       </Box>
     </Drawer>

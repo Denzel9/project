@@ -1,6 +1,5 @@
-import type { Task, UpdateTaskDto } from '@/entities/task'
-
 import type { TaskFormType } from './schema/schema'
+import type { Task, UpdateTaskDto } from '@/entities/task'
 
 export const mapTaskToForm = (task: Task): TaskFormType => ({
   description: task.description,

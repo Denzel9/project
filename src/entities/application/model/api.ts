@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { taskKeys } from '@/entities/task'
 import { mainAxios } from '@/shared/api'
@@ -23,6 +23,8 @@ export const applicationKeys = {
     [...applicationKeys.all, 'post', postId, params ?? {}] as const,
   search: (params: SearchApplicationsParams) =>
     [...applicationKeys.all, 'search', params] as const,
+  forPosts: (postIds: string[]) =>
+    [...applicationKeys.all, 'forPosts', postIds] as const,
 }
 
 export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
@@ -96,6 +98,61 @@ export const useMyApplicationsMap = () => {
 
     return { map }
   }, [data])
+}
+
+export const useMyApplicationsMapForPosts = (postIds: string[]) => {
+  const queryClient = useQueryClient()
+
+  const sortedPostIds = useMemo(
+    () => [...postIds].sort(),
+    [postIds],
+  )
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: applicationKeys.forPosts(sortedPostIds),
+    queryFn: async () => {
+      const limit = Math.min(Math.max(sortedPostIds.length, 20), 100)
+      const { data } = await mainAxios.get<ApplicationList>(
+        '/applications/mine',
+        { params: { page: 1, limit } },
+      )
+
+      const map = new Map<string, Application>()
+
+      data.items.forEach(application => {
+        if (sortedPostIds.includes(application.post?.id ?? '')) {
+          map.set(application.post?.id ?? '', application)
+        }
+      })
+
+      return map
+    },
+    enabled: sortedPostIds.length > 0,
+    placeholderData: previousData => previousData,
+  })
+
+  const removePostFromCollection = useCallback(
+    (postId: string) => {
+      queryClient.setQueryData<Map<string, Application>>(
+        applicationKeys.forPosts(sortedPostIds),
+        previousMap => {
+          if (!previousMap) return previousMap
+
+          const nextMap = new Map(previousMap)
+          nextMap.delete(postId)
+          return nextMap
+        },
+      )
+    },
+    [queryClient, sortedPostIds],
+  )
+
+  return {
+    map: data ?? new Map<string, Application>(),
+    isLoading,
+    isFetching,
+    removePostFromCollection,
+  }
 }
 
 export const useCreateApplicationMutation = () => {

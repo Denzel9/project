@@ -126,17 +126,17 @@ export const ChatConversation = ({
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, [peer?.id, isNearBottom, scrollToBottom]);
+  }, [isNearBottom, scrollToBottom, peer]);
 
   if (!peer) {
     return (
       <Stack
         sx={{
           flex: 1,
-          bgcolor: 'common.white',
-          borderRadius: '32px',
           p: 4,
+          borderRadius: '32px',
           alignItems: 'center',
+          bgcolor: 'common.white',
           justifyContent: 'center',
         }}
       >
@@ -154,10 +154,9 @@ export const ChatConversation = ({
     <Stack
       direction="column"
       sx={{
-        p: 4,
         flex: 1,
         minHeight: 0,
-        overflow: 'hidden',
+        p: { xs: 2, md: 4 },
         borderRadius: '32px',
         bgcolor: 'common.white',
       }}
@@ -175,16 +174,15 @@ export const ChatConversation = ({
       <Box
         ref={messagesContainerRef}
         sx={{
+          mb: 2,
           flex: 1,
           minHeight: 0,
-          p: 3,
-          mb: 2,
           display: 'flex',
-          overflowY: 'auto',
+          overflowY: 'scroll',
+          overflowX: 'visible',
           borderRadius: '24px',
-          flexDirection: 'column',
           scrollbarWidth: 'none',
-          bgcolor: 'secondary.light',
+          flexDirection: 'column',
         }}
       >
         <Box

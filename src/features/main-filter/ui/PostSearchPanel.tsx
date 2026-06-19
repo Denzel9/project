@@ -1,7 +1,6 @@
 import { Close } from '@mui/icons-material';
 import {
   Box,
-  Button,
   CircularProgress,
   Drawer,
   IconButton,
@@ -15,7 +14,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFavoritePostIds } from '@/entities/favorite';
-import { useSearchPostsQuery, type Post } from '@/entities/post';
+import { useSearchPostsInfiniteQuery } from '@/entities/post';
+import { InfiniteScrollSentinel } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 
 import { PostSearchResultItem } from './PostSearchResultItem';
@@ -33,8 +33,6 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [items, setItems] = useState<Post[]>([]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -45,45 +43,27 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
   }, [query]);
 
   useEffect(() => {
-    setTimeout(() => {
-      setPage(1);
-      setItems([]);
-    }, 0);
-  }, [debouncedQuery]);
-
-  useEffect(() => {
     if (!open) {
-      setTimeout(() => {
-        setQuery('');
-        setDebouncedQuery('');
-        setPage(1);
-        setItems([]);
-      }, 0);
+      setQuery('');
+      setDebouncedQuery('');
     }
   }, [open]);
 
-  const { data, isLoading, isFetching, error } = useSearchPostsQuery({
+  const canSearch = debouncedQuery.length >= 2;
+
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useSearchPostsInfiniteQuery({
     q: debouncedQuery,
-    page,
     limit: 20,
   });
 
-  useEffect(() => {
-    if (!data) return;
-
-    setTimeout(() => {
-      setItems(prev => (page === 1 ? data.items : [...prev, ...data.items]));
-    }, 0);
-  }, [data, page]);
-
-  const hasMore = Boolean(data && data.page * data.limit < data.total);
-  const canSearch = debouncedQuery.length >= 2;
-
-  const handleLoadMore = () => {
-    if (hasMore && !isFetching) {
-      setPage(prev => prev + 1);
-    }
-  };
+  const items = data?.pages.flatMap(page => page.items) ?? [];
 
   const handleOpenPost = (postId: string) => {
     navigate(`${ROUTES.POST}/${postId}`);
@@ -199,14 +179,12 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
           />
         ))}
 
-        {hasMore && (
-          <Button
-            variant="outlined"
-            disabled={isFetching}
-            onClick={handleLoadMore}
-          >
-            {isFetching ? 'Загрузка…' : 'Загрузить ещё'}
-          </Button>
+        {canSearch && (
+          <InfiniteScrollSentinel
+            hasMore={Boolean(hasNextPage)}
+            isLoading={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+          />
         )}
       </Box>
     </Drawer>

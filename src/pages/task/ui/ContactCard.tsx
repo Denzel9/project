@@ -2,6 +2,7 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   MoreVertOutlined,
+  NorthEast,
 } from '@mui/icons-material';
 import {
   Box,
@@ -14,7 +15,7 @@ import {
   FormLabel,
 } from '@mui/material';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import {
   getContactIcon,
@@ -22,11 +23,24 @@ import {
   getContactLink,
   getPhone,
   type User,
+  getUserName,
 } from '@/entities/user';
 import { ROUTES } from '@/shared';
 
-export const ContactCard = ({ contact }: { contact?: User }) => {
+type ContactCardProps = {
+  contact?: User;
+  withTitle?: boolean;
+  isMyPost?: boolean;
+};
+
+export const ContactCard = ({
+  contact,
+  withTitle = false,
+  isMyPost = false,
+}: ContactCardProps) => {
   const [isOpenMoreContacts, setisOpenMoreContacts] = useState(false);
+
+  const navigate = useNavigate();
 
   return (
     <Box
@@ -42,90 +56,127 @@ export const ContactCard = ({ contact }: { contact?: User }) => {
         direction="row"
         sx={{ alignItems: 'start', justifyContent: 'space-between' }}
       >
-        <Avatar
-          src={contact?.avatar || ''}
-          sx={{ width: '88px', height: '88px' }}
-        />
-
-        <IconButton>
-          <MoreVertOutlined />
-        </IconButton>
-      </Stack>
-
-      <Typography sx={{ mt: 2 }}>
-        {contact?.creatorProfile?.name} {contact?.creatorProfile?.lastName}
-      </Typography>
-
-      <Stack
-        spacing={2}
-        direction="row"
-        sx={{ alignItems: 'center', mt: 2 }}
-      >
-        {getContactIcon(ContactType.PHONE)}
-        <Typography
-          variant="body1"
-          sx={{
-            transition: 'all 0.3s ease',
-            '&:hover': {
+        {withTitle && (
+          <Stack
+            spacing={1}
+            direction="row"
+            sx={{
+              alignItems: 'center',
               cursor: 'pointer',
-              color: 'primary.main',
-              textDecoration: 'underline',
-            },
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                color: 'primary.main',
+                textDecoration: 'underline',
+              },
+            }}
+            onClick={() => navigate(`${ROUTES.PROFILE}?userId=${contact?.id}`)}
+          >
+            <Typography
+              variant="h6"
+              sx={{ mb: 2 }}
+            >
+              {isMyPost ? 'Исполнитель' : 'Заказчик'}
+            </Typography>
+            <NorthEast />
+          </Stack>
+        )}
+
+        <Box
+          sx={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'end',
           }}
         >
-          <Link
-            target="_blank"
-            to={getContactLink(ContactType.PHONE, contact?.phone || '')}
-            style={{
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-          >
-            {getPhone(contact?.phone || '')}
-          </Link>
-        </Typography>
+          <IconButton>
+            <MoreVertOutlined />
+          </IconButton>
+        </Box>
       </Stack>
 
-      <Stack
-        spacing={2}
-        direction="row"
-        sx={{ alignItems: 'center', mt: 2 }}
-      >
-        {getContactIcon(ContactType.EMAIL)}
-        <Typography
-          variant="body1"
-          sx={{
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              cursor: 'pointer',
-              color: 'primary.main',
-              textDecoration: 'underline',
-            },
-          }}
+      <Avatar
+        src={contact?.avatar || ''}
+        sx={{ width: '88px', height: '88px' }}
+      />
+
+      <Typography sx={{ mt: 4 }}>{getUserName(contact)}</Typography>
+
+      {contact?.phone && (
+        <Stack
+          spacing={2}
+          direction="row"
+          sx={{ alignItems: 'center', mt: 2 }}
         >
-          <Link
-            target="_blank"
-            to={getContactLink(ContactType.EMAIL, contact?.email || '')}
-            style={{
-              color: 'inherit',
-              textDecoration: 'none',
+          {getContactIcon(ContactType.PHONE)}
+          <Typography
+            variant="body1"
+            sx={{
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                cursor: 'pointer',
+                color: 'primary.main',
+                textDecoration: 'underline',
+              },
             }}
           >
-            {contact?.email || ''}
-          </Link>
-        </Typography>
-      </Stack>
+            <Link
+              target="_blank"
+              to={getContactLink(ContactType.PHONE, contact?.phone || '')}
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+            >
+              {getPhone(contact?.phone || '')}
+            </Link>
+          </Typography>
+        </Stack>
+      )}
 
-      <Button
-        size="small"
-        sx={{ px: 2, mt: 2 }}
-        endIcon={
-          isOpenMoreContacts ? <KeyboardArrowUp /> : <KeyboardArrowDown />
-        }
-        onClick={() => setisOpenMoreContacts(!isOpenMoreContacts)}
-      >
-        Дополнительные контакты
-      </Button>
+      {contact?.email && (
+        <Stack
+          spacing={2}
+          direction="row"
+          sx={{ alignItems: 'center', mt: 2 }}
+        >
+          {getContactIcon(ContactType.EMAIL)}
+          <Typography
+            variant="body1"
+            sx={{
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                cursor: 'pointer',
+                color: 'primary.main',
+                textDecoration: 'underline',
+              },
+            }}
+          >
+            <Link
+              target="_blank"
+              to={getContactLink(ContactType.EMAIL, contact?.email || '')}
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+            >
+              {contact?.email || ''}
+            </Link>
+          </Typography>
+        </Stack>
+      )}
+
+      {Boolean(contact?.contacts?.length) && (
+        <Button
+          size="small"
+          sx={{ px: 2, mt: 2 }}
+          endIcon={
+            isOpenMoreContacts ? <KeyboardArrowUp /> : <KeyboardArrowDown />
+          }
+          onClick={() => setisOpenMoreContacts(!isOpenMoreContacts)}
+        >
+          Дополнительные контакты
+        </Button>
+      )}
 
       {isOpenMoreContacts && (
         <Stack
@@ -184,7 +235,7 @@ export const ContactCard = ({ contact }: { contact?: User }) => {
       )}
 
       <Button
-        sx={{ mt: 2 }}
+        sx={{ mt: 4 }}
         component={Link}
         variant="outlined"
         to={`${ROUTES.CHAT}?recipientId=${contact?.id}`}

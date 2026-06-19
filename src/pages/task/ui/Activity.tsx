@@ -22,12 +22,18 @@ import { useState, type MouseEvent } from 'react';
 import {
   formatTaskActivityText,
   TASK_ACTIVITY_LABELS,
-  useTaskActivitiesQuery,
-  type TaskActivityType,
+  TaskActivityType,
+  type TaskActivity,
 } from '@/entities/task';
+import { ConfirmDialog } from '@/widgets';
+
+import { ActivityDiffView } from './ActivityDiffView';
 
 type ActivityProps = {
-  taskId: string;
+  isLoading: boolean;
+  activities: TaskActivity[];
+  activityType?: TaskActivityType;
+  setActivityType: (type?: TaskActivityType) => void;
 };
 
 const formatActivityTime = (createdAt: string) =>
@@ -38,10 +44,23 @@ const formatActivityTime = (createdAt: string) =>
     minute: '2-digit',
   });
 
-export const Activity = ({ taskId }: ActivityProps) => {
-  const [activityType, setActivityType] = useState<
-    TaskActivityType | undefined
-  >(undefined);
+export const Activity = ({
+  isLoading,
+  activities,
+  activityType,
+  setActivityType,
+}: ActivityProps) => {
+  const [activityDialog, setActivityDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    from: string;
+    to: string;
+  }>({
+    isOpen: false,
+    title: '',
+    from: '',
+    to: '',
+  });
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -63,27 +82,26 @@ export const Activity = ({ taskId }: ActivityProps) => {
       handleClose();
     };
 
-  const { data, isLoading } = useTaskActivitiesQuery(taskId, {
-    page: 1,
-    limit: 20,
-    type: activityType,
-  });
-
-  const activities = data?.items ?? [];
-
   return (
     <Box
       sx={{
         width: '100%',
+        display: 'flex',
         bgcolor: 'white',
+        overflow: 'hidden',
+        maxHeight: '500px',
         p: { xs: 3, md: 4 },
         borderRadius: '32px',
-        height: 'fit-content',
+        flexDirection: 'column',
       }}
     >
       <Stack
         direction="row"
-        sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+        sx={{
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
         <Typography variant="h6">Активность</Typography>
 
@@ -151,33 +169,72 @@ export const Activity = ({ taskId }: ActivityProps) => {
       )}
 
       {!isLoading && activities.length > 0 && (
-        <Timeline
+        <Box
           sx={{
             mt: 2,
-            padding: 0,
-            [`& .${timelineOppositeContentClasses.root}`]: {
-              flex: 0,
-              pl: 0,
-              minWidth: 'fit-content',
-            },
+            minHeight: 0,
+            overflowY: 'auto',
           }}
         >
-          {activities.map((activity, index) => (
-            <TimelineItem key={activity.id}>
-              <TimelineOppositeContent color="textSecondary">
-                {formatActivityTime(activity.createdAt)}
-              </TimelineOppositeContent>
-              <TimelineSeparator>
-                <TimelineDot />
-                {index < activities.length - 1 && <TimelineConnector />}
-              </TimelineSeparator>
-              <TimelineContent>
-                {formatTaskActivityText(activity)}
-              </TimelineContent>
-            </TimelineItem>
-          ))}
-        </Timeline>
+          <Timeline
+            sx={{
+              padding: 0,
+              [`& .${timelineOppositeContentClasses.root}`]: {
+                flex: 0,
+                pl: 0,
+              },
+            }}
+          >
+            {activities?.map((activity, index) => (
+              <TimelineItem
+                key={activity.id}
+                sx={{
+                  height: '100px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+                onClick={() => {
+                  setActivityDialog({
+                    isOpen: true,
+                    title: TASK_ACTIVITY_LABELS[activity.type],
+                    from: activity.payload.from,
+                    to: activity.payload.to,
+                  });
+                }}
+              >
+                <TimelineOppositeContent color="textSecondary">
+                  {formatActivityTime(activity.createdAt)}
+                </TimelineOppositeContent>
+                <TimelineSeparator>
+                  <TimelineDot />
+                  {index < activities.length - 1 && <TimelineConnector />}
+                </TimelineSeparator>
+                <TimelineContent>
+                  {formatTaskActivityText(activity)}
+                </TimelineContent>
+              </TimelineItem>
+            ))}
+          </Timeline>
+        </Box>
       )}
+
+      <ConfirmDialog
+        width={1000}
+        title={activityDialog.title}
+        onClose={() =>
+          setActivityDialog({ isOpen: false, title: '', from: '', to: '' })
+        }
+        isOpen={activityDialog.isOpen}
+      >
+        <ActivityDiffView
+          isOpen={activityDialog.isOpen}
+          from={activityDialog.from}
+          to={activityDialog.to}
+        />
+      </ConfirmDialog>
     </Box>
   );
 };

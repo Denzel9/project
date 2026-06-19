@@ -1,22 +1,41 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
-import { useState } from 'react';
+import { Box, Typography } from '@mui/material';
+import { useMemo, useState } from 'react';
 
-import { useMyApplicationsMap } from '@/entities/application';
-import { useFavoritesQuery } from '@/entities/favorite';
-import { ACTION_BUTTONS_KEYS, PostItem, PageLayout } from '@/widgets';
+import { useMyApplicationsMapForPosts } from '@/entities/application';
+import { useFavoritesInfiniteQuery } from '@/entities/favorite';
+import { InfiniteScrollSentinel } from '@/shared';
+import {
+  ACTION_BUTTONS_KEYS,
+  PostItem,
+  PostItemSkeletonList,
+  PageLayout,
+} from '@/widgets';
 
-import { toFavoriteListParams, type FavoriteGroupFilter } from '../model/utils';
+import {
+  toFavoriteInfiniteListParams,
+  type FavoriteGroupFilter,
+} from '../model/utils';
 
 import FavoriteFilter from './Filter';
 
 export const FavoritePage = () => {
   const [groupFilter, setGroupFilter] = useState<FavoriteGroupFilter>('all');
 
-  const { data: favorites, isLoading } = useFavoritesQuery(
-    toFavoriteListParams(groupFilter)
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useFavoritesInfiniteQuery(toFavoriteInfiniteListParams(groupFilter));
+
+  const favorites = data?.pages.flatMap(page => page.items) ?? [];
+  const postIds = useMemo(
+    () => favorites.map(favorite => favorite.postId),
+    [favorites]
   );
 
-  const { map: myApplicationsMap } = useMyApplicationsMap();
+  const { map: myApplicationsMap, isLoading: isApplicationsLoading } =
+    useMyApplicationsMapForPosts(postIds);
+
+  const isInitialLoading = isLoading && !favorites.length;
+  const isMetaLoading = postIds.length > 0 && isApplicationsLoading;
+  const isFeedReady = !isInitialLoading && !isMetaLoading;
 
   return (
     <PageLayout title="Избранное">
@@ -44,13 +63,9 @@ export const FavoritePage = () => {
           flexDirection: 'column',
         }}
       >
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-            <CircularProgress />
-          </Box>
-        )}
+        {!isFeedReady && <PostItemSkeletonList count={5} />}
 
-        {!isLoading && !favorites?.items?.length && (
+        {isFeedReady && !favorites.length && (
           <Typography
             variant="body1"
             color="text.secondary"
@@ -60,26 +75,35 @@ export const FavoritePage = () => {
           </Typography>
         )}
 
-        {favorites?.items?.map(favorite => {
-          const application = myApplicationsMap.get(favorite.postId);
+        {isFeedReady &&
+          favorites.map(favorite => {
+            const application = myApplicationsMap.get(favorite.postId);
 
-          return (
-            <PostItem
-              key={favorite.postId}
-              post={favorite.post}
-              isFavorite
-              isApplied={Boolean(application)}
-              applicationStatus={application?.status}
-              applicationId={application?.id}
-              permissions={[
-                ...(favorite.groupId === null
-                  ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
-                  : []),
-                ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
-              ]}
-            />
-          );
-        })}
+            return (
+              <PostItem
+                key={favorite.postId}
+                post={favorite.post}
+                isFavorite
+                isApplied={Boolean(application)}
+                applicationStatus={application?.status}
+                applicationId={application?.id}
+                permissions={[
+                  ...(favorite.groupId === null
+                    ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
+                    : []),
+                  ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
+                ]}
+              />
+            );
+          })}
+
+        {isFeedReady && (
+          <InfiniteScrollSentinel
+            hasMore={Boolean(hasNextPage)}
+            isLoading={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+          />
+        )}
       </Box>
     </PageLayout>
   );

@@ -6,6 +6,7 @@ export type TaskStatus =
   | 'REVISION'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'CHECKING'
 
 export enum TASK_STATUS_ENUM {
   PREPARING = 'PREPARING',
@@ -13,16 +14,25 @@ export enum TASK_STATUS_ENUM {
   IN_PROGRESS = 'IN_PROGRESS',
   REVISION = 'REVISION',
   COMPLETED = 'COMPLETED',
+  CHECKING = 'CHECKING',
   CANCELLED = 'CANCELLED',
 }
 
 export type TaskRole = 'owner' | 'executor'
+
+export type TaskCommentMedia = {
+  url: string
+  key: string
+  size: string
+  mimeType: string
+}
 
 export type TaskComment = {
   id: string
   taskId: string
   authorId: string
   content: string
+  media?: TaskCommentMedia[]
   createdAt: string
   updatedAt: string
 }
@@ -33,6 +43,29 @@ export type TaskMedia = {
   key: string
   size: string
   mimeType: string
+}
+
+export type Post = {
+  id: string
+  ownerId: string
+  title: string
+  type: string
+}
+
+export type Owner = {
+  id: string
+  avatar: string
+  creatorProfile: CreatorProfile
+  companyProfile: CompanyProfile
+}
+
+export type CreatorProfile = {
+  name: string
+  lastName: string
+}
+
+export type CompanyProfile = {
+  companyName: string
 }
 
 export type Task = {
@@ -51,23 +84,8 @@ export type Task = {
   createdAt: string
   updatedAt: string
   comments?: TaskComment[]
-  post: {
-    id: string
-    ownerId: string
-    title: string
-    type: string
-  }
-  owner: {
-    id: string
-    avatar: string
-    creatorProfile: {
-      name: string
-      lastName: string
-    }
-    companyProfile: {
-      companyName: string
-    }
-  }
+  post?: Post
+  owner?: Owner
 }
 
 export type TaskList = {
@@ -89,9 +107,45 @@ export type TaskListParams = {
   status?: TaskStatus
   page?: number
   limit?: number
+  updatedDate?: string
+}
+
+export type SearchTasksParams = {
+  q: string
+  page?: number
+  limit?: number
 }
 
 export type TaskCommentListParams = {
+  page?: number
+  limit?: number
+}
+
+export type TaskCommentAttachment = {
+  commentId: string
+  authorId: string
+  url: string
+  key: string
+  mimeType: string
+  size: string
+  createdAt: string
+}
+
+export type TaskCommentAttachmentList = {
+  items: TaskCommentAttachment[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type SearchTaskCommentsParams = {
+  q: string
+  page?: number
+  limit?: number
+}
+
+export type TaskCommentAttachmentsParams = {
+  type?: 'image' | 'video' | 'document'
   page?: number
   limit?: number
 }
@@ -151,6 +205,7 @@ export type UpdateTaskDto = {
 
 export type CreateTaskCommentDto = {
   content: string
+  media?: TaskCommentMedia[]
 }
 
 export type UpdateTaskCommentDto = {

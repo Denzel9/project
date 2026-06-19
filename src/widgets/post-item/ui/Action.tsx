@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
-  canWithdrawApplication,
+  APPLICATION_STATUS_ENUM,
   useCreateApplicationMutation,
   useWithdrawApplicationMutation,
   type ApplicationStatus,
@@ -73,7 +73,7 @@ export const Action = ({
     Boolean(currentApplicationId) &&
     Boolean(currentApplicationStatus) &&
     currentApplicationStatus &&
-    canWithdrawApplication(currentApplicationStatus);
+    currentApplicationStatus === APPLICATION_STATUS_ENUM.NEW;
 
   const handleApply = (message: string) => {
     createApplication(

@@ -62,6 +62,7 @@ export const RHFInput = <
                   {startAdornment}
                 </InputAdornment>
               ),
+
               endAdornment:
                 endAdornment ||
                 (maxLength && (
@@ -71,10 +72,10 @@ export const RHFInput = <
                 )),
             },
           }}
-          disabled={field.disabled || props.disabled}
-          onChange={e => handleChange(e, field)}
           children={children}
           error={Boolean(fieldState.error)}
+          onChange={e => handleChange(e, field)}
+          disabled={field.disabled || props.disabled}
           helperText={fieldState.error?.message || props.helperText}
           sx={{ pointerEvents: props?.disabled ? 'none' : 'auto', ...props.sx }}
         />

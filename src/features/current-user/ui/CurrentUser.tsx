@@ -56,6 +56,8 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
     }
 
     await handleSwitchProfile(value);
+    // TODO: Обязательно разкомментировать
+    // navigate(ROUTES.INDEX);
     setCurrentUser(value);
   };
 

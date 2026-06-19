@@ -68,6 +68,7 @@ const MyResponsesFilter = ({
           px: 2,
           pb: 2,
           alignItems: 'center',
+          pt: isScrolled ? 4 : 1,
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
           bgcolor: isScrolled ? 'white' : 'transparent',

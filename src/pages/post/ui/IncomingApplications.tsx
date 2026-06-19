@@ -58,13 +58,23 @@ export const IncomingApplications = ({
 
   if (!applications?.items?.length) {
     return (
-      <Typography
-        variant="body1"
-        color="text.secondary"
-        sx={{ py: 4, textAlign: 'center' }}
+      <Box
+        sx={{
+          bgcolor: 'white',
+          borderRadius: '32px',
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
       >
-        Пока нет откликов на этот пост
-      </Typography>
+        <Typography
+          color="info"
+          sx={{ fontWeight: 500, fontSize: '32px' }}
+        >
+          Пока нет откликов на этот пост
+        </Typography>
+      </Box>
     );
   }
 

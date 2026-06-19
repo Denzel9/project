@@ -771,7 +771,8 @@ paths:
       description:
         'Без query — для профиля (`PATCH /users/update`). С `postId` — для
         поста. С `conversationId` — для чата (затем `send_message` с media[]). С
-        `taskId` — для задачи. Фото: JPEG, PNG, WebP, GIF до 10 МБ. Видео: MP4,
+        `taskId` — для задачи. С `taskId` и `forComment=true` — для вложений
+        комментария задачи. Фото: JPEG, PNG, WebP, GIF до 10 МБ. Видео: MP4,
         WebM, MOV до 100 МБ.'
       parameters:
         - name: postId
@@ -793,10 +794,19 @@ paths:
           required: false
           in: query
           description:
-            UUID задачи — файл сохранится в `tasks/{taskId}/...` и попадёт в
-            media задачи
+            UUID задачи — файл сохранится в `tasks/{taskId}/...`. Без
+            `forComment` попадёт в media задачи; с `forComment=true` — для
+            вложения комментария
           schema:
             type: string
+        - name: forComment
+          required: false
+          in: query
+          description:
+            Использовать с `taskId` — загрузка медиа для комментария задачи, не
+            в media задачи
+          schema:
+            type: boolean
       requestBody:
         required: true
         content:
@@ -1538,6 +1548,89 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskCommentResponseDto'
+      tags: *a12
+      security: *a13
+  /tasks/{id}/comments/search:
+    get:
+      operationId: TasksController_searchComments
+      summary: Поиск комментариев задачи
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+            minLength: 2
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            type: number
+      responses:
+        '200':
+          description: Список найденных комментариев с пагинацией
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskCommentListResponseDto'
+      tags: *a12
+      security: *a13
+  /tasks/{id}/comments/attachments:
+    get:
+      operationId: TasksController_listCommentAttachments
+      summary: Вложения комментариев задачи
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: type
+          required: false
+          in: query
+          schema:
+            type: string
+            enum:
+              - image
+              - video
+              - document
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            default: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            default: 20
+            type: number
+      responses:
+        '200':
+          description: Список вложений комментариев с пагинацией
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskCommentAttachmentListResponseDto'
       tags: *a12
       security: *a13
   /tasks/{id}/comments/{commentId}:
@@ -2960,6 +3053,22 @@ components:
         - key
         - size
         - mimeType
+    TaskCommentMediaDto:
+      type: object
+      properties:
+        url:
+          type: string
+        key:
+          type: string
+        size:
+          type: string
+        mimeType:
+          type: string
+      required:
+        - url
+        - key
+        - size
+        - mimeType
     TaskCommentResponseDto:
       type: object
       properties:
@@ -2974,6 +3083,10 @@ components:
           format: uuid
         content:
           type: string
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskCommentMediaDto'
         createdAt:
           type: string
           format: date-time
@@ -2987,6 +3100,70 @@ components:
         - content
         - createdAt
         - updatedAt
+    TaskCommentListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskCommentResponseDto'
+        total:
+          type: number
+        page:
+          type: number
+        limit:
+          type: number
+      required:
+        - items
+        - total
+        - page
+        - limit
+    TaskCommentAttachmentDto:
+      type: object
+      properties:
+        commentId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        url:
+          type: string
+        key:
+          type: string
+        mimeType:
+          type: string
+        size:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - commentId
+        - authorId
+        - url
+        - key
+        - mimeType
+        - size
+        - createdAt
+    TaskCommentAttachmentListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskCommentAttachmentDto'
+        total:
+          type: number
+        page:
+          type: number
+        limit:
+          type: number
+      required:
+        - items
+        - total
+        - page
+        - limit
     TaskResponseDto:
       type: object
       properties:
@@ -3087,6 +3264,10 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskCommentMediaDto'
       required:
         - content
     UpdateTaskCommentDto:

@@ -15,8 +15,8 @@ import { Link, useNavigate } from 'react-router';
 
 import { BASE_COLOR } from '@/app/index';
 import { usePostApplicationsQuery } from '@/entities/application';
-import { POST_STATUS_ENUM } from '@/entities/post';
-import { getUserName, useGetUserByIdQuery } from '@/entities/user';
+import { getApplicationsCountLabel, POST_STATUS_ENUM } from '@/entities/post';
+import { getUserName, type User } from '@/entities/user';
 import { ROUTES, ShareButton } from '@/shared/index';
 import { Media } from '@/widgets';
 
@@ -43,9 +43,6 @@ const PostItem = ({
     permissions,
     id: post.id,
   });
-
-  // Заменить на легковесный запрос(имя, рейтинг, количество отзывов)
-  const { data: user } = useGetUserByIdQuery(post.ownerId);
 
   const { data: postApplications } = usePostApplicationsQuery(
     post.id,
@@ -157,7 +154,9 @@ const PostItem = ({
                         e.preventDefault();
                         navigate(`${ROUTES.POST}/${post.id}?tab=1`);
                       }}
-                      label={`${postApplications?.items?.length} отклик`}
+                      label={getApplicationsCountLabel(
+                        postApplications?.items || []
+                      )}
                     />
                   )}
                 </Stack>
@@ -207,10 +206,12 @@ const PostItem = ({
             <Box sx={{ mt: 4 }}>
               <Link
                 target="_blank"
-                to={`${ROUTES.PROFILE}?userId=${post?.ownerId}`}
+                to={`${ROUTES.PROFILE}?userId=${post?.owner?.id}`}
                 style={{ textDecoration: 'none', color: 'inherit' }}
               >
-                <Typography variant="h6">{getUserName(user?.data)}</Typography>
+                <Typography variant="h6">
+                  {getUserName(post?.owner as Partial<User>)}
+                </Typography>
               </Link>
 
               <Rating
@@ -258,9 +259,9 @@ const PostItem = ({
           {!isMyPost && (
             <Action
               postId={post.id}
-              ownerId={post.ownerId}
-              isFavorite={isFavorite}
               isApplied={isApplied}
+              isFavorite={isFavorite}
+              ownerId={post.owner?.id}
               applicationId={applicationId}
               applicationStatus={applicationStatus}
               removePostFromCollection={removePostFromCollection}

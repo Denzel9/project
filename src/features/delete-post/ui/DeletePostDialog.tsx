@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 
 import { useDeletePostMutation } from '@/entities/post';
+import { useSnackbarStore } from '@/widgets';
 
 type DeletePostDialogProps = {
   open: boolean;
@@ -25,11 +26,14 @@ export const DeletePostDialog = ({
 }: DeletePostDialogProps) => {
   const { mutateAsync: deletePost, isPending } = useDeletePostMutation();
 
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const handleDelete = async () => {
     if (!postId || isPending) return;
 
     await deletePost(postId);
     onClose();
+    setSnackbarOpen?.(true, 'Пост удален');
     onSuccess?.();
   };
 

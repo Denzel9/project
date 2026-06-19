@@ -44,3 +44,8 @@ export const useLogoutMutation = () => {
     },
   })
 }
+
+export const useVerifyPasswordMutation = () =>
+  useMutation({
+    mutationFn: async (body: { password: string }) => await mainAxios.post<boolean>('auth/verify-password', body),
+  })

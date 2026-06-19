@@ -2,7 +2,7 @@ import { Drawer } from '@mui/material';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 
-import { useSideBarStore } from '../model/store';
+import { useSideBarStore } from '../model/store/store';
 
 import { SideBarContent } from './SideBarContent';
 

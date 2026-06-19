@@ -1,9 +1,9 @@
-import { Avatar, Box, Button, Snackbar, Typography } from '@mui/material';
+import { Avatar, Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
-import { FormBlock, FormBlockRowItem, PhoneInput } from '@/shared';
-import { RHFInput } from '@/shared/ui/rhf';
+import { FormBlock, FormBlockRowItem, PhoneInput, RHFInput } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 import { ContactsSection } from './ContactsSection';
 import { ParametersSection } from './ParametersSection';
@@ -12,16 +12,10 @@ import { ProfileMediaUploadButton } from './ProfileMediaUploadButton';
 import type { ProfileMediaField } from '../../model/hooks/useProfileMediaUpload';
 import type { ProfileSectionProps } from '../../model/types';
 
-export const ProfileSection = ({
-  user,
-  snackbar,
-  setSnackbar,
-}: ProfileSectionProps) => {
+export const ProfileSection = ({ user }: ProfileSectionProps) => {
   const [isOpenAddContacts, setIsOpenAddContacts] = useState(false);
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ open: false, message: '' });
-  };
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const { control, setValue, watch } = useFormContext();
 
@@ -30,14 +24,14 @@ export const ProfileSection = ({
 
   const handleMediaUploaded = (field: ProfileMediaField, url: string) => {
     setValue(field, url);
-    setSnackbar({
-      open: true,
-      message: field === 'avatar' ? 'Аватар обновлён' : 'Баннер обновлён',
-    });
+    setSnackbarOpen?.(
+      true,
+      field === 'avatar' ? 'Аватар обновлён' : 'Баннер обновлён'
+    );
   };
 
   const handleMediaError = (message: string) => {
-    setSnackbar({ open: true, message });
+    setSnackbarOpen?.(true, message);
   };
 
   return (
@@ -195,7 +189,6 @@ export const ProfileSection = ({
 
       {/* Дополнительные контакты */}
       <ContactsSection
-        setSnackbar={setSnackbar}
         isOpenAddContacts={isOpenAddContacts}
         setIsOpenAddContacts={setIsOpenAddContacts}
       />
@@ -229,13 +222,6 @@ export const ProfileSection = ({
           Сохранить
         </Button>
       </FormBlock>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        message={snackbar.message}
-        onClose={handleCloseSnackbar}
-      />
     </Box>
   );
 };

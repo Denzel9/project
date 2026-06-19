@@ -11,30 +11,29 @@ import {
 import { useEffect } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 
-import { CONTACT_LABELS, ContactType } from '@/entities/user';
-import { FormBlock, PhoneInput } from '@/shared';
-import { RHFInput } from '@/shared/ui/rhf';
+import { CONTACT_LABELS, ContactType } from '@/entities';
+import { FormBlock, PhoneInput, RHFInput } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 import { useContactField } from '../../model/hooks/useContactField';
 
 import type { AccountSchemaFormType } from '../../model/schema/accountSchema';
-import type { Snackbar } from '../../model/types';
 
 type ContactsSectionProps = {
   isOpenAddContacts: boolean;
-  setSnackbar: (snackbar: Snackbar) => void;
   setIsOpenAddContacts: (isOpenAddContacts: boolean) => void;
 };
 
 export const ContactsSection = ({
-  setSnackbar,
   isOpenAddContacts,
   setIsOpenAddContacts,
 }: ContactsSectionProps) => {
   const { control, setValue } = useFormContext<AccountSchemaFormType>();
 
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const { fields, handleAddContact, handleRemoveContact } = useContactField({
-    setSnackbar,
+    setSnackbarOpen,
   });
 
   const { contacts } = useWatch({ control });

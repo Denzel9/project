@@ -5,7 +5,13 @@ import { ROUTES } from '@/shared/config/routes';
 
 import type { ReactNode } from 'react';
 
-export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+export const ProtectedRoute = ({
+  children,
+  // isPrimeAccount,
+}: {
+  children: ReactNode;
+  isPrimeAccount?: boolean;
+}) => {
   const { isAuth } = useAuthStore();
 
   if (!isAuth) {

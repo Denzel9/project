@@ -1,14 +1,13 @@
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 import type { AccountSchemaFormType } from '../schema/accountSchema';
-import type { Snackbar } from '../types';
-import type { ContactType } from '@/entities/user';
+import type { ContactType } from '@/entities';
 
 type UseContactFieldProps = {
-  setSnackbar: (snackbar: Snackbar) => void;
+  setSnackbarOpen: (snackbarOpen: boolean, message: string) => void;
 };
 
-export const useContactField = ({ setSnackbar }: UseContactFieldProps) => {
+export const useContactField = ({ setSnackbarOpen }: UseContactFieldProps) => {
   const { control } = useFormContext<AccountSchemaFormType>();
 
   const { fields, append, remove } = useFieldArray({
@@ -22,7 +21,7 @@ export const useContactField = ({ setSnackbar }: UseContactFieldProps) => {
     if (!isContactExists) {
       append({ type, value: '', label: '' });
     } else {
-      setSnackbar({ open: true, message: 'Контакт уже существует' });
+      setSnackbarOpen?.(true, 'Контакт уже существует');
     }
   };
 
@@ -31,7 +30,7 @@ export const useContactField = ({ setSnackbar }: UseContactFieldProps) => {
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbar({ open: false, message: '' });
+    setSnackbarOpen?.(false, '');
   };
 
   return {

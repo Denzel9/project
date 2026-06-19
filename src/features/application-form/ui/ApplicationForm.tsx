@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
+import { useDeleteMediaMutation } from '@/entities/media';
 import {
   mapPostMediaToPhotos,
   useCreatePostMutation,
@@ -13,7 +14,6 @@ import {
   uploadPostMediaBatch,
   type Post,
 } from '@/entities/post';
-import { useDeleteMediaMutation } from '@/entities/media';
 import { ROUTES } from '@/shared';
 
 import { useActions } from '../hooks/useActions';
@@ -29,7 +29,7 @@ import {
   type FormProductType,
 } from '../model/schema/schema';
 
-import Gallery from './Gallery';
+import { Gallery } from './Gallery';
 import { MainInfo } from './MainInfo';
 import { ProductInfo } from './ProductInfo';
 
@@ -140,7 +140,9 @@ export const ApplicationForm = ({
     });
 
     if (files.length === 0) {
-      setImages(mapPostMediaToPhotos(data.media));
+      setTimeout(() => {
+        setImages(mapPostMediaToPhotos(data.media));
+      }, 0);
     }
   }, [data, setValue, files.length]);
 

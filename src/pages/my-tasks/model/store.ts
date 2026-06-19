@@ -2,8 +2,8 @@ import { create } from 'zustand';
 
 import { ALL_TASK_STATUSES } from './kanbanColumns';
 
-import type { TaskRoleFilter, TaskStatusFilter } from './utils';
-import type { TaskStatus } from '@/entities/task';
+import type { TaskStatusFilter } from './utils';
+import type { TaskStatus } from '@/entities';
 
 export type TaskViewMode = 'grid' | 'kanban' | 'table';
 
@@ -45,16 +45,12 @@ const readStoredKanbanColumns = (): TaskStatus[] => {
 };
 
 type MyTaskFilterStore = {
-  role: TaskRoleFilter;
   status: TaskStatusFilter;
   viewMode: TaskViewMode;
   updatedDate: string | null;
   visibleKanbanColumns: TaskStatus[];
-  isRoleInitialized: boolean;
 
   resetKanbanColumns: () => void;
-  setRole: (role: TaskRoleFilter) => void;
-  initRole: (userRole: string | null) => void;
   setStatus: (status: TaskStatusFilter) => void;
   setViewMode: (viewMode: TaskViewMode) => void;
   toggleKanbanColumn: (status: TaskStatus) => void;
@@ -64,35 +60,22 @@ type MyTaskFilterStore = {
 };
 
 export const useMyTaskFilterStore = create<MyTaskFilterStore>((set, get) => ({
-  role: 'all',
   status: 'all',
   updatedDate: null,
-  isRoleInitialized: false,
   viewMode: readStoredViewMode(),
   visibleKanbanColumns: readStoredKanbanColumns(),
 
   isChangedFilters: () => {
     return (
-      get().role !== 'all' ||
       get().status !== 'all' ||
       get().updatedDate !== null ||
       get().visibleKanbanColumns.length !== ALL_TASK_STATUSES.length
     );
   },
 
-  setRole: role => set({ role }),
   setStatus: status => set({ status }),
   setViewMode: viewMode => set({ viewMode }),
   setUpdatedDate: updatedDate => set({ updatedDate }),
-
-  initRole: userRole => {
-    if (get().isRoleInitialized) return;
-
-    set({
-      isRoleInitialized: true,
-      role: userRole === 'CREATOR' ? 'executor' : 'owner',
-    });
-  },
 
   toggleKanbanColumn: status => {
     set(state => {

@@ -14,6 +14,7 @@ type MediaItemProps = {
   alt?: string;
   mimeType?: string;
   withControls?: boolean;
+  isActive?: boolean;
   errorMessage?: string;
   onLoad?: () => void;
   onError?: () => void;
@@ -36,6 +37,7 @@ export const MediaItem = ({
   mimeType,
   loading = 'lazy',
   withControls = false,
+  isActive = true,
   errorMessage = 'Не удалось загрузить медиа',
 }: MediaItemProps) => {
   const imgRef = useRef<HTMLImageElement>(null);
@@ -78,6 +80,16 @@ export const MediaItem = ({
     }
   }, [src, mimeType, kind, onLoad]);
 
+  useEffect(() => {
+    if (kind !== 'video') return;
+
+    const video = videoRef.current;
+
+    if (!video || isActive) return;
+
+    video.pause();
+  }, [isActive, kind]);
+
   if (status === 'error') {
     return (
       <Box
@@ -106,6 +118,7 @@ export const MediaItem = ({
         width: '100%',
         height: '100%',
         position: 'relative',
+        bgcolor: kind === 'video' && withControls ? 'common.black' : 'transparent',
       }}
     >
       {status === 'loading' && (
@@ -142,10 +155,11 @@ export const MediaItem = ({
           controls={withControls}
           onLoadedData={handleLoad}
           className="swiper-no-swiping"
-          onClick={e => e.stopPropagation()}
-          onPointerDown={e => e.stopPropagation()}
+          onClick={event => event.stopPropagation()}
+          onPointerDown={event => event.stopPropagation()}
           style={{
             ...mediaStyle,
+            objectFit: withControls ? 'contain' : mediaStyle.objectFit,
             position: 'relative',
             zIndex: 1,
           }}

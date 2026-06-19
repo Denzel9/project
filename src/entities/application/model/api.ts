@@ -57,6 +57,31 @@ export const useSearchMyApplicationsQuery = (params: SearchApplicationsParams) =
   })
 }
 
+export const useSearchIncomingApplicationsQuery = (
+  params: SearchApplicationsParams,
+) => {
+  const trimmedQuery = params.q.trim()
+  const page = params.page ?? 1
+  const limit = params.limit ?? 20
+
+  return useQuery({
+    queryKey: [
+      ...applicationKeys.all,
+      'incoming',
+      'search',
+      { ...params, q: trimmedQuery, page, limit },
+    ] as const,
+    queryFn: async () => {
+      const { data } = await mainAxios.get<ApplicationList>(
+        '/applications/incoming',
+        { params: { q: trimmedQuery, page, limit } },
+      )
+      return data
+    },
+    enabled: trimmedQuery.length >= 2,
+  })
+}
+
 export const useIncomingApplicationsQuery = (params?: ApplicationListParams) =>
   useQuery({
     queryKey: applicationKeys.incoming(params),

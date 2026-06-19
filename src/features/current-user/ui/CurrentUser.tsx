@@ -3,11 +3,8 @@ import { TextField, MenuItem, Skeleton, Menu, IconButton } from '@mui/material';
 import { useEffect, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
-import {
-  useGetProfilesQuery,
-  useSwitchProfileMutation,
-} from '@/entities/workspace-member';
-import { useAuthStore } from '@/features/auth';
+import { useGetProfilesQuery, useSwitchProfileMutation } from '@/entities';
+import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
 import { useCurrentUserStore } from '../model/store';
@@ -89,6 +86,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
           {data?.data?.map(item => (
             <MenuItem
               key={item.id}
+              disabled={item.userId === id}
               onClick={() => handleChangeUser(item.userId || '')}
             >
               {item.displayName}
@@ -124,6 +122,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
       {data?.data?.map(item => (
         <MenuItem
           key={item.id}
+          disabled={item.userId === id}
           value={item.userId}
         >
           {item.displayName}

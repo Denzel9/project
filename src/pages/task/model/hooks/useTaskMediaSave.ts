@@ -5,6 +5,7 @@ import {
   mapTaskMediaToPhotos,
   useUploadTaskMediaMutation,
   type Task,
+  type TaskMediaUploadKind,
 } from '@/entities/task'
 
 import type { Photo } from '@/entities/photo'
@@ -14,11 +15,13 @@ const isLocalPreview = (photo: Photo) => photo.url.startsWith('blob:')
 type UseTaskMediaSaveOptions = {
   task: Task | undefined
   canEditMedia: boolean
+  kind?: TaskMediaUploadKind
 }
 
 export const useTaskMediaSave = ({
   task,
   canEditMedia,
+  kind = 'main',
 }: UseTaskMediaSaveOptions) => {
   const [files, setFiles] = useState<File[]>([])
   const [images, setImages] = useState<Photo[]>([])
@@ -31,8 +34,10 @@ export const useTaskMediaSave = ({
   useEffect(() => {
     if (!task || files.length > 0) return
 
-    setImages(mapTaskMediaToPhotos(task.media))
-  }, [task, files.length])
+    const media = kind === 'report' ? (task.reportMedia ?? []) : task.media
+
+    setImages(mapTaskMediaToPhotos(media))
+  }, [task, files.length, kind])
 
   const handleRemoveImage = async (key: string) => {
     const photo = images.find(image => image.key === key)
@@ -61,8 +66,21 @@ export const useTaskMediaSave = ({
   const handleSaveMedia = async () => {
     if (!task || !canEditMedia || files.length === 0) return
 
-    await uploadMedia({ taskId: task.id, files })
+    await uploadMedia({ taskId: task.id, files, kind })
     setFiles([])
+  }
+
+  const handleCancel = () => {
+    setFiles([])
+
+    if (!task) {
+      setImages([])
+      return
+    }
+
+    const media = kind === 'report' ? (task.reportMedia ?? []) : task.media
+
+    setImages(mapTaskMediaToPhotos(media))
   }
 
   return {
@@ -73,5 +91,6 @@ export const useTaskMediaSave = ({
     setImages,
     handleRemoveImage,
     handleSaveMedia,
+    handleCancel,
   }
 }

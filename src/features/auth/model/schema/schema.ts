@@ -32,8 +32,9 @@ export type RegistrationCreatorFormType = yup.InferType<typeof registrationCreat
 export const defaultRegistrationCreatorValues = registrationCreatorSchema.getDefault()
 
 export const resetPasswordSchema = yup.object().shape({
-  password: yup.string().default('').required('Поле обязательно для заполнения'),
-  newPassword: yup.string().default('').required('Поле обязательно для заполнения'),
+  oldPassword: yup.string().default('').required('Поле обязательно для заполнения').min(8, 'Пароль должен быть не менее 8 символов'),
+  newPassword: yup.string().default('').required('Поле обязательно для заполнения').min(8, 'Пароль должен быть не менее 8 символов'),
+  repeatNewPassword: yup.string().default('').required('Поле обязательно для заполнения').min(8, 'Пароль должен быть не менее 8 символов'),
 })
 
 export type ResetPasswordFormType = yup.InferType<typeof resetPasswordSchema>

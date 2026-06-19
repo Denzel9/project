@@ -68,9 +68,9 @@ export type CreatePostDto = {
   title: string
   chips?: string[]
   description?: string
-  typeCooperation: PostCooperationType[]
+  typeCooperation?: PostCooperationType[]
   urgent?: boolean
-  contentType: PostContentType
+  contentType?: PostContentType
   photoCount?: string
   videoCount?: string
   finalPrice?: string

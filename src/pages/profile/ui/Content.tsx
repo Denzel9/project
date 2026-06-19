@@ -17,7 +17,7 @@ type ContentProps = {
 
 export const Content = ({ tabValue, user, mediaTabValue }: ContentProps) => {
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', height: '100%' }}>
       {tabValue === 0 && (
         <MediaContent
           userId={user?.id}

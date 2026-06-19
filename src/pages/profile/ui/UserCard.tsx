@@ -150,7 +150,7 @@ export const UserCard = ({
             >
               Написать сообщение
             </Button>
-
+            {/* TODO: add postId to user */}
             <FavoriteButton
               postId={'postId'}
               isFavorite={false}

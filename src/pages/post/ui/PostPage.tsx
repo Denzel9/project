@@ -39,10 +39,14 @@ export const PostPage = () => {
   const { data: user } = useGetUserByIdQuery(post?.owner?.id ?? null);
 
   const { data: postApplications, isLoading: isPostApplicationsLoading } =
-    usePostApplicationsQuery(post?.id || null, {
-      page: 1,
-      limit: 20,
-    });
+    usePostApplicationsQuery(
+      post?.id || null,
+      {
+        page: 1,
+        limit: 20,
+      },
+      true
+    );
 
   const { map: myApplicationsMap } = useMyApplicationsMap();
 
@@ -106,7 +110,7 @@ export const PostPage = () => {
                 direction="row"
                 spacing={1}
               >
-                <Typography variant="body1">Отклики</Typography>
+                <Typography variant="body2">Отклики</Typography>
                 <Chip
                   label={getApplicationsCountLabel(
                     postApplications?.items || []

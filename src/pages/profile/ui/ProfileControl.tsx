@@ -14,6 +14,7 @@ import {
 import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/shared';
+import { FavoriteButton } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
 
@@ -22,6 +23,7 @@ import type { SyntheticEvent } from 'react';
 type ProfileControlProps = {
   id?: string;
   tabValue: number;
+  isCompany: boolean;
   mediaTabValue: MEDIA_TAB_VALUES;
   setMediaTabValue: (value: MEDIA_TAB_VALUES) => void;
   handleTabChange: (event: SyntheticEvent, newValue: number) => void;
@@ -30,6 +32,7 @@ type ProfileControlProps = {
 export const ProfileControl = ({
   id,
   tabValue,
+  isCompany,
   mediaTabValue,
   handleTabChange,
   setMediaTabValue,
@@ -61,19 +64,29 @@ export const ProfileControl = ({
           onChange={handleTabChange}
         >
           <Tab label="Медиа" />
-          <Tab label="Обо мне" />
+          <Tab label={isCompany ? 'О компании' : 'Обо мне'} />
           <Tab label="Контакты" />
         </Tabs>
 
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
           {id ? (
-            <Button
-              size="small"
-              sx={{ px: 2 }}
-              onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${id}`)}
+            <Stack
+              direction="row"
+              spacing={2}
             >
-              Написать сообщение
-            </Button>
+              <Button
+                size="small"
+                sx={{ px: 2 }}
+                onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${id}`)}
+              >
+                Написать сообщение
+              </Button>
+              {/* TODO: add postId to user */}
+              <FavoriteButton
+                postId={'postId'}
+                isFavorite={false}
+              />
+            </Stack>
           ) : (
             <Button
               size="small"

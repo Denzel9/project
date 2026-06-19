@@ -23,15 +23,15 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
-import { TASK_ROLE_LABELS, TASK_STATUS_LABELS } from '@/entities/task';
-import { useScroll } from '@/shared/hooks/useScroll';
+import { TASK_STATUS_LABELS } from '@/entities';
+import { useScroll } from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/kanbanColumns';
 import { useMyTaskFilterStore } from '../model/store';
 
 import { TaskSearchPanel } from './TaskSearchPanel';
 
-import type { TaskRoleFilter, TaskStatusFilter } from '../model/utils';
+import type { TaskStatusFilter } from '../model/utils';
 
 export type { TaskViewMode } from '../model/store';
 
@@ -41,9 +41,7 @@ export const MyTaskFilter = () => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const {
-    role,
     status,
-    setRole,
     viewMode,
     setStatus,
     setViewMode,
@@ -93,19 +91,6 @@ export const MyTaskFilter = () => {
         spacing={2}
         sx={{ width: '100%' }}
       >
-        <TextField
-          select
-          value={role}
-          label="Моя роль"
-          size={isMobile ? 'small' : 'medium'}
-          sx={{ width: { xs: '48%', md: '20%' } }}
-          onChange={e => setRole(e.target.value as TaskRoleFilter)}
-        >
-          <MenuItem value="all">Все</MenuItem>
-          <MenuItem value="owner">{TASK_ROLE_LABELS.owner}</MenuItem>
-          <MenuItem value="executor">{TASK_ROLE_LABELS.executor}</MenuItem>
-        </TextField>
-
         {viewMode !== 'kanban' && (
           <TextField
             select

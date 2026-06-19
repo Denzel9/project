@@ -1,3 +1,31 @@
 export * from './model/api'
 export * from './model/utils'
-export * from './model/types'
+export {
+  TASK_STATUS_ENUM,
+  TaskActivityType,
+  TASK_ACTIVITY_LABELS,
+  type TaskStatus,
+  type TaskRole,
+  type TaskCommentMedia,
+  type TaskComment,
+  type TaskMediaKind,
+  type TaskMediaUploadKind,
+  type TaskMedia,
+  type Task,
+  type TaskList,
+  type TaskCommentList,
+  type TaskListParams,
+  type SearchTasksParams,
+  type TaskCommentListParams,
+  type TaskCommentAttachment,
+  type TaskCommentAttachmentList,
+  type SearchTaskCommentsParams,
+  type TaskCommentAttachmentsParams,
+  type TaskActivityPayload,
+  type TaskActivity,
+  type TaskActivityList,
+  type TaskActivityListParams,
+  type UpdateTaskDto,
+  type CreateTaskCommentDto,
+  type UpdateTaskCommentDto,
+} from './model/types'

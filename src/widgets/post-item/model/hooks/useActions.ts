@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router";
 
-import { useRemoveFavoriteMutation } from "@/entities/favorite";
-import { useDeletePostDialogStore } from "@/features/delete-post";
+import { useUpdatePostMutation, useRemoveFavoriteMutation } from "@/entities";
+import { useDeletePostDialogStore } from "@/features";
 import { ROUTES } from "@/shared";
+import { useSnackbarStore } from "@/widgets";
 
 import { ACTION_BUTTONS, ACTION_BUTTONS_KEYS } from "../constants";
 import { useApplicationItemStore } from "../store";
@@ -10,11 +11,15 @@ import { useApplicationItemStore } from "../store";
 import type { ActionButton } from "../types";
 import type { UseActionsProps } from "../types/index";
 
-export const useActions = ({ permissions, id }: UseActionsProps) => {
-    const { mutate: removeFavorite } = useRemoveFavoriteMutation();
+export const useActions = ({ permissions, id, }: UseActionsProps) => {
+    const { mutateAsync: removeFavorite } = useRemoveFavoriteMutation();
+    const { mutateAsync: updatePost } = useUpdatePostMutation();
+
+    const { setSnackbarOpen } = useSnackbarStore();
 
     const { openDeletePostDialog } = useDeletePostDialogStore();
     const { setOpenAddToCollectionDialog } = useApplicationItemStore();
+
 
     const navigate = useNavigate();
 
@@ -36,12 +41,14 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
         navigate({ pathname: ROUTES.MANAGE_APPLICATION, search: `?id=${id}` });
     };
 
-    const handleAddToArchive = () => {
-        console.log('add to archive');
+    const handleAddToArchive = async () => {
+        await updatePost({ id, body: { isArchived: true } });
+        setSnackbarOpen?.(true, 'Пост добавлен в архив');
     };
 
-    const handleRemoveFromArchive = () => {
-        console.log('remove from archive');
+    const handleRemoveFromArchive = async () => {
+        await updatePost({ id, body: { isArchived: false } });
+        setSnackbarOpen?.(true, 'Пост удален из архива');
     };
 
     const handleAction = (action: ACTION_BUTTONS_KEYS) => {

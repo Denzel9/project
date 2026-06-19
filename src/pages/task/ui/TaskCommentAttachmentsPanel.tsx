@@ -24,7 +24,7 @@ import {
   getAttachmentGalleryIndex,
   isGalleryMedia,
   toGalleryItems,
-} from '../lib/commentMedia';
+} from '../model/lib/commentMedia';
 
 type AttachmentFilter = 'all' | 'image' | 'video' | 'document';
 

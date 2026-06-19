@@ -5,7 +5,6 @@ export type TaskStatusFilter = TaskStatus | 'all';
 
 export const toTasksParams = (
   filters: {
-    role: TaskRoleFilter;
     status: TaskStatusFilter;
     updatedDate?: string | null;
   },
@@ -13,7 +12,6 @@ export const toTasksParams = (
 ): TaskListParams => ({
   page: pagination?.page ?? 1,
   limit: pagination?.limit ?? 20,
-  ...(filters.role !== 'all' && { role: filters.role }),
   ...(filters.status !== 'all' && { status: filters.status }),
   ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
 });

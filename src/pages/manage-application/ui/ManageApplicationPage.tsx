@@ -1,8 +1,8 @@
 import { Box } from '@mui/material';
 import { useSearchParams } from 'react-router';
 
-import { usePostByIdQuery } from '@/entities/post';
-import { ApplicationForm } from '@/features/application-form';
+import { USER_ROLE, usePostByIdQuery } from '@/entities';
+import { ApplicationForm, useAuthStore, UserPostForm } from '@/features';
 import { PageLayout } from '@/widgets';
 
 export const ManageApplicationPage = () => {
@@ -10,6 +10,8 @@ export const ManageApplicationPage = () => {
   const postId = searchParams.get('id');
 
   const { data: post, isLoading } = usePostByIdQuery(postId);
+
+  const { role } = useAuthStore();
 
   return (
     <PageLayout>
@@ -21,11 +23,21 @@ export const ManageApplicationPage = () => {
           borderRadius: '32px',
         }}
       >
-        <ApplicationForm
-          data={post}
-          isEdit={Boolean(postId)}
-          isLoading={Boolean(postId) && isLoading}
-        />
+        {role === USER_ROLE.COMPANY && (
+          <ApplicationForm
+            data={post}
+            isEdit={Boolean(postId)}
+            isLoading={Boolean(postId) && isLoading}
+          />
+        )}
+
+        {role === USER_ROLE.CREATOR && (
+          <UserPostForm
+            data={post}
+            isEdit={Boolean(postId)}
+            isLoading={Boolean(postId) && isLoading}
+          />
+        )}
       </Box>
     </PageLayout>
   );

@@ -1,11 +1,9 @@
 import { Box, CircularProgress, Grid } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useTasksQuery } from '@/entities/task';
-import { useAuthStore } from '@/features/auth';
-import { EmptyBlock } from '@/shared';
-import { ROUTES } from '@/shared/config/routes';
+import { useTasksQuery } from '@/entities';
+import { ROUTES, EmptyBlock } from '@/shared';
 import { PageLayout } from '@/widgets';
 
 import { useMyTaskFilterStore } from '../model/store';
@@ -17,13 +15,10 @@ import { TaskItem } from './TaskItem';
 import { TaskTable } from './TaskTable';
 
 export const MyTasks = () => {
-  const { role: userRole } = useAuthStore();
   const navigate = useNavigate();
 
   const {
-    role,
     status,
-    initRole,
     viewMode,
     updatedDate,
     isChangedFilters,
@@ -31,18 +26,13 @@ export const MyTasks = () => {
     visibleKanbanColumns,
   } = useMyTaskFilterStore();
 
-  useEffect(() => {
-    initRole(userRole);
-  }, [initRole, userRole]);
-
   const queryParams = useMemo(
     () =>
       toTasksParams({
-        role,
         updatedDate,
         status: viewMode === 'kanban' ? 'all' : status,
       }),
-    [role, status, viewMode, updatedDate]
+    [status, viewMode, updatedDate]
   );
 
   const { data: tasks, isLoading } = useTasksQuery(queryParams);
@@ -68,16 +58,18 @@ export const MyTasks = () => {
           }),
         }}
       >
-        <Box
-          sx={{
-            top: 0,
-            zIndex: 1000,
-            flexShrink: 0,
-            position: 'sticky',
-          }}
-        >
-          <MyTaskFilter />
-        </Box>
+        {Boolean(tasks?.items?.length || !isChangedFilters) && (
+          <Box
+            sx={{
+              top: 0,
+              zIndex: 1000,
+              flexShrink: 0,
+              position: 'sticky',
+            }}
+          >
+            <MyTaskFilter />
+          </Box>
+        )}
 
         {isEmpty && (
           <Box

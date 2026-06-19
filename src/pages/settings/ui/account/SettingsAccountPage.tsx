@@ -1,6 +1,6 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Divider, Stack } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
@@ -10,8 +10,9 @@ import {
   type CreatorProfile,
   type Person,
   type User,
-} from '@/entities/user';
-import { useAuthStore } from '@/features/auth';
+} from '@/entities';
+import { useAuthStore } from '@/features';
+import { useSnackbarStore } from '@/widgets';
 
 import {
   COMPANY_PROFILE_KEYS,
@@ -28,10 +29,7 @@ import { parseRequestCreatorData } from '../../model/utils';
 import { ProfileSection } from './ProfileSection';
 
 export const SettingsAccountPage = () => {
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-  });
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const { mutateAsync: updateUser } = useUpdateUserMutation();
 
@@ -84,14 +82,14 @@ export const SettingsAccountPage = () => {
       if (user?.data?.companyProfile) {
         const res = await updateUser(parseRequestCreatorData(data, user?.data));
         if (res.data) {
-          setSnackbar({ open: true, message: 'Данные успешно обновлены' });
+          setSnackbarOpen?.(true, 'Данные успешно обновлены');
         }
       } else {
         const res = await updateUser(
           parseRequestCreatorData(data, user?.data as User)
         );
         if (res.data) {
-          setSnackbar({ open: true, message: 'Данные успешно обновлены' });
+          setSnackbarOpen?.(true, 'Данные успешно обновлены');
         }
       }
     } catch (error) {
@@ -106,11 +104,7 @@ export const SettingsAccountPage = () => {
     >
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ProfileSection
-            user={user?.data}
-            snackbar={snackbar}
-            setSnackbar={setSnackbar}
-          />
+          <ProfileSection user={user?.data} />
         </form>
       </FormProvider>
     </Stack>

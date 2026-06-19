@@ -15,3 +15,8 @@ export const MY_PARAMETERS_LABELS = {
     [MY_PARAMETERS.GENDER]: 'Пол',
     [MY_PARAMETERS.PARAMETERS]: 'Параметры',
 }
+
+export enum USER_ROLE {
+    CREATOR = 'CREATOR',
+    COMPANY = 'COMPANY',
+}

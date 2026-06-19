@@ -1,6 +1,6 @@
 import { ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 
-import type { MenuRoute } from '../model/types';
+import type { MenuRoute } from '../model/types/types';
 
 type MenuItemProps = {
   route: MenuRoute;

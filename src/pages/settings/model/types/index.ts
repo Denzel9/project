@@ -21,6 +21,4 @@ export type Snackbar = {
 
 export type ProfileSectionProps = {
   user?: User;
-  snackbar: Snackbar;
-  setSnackbar: (snackbar: Snackbar) => void;
 };

@@ -8,11 +8,9 @@ import {
 import { useState, type SyntheticEvent } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { useGetUserByIdQuery } from '@/entities/user';
-import { useAuthStore } from '@/features/auth';
-import { CurrentUser } from '@/features/current-user';
-import { PageFooter } from '@/widgets';
-import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
+import { useGetUserByIdQuery, USER_ROLE } from '@/entities';
+import { useAuthStore, CurrentUser } from '@/features';
+import { PageFooter, SideBarButton } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
 
@@ -118,6 +116,7 @@ export const ProfilePage = () => {
               mediaTabValue={mediaTabValue}
               handleTabChange={handleTabChange}
               setMediaTabValue={setMediaTabValue}
+              isCompany={user?.data?.role === USER_ROLE.COMPANY}
             />
 
             <Content

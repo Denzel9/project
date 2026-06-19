@@ -6,7 +6,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Snackbar,
   Stack,
   Step,
   StepLabel,
@@ -17,39 +16,47 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 
 import {
+  useGetUserByIdQuery,
   canEditTaskFields,
   canEditTaskStatus,
+  isTaskExecutor,
   isTaskOwner,
   useTaskActivitiesQuery,
   useTaskByIdQuery,
   useUpdateTaskMutation,
   type TaskStatus,
   type UpdateTaskDto,
-} from '@/entities/task';
-import {
   TASK_STATUS_ENUM,
   TaskActivityType,
-} from '@/entities/task/model/types';
-import { useGetUserByIdQuery } from '@/entities/user';
-import Gallery from '@/features/application-form/ui/Gallery';
-import { useAuthStore } from '@/features/auth';
+} from '@/entities';
 import {
   mapFormToUpdateTask,
   TaskForm,
+  Gallery,
+  useAuthStore,
   type TaskFormType,
-} from '@/features/task-form';
+} from '@/features';
 import { scrollMainToTop } from '@/shared';
-import { ConfirmDialog, PageLayout } from '@/widgets';
+import { ConfirmDialog, PageLayout, useSnackbarStore } from '@/widgets';
 
 import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
 
 import { Activity } from './Activity';
 import { ContactCard } from './ContactCard';
 import { TaskComments } from './TaskComments';
+import { TaskResultDropzone } from './TaskResultDropzone';
+
+const finalStatuses = [
+  TASK_STATUS_ENUM.IN_PROGRESS,
+  TASK_STATUS_ENUM.CHECKING,
+  TASK_STATUS_ENUM.COMPLETED,
+];
 
 export const TaskPage = () => {
   const { id } = useParams<{ id: string }>();
   const currentUserId = useAuthStore(state => state.id);
+
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const { data: task, isLoading } = useTaskByIdQuery(id ?? null);
 
@@ -57,19 +64,21 @@ export const TaskPage = () => {
     useUpdateTaskMutation();
 
   const [isEdit, setIsEdit] = useState(false);
-  const [isOpenSnackbar, setIsOpenSnackbar] = useState(false);
   const [status, setStatus] = useState<TaskStatus>('PREPARING');
   const [isOpenDescription, setIsOpenDescription] = useState(false);
   const [isOpenCancelDialog, setIsOpenCancelDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [isOpenStatusSnackbar, setIsOpenStatusSnackbar] = useState(false);
   const [activityType, setActivityType] = useState<
     TaskActivityType | undefined
   >(undefined);
 
   const isOwner = task ? canEditTaskFields(task, currentUserId) : false;
   const canChangeStatus = task ? canEditTaskStatus(task, currentUserId) : false;
-  const canEditMedia = task ? isTaskOwner(task, currentUserId) : false;
+  const canEditMedia = task
+    ? isTaskOwner(task, currentUserId) &&
+      !finalStatuses.includes(status as TASK_STATUS_ENUM)
+    : false;
+  const canEditReportMedia = task ? isTaskExecutor(task, currentUserId) : false;
 
   const {
     files,
@@ -78,8 +87,24 @@ export const TaskPage = () => {
     setImages,
     handleSaveMedia,
     handleRemoveImage,
+    handleCancel: handleCancelMedia,
     isPending: isMediaSaving,
-  } = useTaskMediaSave({ task, canEditMedia });
+  } = useTaskMediaSave({ task, canEditMedia, kind: 'main' });
+
+  const {
+    files: reportFiles,
+    images: reportImages,
+    setFiles: setReportFiles,
+    setImages: setReportImages,
+    handleSaveMedia: handleSaveReportMedia,
+    handleRemoveImage: handleRemoveReportImage,
+    handleCancel: handleCancelReportMedia,
+    isPending: isReportMediaSaving,
+  } = useTaskMediaSave({
+    task,
+    canEditMedia: canEditReportMedia,
+    kind: 'report',
+  });
 
   const { data, isLoading: isLoadingActivities } = useTaskActivitiesQuery(
     task?.id ?? '',
@@ -123,14 +148,14 @@ export const TaskPage = () => {
     setIsEdit(false);
 
     if (body['status']) {
-      setIsOpenStatusSnackbar(true);
+      setSnackbarOpen?.(true, 'Статус успешно изменен');
     }
 
     requestAnimationFrame(() => {
       scrollMainToTop();
     });
 
-    setIsOpenSnackbar(true);
+    setSnackbarOpen?.(true, 'Данные успешно сохранены');
   };
 
   const handleSimpleSaveForm = async (formValues: TaskFormType) => {
@@ -154,12 +179,11 @@ export const TaskPage = () => {
   };
 
   const handleCancel = () => {
-    setFiles([]);
-    setImages([]);
+    handleCancelMedia();
     setIsOpenDescription(false);
   };
 
-  const isLoadingTask = isUpdating || isMediaSaving;
+  const isLoadingTask = isUpdating || isMediaSaving || isReportMediaSaving;
   const isEnabledCancel = [
     TASK_STATUS_ENUM.PREPARING,
     TASK_STATUS_ENUM.PENDING_APPROVAL,
@@ -253,10 +277,20 @@ export const TaskPage = () => {
                 width: { xs: '100%', lg: '70%' },
               }}
             >
-              {status === TASK_STATUS_ENUM.IN_PROGRESS && (
-                <Box sx={{ bgcolor: 'white', p: 4, borderRadius: '12px' }}>
-                  12
-                </Box>
+              {(Boolean(reportFiles.length || reportImages.length) ||
+                canEditReportMedia) && (
+                <TaskResultDropzone
+                  status={status}
+                  files={reportFiles}
+                  images={reportImages}
+                  setFiles={setReportFiles}
+                  setImages={setReportImages}
+                  isSaving={isReportMediaSaving}
+                  canUpload={canEditReportMedia}
+                  onSave={handleSaveReportMedia}
+                  onCancel={handleCancelReportMedia}
+                  onRemoveUploaded={handleRemoveReportImage}
+                />
               )}
 
               <Stack
@@ -361,6 +395,7 @@ export const TaskPage = () => {
                   isLoading={isLoadingTask}
                   activities={data?.items ?? []}
                   canChangeStatus={canChangeStatus}
+                  imagesLength={reportImages.length}
                   isOpenDescription={isOpenDescription}
                   handleSimpleSaveForm={handleSimpleSaveForm}
                   setIsOpenDescription={setIsOpenDescription}
@@ -399,20 +434,6 @@ export const TaskPage = () => {
           />
         </Box>
       )}
-
-      <Snackbar
-        open={isOpenSnackbar}
-        autoHideDuration={3000}
-        message="Данные успешно сохранены"
-        onClose={() => setIsOpenSnackbar(false)}
-      />
-
-      <Snackbar
-        autoHideDuration={3000}
-        open={isOpenStatusSnackbar}
-        message="Статус успешно изменен"
-        onClose={() => setIsOpenStatusSnackbar(false)}
-      />
 
       <ConfirmDialog
         title="Отменить задачу"

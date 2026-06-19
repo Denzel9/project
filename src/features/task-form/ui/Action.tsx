@@ -1,5 +1,5 @@
-import { Stack, Button, CircularProgress, Snackbar } from '@mui/material';
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { Stack, Button, CircularProgress } from '@mui/material';
+import { useEffect, useMemo, type MouseEvent } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import {
@@ -7,8 +7,9 @@ import {
   TaskActivityType,
   type TaskActivity,
   type TaskStatus,
-} from '@/entities/task';
-import { useAuthStore } from '@/features/auth';
+} from '@/entities';
+import { useAuthStore } from '@/features';
+import { useSnackbarStore } from '@/widgets';
 
 type ActionProps = {
   isEdit: boolean;
@@ -34,10 +35,7 @@ export const Action = ({
   handleSubmitForm,
   handleGoToRevision,
 }: ActionProps) => {
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-  });
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const { id } = useAuthStore();
 
@@ -125,17 +123,14 @@ export const Action = ({
   useEffect(() => {
     if (Object.keys(errors).length) {
       setTimeout(() => {
-        setSnackbar({
-          open: true,
-          message: String(errors.description?.message),
-        });
+        setSnackbarOpen?.(true, String(errors.description?.message));
       }, 0);
 
       setTimeout(() => {
         clearErrors('description');
       }, 3000);
     }
-  }, [clearErrors, errors]);
+  }, [clearErrors, errors, setSnackbarOpen]);
 
   return (
     <Stack
@@ -216,13 +211,6 @@ export const Action = ({
           ) : null}
         </>
       )}
-
-      <Snackbar
-        open={snackbar?.open}
-        autoHideDuration={3000}
-        message={snackbar?.message}
-        onClose={() => setSnackbar({ open: false, message: '' })}
-      />
     </Stack>
   );
 };

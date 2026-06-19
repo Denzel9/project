@@ -37,12 +37,17 @@ export type TaskComment = {
   updatedAt: string
 }
 
+export type TaskMediaKind = 'MAIN' | 'REPORT'
+
+export type TaskMediaUploadKind = 'main' | 'report'
+
 export type TaskMedia = {
   id: string
   url: string
   key: string
   size: string
   mimeType: string
+  kind?: TaskMediaKind
 }
 
 export type Post = {
@@ -76,6 +81,7 @@ export type Task = {
   executorId: string
   status: TaskStatus
   media: TaskMedia[]
+  reportMedia?: TaskMedia[]
   description: string
   finalDate: string | null
   photoCount: string
@@ -210,12 +216,4 @@ export type CreateTaskCommentDto = {
 
 export type UpdateTaskCommentDto = {
   content: string
-}
-
-
-export type UploadMediaResponse = {
-  url: string
-  key: string
-  mimeType: string
-  size: number
 }

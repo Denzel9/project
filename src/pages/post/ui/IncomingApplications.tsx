@@ -5,6 +5,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Grid,
   IconButton,
   Stack,
   Typography,
@@ -79,9 +80,13 @@ export const IncomingApplications = ({
   }
 
   return (
-    <Stack spacing={2}>
+    <Grid
+      container
+      spacing={2}
+    >
       {applications.items.map(application => (
-        <Box
+        <Grid
+          size={{ xs: 12, md: 4 }}
           key={application.id}
           sx={{
             p: 3,
@@ -234,8 +239,8 @@ export const IncomingApplications = ({
               )}
             </Stack>
           </Box>
-        </Box>
+        </Grid>
       ))}
-    </Stack>
+    </Grid>
   );
 };

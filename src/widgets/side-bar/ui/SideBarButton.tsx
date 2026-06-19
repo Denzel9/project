@@ -1,7 +1,7 @@
 import { FirstPage, LastPage, Menu } from '@mui/icons-material';
 import { IconButton, useMediaQuery, useTheme } from '@mui/material';
 
-import { useSideBarStore } from '../model/store';
+import { useSideBarStore } from '../model/store/store';
 
 export const SideBarButton = () => {
   const theme = useTheme();

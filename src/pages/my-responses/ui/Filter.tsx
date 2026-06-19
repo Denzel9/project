@@ -13,19 +13,15 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
-import { APPLICATION_STATUS_LABELS } from '@/entities/application';
-import { POST_TYPE_ENUM } from '@/entities/post';
-import { useMainFilterStore } from '@/features/main-filter';
-import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
-import { useScroll } from '@/shared/hooks/useScroll';
+import { APPLICATION_STATUS_LABELS } from '@/entities';
+import { SideBarFilter, useMainFilterStore } from '@/features';
+import { useScroll } from '@/shared';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
 
 import type { ApplicationStatusFilter } from '../model/utils';
 
 type MyResponsesFilterProps = {
-  postType: POST_TYPE_ENUM;
-  onPostTypeChange: (value: POST_TYPE_ENUM) => void;
   status: ApplicationStatusFilter;
   onStatusChange: (value: ApplicationStatusFilter) => void;
   updatedDate: string | null;
@@ -33,8 +29,6 @@ type MyResponsesFilterProps = {
 };
 
 const MyResponsesFilter = ({
-  postType,
-  onPostTypeChange,
   status,
   onStatusChange,
   updatedDate,
@@ -77,56 +71,42 @@ const MyResponsesFilter = ({
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
+        <TextField
+          select
+          label="Статус"
+          value={status}
+          size={isMobile ? 'small' : 'medium'}
+          sx={{ width: { xs: '90%', md: '20%' } }}
+          onChange={e =>
+            onStatusChange(e.target.value as ApplicationStatusFilter)
+          }
+        >
+          <MenuItem value="all">Все</MenuItem>
+          {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
+            <MenuItem
+              key={value}
+              value={value}
+            >
+              {label}
+            </MenuItem>
+          ))}
+        </TextField>
+
         <Stack
           direction="row"
           spacing={2}
-          sx={{ width: '100%' }}
         >
-          <TextField
-            select
-            label="Тип"
-            value={postType}
-            size={isMobile ? 'small' : 'medium'}
-            sx={{ width: { xs: '90%', md: '20%' } }}
-            onChange={e => onPostTypeChange(e.target.value as POST_TYPE_ENUM)}
+          <IconButton
+            color={updatedDate ? 'primary' : 'default'}
+            onClick={event => setAnchorEl(event.currentTarget)}
           >
-            <MenuItem value={POST_TYPE_ENUM.ALL}>Все</MenuItem>
-            <MenuItem value={POST_TYPE_ENUM.COMPANY}>Компании</MenuItem>
-            <MenuItem value={POST_TYPE_ENUM.CREATOR}>Креаторы</MenuItem>
-          </TextField>
+            <CalendarMonthOutlined />
+          </IconButton>
 
-          <TextField
-            select
-            label="Статус"
-            value={status}
-            size={isMobile ? 'small' : 'medium'}
-            sx={{ width: { xs: '90%', md: '20%' } }}
-            onChange={e =>
-              onStatusChange(e.target.value as ApplicationStatusFilter)
-            }
-          >
-            <MenuItem value="all">Все</MenuItem>
-            {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
-              <MenuItem
-                key={value}
-                value={value}
-              >
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
+          <IconButton onClick={() => setIsSearchOpen(true)}>
+            <Search />
+          </IconButton>
         </Stack>
-
-        <IconButton
-          color={updatedDate ? 'primary' : 'default'}
-          onClick={event => setAnchorEl(event.currentTarget)}
-        >
-          <CalendarMonthOutlined />
-        </IconButton>
-
-        <IconButton onClick={() => setIsSearchOpen(true)}>
-          <Search />
-        </IconButton>
       </Stack>
 
       <ApplicationSearchPanel

@@ -52,7 +52,7 @@ export const MyResponseItem = ({
       >
         <Box>
           <Link
-            to={`${ROUTES.POST}/${application.postId}`}
+            to={`${ROUTES.POST}/${application.post?.id}`}
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
             <Typography

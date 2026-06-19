@@ -20,7 +20,7 @@ import {
   getGallerySlideIndex,
   hasCommentText,
   isGalleryMedia,
-} from '../lib/commentMedia';
+} from '../model/lib/commentMedia';
 
 type TaskCommentItemProps = {
   comment: TaskComment;

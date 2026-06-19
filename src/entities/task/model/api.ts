@@ -19,11 +19,12 @@ import type {
   SearchTaskCommentsParams,
   TaskList,
   TaskListParams,
+  TaskMediaUploadKind,
   SearchTasksParams,
   UpdateTaskCommentDto,
   UpdateTaskDto,
-  UploadMediaResponse,
 } from './types'
+import type { UploadMediaResponse } from '@/entities/post'
 
 export const taskKeys = {
   all: ['tasks'] as const,
@@ -252,7 +253,11 @@ export const useUpdateTaskCommentMutation = () => {
   })
 }
 
-export const uploadTaskMedia = async (taskId: string, file: File) => {
+export const uploadTaskMedia = async (
+  taskId: string,
+  file: File,
+  kind: TaskMediaUploadKind = 'main',
+) => {
   const prepared = await prepareFileForUpload(file)
   const formData = new FormData()
   formData.append('file', prepared)
@@ -261,7 +266,10 @@ export const uploadTaskMedia = async (taskId: string, file: File) => {
     '/media/upload',
     formData,
     {
-      params: { taskId },
+      params: {
+        taskId,
+        ...(kind === 'report' ? { kind: 'report' } : {}),
+      },
       headers: { 'Content-Type': 'multipart/form-data' },
     },
   )
@@ -269,8 +277,11 @@ export const uploadTaskMedia = async (taskId: string, file: File) => {
   return data
 }
 
-export const uploadTaskMediaBatch = async (taskId: string, files: File[]) =>
-  Promise.all(files.map(file => uploadTaskMedia(taskId, file)))
+export const uploadTaskMediaBatch = async (
+  taskId: string,
+  files: File[],
+  kind: TaskMediaUploadKind = 'main',
+) => Promise.all(files.map(file => uploadTaskMedia(taskId, file, kind)))
 
 export const uploadTaskCommentMedia = async (taskId: string, file: File) => {
   const prepared = await prepareFileForUpload(file)
@@ -307,10 +318,12 @@ export const useUploadTaskMediaMutation = () => {
     mutationFn: async ({
       taskId,
       files,
+      kind = 'main',
     }: {
       taskId: string
       files: File[]
-    }) => uploadTaskMediaBatch(taskId, files),
+      kind?: TaskMediaUploadKind
+    }) => uploadTaskMediaBatch(taskId, files, kind),
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
       queryClient.invalidateQueries({

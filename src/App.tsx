@@ -10,7 +10,8 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 import { AuthProvider } from './app/providers/AuthProvider';
 import { theme } from './app/theme/theme';
 import { Router } from './pages';
-import { queryClient } from './shared/api';
+import { queryClient } from './shared';
+import { SnackbarLocal } from './widgets';
 
 dayjs.extend(updateLocale);
 dayjs.updateLocale('ru', { weekStart: 1 });
@@ -28,6 +29,7 @@ function App() {
         <ThemeProvider theme={theme}>
           <AuthProvider>
             <Router />
+            <SnackbarLocal />
           </AuthProvider>
         </ThemeProvider>
       </LocalizationProvider>

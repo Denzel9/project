@@ -1,4 +1,4 @@
-import { MoreVert, Whatshot } from '@mui/icons-material';
+import { MoreVert, RocketLaunch, Whatshot } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -7,6 +7,7 @@ import {
   MenuItem,
   Rating,
   Stack,
+  Tooltip,
   Typography,
   type Theme,
 } from '@mui/material';
@@ -28,13 +29,14 @@ import type { PostItemProps } from '../model/types';
 
 const PostItem = ({
   post,
+  applicationId,
   permissions = [],
   isMyPost = false,
+  isCompany = false,
   isCompact = false,
-  isFavorite = false,
   isApplied = false,
-  applicationId,
   applicationStatus,
+  isFavorite = false,
   removePostFromCollection,
 }: PostItemProps) => {
   const navigate = useNavigate();
@@ -81,170 +83,190 @@ const PostItem = ({
   };
 
   return (
-    <Link
-      target="_blank"
-      to={`${ROUTES.POST}/${post.id}`}
-      style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}
+    <Box
+      sx={{
+        gap: 2,
+        width: '100%',
+        display: 'flex',
+        bgcolor: 'white',
+        p: { xs: 3, lg: 4 },
+        borderRadius: '32px',
+        transition: 'all 0.3s ease',
+        flexDirection: { xs: 'column', lg: 'row' },
+        border: theme => `1px solid ${theme.palette.secondary.main}`,
+        borderLeft: theme =>
+          isApplied
+            ? `4px solid ${getBorderColor(theme)}`
+            : `1px solid ${theme.palette.secondary.main}`,
+      }}
     >
-      <Box
-        sx={{
-          gap: 2,
-          width: '100%',
-          display: 'flex',
-          bgcolor: 'white',
-          cursor: 'pointer',
-          p: { xs: 3, lg: 4 },
-          borderRadius: '32px',
-          transition: 'all 0.3s ease',
-          flexDirection: { xs: 'column', lg: 'row' },
-          border: theme => `1px solid ${theme.palette.secondary.main}`,
-          borderLeft: theme =>
-            isApplied
-              ? `4px solid ${getBorderColor(theme)}`
-              : `1px solid ${theme.palette.secondary.main}`,
-        }}
-      >
-        {mediaItems.length > 0 && (
-          <Box
-            sx={{
-              width: { xs: '100%', md: isCompact ? '400px' : '500px' },
-              height: { xs: '400px', md: isCompact ? '350px' : '450px' },
-            }}
-            onClick={e => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-          >
-            <Media items={mediaItems} />
-          </Box>
-        )}
-
+      {Boolean(mediaItems.length) && (
         <Box
           sx={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'start',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
+            width: { xs: '100%', md: isCompact ? '400px' : '500px' },
+            height: { xs: '400px', md: isCompact ? '350px' : '450px' },
           }}
         >
-          <Box sx={{ width: '100%' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'start',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center' }}
+          <Media items={mediaItems} />
+        </Box>
+      )}
+
+      <Box
+        sx={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'start',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ width: '100%' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'start',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box>
+              <Stack
+                spacing={1}
+                direction="row"
+                sx={{ alignItems: 'center' }}
+              >
+                <Typography
+                  variant="h6"
+                  component={isCompany ? Link : 'span'}
+                  to={isCompany ? `${ROUTES.POST}/${post.id}` : undefined}
+                  sx={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    transition: 'all 0.3s ease',
+                    cursor: isCompany ? 'pointer' : 'default',
+                    ':hover': {
+                      color: isCompany ? 'primary.main' : 'inherit',
+                    },
+                  }}
                 >
-                  <Typography variant="h6">{post?.title}</Typography>
+                  {post?.title}
+                </Typography>
 
-                  {post?.urgent && <Whatshot color="error" />}
+                {post?.urgent && <Whatshot color="error" />}
 
-                  {isMyPost && (
-                    <Chip
-                      size="small"
-                      color="primary"
-                      onClick={e => {
-                        e.preventDefault();
-                        navigate(`${ROUTES.POST}/${post.id}?tab=1`);
-                      }}
-                      label={getApplicationsCountLabel(
-                        postApplications?.items || []
-                      )}
-                    />
-                  )}
-                </Stack>
+                {isMyPost && isCompany && (
+                  <Chip
+                    size="small"
+                    color="primary"
+                    onClick={e => {
+                      e.preventDefault();
+                      navigate(`${ROUTES.POST}/${post.id}?tab=1`);
+                    }}
+                    label={getApplicationsCountLabel(
+                      postApplications?.items || []
+                    )}
+                  />
+                )}
+              </Stack>
 
-                <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                  {post?.chips?.map(chip => (
-                    <Chip
-                      size="small"
-                      key={chip}
-                      label={chip}
-                    />
-                  ))}
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <ShareButton
-                  postId={post.id}
-                  title={post.title}
-                />
-
-                <IconButton onClick={handleClick}>
-                  <MoreVert />
-                </IconButton>
-
-                <Menu
-                  anchorEl={anchorEl}
-                  open={open}
-                  onClose={handleClose}
-                >
-                  {allowedActions.map(action => (
-                    <MenuItem
-                      key={action.key}
-                      onClick={e => {
-                        e.preventDefault();
-                        handleAction(action.key);
-                        handleClose();
-                      }}
-                    >
-                      {action.label}
-                    </MenuItem>
-                  ))}
-                </Menu>
+              <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                {post?.chips?.map(chip => (
+                  <Chip
+                    size="small"
+                    key={chip}
+                    label={chip}
+                  />
+                ))}
               </Box>
             </Box>
 
-            <Box sx={{ mt: 4 }}>
-              <Link
-                target="_blank"
-                to={`${ROUTES.PROFILE}?userId=${post?.owner?.id}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-                <Typography variant="h6">
-                  {getUserName(post?.owner as Partial<User>)}
-                </Typography>
-              </Link>
-
-              <Rating
-                readOnly
-                value={4.5}
-                precision={0.5}
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <ShareButton
+                postId={post.id}
+                title={post.title}
               />
 
-              <Typography
-                variant="body1"
-                sx={{ mt: 4, maxWidth: 700 }}
-              >
-                {isCompact
-                  ? post?.description.slice(0, 200) + '... '
-                  : post?.description}
+              <IconButton onClick={handleClick}>
+                <MoreVert />
+              </IconButton>
 
-                {isCompact && post?.description?.length > 200 && (
-                  <span
-                    onClick={e => {
-                      e.preventDefault();
-                      navigate(`${ROUTES.POST}/${post.id}`);
-                    }}
-                    style={{
-                      color: BASE_COLOR,
-                      cursor: 'pointer',
+              <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+              >
+                {allowedActions.map(action => (
+                  <MenuItem
+                    key={action.key}
+                    onClick={() => {
+                      handleAction(action.key);
+                      handleClose();
                     }}
                   >
-                    Подробнее
-                  </span>
-                )}
+                    {action.label}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+          </Box>
+
+          <Box sx={{ mt: 4 }}>
+            <Typography
+              target="_blank"
+              component={Link}
+              to={`${ROUTES.PROFILE}?userId=${post?.owner?.id}`}
+              sx={{
+                gap: 1,
+                display: 'flex',
+                color: 'inherit',
+                cursor: 'pointer',
+                alignItems: 'center',
+                width: 'fit-content',
+                textDecoration: 'none',
+                transition: 'text-decoration 0.3s ease',
+                ':hover': {
+                  color: 'primary.main',
+                },
+              }}
+            >
+              <Typography variant="body1">
+                {getUserName(post?.owner as Partial<User>)}
               </Typography>
 
-              {/* // TODO: Add location !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+              <Tooltip title="Это - Prime-аккаунт">
+                <RocketLaunch color="primary" />
+              </Tooltip>
+            </Typography>
+
+            <Rating
+              readOnly
+              value={4.5}
+              precision={0.5}
+            />
+
+            <Typography
+              variant="body1"
+              sx={{ mt: 4, maxWidth: 700 }}
+            >
+              {isCompact
+                ? post?.description.slice(0, 200) + '... '
+                : post?.description}
+
+              {isCompact && isCompany && post?.description?.length > 200 && (
+                <span
+                  onClick={() => {
+                    navigate(`${ROUTES.POST}/${post.id}`);
+                  }}
+                  style={{
+                    color: BASE_COLOR,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Подробнее
+                </span>
+              )}
+            </Typography>
+
+            {/* // TODO: Add location !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               {typeof item === 'number' && item % 2 === 0 && (
                 <Typography
                   variant="body1"
@@ -253,23 +275,23 @@ const PostItem = ({
                   Moscow, Russia
                 </Typography>
               )} */}
-            </Box>
           </Box>
-
-          {!isMyPost && (
-            <Action
-              postId={post.id}
-              isApplied={isApplied}
-              isFavorite={isFavorite}
-              ownerId={post.owner?.id}
-              applicationId={applicationId}
-              applicationStatus={applicationStatus}
-              removePostFromCollection={removePostFromCollection}
-            />
-          )}
         </Box>
+
+        {!isMyPost && (
+          <Action
+            postId={post.id}
+            isCompany={isCompany}
+            isApplied={isApplied}
+            isFavorite={isFavorite}
+            ownerId={post.owner?.id}
+            applicationId={applicationId}
+            applicationStatus={applicationStatus}
+            removePostFromCollection={removePostFromCollection}
+          />
+        )}
       </Box>
-    </Link>
+    </Box>
   );
 };
 

@@ -4,19 +4,20 @@ import type { Post } from "@/entities/post";
 
 export type PostItemProps = {
     removePostFromCollection?: (postId: string) => void;
-    isCompact?: boolean;
     post: Post;
-    permissions?: ACTION_BUTTONS_KEYS[];
     isMyPost?: boolean;
-    isFavorite?: boolean;
+    isCompact?: boolean;
+    isCompany?: boolean;
     isApplied?: boolean;
+    isFavorite?: boolean;
     applicationId?: string;
+    permissions?: ACTION_BUTTONS_KEYS[];
     applicationStatus?: ApplicationStatus;
 };
 
 export type ActionButton = {
-    key: ACTION_BUTTONS_KEYS;
     label: string;
+    key: ACTION_BUTTONS_KEYS;
     allowed?: ACTION_BUTTONS_ALLOWED[];
 };
 

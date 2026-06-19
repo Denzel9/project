@@ -1,15 +1,14 @@
 import {
-  TASK_STATUS_ENUM,
   TaskActivityType,
   type Task,
   type TaskActivity,
   type TaskMedia,
   type TaskStatus,
-  type UploadMediaResponse,
   type TaskCommentMedia,
 } from './types'
 
 import type { Photo } from '@/entities/photo'
+import type { UploadMediaResponse } from '@/entities/post'
 
 export const mapTaskMediaToPhotos = (media: TaskMedia[]): Photo[] =>
   media.map(item => ({
@@ -99,7 +98,7 @@ export const formatTaskActivityText = (activity: TaskActivity) => {
 }
 
 export const isTaskOwner = (task: Task, userId: string | null) =>
-  Boolean(userId && task.ownerId === userId) && [TASK_STATUS_ENUM.PREPARING, TASK_STATUS_ENUM.REVISION].includes(task?.status as TASK_STATUS_ENUM)
+  Boolean(userId && task.ownerId === userId)
 
 export const isTaskExecutor = (
   task: Pick<Task, 'executorId'>,

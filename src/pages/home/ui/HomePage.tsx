@@ -19,11 +19,10 @@ import {
 } from '@/widgets';
 
 export const HomePage = () => {
-  const { isOpenMainFilter, setIsOpenMainFilter, postsType } =
-    useMainFilterStore();
+  const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
 
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    usePostsInfiniteQuery(toPostInfiniteListParams(postsType));
+    usePostsInfiniteQuery(toPostInfiniteListParams());
 
   const posts = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
@@ -87,8 +86,6 @@ export const HomePage = () => {
             {posts.map(post => {
               const application = myApplicationsMap.get(post.id);
 
-              // console.log(post.id, myApplicationsMap);
-
               return (
                 <PostItem
                   post={post}
@@ -98,6 +95,7 @@ export const HomePage = () => {
                   applicationStatus={application?.status}
                   isFavorite={favoritePostIds.has(post.id)}
                   removePostFromCollection={removePostFromCollection}
+                  isCompany={Boolean(post.owner.companyProfile?.companyName)}
                   permissions={[
                     favoritePostIds.has(post.id)
                       ? ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION

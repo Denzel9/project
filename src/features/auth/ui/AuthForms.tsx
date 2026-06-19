@@ -10,7 +10,7 @@ import RegistrationCreatorForm from './RegistrationCreatorForm';
 type AuthFormsProps = {
   onSuccess?: () => void;
   onRecoveryPassword?: () => void;
-  onError?: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
+  onError?: (isOpen: boolean, message: string) => void;
 };
 
 export const AuthForms = ({
@@ -42,21 +42,21 @@ export const AuthForms = ({
 
       {isLogin ? (
         <LoginForm
-          onSuccess={onSuccess}
           onError={onError}
+          onSuccess={onSuccess}
           onRecoveryPassword={onRecoveryPassword}
         />
       ) : (
         <>
           {isCreator ? (
             <RegistrationCreatorForm
-              onSuccess={onSuccess}
               onError={onError}
+              onSuccess={onSuccess}
             />
           ) : (
             <RegistrationCompanyForm
-              onSuccess={onSuccess}
               onError={onError}
+              onSuccess={onSuccess}
             />
           )}
         </>

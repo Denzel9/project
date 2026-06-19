@@ -3,11 +3,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { usePostsInfiniteQuery } from '@/entities/post';
 import { useAuthStore } from '@/features/auth';
 import { InfiniteScrollSentinel } from '@/shared';
-import {
-  ACTION_BUTTONS_KEYS,
-  PostItem,
-  PostItemSkeletonList,
-} from '@/widgets';
+import { ACTION_BUTTONS_KEYS, PostItem, PostItemSkeletonList } from '@/widgets';
 
 import { MEDIA_TAB_VALUES, type MediaContentProps } from '../model/types';
 
@@ -16,27 +12,25 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
 
   const isArchived = mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED;
 
-  const {
-    data,
-    isLoading,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-  } = usePostsInfiniteQuery({
-    ownerId: userId || id || '',
-    isArchived,
-    limit: 20,
-  });
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    usePostsInfiniteQuery({
+      ownerId: userId || id || '',
+      isArchived,
+      limit: 20,
+    });
 
   const posts = data?.pages.flatMap(page => page.items) ?? [];
 
   const postPermissions = isArchived
-    ? [ACTION_BUTTONS_KEYS.EDIT, ACTION_BUTTONS_KEYS.DELETE]
+    ? [
+        ACTION_BUTTONS_KEYS.EDIT,
+        ACTION_BUTTONS_KEYS.DELETE,
+        ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
+      ]
     : [
         ACTION_BUTTONS_KEYS.EDIT,
         ACTION_BUTTONS_KEYS.DELETE,
         ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE,
-        ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
       ];
 
   if (isLoading && !posts.length) {
@@ -51,7 +45,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
   }
 
   return (
-    <Box>
+    <Box sx={{ height: '100%' }}>
       <Box sx={{ borderRadius: '32px' }}>
         {mediaTabValue === MEDIA_TAB_VALUES.ACTIVE && (
           <Stack
@@ -93,13 +87,24 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
       )}
 
       {!isLoading && !posts.length && (
-        <Typography
-          variant="h4"
-          color="info"
-          sx={{ textAlign: 'center', py: 6 }}
+        <Box
+          sx={{
+            height: '100%',
+            display: 'flex',
+            bgcolor: 'white',
+            alignItems: 'center',
+            borderRadius: '32px',
+            justifyContent: 'center',
+          }}
         >
-          Посты не найдены
-        </Typography>
+          <Typography
+            variant="h4"
+            color="info"
+            sx={{ textAlign: 'center', py: 6 }}
+          >
+            Посты не найдены
+          </Typography>
+        </Box>
       )}
 
       <InfiniteScrollSentinel

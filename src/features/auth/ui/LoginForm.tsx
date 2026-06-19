@@ -1,6 +1,8 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Button } from '@mui/material';
+import { VisibilityOff, Visibility } from '@mui/icons-material';
+import { Box, Button, IconButton } from '@mui/material';
 import axios from 'axios';
+import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
@@ -17,7 +19,7 @@ import { useLoginMutation } from '../model/api/api';
 type LoginFormProps = {
   onSuccess?: () => void;
   onRecoveryPassword?: () => void;
-  onError?: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
+  onError?: (isOpen: boolean, message: string) => void;
 };
 
 const LoginForm = ({
@@ -25,6 +27,8 @@ const LoginForm = ({
   onError,
   onRecoveryPassword,
 }: LoginFormProps) => {
+  const [showPassword, setShowPassword] = useState(false);
+
   const { mutateAsync: login } = useLoginMutation();
 
   const { setAuth } = useAuthStore();
@@ -57,7 +61,7 @@ const LoginForm = ({
       }
     } catch (e) {
       if (axios.isAxiosError(e)) {
-        onError?.({ message: e.response?.data.message, isOpen: true });
+        onError?.(true, e.response?.data.message);
       }
     }
   };
@@ -86,10 +90,15 @@ const LoginForm = ({
             name="password"
             control={control}
             autoCapitalize="off"
+            endAdornment={
+              <IconButton onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            }
             props={{
               sx: { mt: 2 },
               label: 'Пароль',
-              type: 'password',
+              type: showPassword ? 'text' : 'password',
             }}
           />
 

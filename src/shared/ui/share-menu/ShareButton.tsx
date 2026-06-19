@@ -3,16 +3,12 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Snackbar,
   type IconButtonProps,
 } from '@mui/material';
 import { useMemo, useState, type MouseEvent } from 'react';
 
-import {
-  getPostShareUrl,
-  openShareUrl,
-  SHARE_TARGETS,
-} from '@/shared/lib/share/shareTargets';
+import { getPostShareUrl, openShareUrl, SHARE_TARGETS } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 type ShareButtonProps = {
   postId: string;
@@ -22,7 +18,8 @@ type ShareButtonProps = {
 
 export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const shareUrl = useMemo(() => getPostShareUrl(postId), [postId]);
   const open = Boolean(anchorEl);
@@ -40,7 +37,7 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(shareUrl);
-    setSnackbarOpen(true);
+    setSnackbarOpen?.(true, 'Ссылка скопирована');
     handleClose();
   };
 
@@ -53,7 +50,9 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
     handleClose();
   };
 
-  const handleShareTarget = (getShareUrl: (url: string, title: string) => string) => {
+  const handleShareTarget = (
+    getShareUrl: (url: string, title: string) => string
+  ) => {
     openShareUrl(getShareUrl(shareUrl, title));
     handleClose();
   };
@@ -86,15 +85,10 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
           </MenuItem>
         ))}
 
-        <MenuItem onClick={() => void handleCopyLink()}>Скопировать ссылку</MenuItem>
+        <MenuItem onClick={() => void handleCopyLink()}>
+          Скопировать ссылку
+        </MenuItem>
       </Menu>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        message="Ссылка скопирована"
-        onClose={() => setSnackbarOpen(false)}
-      />
     </>
   );
 };

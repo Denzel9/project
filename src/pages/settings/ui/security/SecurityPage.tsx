@@ -2,7 +2,6 @@ import { Divider, Stack } from '@mui/material';
 
 import { AccountActionsSection } from './AccountActionsSection';
 import { AccountSecuritySection } from './AccountSecuritySection';
-import { SupportAccessSection } from './SupportAccessSection';
 
 export const SettingsAccountPage = () => {
   return (
@@ -11,7 +10,6 @@ export const SettingsAccountPage = () => {
       divider={<Divider />}
     >
       <AccountSecuritySection />
-      <SupportAccessSection />
       <AccountActionsSection />
     </Stack>
   );

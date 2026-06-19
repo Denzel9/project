@@ -3,7 +3,6 @@ import {
   Drawer,
   IconButton,
   MenuItem,
-  Snackbar,
   Stack,
   TextField,
   useMediaQuery,
@@ -15,9 +14,9 @@ import {
   useFavoriteGroupsQuery,
   type FavoriteGroup,
 } from '@/entities/favorite';
-import { useMainFilterStore } from '@/features/main-filter';
-import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
-import { useScroll } from '@/shared/hooks/useScroll';
+import { SideBarFilter, useMainFilterStore } from '@/features';
+import { useScroll } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog';
 import { FavoriteSearchPanel } from './FavoriteSearchPanel';
@@ -33,7 +32,8 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const {
     isOpenMainFilter,
@@ -60,13 +60,12 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
       onChange('all');
     }
 
-    setSnackbar({
-      open: true,
-      message:
-        group.count > 0
-          ? 'Подборка удалена. Посты остались в избранном.'
-          : 'Подборка удалена.',
-    });
+    setSnackbarOpen?.(
+      true,
+      group.count > 0
+        ? 'Подборка удалена. Посты остались в избранном.'
+        : 'Подборка удалена.'
+    );
   };
 
   const handleDeleteGroup = async (group: FavoriteGroup) => {
@@ -167,13 +166,6 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
         isPending={isPending}
         onClose={() => setGroupToDelete(null)}
         onConfirm={() => void handleConfirmDelete()}
-      />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        message={snackbar.message}
-        onClose={() => setSnackbar({ open: false, message: '' })}
       />
 
       <FavoriteSearchPanel

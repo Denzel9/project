@@ -7,11 +7,12 @@ import {
   SettingsOutlined,
   PersonOutlined,
   TaskOutlined,
+  PostAddOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
 
-import type { MenuRoute } from './types';
+import type { MenuRoute } from '../types/types';
 
 export const AUTH_TYPES = {
   ONLY_AUTH: 'only_auth',
@@ -48,6 +49,12 @@ export const TOP_MENU_ROUTES: MenuRoute[] = [
     path: ROUTES.MY_TASKS,
     icon: <TaskOutlined />,
     label: 'Мои задачи',
+  },
+  {
+    authType: AUTH_TYPES.ALWAYS,
+    path: ROUTES.MANAGE_POSTS,
+    icon: <PostAddOutlined />,
+    label: 'Мои посты',
   },
 ];
 

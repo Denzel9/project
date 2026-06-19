@@ -1,36 +1,44 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Button, Snackbar } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Box, Button, IconButton } from '@mui/material';
+import axios from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm, type Resolver } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router';
 
-import { ROUTES } from '@/shared/config/routes';
-import { RHFInput } from '@/shared/ui/rhf';
+import { ROUTES, RHFInput } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 import {
   defaultResetPasswordValues,
   resetPasswordSchema,
+  useAuthStore,
   type ResetPasswordFormType,
 } from '../model';
-import { useResetPasswordMutation } from '../model/api/api';
 import {
-  validatePassword,
-  validationEqualPassword,
-} from '../model/utils/validation';
+  useLogoutMutation,
+  useResetPasswordMutation,
+  useVerifyPasswordMutation,
+} from '../model/api/api';
+import { validationEqualPassword } from '../model/utils/validation';
 
 const ResetPasswordForm = () => {
-  const [snackbar, setSnackbar] = useState({
-    isOpen: false,
-    message: '',
-  });
+  const { setSnackbarOpen } = useSnackbarStore();
+  const { removeAuth } = useAuthStore();
 
   const { mutateAsync: resetPassword } = useResetPasswordMutation();
+  const { mutateAsync: verifyPassword } = useVerifyPasswordMutation();
+  const { mutateAsync: logoutMutation } = useLogoutMutation();
 
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
 
   const token = searchParams.get('token');
+
+  const [showRepeatNewPassword, setShowRepeatNewPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const methods = useForm({
     mode: 'onSubmit',
@@ -43,19 +51,21 @@ const ResetPasswordForm = () => {
   const { handleSubmit, control } = methods;
 
   const onSubmit = async (formData: ResetPasswordFormType) => {
-    if (validationEqualPassword(formData.password, formData.newPassword)) {
-      setSnackbar({
-        isOpen: true,
-        message: 'Пароли не совпадают',
-      });
-      return;
-    }
+    await verifyPassword({
+      password: formData.oldPassword,
+    }).catch(e => {
+      if (axios.isAxiosError(e)) {
+        setSnackbarOpen?.(true, e.response?.data.message);
+        return false;
+      }
 
-    if (validatePassword(formData.password)) {
-      setSnackbar({
-        isOpen: true,
-        message: 'Пароль должен быть не менее 8 символов',
-      });
+      return false;
+    });
+
+    if (
+      validationEqualPassword(formData.repeatNewPassword, formData.newPassword)
+    ) {
+      setSnackbarOpen?.(true, 'Пароли не совпадают');
       return;
     }
 
@@ -65,6 +75,9 @@ const ResetPasswordForm = () => {
           newPassword: formData.newPassword,
           token,
         });
+
+        await logoutMutation();
+        removeAuth();
 
         navigate({ pathname: ROUTES.AUTH, search: `?isResetPassword=true` });
       }
@@ -80,24 +93,52 @@ const ResetPasswordForm = () => {
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            mt: '50%',
-            transform: 'translateY(-50%)',
           }}
         >
           <RHFInput
-            name="password"
+            name="oldPassword"
             control={control}
+            endAdornment={
+              <IconButton onClick={() => setShowOldPassword(!showOldPassword)}>
+                {showOldPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            }
             props={{
-              label: 'Пароль',
+              label: 'Старый пароль',
+              sx: { width: '500px' },
+              type: showOldPassword ? 'text' : 'password',
             }}
           />
 
           <RHFInput
             name="newPassword"
             control={control}
+            endAdornment={
+              <IconButton onClick={() => setShowNewPassword(!showNewPassword)}>
+                {showNewPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            }
             props={{
-              sx: { mt: 2 },
               label: 'Новый пароль',
+              sx: { mt: 2, width: '500px' },
+              type: showNewPassword ? 'text' : 'password',
+            }}
+          />
+
+          <RHFInput
+            name="repeatNewPassword"
+            control={control}
+            endAdornment={
+              <IconButton
+                onClick={() => setShowRepeatNewPassword(!showRepeatNewPassword)}
+              >
+                {showRepeatNewPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            }
+            props={{
+              sx: { mt: 2, width: '500px' },
+              label: 'Повторите новый пароль',
+              type: showRepeatNewPassword ? 'text' : 'password',
             }}
           />
 
@@ -111,13 +152,6 @@ const ResetPasswordForm = () => {
           </Button>
         </Box>
       </form>
-
-      <Snackbar
-        open={snackbar.isOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ isOpen: false, message: '' })}
-        message={snackbar.message}
-      />
     </FormProvider>
   );
 };

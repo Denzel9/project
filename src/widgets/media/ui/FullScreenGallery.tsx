@@ -89,6 +89,7 @@ export const FullScreenGallery = ({
 
         <BigMedia
           isDialog
+          isGalleryOpen={isOpen}
           items={items}
           initialSlide={initialSlide}
           thumbsSwiper={thumbsSwiper}

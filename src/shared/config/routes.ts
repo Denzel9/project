@@ -10,6 +10,7 @@ export const ROUTES = {
     SETTINGS: "/settings",
     FAVORITES: "/favorites",
     INVITE: "/invites/accept",
+    MANAGE_POSTS: "/manage-posts",
     MY_RESPONSES: "/my-responses",
     SETTINGS_APPS: "/settings/apps",
     SETTINGS_GENERAL: "/settings/general",

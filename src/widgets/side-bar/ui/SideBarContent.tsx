@@ -17,7 +17,7 @@ import {
   TOP_MENU_ROUTES,
   BOTTOM_MENU_ROUTES,
   MENU_ROUTES_PRIME,
-} from '../model/routes';
+} from '../model/routes/routes';
 
 import { MenuItem } from './MenuItem';
 import { SettingsCollapseMenu } from './SettingsCollapseMenu';

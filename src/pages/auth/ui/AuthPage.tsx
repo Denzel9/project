@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Snackbar, Typography } from '@mui/material';
+import { Box, Button, Divider, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
@@ -8,14 +8,12 @@ import {
   LoginForm,
   RecoveryPasswordForm,
   ResetPasswordForm,
-} from '@/features/auth';
+} from '@/features';
 import { ROUTES } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 export const AuthPage = () => {
-  const [snackbar, setSnackbar] = useState({
-    isOpen: false,
-    message: '',
-  });
+  const { setSnackbarOpen } = useSnackbarStore();
   const [isRecoveryPassword, setIsRecoveryPassword] = useState(false);
 
   const [searchParams] = useSearchParams();
@@ -35,10 +33,7 @@ export const AuthPage = () => {
       if (res?.data) {
         navigate(ROUTES.INDEX, { replace: true });
       } else {
-        setSnackbar({
-          isOpen: true,
-          message: 'Неверный токен',
-        });
+        setSnackbarOpen?.(true, 'Неверный токен');
       }
     } else {
       navigate(ROUTES.INDEX, { replace: true });
@@ -47,10 +42,10 @@ export const AuthPage = () => {
 
   const handleSuccessRecoveryPassword = () => {
     setIsRecoveryPassword(false);
-    setSnackbar({
-      isOpen: true,
-      message: 'Ссылка для восстановления пароля отправлена на вашу почту',
-    });
+    setSnackbarOpen?.(
+      true,
+      'Ссылка для восстановления пароля отправлена на вашу почту'
+    );
   };
 
   return (
@@ -70,7 +65,7 @@ export const AuthPage = () => {
           alignItems: 'center',
           flexDirection: 'column',
           justifyContent: 'center',
-          width: { xs: '100%', md: '50%' },
+          width: { xs: '100%', md: '100%' },
         }}
       >
         <Box
@@ -103,28 +98,27 @@ export const AuthPage = () => {
             display: 'flex',
             alignItems: 'center',
             flexDirection: 'column',
-            mt: { xs: '20%', md: 0 },
           }}
         >
           {token && !isAuthFailed && <ResetPasswordForm />}
 
           {token && isAuthFailed && (
             <LoginForm
-              onError={setSnackbar}
+              onError={setSnackbarOpen}
               onSuccess={handleSuccessLogin}
             />
           )}
 
           {isRecoveryPassword && (
             <RecoveryPasswordForm
-              onError={setSnackbar}
+              onError={setSnackbarOpen}
               onSuccess={handleSuccessRecoveryPassword}
               onBackToLogin={() => setIsRecoveryPassword(false)}
             />
           )}
 
           {!token && !isRecoveryPassword && (
-            <Box sx={{ width: { xs: '100%', md: '50%' } }}>
+            <Box sx={{ width: { xs: '100%', md: '500px' } }}>
               {isResetPassword && (
                 <Typography
                   variant="h6"
@@ -135,14 +129,14 @@ export const AuthPage = () => {
               )}
 
               <AuthForms
-                onError={setSnackbar}
+                onError={setSnackbarOpen}
                 onRecoveryPassword={() => setIsRecoveryPassword(true)}
               />
             </Box>
           )}
 
           {!token && !isRecoveryPassword && (
-            <Box sx={{ mt: 2, width: { xs: '100%', md: '50%' } }}>
+            <Box sx={{ mt: 2, width: { xs: '100%', md: '500px' } }}>
               <Divider sx={{ mb: 2 }}>
                 <Typography
                   variant="body1"
@@ -163,7 +157,7 @@ export const AuthPage = () => {
         </Box>
       </Box>
 
-      <Box
+      {/* <Box
         sx={{
           width: '50%',
           backgroundSize: 'cover',
@@ -172,14 +166,7 @@ export const AuthPage = () => {
           display: { xs: 'none', md: 'block' },
           backgroundImage: `url('main-bg.jpg')`,
         }}
-      />
-
-      <Snackbar
-        open={snackbar.isOpen}
-        autoHideDuration={6000}
-        message={snackbar.message}
-        onClose={() => setSnackbar({ isOpen: false, message: '' })}
-      />
+      /> */}
     </Box>
   );
 };

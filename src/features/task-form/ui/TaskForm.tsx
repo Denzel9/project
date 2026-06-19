@@ -8,7 +8,7 @@ import {
   type TaskActivity,
   type TaskStatus,
 } from '@/entities/task';
-import { ConfirmDialog } from '@/widgets';
+import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 import { mapTaskToForm } from '../model/mappers';
 import {
@@ -26,6 +26,7 @@ type TaskFormProps = {
   isEdit: boolean;
   status: TaskStatus;
   isLoading: boolean;
+  imagesLength: number;
   canChangeStatus?: boolean;
   activities: TaskActivity[];
   isOpenDescription: boolean;
@@ -43,12 +44,15 @@ export const TaskForm = ({
   isLoading,
   setIsEdit,
   activities,
+  imagesLength,
   isOpenDescription,
   setIsOpenDescription,
   handleSimpleSaveForm,
   canChangeStatus = false,
 }: TaskFormProps) => {
   const [isOpenConfirmDialog, setIsOpenConfirmDialog] = useState(false);
+
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const methods = useForm<TaskFormType>({
     defaultValues,
@@ -89,6 +93,14 @@ export const TaskForm = ({
   };
 
   const handleSubmitForm = (newStatus?: TaskStatus) => {
+    if (!imagesLength) {
+      setSnackbarOpen?.(
+        true,
+        'Для проверки необходимо загрузить результат работы'
+      );
+      return;
+    }
+
     if (status === TASK_STATUS_ENUM.CHECKING) {
       setIsOpenConfirmDialog(true);
       return;

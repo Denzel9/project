@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 
-import { useSideBarStore } from '../model/store';
+import { useSideBarStore } from '../model/store/store';
 
 import { SideBarContent } from './SideBarContent';
 

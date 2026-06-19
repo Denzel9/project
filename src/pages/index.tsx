@@ -36,6 +36,8 @@ const SettingsAccountPage = lazy(
 const SecurityPage = lazy(() => import('./settings/ui/security/SecurityPage'));
 const MyTasksPage = lazy(() => import('./my-tasks'));
 const TaskPage = lazy(() => import('./task'));
+const MyPostPage = lazy(() => import('./my-posts'));
+const DashboardPage = lazy(() => import('./dashboard'));
 
 export const Router = () => {
   return (
@@ -96,6 +98,11 @@ export const Router = () => {
             />
 
             <Route
+              path={`${ROUTES.MANAGE_POSTS}`}
+              element={<MyPostPage />}
+            />
+
+            <Route
               path={`${ROUTES.SETTINGS}/*`}
               element={<SettingsLayout />}
             >
@@ -138,6 +145,24 @@ export const Router = () => {
                 element={<SettingsBillingPage />}
               />
             </Route>
+          </>
+        }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute isPrimeAccount>
+            <MainLayout>
+              <Outlet />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+        children={
+          <>
+            <Route
+              path={`${ROUTES.CRM}`}
+              element={<DashboardPage />}
+            />
           </>
         }
       />

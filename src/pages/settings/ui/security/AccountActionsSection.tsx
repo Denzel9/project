@@ -4,12 +4,10 @@ import { useNavigate } from 'react-router';
 import { useLogoutMutation } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 
-import { SettingsRow } from './SettingsRow';
+import { SettingsRow } from '../SettingsRow';
 
 export const AccountActionsSection = () => {
   const { mutateAsync: logout } = useLogoutMutation();
-
-  // const { mutateAsync: deleteAccount } = useDeleteAccountMutation();
 
   const navigate = useNavigate();
 
@@ -21,32 +19,17 @@ export const AccountActionsSection = () => {
   return (
     <Stack spacing={3}>
       <SettingsRow
-        title="Выйти из всех устройств"
-        description="Выйти из всех других активных сессий на других устройствах."
+        title="Выйти"
+        description="Выйти из текущего аккаунта"
         action={
           <Button
-            variant="outlined"
             size="small"
-            sx={{ minWidth: 100, flexShrink: 0 }}
+            color="error"
+            variant="outlined"
             onClick={handleLogout}
+            sx={{ minWidth: 100, flexShrink: 0 }}
           >
             Выйти
-          </Button>
-        }
-      />
-
-      <SettingsRow
-        title="Удалить аккаунт"
-        titleColor="error.main"
-        description="Удалить этот аккаунт и удалить доступ из всех рабочих пространств."
-        action={
-          <Button
-            variant="outlined"
-            color="error"
-            size="small"
-            sx={{ minWidth: 140, flexShrink: 0 }}
-          >
-            Удалить аккаунт
           </Button>
         }
       />

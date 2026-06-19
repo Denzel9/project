@@ -1,7 +1,7 @@
 import { Chat } from '@mui/icons-material';
 import { Box, Button, IconButton, Tooltip } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import {
   APPLICATION_STATUS_ENUM,
@@ -18,6 +18,7 @@ import { WithdrawDialog } from './WithdrawDialog';
 type ActionProps = {
   postId: string;
   ownerId: string;
+  isCompany?: boolean;
   isFavorite?: boolean;
   isApplied?: boolean;
   applicationId?: string;
@@ -28,11 +29,12 @@ type ActionProps = {
 export const Action = ({
   postId,
   ownerId,
-  isFavorite = false,
-  isApplied: isAppliedProp = false,
   applicationId,
   applicationStatus,
+  isCompany = false,
+  isFavorite = false,
   removePostFromCollection,
+  isApplied: isAppliedProp = false,
 }: ActionProps) => {
   const navigate = useNavigate();
 
@@ -107,20 +109,32 @@ export const Action = ({
     navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
   };
 
+  const mainButton = isCompany ? (
+    <Button
+      variant="contained"
+      disabled={isApplicationPending}
+      onClick={() => setIsApplyDialogOpen(true)}
+    >
+      Откликнуться
+    </Button>
+  ) : (
+    <Button
+      size="small"
+      target="_blank"
+      component={Link}
+      variant="outlined"
+      to={`${ROUTES.CHAT}?recipientId=${ownerId}`}
+      sx={{ display: { xs: 'none', md: 'block' } }}
+    >
+      Написать
+    </Button>
+  );
+
   return (
     <>
       {!isApplied && !applicationStatus ? (
-        <Box
-          sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 4 }}
-          onClick={e => e.preventDefault()}
-        >
-          <Button
-            variant="contained"
-            disabled={isApplicationPending}
-            onClick={() => setIsApplyDialogOpen(true)}
-          >
-            Откликнуться
-          </Button>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 4 }}>
+          {mainButton}
 
           <FavoriteButton
             postId={postId}
@@ -128,10 +142,7 @@ export const Action = ({
           />
         </Box>
       ) : (
-        <Box
-          sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 4 }}
-          onClick={e => e.preventDefault()}
-        >
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 4 }}>
           {canWithdraw && (
             <Button
               color="error"
@@ -144,7 +155,7 @@ export const Action = ({
             </Button>
           )}
 
-          {!canWithdraw && (
+          {!canWithdraw && isCompany && (
             <Tooltip title="Повторный отклик недоступен. Вы можете написать заказчику в чат">
               <Button
                 variant="contained"
@@ -157,10 +168,10 @@ export const Action = ({
           )}
 
           <Button
-            sx={{ display: { xs: 'none', md: 'block' } }}
             size="small"
             variant="outlined"
             onClick={handleOpenChat}
+            sx={{ display: { xs: 'none', md: 'block' } }}
           >
             В чат
           </Button>
@@ -180,17 +191,17 @@ export const Action = ({
       )}
 
       <ApplyDialog
-        open={isApplyDialogOpen}
         isPending={isCreating}
-        onClose={() => setIsApplyDialogOpen(false)}
         onSubmit={handleApply}
+        open={isApplyDialogOpen}
+        onClose={() => setIsApplyDialogOpen(false)}
       />
 
       <WithdrawDialog
-        open={isWithdrawDialogOpen}
         isPending={isWithdrawing}
-        onClose={() => setIsWithdrawDialogOpen(false)}
         onConfirm={handleWithdraw}
+        open={isWithdrawDialogOpen}
+        onClose={() => setIsWithdrawDialogOpen(false)}
       />
     </>
   );

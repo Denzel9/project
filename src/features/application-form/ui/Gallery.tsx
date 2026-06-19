@@ -115,7 +115,7 @@ const DraggableImage = ({
   );
 };
 
-const Gallery = ({
+export const Gallery = ({
   files,
   setFiles,
   setDeletedFiles,
@@ -195,5 +195,3 @@ const Gallery = ({
     </Box>
   );
 };
-
-export default Gallery;

@@ -24,7 +24,10 @@ import { useAuthStore } from '@/features/auth';
 import { ChatInput } from '@/shared/ui/messenger';
 import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
 
-import { COMMENT_MEDIA_PLACEHOLDER, toGalleryItems } from '../lib/commentMedia';
+import {
+  COMMENT_MEDIA_PLACEHOLDER,
+  toGalleryItems,
+} from '../model/lib/commentMedia';
 
 import { DeleteCommentDialog } from './DeleteCommentDialog';
 import { TaskCommentAttachmentsPanel } from './TaskCommentAttachmentsPanel';
@@ -87,10 +90,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
   }, [task.id, comments.length]);
 
   const openGallery = useCallback(
-    (
-      media: TaskCommentMedia[] | undefined,
-      initialSlide: number,
-    ) => {
+    (media: TaskCommentMedia[] | undefined, initialSlide: number) => {
       const items = toGalleryItems(media ?? []);
 
       if (!items.length) return;
@@ -99,7 +99,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
       setGalleryInitialSlide(initialSlide);
       setGalleryOpen(true);
     },
-    [],
+    []
   );
 
   const openGalleryFromItems = useCallback(
@@ -110,7 +110,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
       setGalleryInitialSlide(initialSlide);
       setGalleryOpen(true);
     },
-    [],
+    []
   );
 
   const addPendingFiles = useCallback((files: File[]) => {
@@ -185,7 +185,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
           setEditingId(null);
           setEditContent('');
         },
-      },
+      }
     );
   };
 

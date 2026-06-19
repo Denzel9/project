@@ -7,7 +7,7 @@ import { useRecoveryPasswordMutation } from '../model';
 type RecoveryPasswordFormProps = {
   onSuccess: () => void;
   onBackToLogin: () => void;
-  onError: ({ message, isOpen }: { message: string; isOpen: boolean }) => void;
+  onError: (isOpen: boolean, message: string) => void;
 };
 
 const RecoveryPasswordForm = ({
@@ -26,7 +26,7 @@ const RecoveryPasswordForm = ({
       onSuccess();
     } catch (e) {
       if (axios.isAxiosError(e)) {
-        onError?.({ message: e.response?.data.message, isOpen: true });
+        onError?.(true, e.response?.data.message);
       }
     }
   };

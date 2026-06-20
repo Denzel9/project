@@ -36,16 +36,23 @@ export const MainFilter = () => {
           pt: isScrolled ? 4 : 1,
           alignItems: 'center',
           transition: 'all 0.3s ease',
-          justifyContent: 'flex-end',
+          justifyContent: { xs: 'space-between', md: 'flex-end' },
           bgcolor: isScrolled ? 'white' : 'transparent',
           borderBottomLeftRadius: isScrolled ? '32px' : '0',
           borderBottomRightRadius: isScrolled ? '32px' : '0',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
+        <Chip
+          label={FILTERS[0].label}
+          onClick={() => handleFilter(FILTERS[0].value)}
+          sx={{ cursor: 'pointer', display: { xs: 'flex', md: 'none' } }}
+          color={filters.includes(FILTERS[0].value) ? 'primary' : 'default'}
+        />
+
         <Stack
           direction="row"
-          spacing={{ xs: 1, md: 2 }}
+          spacing={{ xs: 1, md: 1 }}
           sx={{ alignItems: 'center' }}
         >
           <IconButton onClick={() => setIsSearchOpen(true)}>

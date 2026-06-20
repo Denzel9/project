@@ -89,7 +89,7 @@ const PostItem = ({
         width: '100%',
         display: 'flex',
         bgcolor: 'white',
-        p: { xs: 3, lg: 4 },
+        p: { md: 4 },
         borderRadius: '32px',
         transition: 'all 0.3s ease',
         flexDirection: { xs: 'column', lg: 'row' },
@@ -98,13 +98,19 @@ const PostItem = ({
           isApplied
             ? `4px solid ${getBorderColor(theme)}`
             : `1px solid ${theme.palette.secondary.main}`,
+        ':hover': {
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        },
       }}
     >
       {Boolean(mediaItems.length) && (
         <Box
           sx={{
-            width: { xs: '100%', md: isCompact ? '400px' : '500px' },
-            height: { xs: '400px', md: isCompact ? '350px' : '450px' },
+            width: { xs: window.innerWidth, md: isCompact ? '400px' : '500px' },
+            height: {
+              xs: window.innerWidth + 66,
+              md: isCompact ? '350px' : '450px',
+            },
           }}
         >
           <Media items={mediaItems} />
@@ -116,6 +122,7 @@ const PostItem = ({
           width: '100%',
           display: 'flex',
           alignItems: 'start',
+          p: { xs: 3, md: 0 },
           flexDirection: 'column',
           justifyContent: 'space-between',
         }}
@@ -136,6 +143,7 @@ const PostItem = ({
               >
                 <Typography
                   variant="h6"
+                  target="_blank"
                   component={isCompany ? Link : 'span'}
                   to={isCompany ? `${ROUTES.POST}/${post.id}` : undefined}
                   sx={{
@@ -168,15 +176,17 @@ const PostItem = ({
                 )}
               </Stack>
 
-              <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                {post?.chips?.map(chip => (
-                  <Chip
-                    size="small"
-                    key={chip}
-                    label={chip}
-                  />
-                ))}
-              </Box>
+              {Boolean(post?.chips?.length) && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                  {post?.chips?.map(chip => (
+                    <Chip
+                      size="small"
+                      key={chip}
+                      label={chip}
+                    />
+                  ))}
+                </Box>
+              )}
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -228,7 +238,7 @@ const PostItem = ({
                 },
               }}
             >
-              <Typography variant="body1">
+              <Typography variant="h6">
                 {getUserName(post?.owner as Partial<User>)}
               </Typography>
 

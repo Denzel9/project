@@ -77,7 +77,7 @@ export const HomePage = () => {
         {isFeedReady && posts.length > 0 && (
           <Stack
             direction="column"
-            spacing={2}
+            spacing={1}
             sx={{
               width: '100%',
               alignItems: 'start',

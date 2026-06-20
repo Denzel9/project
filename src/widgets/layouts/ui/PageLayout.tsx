@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography, useMediaQuery } from '@mui/material';
 import { type PropsWithChildren } from 'react';
 
 import { CurrentUser } from '@/features/current-user';
@@ -14,6 +14,8 @@ export const PageLayout = ({
   title = undefined,
   isScreenHeight = false,
 }: PropsWithChildren<PageLayoutProps>) => {
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+
   return (
     <Box
       sx={{
@@ -74,7 +76,7 @@ export const PageLayout = ({
           )}
         </Stack>
 
-        <CurrentUser />
+        <CurrentUser isButton={isMobile} />
       </Stack>
 
       <Box

@@ -7,7 +7,7 @@ import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { PageLayout } from '@/widgets';
 
-import { useManagePostFilterStore } from '../model/store';
+import { useMyPostFilterStore } from '../model/store';
 import { toIncomingApplicationsParams } from '../model/utils';
 
 import Filter from './Filter';
@@ -16,11 +16,11 @@ import { IncomingApplicationItem } from './IncomingApplicationItem';
 const MyPostPage = () => {
   const navigate = useNavigate();
 
-  const { status, updatedDate, q, setPosts, posts } =
-    useManagePostFilterStore();
+  const { status, updatedDate, q, postId, type, setPosts, posts } =
+    useMyPostFilterStore();
 
   const { data: applications, isLoading } = useIncomingApplicationsQuery(
-    toIncomingApplicationsParams({ status, updatedDate, q })
+    toIncomingApplicationsParams({ status, updatedDate, q, postId, type })
   );
 
   useEffect(() => {
@@ -30,7 +30,12 @@ const MyPostPage = () => {
   }, [applications, posts?.items.length, setPosts]);
 
   const isEmpty = !isLoading && !applications?.items?.length;
-  const isFilterEmpty = !updatedDate && status === 'all' && q === 'all';
+  const isFilterEmpty =
+    !updatedDate &&
+    status === 'all' &&
+    !q.trim() &&
+    type === 'all' &&
+    postId === 'all';
 
   return (
     <PageLayout title="Мои посты">

@@ -2,7 +2,7 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   MoreVertOutlined,
-  NorthEast,
+  RocketLaunch,
 } from '@mui/icons-material';
 import {
   Box,
@@ -13,6 +13,9 @@ import {
   Button,
   FormControl,
   FormLabel,
+  Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -22,15 +25,18 @@ import {
   ContactType,
   getContactLink,
   getPhone,
-  type User,
   getUserName,
-} from '@/entities/user';
+  type User,
+  type ApplicationStatus,
+  APPLICATION_STATUS_ENUM,
+} from '@/entities';
 import { ROUTES } from '@/shared';
 
 type ContactCardProps = {
   contact?: User;
   withTitle?: boolean;
   isMyPost?: boolean;
+  status?: ApplicationStatus;
 };
 
 export const ContactCard = ({
@@ -38,6 +44,7 @@ export const ContactCard = ({
   withTitle = false,
   isMyPost = false,
 }: ContactCardProps) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isOpenMoreContacts, setisOpenMoreContacts] = useState(false);
 
   const navigate = useNavigate();
@@ -61,8 +68,9 @@ export const ContactCard = ({
             spacing={1}
             direction="row"
             sx={{
-              alignItems: 'center',
+              mb: 2,
               cursor: 'pointer',
+              alignItems: 'center',
               transition: 'all 0.3s ease',
               '&:hover': {
                 color: 'primary.main',
@@ -77,7 +85,6 @@ export const ContactCard = ({
             >
               {isMyPost ? 'Исполнитель' : 'Заказчик'}
             </Typography>
-            <NorthEast />
           </Stack>
         )}
 
@@ -88,10 +95,22 @@ export const ContactCard = ({
             justifyContent: 'end',
           }}
         >
-          <IconButton>
+          <IconButton onClick={event => setAnchorEl(event.currentTarget)}>
             <MoreVertOutlined />
           </IconButton>
         </Box>
+
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={() => setAnchorEl(null)}
+        >
+          <MenuItem
+            onClick={() => navigate(`${ROUTES.PROFILE}?userId=${contact?.id}`)}
+          >
+            <Typography>Перейти к профилю</Typography>
+          </MenuItem>
+        </Menu>
       </Stack>
 
       <Avatar
@@ -99,7 +118,17 @@ export const ContactCard = ({
         sx={{ width: '88px', height: '88px' }}
       />
 
-      <Typography sx={{ mt: 4 }}>{getUserName(contact)}</Typography>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', mt: 4 }}
+      >
+        <Typography variant="h6">{getUserName(contact)}</Typography>
+
+        <Tooltip title="Это - Prime-аккаунт">
+          <RocketLaunch color="primary" />
+        </Tooltip>
+      </Stack>
 
       {contact?.phone && (
         <Stack
@@ -234,14 +263,16 @@ export const ContactCard = ({
         </Stack>
       )}
 
-      <Button
-        sx={{ mt: 4 }}
-        component={Link}
-        variant="outlined"
-        to={`${ROUTES.CHAT}?recipientId=${contact?.id}`}
-      >
-        В чат
-      </Button>
+      {status === APPLICATION_STATUS_ENUM.ACCEPTED && (
+        <Button
+          sx={{ mt: 4 }}
+          component={Link}
+          variant="outlined"
+          to={`${ROUTES.CHAT}?recipientId=${contact?.id}`}
+        >
+          В чат
+        </Button>
+      )}
     </Box>
   );
 };

@@ -6,8 +6,8 @@ import { Mousewheel, Navigation, Pagination, Thumbs } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import '../model/styles/style.css';
-
 import { getMediaKind } from '../lib/getMediaKind';
+
 import { MediaItem } from './MediaItem';
 
 import type { MediaItemType } from '../model/types';
@@ -36,7 +36,9 @@ export const BigMedia = ({
   const isLoading = items.length > 0 && readyKey !== loadingKey;
 
   useEffect(() => {
-    setActiveIndex(initialSlide);
+    setTimeout(() => {
+      setActiveIndex(initialSlide);
+    }, 0);
   }, [initialSlide, items]);
 
   const handleImageReady = useCallback(
@@ -110,9 +112,7 @@ export const BigMedia = ({
               key={`${item.url}-${item.mimeType ?? ''}`}
               loading={index === initialSlide ? 'eager' : 'lazy'}
               withControls={isDialog && isVideo}
-              isActive={
-                isGalleryOpen && (!isDialog || activeIndex === index)
-              }
+              isActive={isGalleryOpen && (!isDialog || activeIndex === index)}
             />
           </SwiperSlide>
         );

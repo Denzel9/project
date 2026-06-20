@@ -16,15 +16,17 @@ export const EmptyBlock = ({
       direction="column"
       spacing={2}
       sx={{
-        p: 10,
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
       <Typography
-        variant="h4"
-        sx={{ textAlign: 'center', opacity: 0.3 }}
+        sx={{
+          opacity: 0.3,
+          textAlign: 'center',
+          fontSize: { xs: '24px', md: '34px' },
+        }}
       >
         {title}
       </Typography>

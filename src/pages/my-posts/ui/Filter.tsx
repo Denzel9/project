@@ -1,4 +1,4 @@
-import { CalendarMonthOutlined, Search } from '@mui/icons-material';
+import { CalendarMonthOutlined, Search, Tune } from '@mui/icons-material';
 import {
   Button,
   Drawer,
@@ -14,32 +14,53 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
-import { useMainFilterStore, SideBarFilter } from '@/features';
 import { useScroll } from '@/shared';
 
-import { useManagePostFilterStore } from '../model/store';
+import { useMyPostFilterStore } from '../model/store';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
+import { MyPostSideBarFilter } from './MyPostSideBarFilter';
 
 import type { ApplicationStatusFilter } from '../model/utils';
 
-const ManagePostFilter = () => {
+const MyPostFilter = () => {
   const { isScrolled, ref } = useScroll(150);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-  const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
-
-  const { q, setQ, posts, status, setStatus, updatedDate, setUpdatedDate } =
-    useManagePostFilterStore();
+  const {
+    postId,
+    setPostId,
+    posts,
+    status,
+    setStatus,
+    q,
+    updatedDate,
+    setUpdatedDate,
+    isOpenFilter,
+    setIsOpenFilter,
+  } = useMyPostFilterStore();
 
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
-  const postsLabels = useMemo(
-    () => posts?.items.map(post => post.post?.title),
-    [posts]
-  );
+  const postOptions = useMemo(() => {
+    const map = new Map<string, string>();
+
+    posts?.items.forEach(application => {
+      const id = application.post?.id;
+      const title = application.post?.title;
+
+      if (id && title) {
+        map.set(id, title);
+      }
+    });
+
+    return Array.from(map.entries());
+  }, [posts]);
+
+  const hasActiveSidebarFilters =
+    status !== 'all' || postId !== 'all' || Boolean(q.trim());
 
   const handleDateChange = (date: Dayjs | null) => {
     setUpdatedDate(date ? date.format('YYYY-MM-DD') : null);
@@ -79,7 +100,10 @@ const ManagePostFilter = () => {
             label="Статус"
             value={status}
             size={isMobile ? 'small' : 'medium'}
-            sx={{ width: { xs: '90%', md: '20%' } }}
+            sx={{
+              width: { xs: '90%', md: '20%' },
+              display: { xs: 'none', md: 'block' },
+            }}
             onChange={event =>
               setStatus(event.target.value as ApplicationStatusFilter)
             }
@@ -97,34 +121,51 @@ const ManagePostFilter = () => {
 
           <TextField
             select
-            label="Обьявление"
-            value={q}
+            label="Объявление"
+            value={postId}
             size={isMobile ? 'small' : 'medium'}
-            sx={{ width: { xs: '90%', md: '20%' } }}
-            onChange={event => setQ(event.target.value)}
+            sx={{
+              width: { xs: '90%', md: '20%' },
+              display: { xs: 'none', md: 'block' },
+            }}
+            onChange={event => setPostId(event.target.value)}
           >
             <MenuItem value="all">Все</MenuItem>
-            {postsLabels?.map(label => (
+            {postOptions.map(([id, title]) => (
               <MenuItem
-                key={label}
-                value={label}
+                key={id}
+                value={id}
               >
-                {label}
+                {title}
               </MenuItem>
             ))}
           </TextField>
         </Stack>
 
-        <IconButton
-          color={updatedDate ? 'primary' : 'default'}
-          onClick={event => setAnchorEl(event.currentTarget)}
+        <Stack
+          direction="row"
+          spacing={1}
         >
-          <CalendarMonthOutlined />
-        </IconButton>
+          <IconButton
+            color={updatedDate ? 'primary' : 'default'}
+            onClick={event => setAnchorEl(event.currentTarget)}
+          >
+            <CalendarMonthOutlined />
+          </IconButton>
 
-        <IconButton onClick={() => setIsSearchOpen(true)}>
-          <Search />
-        </IconButton>
+          <IconButton onClick={() => setIsSearchOpen(true)}>
+            <Search />
+          </IconButton>
+
+          <IconButton
+            onClick={() => setIsOpenFilter(!isOpenFilter)}
+            color={
+              isOpenFilter || hasActiveSidebarFilters ? 'primary' : 'default'
+            }
+          >
+            <Tune />
+          </IconButton>
+        </Stack>
       </Stack>
 
       <ApplicationSearchPanel
@@ -162,21 +203,20 @@ const ManagePostFilter = () => {
 
       <Drawer
         anchor="right"
-        open={isOpenMainFilter}
-        onClose={() => setIsOpenMainFilter(!isOpenMainFilter)}
+        open={isOpenFilter}
+        onClose={() => setIsOpenFilter(false)}
         sx={{
           '& .MuiDrawer-paper': {
             p: { xs: 2, md: 4 },
             width: { xs: '100%', sm: '80%', md: '25%' },
-            borderTopLeftRadius: 32,
-            borderBottomLeftRadius: 32,
+            display: { xs: 'block', md: 'none' },
           },
         }}
       >
-        <SideBarFilter />
+        <MyPostSideBarFilter />
       </Drawer>
     </>
   );
 };
 
-export default ManagePostFilter;
+export default MyPostFilter;

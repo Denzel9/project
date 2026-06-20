@@ -58,10 +58,10 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
                 sx={{ bgcolor: 'white', borderRadius: '32px' }}
               >
                 <PostItem
-                  isMyPost
                   isCompact
                   post={post}
                   permissions={postPermissions}
+                  isMyPost={post.owner.id === id}
                 />
               </Box>
             ))}
@@ -76,11 +76,11 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
         >
           {posts.map(post => (
             <PostItem
-              isMyPost
               isCompact
               post={post}
               key={post.id}
               permissions={postPermissions}
+              isMyPost={post.owner.id === id}
             />
           ))}
         </Stack>

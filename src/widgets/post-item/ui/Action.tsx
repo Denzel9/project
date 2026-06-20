@@ -71,11 +71,7 @@ export const Action = ({
   }, [applicationStatus]);
 
   const isApplicationPending = isCreating || isWithdrawing;
-  const canWithdraw =
-    Boolean(currentApplicationId) &&
-    Boolean(currentApplicationStatus) &&
-    currentApplicationStatus &&
-    currentApplicationStatus === APPLICATION_STATUS_ENUM.NEW;
+  const canWithdraw = currentApplicationStatus === APPLICATION_STATUS_ENUM.NEW;
 
   const handleApply = (message: string) => {
     createApplication(
@@ -124,7 +120,6 @@ export const Action = ({
       component={Link}
       variant="outlined"
       to={`${ROUTES.CHAT}?recipientId=${ownerId}`}
-      sx={{ display: { xs: 'none', md: 'block' } }}
     >
       Написать
     </Button>
@@ -151,7 +146,7 @@ export const Action = ({
               sx={{ textTransform: 'none' }}
               disabled={isApplicationPending}
             >
-              Отменить отклик
+              Отозвать отклик
             </Button>
           )}
 
@@ -167,21 +162,25 @@ export const Action = ({
             </Tooltip>
           )}
 
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={handleOpenChat}
-            sx={{ display: { xs: 'none', md: 'block' } }}
-          >
-            В чат
-          </Button>
+          {applicationStatus === APPLICATION_STATUS_ENUM.ACCEPTED && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleOpenChat}
+              sx={{ display: { xs: 'none', md: 'block' } }}
+            >
+              В чат
+            </Button>
+          )}
 
-          <IconButton
-            onClick={handleOpenChat}
-            sx={{ display: { xs: 'flex', md: 'none' } }}
-          >
-            <Chat />
-          </IconButton>
+          {applicationStatus === APPLICATION_STATUS_ENUM.ACCEPTED && (
+            <IconButton
+              onClick={handleOpenChat}
+              sx={{ display: { xs: 'flex', md: 'none' } }}
+            >
+              <Chat />
+            </IconButton>
+          )}
 
           <FavoriteButton
             postId={postId}

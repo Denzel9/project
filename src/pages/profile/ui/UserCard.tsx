@@ -136,8 +136,8 @@ export const UserCard = ({
         )}
       </Stack>
 
-      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-        {!isMe && (
+      {!isMe && (
+        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
           <Stack
             spacing={2}
             direction="row"
@@ -156,8 +156,8 @@ export const UserCard = ({
               isFavorite={false}
             />
           </Stack>
-        )}
-      </Box>
+        </Box>
+      )}
     </Box>
   );
 };

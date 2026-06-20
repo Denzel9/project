@@ -31,6 +31,7 @@ export const WithdrawDialog = ({
           overflow: 'visible',
           position: 'relative',
           borderRadius: '32px',
+          maxWidth: '90%',
         },
       }}
     >

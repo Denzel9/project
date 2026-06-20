@@ -59,6 +59,14 @@ export const theme = createTheme({
                 },
             },
         },
+
+        MuiMenu: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: '32px',
+                },
+            },
+        },
     },
 }
 );

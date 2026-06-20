@@ -8,3 +8,4 @@ export * from './favorite-button';
 export * from './confirm-dialog';
 export * from './side-bar'
 export * from './snackbar';
+export * from './contact-card';

@@ -1,4 +1,4 @@
-import { Whatshot, NorthEast, MoreVert } from '@mui/icons-material';
+import { Whatshot, MoreVert, RocketLaunch } from '@mui/icons-material';
 import {
   Box,
   Stack,
@@ -8,39 +8,43 @@ import {
   Rating,
   Menu,
   MenuItem,
+  Tooltip,
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
-import { useFavoritePostIds } from '@/entities/favorite';
-import { getUserName } from '@/entities/user';
-import { DeletePostDialog } from '@/features/delete-post';
+import {
+  getUserName,
+  USER_ROLE,
+  useFavoritePostIds,
+  type Post,
+  type User,
+  type Application,
+} from '@/entities';
+import { DeletePostDialog } from '@/features';
 import { ShareButton, ROUTES } from '@/shared';
-import { Media } from '@/widgets';
-import { Action } from '@/widgets/post-item/ui/Action';
+import { Media, Action } from '@/widgets';
 
-import type { Application } from '@/entities/application';
-import type { Post } from '@/entities/post';
-import type { User } from '@/entities/user';
+type MediaItem = {
+  url: string;
+  mimeType: string;
+};
 
 type MainCardProps = {
   post?: Post;
   user?: User;
-  application?: Application;
   isOwner: boolean;
-  mediaItems: {
-    url: string;
-    mimeType: string;
-  }[];
+  mediaItems: MediaItem[];
+  application?: Application;
   removePostFromCollection: (postId: string) => void;
 };
 
 export const MainCard = ({
   post,
   user,
-  application,
   isOwner,
   mediaItems,
+  application,
   removePostFromCollection,
 }: MainCardProps) => {
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
@@ -166,19 +170,31 @@ export const MainCard = ({
             </Box>
 
             <Stack
+              component={Link}
+              to={`${ROUTES.PROFILE}?userId=${user?.id}`}
+              target="_blank"
               spacing={1}
-              sx={{ mt: 6, alignItems: 'center' }}
+              sx={{
+                mt: 6,
+                color: 'inherit',
+                cursor: 'pointer',
+                width: 'fit-content',
+                alignItems: 'center',
+                textDecoration: 'none',
+                transition: 'all 0.3s ease',
+                ':hover': {
+                  color: 'primary.main',
+                },
+              }}
               direction="row"
             >
               <Typography sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
                 {getUserName(user)}
               </Typography>
 
-              <IconButton
-                onClick={() => navigate(`${ROUTES.PROFILE}?userId=${user?.id}`)}
-              >
-                <NorthEast />
-              </IconButton>
+              <Tooltip title="Это - Prime-аккаунт">
+                <RocketLaunch color="primary" />
+              </Tooltip>
             </Stack>
 
             <Rating
@@ -202,6 +218,7 @@ export const MainCard = ({
               applicationId={application?.id}
               isApplied={Boolean(application)}
               applicationStatus={application?.status}
+              isCompany={user?.role === USER_ROLE.COMPANY}
               isFavorite={favoritePostIds.has(post?.id ?? '')}
               removePostFromCollection={removePostFromCollection}
             />

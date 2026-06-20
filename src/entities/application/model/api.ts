@@ -118,7 +118,7 @@ export const useMyApplicationsMap = () => {
     const map = new Map<string, Application>()
 
     data?.items?.forEach(application => {
-      map.set(application.postId, application)
+      map.set(application.post?.id ?? '', application)
     })
 
     return { map }

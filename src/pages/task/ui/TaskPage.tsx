@@ -37,12 +37,16 @@ import {
   type TaskFormType,
 } from '@/features';
 import { scrollMainToTop } from '@/shared';
-import { ConfirmDialog, PageLayout, useSnackbarStore } from '@/widgets';
+import {
+  ConfirmDialog,
+  PageLayout,
+  useSnackbarStore,
+  ContactCard,
+} from '@/widgets';
 
 import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
 
 import { Activity } from './Activity';
-import { ContactCard } from './ContactCard';
 import { TaskComments } from './TaskComments';
 import { TaskResultDropzone } from './TaskResultDropzone';
 

@@ -11,15 +11,15 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 
 import {
+  getApplicationsCountLabel,
+  usePostByIdQuery,
+  useGetUserByIdQuery,
   useMyApplicationsMap,
   usePostApplicationsQuery,
-} from '@/entities/application';
-import { getApplicationsCountLabel, usePostByIdQuery } from '@/entities/post';
-import { useGetUserByIdQuery } from '@/entities/user';
-import { useAuthStore } from '@/features/auth';
-import { PageLayout } from '@/widgets';
+} from '@/entities';
+import { useAuthStore } from '@/features';
+import { PageLayout, ContactCard } from '@/widgets';
 
-import { ContactCard } from './ContactCard';
 import { IncomingApplications } from './IncomingApplications';
 import { MainCard } from './MainCard';
 import { PostDetailsCard } from './PostDetailsCard';
@@ -54,8 +54,6 @@ export const PostPage = () => {
     myApplicationsMap.delete(postId);
   };
 
-  const isMyPost = Boolean(post?.owner?.id === currentUserId);
-
   useEffect(() => {
     if (tab) {
       setTimeout(() => {
@@ -64,10 +62,10 @@ export const PostPage = () => {
     }
   }, [tab]);
 
-  const isOwner = Boolean(
-    post && currentUserId && post.owner?.id === currentUserId
-  );
-  const application = post ? myApplicationsMap.get(post.id) : undefined;
+  const isOwner = Boolean(post?.owner?.id === currentUserId);
+  const application = myApplicationsMap.get(post?.id ?? '');
+
+  console.log({ myApplicationsMap, s: post?.id });
 
   const mediaItems =
     post?.media?.map(media => ({
@@ -93,7 +91,7 @@ export const PostPage = () => {
         </Typography>
       )}
 
-      {isMyPost && (
+      {isOwner && (
         <Tabs
           value={tabValue}
           onChange={(_, newValue) => setTabValue(newValue)}
@@ -148,8 +146,9 @@ export const PostPage = () => {
 
             <Box sx={{ width: { xs: '100%', lg: '30%' } }}>
               <ContactCard
+                withTitle
+                isMyPost={isOwner}
                 contact={user?.data}
-                isMyPost={isMyPost}
               />
             </Box>
           </Stack>

@@ -1,4 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material';
+import { formatDate } from 'date-fns';
 
 import { MY_PARAMETERS_LABELS, type Person } from '@/entities/user';
 import { FormBlock } from '@/shared';
@@ -25,8 +26,8 @@ export const AboutMe = ({
       }}
     >
       <UserCardItem
-        value={aboutMe || ''}
         isLoading={false}
+        value={aboutMe || ''}
       />
 
       {isLeastOneParameter && (
@@ -40,7 +41,12 @@ export const AboutMe = ({
                 {MY_PARAMETERS_LABELS[key as keyof typeof MY_PARAMETERS_LABELS]}
               </Typography>
               <Typography variant="body1">
-                {person?.[key as keyof Person]}
+                {key === 'birthday'
+                  ? formatDate(
+                      person?.[key as keyof Person] || new Date(),
+                      'dd.MM.yyyy'
+                    )
+                  : person?.[key as keyof Person]}
               </Typography>
             </Stack>
           ))}

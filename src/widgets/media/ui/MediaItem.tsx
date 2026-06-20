@@ -12,12 +12,13 @@ import { getMediaKind } from '../lib/getMediaKind';
 type MediaItemProps = {
   src: string;
   alt?: string;
+  size?: number;
   mimeType?: string;
-  withControls?: boolean;
   isActive?: boolean;
-  errorMessage?: string;
   onLoad?: () => void;
   onError?: () => void;
+  errorMessage?: string;
+  withControls?: boolean;
   loading?: ImgHTMLAttributes<HTMLImageElement>['loading'];
 };
 
@@ -118,7 +119,8 @@ export const MediaItem = ({
         width: '100%',
         height: '100%',
         position: 'relative',
-        bgcolor: kind === 'video' && withControls ? 'common.black' : 'transparent',
+        bgcolor:
+          kind === 'video' && withControls ? 'common.black' : 'transparent',
       }}
     >
       {status === 'loading' && (

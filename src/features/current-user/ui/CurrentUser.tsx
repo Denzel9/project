@@ -1,4 +1,4 @@
-import { Add, PersonAddAlt } from '@mui/icons-material';
+import { Add, ManageAccounts } from '@mui/icons-material';
 import { TextField, MenuItem, Skeleton, Menu, IconButton } from '@mui/material';
 import { useEffect, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
@@ -75,7 +75,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
           color="primary"
           onClick={handleClick}
         >
-          <PersonAddAlt />
+          <ManageAccounts />
         </IconButton>
 
         <Menu

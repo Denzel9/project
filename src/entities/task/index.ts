@@ -26,6 +26,7 @@ export {
   type TaskActivityList,
   type TaskActivityListParams,
   type UpdateTaskDto,
+  type CreateTaskDto,
   type CreateTaskCommentDto,
   type UpdateTaskCommentDto,
 } from './model/types'

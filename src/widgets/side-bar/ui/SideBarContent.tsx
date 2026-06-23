@@ -9,18 +9,21 @@ import {
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router';
 
-import { useAuthStore } from '@/features/auth';
-import { ROUTES } from '@/shared/config/routes';
+import { BASE_COLOR } from '@/app/index';
+import { useAuthStore } from '@/features';
+import { ROUTES } from '@/shared';
 
 import {
-  AUTH_TYPES,
   TOP_MENU_ROUTES,
   BOTTOM_MENU_ROUTES,
   MENU_ROUTES_PRIME,
 } from '../model/routes/routes';
+import { getIsVisibleRoute } from '../model/utils';
 
 import { MenuItem } from './MenuItem';
 import { SettingsCollapseMenu } from './SettingsCollapseMenu';
+
+import type { USER_ROLE } from '@/entities';
 
 type SideBarContentProps = {
   isExpanded: boolean;
@@ -31,8 +34,10 @@ export const SideBarContent = ({
   isExpanded,
   onNavigate,
 }: SideBarContentProps) => {
-  const { isAuth } = useAuthStore();
+  const { isAuth, role } = useAuthStore();
+
   const navigate = useNavigate();
+
   const pathname = useLocation()?.pathname;
 
   return (
@@ -48,10 +53,10 @@ export const SideBarContent = ({
       <List sx={{ gap: 1, display: 'flex', flexDirection: 'column' }}>
         {isExpanded ? (
           <Typography
-            variant="h6"
+            variant="h4"
             sx={{ pb: 10, px: 4 }}
           >
-            LOGO
+            NIKS<span style={{ color: BASE_COLOR }}>SENS</span>
           </Typography>
         ) : (
           <Cyclone
@@ -61,7 +66,7 @@ export const SideBarContent = ({
         )}
 
         {TOP_MENU_ROUTES.map(route => {
-          if (route.authType === AUTH_TYPES.ONLY_AUTH && !isAuth) return null;
+          if (!getIsVisibleRoute(route, isAuth, role as USER_ROLE)) return null;
 
           return (
             <MenuItem
@@ -92,7 +97,7 @@ export const SideBarContent = ({
         {isAuth && <Divider sx={{ mb: 2 }} />}
 
         {BOTTOM_MENU_ROUTES.map(route => {
-          if (route.authType === AUTH_TYPES.ONLY_AUTH && !isAuth) return null;
+          if (!getIsVisibleRoute(route, isAuth, role as USER_ROLE)) return null;
 
           if (route.path === ROUTES.SETTINGS && onNavigate) {
             return (

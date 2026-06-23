@@ -1,5 +1,9 @@
+import { lazy, Suspense } from 'react';
 import { Popover } from '@mui/material';
-import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
+
+import type { EmojiClickData } from 'emoji-picker-react';
+
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 type ChatEmojiPickerProps = {
   anchorEl: HTMLElement | null;
@@ -33,13 +37,17 @@ export const ChatEmojiPicker = ({
         },
       }}
     >
-      <EmojiPicker
-        onEmojiClick={handleEmojiClick}
-        searchPlaceHolder="Поиск эмодзи"
-        previewConfig={{ showPreview: false }}
-        width={320}
-        height={400}
-      />
+      {open && (
+        <Suspense fallback={null}>
+          <EmojiPicker
+            onEmojiClick={handleEmojiClick}
+            searchPlaceHolder="Поиск эмодзи"
+            previewConfig={{ showPreview: false }}
+            width={320}
+            height={400}
+          />
+        </Suspense>
+      )}
     </Popover>
   );
 };

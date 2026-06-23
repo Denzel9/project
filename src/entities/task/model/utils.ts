@@ -27,6 +27,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   COMPLETED: 'Завершена',
   CANCELLED: 'Отменена',
   CHECKING: 'На проверке',
+  CANCELLED_EXECUTOR: 'Отменена исполнителем',
 }
 
 export const TASK_ROLE_LABELS = {

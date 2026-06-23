@@ -7,6 +7,7 @@ export type TaskStatus =
   | 'COMPLETED'
   | 'CANCELLED'
   | 'CHECKING'
+  | 'CANCELLED_EXECUTOR'
 
 export enum TASK_STATUS_ENUM {
   PREPARING = 'PREPARING',
@@ -16,6 +17,7 @@ export enum TASK_STATUS_ENUM {
   COMPLETED = 'COMPLETED',
   CHECKING = 'CHECKING',
   CANCELLED = 'CANCELLED',
+  CANCELLED_EXECUTOR = 'CANCELLED_EXECUTOR',
 }
 
 export type TaskRole = 'owner' | 'executor'
@@ -55,6 +57,7 @@ export type Post = {
   ownerId: string
   title: string
   type: string
+  isPrivate: boolean
 }
 
 export type Owner = {
@@ -73,8 +76,17 @@ export type CompanyProfile = {
   companyName: string
 }
 
+export type Executor = {
+  avatar: string
+  id: string
+  lastName: string
+  name: string
+  role: string
+}
+
 export type Task = {
   id: string
+  title: string
   applicationId: string
   postId: string
   ownerId: string
@@ -89,7 +101,9 @@ export type Task = {
   urgent: boolean
   createdAt: string
   updatedAt: string
+  isExecutorApprove?: boolean
   comments?: TaskComment[]
+  executor?: Executor
   post?: Post
   owner?: Owner
 }
@@ -111,6 +125,7 @@ export type TaskCommentList = {
 export type TaskListParams = {
   role?: TaskRole
   status?: TaskStatus
+  postId?: string
   page?: number
   limit?: number
   updatedDate?: string
@@ -200,6 +215,7 @@ export const TASK_ACTIVITY_LABELS: Record<TaskActivityType, string> = {
 } as const
 
 export type UpdateTaskDto = {
+  title?: string
   status?: TaskStatus
   media?: string[]
   description?: string
@@ -207,6 +223,13 @@ export type UpdateTaskDto = {
   photoCount?: string
   videoCount?: string
   urgent?: boolean
+  executorId?: string
+  isExecutorApprove?: boolean | null
+}
+
+export type CreateTaskDto = {
+  postId: string
+  executorId?: string
 }
 
 export type CreateTaskCommentDto = {

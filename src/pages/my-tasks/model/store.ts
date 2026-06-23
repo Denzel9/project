@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { ALL_TASK_STATUSES } from './kanbanColumns';
 
-import type { TaskStatusFilter } from './utils';
+import type { TaskStatusFilter, ExecutorApproveFilter } from './utils';
 import type { TaskStatus } from '@/entities';
 
 export type TaskViewMode = 'grid' | 'kanban' | 'table';
@@ -45,30 +45,38 @@ const readStoredKanbanColumns = (): TaskStatus[] => {
 };
 
 type MyTaskFilterStore = {
-  status: TaskStatusFilter;
+  postId: string;
   viewMode: TaskViewMode;
+  status: TaskStatusFilter;
   updatedDate: string | null;
   visibleKanbanColumns: TaskStatus[];
+  executorApproveFilter: ExecutorApproveFilter;
 
   resetKanbanColumns: () => void;
+  setPostId: (postId: string) => void;
   setStatus: (status: TaskStatusFilter) => void;
   setViewMode: (viewMode: TaskViewMode) => void;
   toggleKanbanColumn: (status: TaskStatus) => void;
   setUpdatedDate: (updatedDate: string | null) => void;
+  setExecutorApproveFilter: (filter: ExecutorApproveFilter) => void;
 
   isChangedFilters: () => boolean;
 };
 
 export const useMyTaskFilterStore = create<MyTaskFilterStore>((set, get) => ({
+  postId: 'all',
   status: 'all',
   updatedDate: null,
   viewMode: readStoredViewMode(),
   visibleKanbanColumns: readStoredKanbanColumns(),
+  executorApproveFilter: 'active',
 
+  setPostId: postId => set({ postId }),
   isChangedFilters: () => {
     return (
       get().status !== 'all' ||
       get().updatedDate !== null ||
+      get().executorApproveFilter !== 'active' ||
       get().visibleKanbanColumns.length !== ALL_TASK_STATUSES.length
     );
   },
@@ -76,6 +84,8 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set, get) => ({
   setStatus: status => set({ status }),
   setViewMode: viewMode => set({ viewMode }),
   setUpdatedDate: updatedDate => set({ updatedDate }),
+  setExecutorApproveFilter: executorApproveFilter =>
+    set({ executorApproveFilter }),
 
   toggleKanbanColumn: status => {
     set(state => {

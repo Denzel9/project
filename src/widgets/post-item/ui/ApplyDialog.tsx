@@ -44,11 +44,12 @@ export const ApplyDialog = ({
       onClose={handleClose}
       sx={{
         '& .MuiDialog-paper': {
+          maxWidth: '90%',
           outline: 'none',
           overflow: 'visible',
           position: 'relative',
           borderRadius: '32px',
-          minWidth: 480,
+          minWidth: { xs: 'auto', md: 560 },
         },
       }}
     >
@@ -68,7 +69,7 @@ export const ApplyDialog = ({
         <Close />
       </IconButton>
 
-      <Box sx={{ p: 4 }}>
+      <Box sx={{ p: { xs: 3, md: 4 } }}>
         <Typography variant="h6">Откликнуться</Typography>
 
         <Typography
@@ -104,6 +105,7 @@ export const ApplyDialog = ({
             variant="contained"
             disabled={isPending || !message.trim()}
             onClick={handleSubmit}
+            loading={isPending}
           >
             Отправить
           </Button>

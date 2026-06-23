@@ -52,6 +52,7 @@ export const ProfileControl = ({
         borderRadius: '32px',
         mt: { xs: 2, md: 20 },
         justifyContent: 'space-between',
+        boxShadow: { xs: 'none', md: '0 0 10px 0 rgba(0, 0, 0, 0.1)' },
       }}
     >
       <Stack

@@ -6,12 +6,15 @@ import { useNavigate } from 'react-router';
 import { useGetProfilesQuery, useSwitchProfileMutation } from '@/entities';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
 
 import { useCurrentUserStore } from '../model/store';
 
 export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const handleClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -54,8 +57,10 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
 
     await handleSwitchProfile(value);
     // TODO: Обязательно разкомментировать
-    // navigate(ROUTES.INDEX);
+    navigate(ROUTES.INDEX);
     setCurrentUser(value);
+    setAnchorEl(null);
+    setSnackbarOpen?.(true, 'Профиль успешно переключен');
   };
 
   if (isLoading || isPending) {

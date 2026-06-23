@@ -9,3 +9,4 @@ export * from './confirm-dialog';
 export * from './side-bar'
 export * from './snackbar';
 export * from './contact-card';
+export * from './providers';

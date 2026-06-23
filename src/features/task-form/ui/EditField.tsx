@@ -5,10 +5,12 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import type { PropsWithChildren } from 'react';
 
 type EditFieldProps = {
-  isDate?: boolean;
   name: string;
-  label: string;
+  label?: string;
   isEdit: boolean;
+  isDate?: boolean;
+  canEdit?: boolean;
+  fieldLabel?: string;
   setIsEdit: (isEdit: boolean) => void;
 };
 
@@ -18,6 +20,8 @@ export const EditField = ({
   isEdit,
   children,
   setIsEdit,
+  fieldLabel,
+  canEdit = true,
   isDate = false,
 }: PropsWithChildren<EditFieldProps>) => {
   const { control } = useFormContext();
@@ -35,7 +39,7 @@ export const EditField = ({
     children
   ) : (
     <FormControl fullWidth>
-      <FormLabel sx={{ mb: 2, fontWeight: 500, fontSize: '18px' }}>
+      <FormLabel sx={{ mb: 2, fontWeight: 500, fontSize: '16px' }}>
         {label}
       </FormLabel>
 
@@ -43,20 +47,21 @@ export const EditField = ({
         <Typography variant="body1">{value}</Typography>
       ) : (
         <Typography
-          onClick={() => setIsEdit(true)}
+          onClick={() => canEdit && setIsEdit(true)}
           sx={{
             color: 'info.main',
             fontWeight: 500,
             fontSize: '16px',
-            cursor: 'pointer',
+            cursor: canEdit ? 'pointer' : 'default',
             transition: 'all 0.3s ease',
-            ':hover': {
-              color: 'primary.main',
-              textDecoration: 'underline',
-            },
+            ':hover': canEdit
+              ? {
+                  color: 'primary.main',
+                }
+              : {},
           }}
         >
-          Добавить
+          Добавить {fieldLabel ? fieldLabel : ''}
         </Typography>
       )}
     </FormControl>

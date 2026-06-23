@@ -29,33 +29,32 @@ export const InvitePage = () => {
           if (!res?.data) {
             setIsError(true);
           }
-          // navigate(ROUTES.INDEX, { replace: true });
+          navigate(ROUTES.INDEX, { replace: true });
         })
         .catch(() => {
           setIsError(true);
         });
     }
-  }, [acceptInvite, token]);
+  }, [acceptInvite, navigate, token]);
 
   return (
     <Box
       sx={{
-        padding: 10,
         height: '100vh',
       }}
     >
       <Box
         sx={{
           p: 4,
-          borderRadius: 4,
-          bgcolor: 'white',
-          height: '100%',
           width: '100%',
+          height: '100%',
+          borderRadius: 4,
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          bgcolor: 'white',
           position: 'relative',
+          alignItems: 'center',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}
       >
         <Typography

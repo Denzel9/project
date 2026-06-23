@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
 import { prepareFileForUpload } from '@/shared/lib/media'
@@ -7,6 +12,7 @@ import { toTaskCommentMedia } from './utils'
 
 import type {
   CreateTaskCommentDto,
+  CreateTaskDto,
   Task,
   TaskActivityList,
   TaskActivityListParams,
@@ -45,6 +51,22 @@ export const taskKeys = {
     [...taskKeys.all, 'activities', taskId, params ?? {}] as const,
 }
 
+const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
+  const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(task.id))
+  const postId = task.postId || cachedTask?.postId
+  const mergedTask = { ...cachedTask, ...task, postId: postId ?? task.postId }
+
+  queryClient.setQueryData(taskKeys.detail(task.id), mergedTask)
+
+  void queryClient.invalidateQueries({ queryKey: taskKeys.detail(task.id) })
+  void queryClient.invalidateQueries({ queryKey: ['postTasks', postId] })
+  void queryClient.invalidateQueries({ queryKey: ['user', task.executorId] })
+  void queryClient.invalidateQueries({ queryKey: ['user', task.ownerId] })
+  void queryClient.invalidateQueries({
+    queryKey: ['executor', 'pending-approval-tasks'],
+  })
+}
+
 export const useTasksQuery = (params?: TaskListParams) =>
   useQuery({
     queryKey: taskKeys.list(params),
@@ -72,14 +94,14 @@ export const useSearchTasksQuery = (params: SearchTasksParams) => {
   })
 }
 
-export const useTaskByIdQuery = (id: string | null) =>
+export const useTaskByIdQuery = (id: string | null, skip?: boolean) =>
   useQuery({
     queryKey: taskKeys.detail(id ?? ''),
     queryFn: async () => {
       const { data } = await mainAxios.get<Task>(`/tasks/${id}`)
       return data
     },
-    enabled: Boolean(id),
+    enabled: Boolean(id) && !skip,
   })
 
 export const useUpdateTaskMutation = () => {
@@ -91,11 +113,36 @@ export const useUpdateTaskMutation = () => {
       return data
     },
     onSuccess: task => {
-      queryClient.setQueryData(taskKeys.detail(task.id), task)
+      invalidateTaskRelatedQueries(queryClient, task)
+    },
+  })
+}
+
+export const useCreateTaskMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: CreateTaskDto) => {
+      const { data } = await mainAxios.post<Task>('/tasks', body)
+      return data
+    },
+    onSuccess: task => {
       queryClient.invalidateQueries({ queryKey: taskKeys.all })
-      queryClient.invalidateQueries({
-        queryKey: [...taskKeys.all, 'activities', task.id],
-      })
+      queryClient.setQueryData(taskKeys.detail(task.id), task)
+    },
+  })
+}
+
+export const useDeleteTaskMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await mainAxios.delete(`/tasks/${id}`)
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.all })
+      queryClient.removeQueries({ queryKey: taskKeys.detail(id) })
     },
   })
 }
@@ -361,6 +408,16 @@ export const useDeleteTaskCommentMutation = () => {
             : old,
       )
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
+    },
+  })
+}
+
+export const usePendingApprovalTasksQuery = () => {
+  return useQuery({
+    queryKey: ['executor', 'pending-approval-tasks'],
+    queryFn: async () => {
+      const { data } = await mainAxios.get<TaskList>('/tasks/pending-approval')
+      return data
     },
   })
 }

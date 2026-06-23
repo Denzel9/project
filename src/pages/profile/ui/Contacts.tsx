@@ -10,8 +10,23 @@ import {
 } from '@/entities/user';
 
 export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
+  if(!contacts.length) {
+    return <Box sx={{
+      bgcolor: 'white',
+      p: { xs: 3, md: 4 },
+      borderRadius: '32px',
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <Typography sx={{ fontSize: {xs: '24px', md: '34px'}, opacity: 0.3 }} color="info">
+        Нет данных
+      </Typography>
+    </Box>;
+  }
+
   return (
-    <Box>
       <Stack
         direction="column"
         spacing={2}
@@ -19,6 +34,7 @@ export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
           p: { xs: 3, md: 4 },
           borderRadius: '32px',
           bgcolor: 'white',
+          height: '100%',
         }}
       >
         {contacts?.map(field => {
@@ -64,6 +80,5 @@ export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
           );
         })}
       </Stack>
-    </Box>
   );
 };

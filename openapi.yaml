@@ -1377,9 +1377,17 @@ paths:
       summary: Список задач
       description:
         'Задачи, где пользователь owner или executor. Фильтры: `role`, `status`,
-        `updatedDate` (YYYY-MM-DD, UTC), `q` (название поста или компании).
-        Создание задачи — автоматически при ACCEPTED отклика.'
+        `postId`, `updatedDate` (YYYY-MM-DD, UTC), `q` (название поста или
+        компании). Создание — `POST /tasks` или автоматически при ACCEPTED
+        отклика.'
       parameters:
+        - name: postId
+          required: false
+          in: query
+          description: Фильтр по посту (задачи, связанные с объявлением)
+          schema:
+            format: uuid
+            type: string
         - name: role
           required: false
           in: query
@@ -1440,6 +1448,32 @@ paths:
         - tasks
       security: &a13
         - access-token: []
+    post:
+      operationId: TasksController_create
+      summary: Создать задачу по посту
+      description:
+        Создаёт задачу для поста с указанным исполнителем. Только owner поста.
+        Альтернатива автоматическому созданию при ACCEPTED отклика.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskDto'
+      responses:
+        '201':
+          description: Задача создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponseDto'
+        '403':
+          description: Недостаточно прав (не owner поста)
+        '404':
+          description: Пост или исполнитель не найден
+      tags: *a12
+      security: *a13
   /tasks/{id}:
     get:
       operationId: TasksController_findById
@@ -1491,6 +1525,25 @@ paths:
                 $ref: '#/components/schemas/TaskResponseDto'
         '403':
           description: Нет доступа или недопустимые поля
+        '404':
+          description: Задача не найдена
+      tags: *a12
+      security: *a13
+    delete:
+      operationId: TasksController_delete
+      summary: Удалить задачу
+      description: Удаляет задачу. Только owner поста. VIEWER → 403.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Задача удалена
+        '403':
+          description: Нет доступа
         '404':
           description: Задача не найдена
       tags: *a12
@@ -2144,9 +2197,10 @@ info:
 
     ### Задачи
 
-    1. Создаются автоматически при `PATCH /applications/:id/status` → ACCEPTED.
+    1. Создание: `POST /tasks` (`postId`, `executorId`) — owner поста; или
+    автоматически при `PATCH /applications/:id/status` → ACCEPTED.
 
-    2. `GET /tasks` — список (`?role=owner|executor`, `?status=`,
+    2. `GET /tasks` — список (`?role=owner|executor`, `?postId=`, `?status=`,
     `?updatedDate=YYYY-MM-DD`, `?q=` по title или companyName).
 
     3. `GET /tasks/:id` — задача с `media[]` (основные) и `reportMedia[]`
@@ -2155,10 +2209,12 @@ info:
     4. `PATCH /tasks/:id` — owner: все поля; executor: только status.
     `description` — Markdown (хранится как строка).
 
-    5. Медиа задачи: `POST /media/upload?taskId=` (main), `?taskId=&kind=report`
+    5. `DELETE /tasks/:id` — удалить задачу (только owner поста).
+
+    6. Медиа задачи: `POST /media/upload?taskId=` (main), `?taskId=&kind=report`
     (отчёт), `GET /tasks/:id/attachments` (фильтры kind, type).
 
-    6. Комментарии: `GET/POST /tasks/:id/comments`, `GET
+    7. Комментарии: `GET/POST /tasks/:id/comments`, `GET
     .../comments/search?q=`, `GET .../comments/attachments`, `PATCH/DELETE
     .../comments/:commentId`. Вложения в комментарий: `POST
     /media/upload?taskId=&forComment=true`.
@@ -3298,6 +3354,20 @@ components:
         - media
         - createdAt
         - updatedAt
+    CreateTaskDto:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+          description: UUID поста, для которого создаётся задача
+        executorId:
+          type: string
+          format: uuid
+          description: UUID профиля исполнителя (User)
+      required:
+        - postId
+        - executorId
     TaskResponseDto:
       type: object
       properties:
@@ -3305,6 +3375,9 @@ components:
           type: string
           format: uuid
         applicationId:
+          type: string
+          format: uuid
+        postId:
           type: string
           format: uuid
         executorId:
@@ -3366,6 +3439,7 @@ components:
       required:
         - id
         - applicationId
+        - postId
         - executorId
         - ownerId
         - status

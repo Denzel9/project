@@ -62,6 +62,7 @@ export type Post = {
   createdAt: string
   updatedAt: string
   owner: PostOwner
+  isPrivate?: boolean
 }
 
 export type CreatePostDto = {
@@ -77,6 +78,7 @@ export type CreatePostDto = {
   rangePrice?: string[]
   keyWords?: string[]
   categories?: string[]
+  isPrivate?: boolean
 }
 
 export type UpdatePostDto = Partial<
@@ -85,6 +87,7 @@ export type UpdatePostDto = Partial<
   typeCooperation?: PostCooperationType[]
   contentType?: PostContentType
   isArchived?: boolean
+  isPrivate?: boolean
 }
 
 export type PostListParams = {
@@ -98,6 +101,17 @@ export type PostListParams = {
 
 export type SearchPostsParams = {
   q: string
+  page?: number
+  limit?: number
+}
+
+export type CreatePostTaskDto = {
+  postId: string
+  executorId: string
+}
+
+export type PostTasksParams = {
+  postId: string
   page?: number
   limit?: number
 }

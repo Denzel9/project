@@ -55,7 +55,7 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
   const handleClick = () => {
     if (isDragging) return;
 
-    navigate(`${ROUTES.TASK}/${task.id}`);
+    navigate(`${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`);
   };
 
   return (

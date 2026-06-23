@@ -10,7 +10,6 @@ import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { getUserName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
 import { FavoriteButton } from '@/widgets';
-import { MediaPreview } from '@/widgets/media/ui/MediaPreview';
 
 type MyResponseItemProps = {
   isFavorite?: boolean;
@@ -106,10 +105,6 @@ export const MyResponseItem = ({
           }
         />
       </Stack>
-
-      {Boolean(application.post?.media?.length) && (
-        <MediaPreview media={application.post?.media ?? []} />
-      )}
     </Box>
 
     <Stack

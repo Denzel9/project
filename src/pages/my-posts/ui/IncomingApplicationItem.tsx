@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
@@ -18,6 +19,7 @@ import {
 } from '@/entities/application';
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { ROUTES } from '@/shared/config/routes';
+import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 type IncomingApplicationItemProps = {
   application: Application;
@@ -26,6 +28,10 @@ type IncomingApplicationItemProps = {
 export const IncomingApplicationItem = ({
   application,
 }: IncomingApplicationItemProps) => {
+  const [isOpenRejectDialog, setIsOpenRejectDialog] = useState(false);
+
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const navigate = useNavigate();
 
   const { mutateAsync: updateStatus, isPending } =
@@ -134,12 +140,7 @@ export const IncomingApplicationItem = ({
               color="error"
               disabled={isPending}
               sx={{ px: 2 }}
-              onClick={() =>
-                updateStatus({
-                  id: application.id,
-                  body: { status: APPLICATION_STATUS_ENUM.REJECTED },
-                })
-              }
+              onClick={() => setIsOpenRejectDialog(true)}
             >
               Отклонить
             </Button>
@@ -153,9 +154,12 @@ export const IncomingApplicationItem = ({
                 updateStatus({
                   id: application.id,
                   body: { status: APPLICATION_STATUS_ENUM.ACCEPTED },
-                }).then(() => {
-                  navigate(ROUTES.MY_TASKS);
-                })
+                }).then(() =>
+                  setSnackbarOpen?.(
+                    true,
+                    'Задача создана и переведена в статус "Подготовка"'
+                  )
+                )
               }
             >
               Принять
@@ -174,6 +178,24 @@ export const IncomingApplicationItem = ({
           </IconButton>
         )}
       </Stack>
+
+      <ConfirmDialog
+        isOpen={isOpenRejectDialog}
+        onClose={() => setIsOpenRejectDialog(false)}
+        onSuccess={() => {
+          updateStatus({
+            id: application.id,
+            body: { status: APPLICATION_STATUS_ENUM.REJECTED },
+          }).then(() => {
+            setIsOpenRejectDialog(false);
+          });
+        }}
+      >
+        <Typography variant="h6">Отклонить отклик</Typography>
+        <Typography variant="body1">
+          Вы уверены, что хотите отклонить отклик?
+        </Typography>
+      </ConfirmDialog>
     </Stack>
   );
 };

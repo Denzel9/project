@@ -6,17 +6,27 @@ import { Link } from 'react-router';
 import { TASK_STATUS_LABELS, type Task } from '@/entities/task';
 import { getUserName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
-import { MediaPreview } from '@/widgets/media/ui/MediaPreview';
 
 type TaskItemProps = {
   task: Task;
+  isCompany: boolean;
 };
 
-export const TaskItem = ({ task }: TaskItemProps) => {
+export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
+  const getLink = () => {
+    if (isCompany) {
+      return `${ROUTES.TASK}/${task.post?.id}?inviteId=${task.id}`;
+    }
+
+    return `${ROUTES.TASK}/${task.post?.id}?&inviteId=${task.id}`;
+  };
+
+  const canNavigateToPost = !task?.post?.isPrivate || !isCompany;
+
   return (
     <Box
       component={Link}
-      to={`${ROUTES.TASK}/${task.id}`}
+      to={getLink()}
       sx={{
         p: 2,
         color: 'inherit',
@@ -48,42 +58,36 @@ export const TaskItem = ({ task }: TaskItemProps) => {
           <Stack
             direction="column"
             spacing={0}
+            onClick={e => e.stopPropagation()}
           >
             <Link
-              to={`${ROUTES.POST}/${task?.post?.id}`}
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              to={canNavigateToPost ? '' : `${ROUTES.POST}/${task?.post?.id}`}
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+                cursor: canNavigateToPost ? 'default' : 'pointer',
+              }}
             >
               <Typography
                 variant="h6"
                 sx={{
-                  cursor: 'pointer',
+                  cursor: canNavigateToPost ? 'default' : 'pointer',
                   transition: 'text-decoration 0.2s ease',
-                  ':hover': {
-                    color: 'primary.main',
-                    textDecoration: 'underline',
-                  },
+                  ':hover': canNavigateToPost
+                    ? {}
+                    : {
+                        color: 'primary.main',
+                      },
                 }}
               >
                 {task.post?.title}
               </Typography>
-            </Link>
 
-            <Link
-              to={`${ROUTES.PROFILE}?userId=${task.ownerId}`}
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
               <Typography
-                variant="body1"
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'text-decoration 0.2s ease',
-                  ':hover': {
-                    color: 'primary.main',
-                    textDecoration: 'underline',
-                  },
-                }}
+                variant="body2"
+                color="info"
               >
-                {getUserName(task.owner as Partial<User>)}
+                {task?.title}
               </Typography>
             </Link>
           </Stack>
@@ -94,6 +98,7 @@ export const TaskItem = ({ task }: TaskItemProps) => {
           spacing={1}
         >
           {task.urgent && <Whatshot color="error" />}
+
           <Chip
             size="small"
             label={TASK_STATUS_LABELS[task.status]}
@@ -103,22 +108,64 @@ export const TaskItem = ({ task }: TaskItemProps) => {
         </Stack>
       </Stack>
 
-      <Stack
-        direction="row"
-        sx={{ justifyContent: 'space-between', alignItems: 'end', mt: 4 }}
-      >
-        <MediaPreview media={task?.media} />
+      {task.finalDate && (
+        <Typography
+          variant="body2"
+          color="info"
+          sx={{ fontSize: '12px', textAlign: 'right' }}
+        >
+          Дедлайн: {format(new Date(task.finalDate ?? ''), 'dd.MM.yyyy')}
+        </Typography>
+      )}
 
-        {task.finalDate && (
-          <Typography
-            variant="body2"
-            color="info"
-            sx={{ fontSize: '12px', textAlign: 'right' }}
+      <Box
+        onClick={e => e.stopPropagation()}
+        sx={{ mt: 4 }}
+      >
+        {isCompany && (
+          <Link
+            target="_blank"
+            to={`${ROUTES.PROFILE}?userId=${task.executorId}`}
+            style={{ textDecoration: 'none', color: 'inherit' }}
           >
-            Дедлайн: {format(new Date(task.finalDate ?? ''), 'dd.MM.yyyy')}
-          </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                ':hover': {
+                  color: 'primary.main',
+                },
+              }}
+            >
+              {task?.executor?.name && task?.executor?.lastName
+                ? `${task?.executor?.name} ${task?.executor?.lastName}`
+                : 'Не назначено'}
+            </Typography>
+          </Link>
         )}
-      </Stack>
+
+        {!isCompany && (
+          <Link
+            target="_blank"
+            to={`${ROUTES.PROFILE}?userId=${task.ownerId}`}
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                ':hover': {
+                  color: 'primary.main',
+                },
+              }}
+            >
+              {getUserName(task.owner as Partial<User>)}
+            </Typography>
+          </Link>
+        )}
+      </Box>
     </Box>
   );
 };

@@ -2,6 +2,7 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   MoreVertOutlined,
+  Person,
   RocketLaunch,
 } from '@mui/icons-material';
 import {
@@ -16,6 +17,7 @@ import {
   Tooltip,
   Menu,
   MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -27,27 +29,97 @@ import {
   getPhone,
   getUserName,
   type User,
-  type ApplicationStatus,
-  APPLICATION_STATUS_ENUM,
+  TASK_STATUS_ENUM,
+  type TaskStatus,
 } from '@/entities';
 import { ROUTES } from '@/shared';
 
+import { AddExecutorDialog } from './AddExecutorDialog';
+
 type ContactCardProps = {
+  taskId: string;
   contact?: User;
-  withTitle?: boolean;
   isMyPost?: boolean;
-  status?: ApplicationStatus;
+  withTitle?: boolean;
+  status?: TaskStatus;
+  isExecutorApprove?: boolean;
 };
 
 export const ContactCard = ({
+  taskId,
+  status,
   contact,
   withTitle = false,
   isMyPost = false,
+  isExecutorApprove = false,
 }: ContactCardProps) => {
+  const [isOpenAddExecutorDialog, setIsOpenAddExecutorDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isOpenMoreContacts, setisOpenMoreContacts] = useState(false);
 
   const navigate = useNavigate();
+
+  if (isExecutorApprove === null && contact?.id) {
+    return (
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          width: '100%',
+          bgcolor: 'white',
+          p: { xs: 3, md: 4 },
+          borderRadius: '32px',
+          alignItems: 'center',
+          height: 'fit-content',
+        }}
+      >
+        <Typography variant="h6">Ожидается подтверждение</Typography>
+        <CircularProgress size={24} />
+      </Stack>
+    );
+  }
+
+  if (!contact) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          bgcolor: 'white',
+          borderRadius: '32px',
+          p: { xs: 3, md: 4 },
+          height: 'fit-content',
+        }}
+      >
+        {status !== TASK_STATUS_ENUM.CANCELLED && (
+          <Button
+            fullWidth
+            color="primary"
+            variant="contained"
+            onClick={() => setIsOpenAddExecutorDialog(true)}
+          >
+            Назначить исполнителя
+          </Button>
+        )}
+
+        {status === TASK_STATUS_ENUM.CANCELLED && !contact && (
+          <Stack
+            spacing={1}
+            direction="row"
+            sx={{ alignItems: 'center' }}
+          >
+            <Person color="primary" />
+            <Typography variant="body1">Исполнитель не был назначен</Typography>
+          </Stack>
+        )}
+
+        <AddExecutorDialog
+          taskId={taskId}
+          isOpen={isOpenAddExecutorDialog}
+          onClose={() => setIsOpenAddExecutorDialog(false)}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -263,16 +335,14 @@ export const ContactCard = ({
         </Stack>
       )}
 
-      {status === APPLICATION_STATUS_ENUM.ACCEPTED && (
-        <Button
-          sx={{ mt: 4 }}
-          component={Link}
-          variant="outlined"
-          to={`${ROUTES.CHAT}?recipientId=${contact?.id}`}
-        >
-          В чат
-        </Button>
-      )}
+      <Button
+        sx={{ mt: 4 }}
+        component={Link}
+        variant="outlined"
+        to={`${ROUTES.CHAT}?recipientId=${contact?.id}`}
+      >
+        В чат
+      </Button>
     </Box>
   );
 };

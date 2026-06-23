@@ -5,18 +5,25 @@ import { useFormContext } from 'react-hook-form';
 import {
   TASK_STATUS_ENUM,
   TaskActivityType,
+  useUpdateTaskMutation,
   type TaskActivity,
   type TaskStatus,
 } from '@/entities';
 import { useAuthStore } from '@/features';
 import { useSnackbarStore } from '@/widgets';
 
+import { PendingInvite } from './PendingInvite';
+import { RejectInvite } from './RejectInvite';
+
 type ActionProps = {
+  taskId: string;
   isEdit: boolean;
   status: TaskStatus;
   isLoading: boolean;
+  executorId?: string;
   taskOwnerId: string;
   activities: TaskActivity[];
+  isExecutorApprove?: boolean;
   handleGoToRevision: () => void;
   handleCompleteTask: () => void;
   handleEdit: (isEdit: boolean) => void;
@@ -25,14 +32,17 @@ type ActionProps = {
 };
 
 export const Action = ({
+  taskId,
   status,
   isEdit,
   isLoading,
   activities,
+  executorId,
   handleSave,
   handleEdit,
   taskOwnerId,
   handleSubmitForm,
+  isExecutorApprove,
   handleGoToRevision,
 }: ActionProps) => {
   const { setSnackbarOpen } = useSnackbarStore();
@@ -43,6 +53,8 @@ export const Action = ({
     formState: { errors },
     clearErrors,
   } = useFormContext();
+
+  const { mutateAsync: updateTask } = useUpdateTaskMutation();
 
   const lastActivitiesStatus = useMemo(
     () =>
@@ -110,12 +122,16 @@ export const Action = ({
 
   const { label, isDisabled, status: newStatus } = getSaveButtonConditions();
 
-  const isSaveEnabled =
-    status !== TASK_STATUS_ENUM.COMPLETED &&
-    status !== TASK_STATUS_ENUM.CANCELLED;
+  const isSaveEnabled = ![
+    TASK_STATUS_ENUM.CANCELLED,
+    TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
+    TASK_STATUS_ENUM.COMPLETED,
+  ].includes(status as TASK_STATUS_ENUM);
+
   const isRevisionEnabled =
     status === TASK_STATUS_ENUM.PENDING_APPROVAL ||
     (status === TASK_STATUS_ENUM.CHECKING && isMe);
+
   const isEditEnabled =
     (status === TASK_STATUS_ENUM.PREPARING && isMe) ||
     status === TASK_STATUS_ENUM.REVISION;
@@ -132,6 +148,27 @@ export const Action = ({
     }
   }, [clearErrors, errors, setSnackbarOpen]);
 
+  console.log({ isExecutorApprove });
+
+  if (isExecutorApprove === null && !isMe) {
+    return (
+      <PendingInvite
+        taskId={taskId}
+        updateTask={updateTask}
+      />
+    );
+  }
+
+  if (isExecutorApprove === false) {
+    return (
+      <RejectInvite
+        isMe={isMe}
+        taskId={taskId}
+        updateTask={updateTask}
+      />
+    );
+  }
+
   return (
     <Stack
       spacing={2}
@@ -145,7 +182,9 @@ export const Action = ({
               size="small"
               variant="contained"
               loading={isLoading}
-              disabled={isLoading || isDisabled}
+              disabled={
+                isLoading || isDisabled || !executorId || !isExecutorApprove
+              }
               onClick={() => handleSubmitForm(newStatus)}
               endIcon={
                 isDisabled && (

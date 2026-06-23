@@ -8,6 +8,7 @@ import {
   type TaskActivity,
   type TaskStatus,
 } from '@/entities/task';
+import { useAuthStore } from '@/features';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 import { mapTaskToForm } from '../model/mappers';
@@ -18,7 +19,7 @@ import {
   type TaskFormType,
 } from '../model/schema/schema';
 
-import { Action } from './Action';
+import { Action } from './action/Action';
 import { TaskFormFields } from './TaskFormFields';
 
 type TaskFormProps = {
@@ -30,6 +31,7 @@ type TaskFormProps = {
   canChangeStatus?: boolean;
   activities: TaskActivity[];
   isOpenDescription: boolean;
+  isExecutorApprove?: boolean;
   setIsEdit: (isEdit: boolean) => void;
   setIsOpenDescription: (isOpen: boolean) => void;
   handleSimpleSaveForm: (values: TaskFormType) => void;
@@ -46,10 +48,13 @@ export const TaskForm = ({
   activities,
   imagesLength,
   isOpenDescription,
+  isExecutorApprove,
   setIsOpenDescription,
   handleSimpleSaveForm,
   canChangeStatus = false,
 }: TaskFormProps) => {
+  const { id } = useAuthStore();
+
   const [isOpenConfirmDialog, setIsOpenConfirmDialog] = useState(false);
 
   const { setSnackbarOpen } = useSnackbarStore();
@@ -119,14 +124,17 @@ export const TaskForm = ({
         )}
       >
         <TaskFormFields
+          status={status}
           isEdit={isEdit}
           setIsEdit={setIsEdit}
+          isMe={task.ownerId === id}
           isOpenDescription={isOpenDescription}
           setIsOpenDescription={setIsOpenDescription}
         />
 
         {canChangeStatus && (
           <Action
+            taskId={task.id}
             status={status}
             isEdit={isEdit}
             isLoading={isLoading}
@@ -134,7 +142,9 @@ export const TaskForm = ({
             handleEdit={handleEdit}
             handleSave={handleSave}
             taskOwnerId={task.ownerId}
+            executorId={task.executor?.id}
             handleSubmitForm={handleSubmitForm}
+            isExecutorApprove={isExecutorApprove}
             handleGoToRevision={handleGoToRevision}
             handleCompleteTask={handleCompleteTask}
           />

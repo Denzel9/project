@@ -37,8 +37,11 @@ export const ProfilePage = () => {
   return (
     <Box
       sx={{
+        height: '100%',
+        display: 'flex',
         bgcolor: 'white',
         position: 'relative',
+        flexDirection: 'column',
         borderTopLeftRadius: '32px',
         borderBottomLeftRadius: '32px',
         borderBottomRightRadius: '32px',
@@ -52,6 +55,7 @@ export const ProfilePage = () => {
           backgroundSize: 'cover',
           bgcolor: 'secondary.main',
           height: { xs: 250, md: 300 },
+          minHeight: { xs: 250, md: 300 },
           backgroundPosition: 'center ',
           backgroundRepeat: 'no-repeat',
           borderTopLeftRadius: { xs: 0, md: '32px' },
@@ -79,8 +83,9 @@ export const ProfilePage = () => {
         direction="row"
         sx={{
           mb: 2,
-          mt: -7,
           pb: 0,
+          mt: -7,
+          flex:1,
           width: '100%',
           pt: { xs: 0, md: 4 },
           px: { xs: 0, md: 2 },
@@ -108,6 +113,7 @@ export const ProfilePage = () => {
             direction="column"
             sx={{
               width: '100%',
+              height: '100%',
             }}
           >
             <ProfileControl

@@ -9,6 +9,7 @@ export const ROUTES = {
     MY_TASKS: "/my-tasks",
     SETTINGS: "/settings",
     FAVORITES: "/favorites",
+    MY_INVITES: "/my-invites",
     INVITE: "/invites/accept",
     MANAGE_POSTS: "/manage-posts",
     MY_RESPONSES: "/my-responses",

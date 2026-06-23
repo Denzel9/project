@@ -4,5 +4,5 @@ export type MenuRoute = {
     path: string;
     label: string;
     icon: React.ReactNode;
-    authType: typeof AUTH_TYPES[keyof typeof AUTH_TYPES];
+    authTypes: typeof AUTH_TYPES[keyof typeof AUTH_TYPES][];
 };

@@ -8,7 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 
 import {
   getApplicationsCountLabel,
@@ -18,6 +18,7 @@ import {
   usePostApplicationsQuery,
 } from '@/entities';
 import { useAuthStore } from '@/features';
+import { EmptyBlock, ROUTES } from '@/shared';
 import { PageLayout, ContactCard } from '@/widgets';
 
 import { IncomingApplications } from './IncomingApplications';
@@ -26,6 +27,8 @@ import { PostDetailsCard } from './PostDetailsCard';
 
 export const PostPage = () => {
   const [tabValue, setTabValue] = useState(0);
+
+  const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
   const tab = searchParams.get('tab');
@@ -76,19 +79,39 @@ export const PostPage = () => {
   return (
     <PageLayout>
       {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+            flex: 1,
+            bgcolor: 'white',
+            borderRadius: '32px',
+          }}
+        >
           <CircularProgress />
         </Box>
       )}
 
       {!isLoading && !post && (
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ textAlign: 'center', py: 6 }}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+            flex: 1,
+            bgcolor: 'white',
+            borderRadius: '32px',
+          }}
         >
-          Пост не найден
-        </Typography>
+          <EmptyBlock
+            title="Пост не найден"
+            buttonText="На главную"
+            buttonOnClick={() => navigate(ROUTES.INDEX)}
+          />
+        </Box>
       )}
 
       {isOwner && (
@@ -127,31 +150,36 @@ export const PostPage = () => {
           spacing={2}
           direction="column"
         >
-          <MainCard
-            post={post}
-            user={user?.data}
-            isOwner={isOwner}
-            mediaItems={mediaItems}
-            application={application}
-            removePostFromCollection={removePostFromCollection}
-          />
+          {post && (
+            <MainCard
+              post={post}
+              user={user?.data}
+              isOwner={isOwner}
+              mediaItems={mediaItems}
+              application={application}
+              removePostFromCollection={removePostFromCollection}
+            />
+          )}
 
-          <Stack
-            direction={{ xs: 'column', lg: 'row' }}
-            spacing={2}
-          >
-            <Box sx={{ flex: { xs: '1 1 auto', lg: '1 1 70%' } }}>
-              {post && <PostDetailsCard post={post} />}
-            </Box>
+          {post && (
+            <Stack
+              direction={{ xs: 'column', lg: 'row' }}
+              spacing={2}
+            >
+              <Box sx={{ flex: { xs: '1 1 auto', lg: '1 1 70%' } }}>
+                {post && <PostDetailsCard post={post} />}
+              </Box>
 
-            <Box sx={{ width: { xs: '100%', lg: '30%' } }}>
-              <ContactCard
-                withTitle
-                isMyPost={isOwner}
-                contact={user?.data}
-              />
-            </Box>
-          </Stack>
+              <Box sx={{ width: { xs: '100%', lg: '30%' } }}>
+                <ContactCard
+                  withTitle
+                  isMyPost={isOwner}
+                  contact={user?.data}
+                  taskId={post?.id ?? ''}
+                />
+              </Box>
+            </Stack>
+          )}
         </Stack>
       )}
 

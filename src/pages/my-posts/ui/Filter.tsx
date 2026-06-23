@@ -1,6 +1,5 @@
 import { CalendarMonthOutlined, Search, Tune } from '@mui/icons-material';
 import {
-  Button,
   Drawer,
   IconButton,
   MenuItem,
@@ -9,12 +8,12 @@ import {
   TextField,
   useMediaQuery,
 } from '@mui/material';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import dayjs, { type Dayjs } from 'dayjs';
+import { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
 import { useScroll } from '@/shared';
+import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import { useMyPostFilterStore } from '../model/store';
 
@@ -93,17 +92,14 @@ const MyPostFilter = () => {
         <Stack
           direction="row"
           spacing={2}
-          sx={{ width: '100%' }}
+          sx={{ width: '50%' }}
         >
           <TextField
             select
+            fullWidth
             label="Статус"
             value={status}
             size={isMobile ? 'small' : 'medium'}
-            sx={{
-              width: { xs: '90%', md: '20%' },
-              display: { xs: 'none', md: 'block' },
-            }}
             onChange={event =>
               setStatus(event.target.value as ApplicationStatusFilter)
             }
@@ -121,13 +117,10 @@ const MyPostFilter = () => {
 
           <TextField
             select
-            label="Объявление"
+            fullWidth
             value={postId}
+            label="Объявление"
             size={isMobile ? 'small' : 'medium'}
-            sx={{
-              width: { xs: '90%', md: '20%' },
-              display: { xs: 'none', md: 'block' },
-            }}
             onChange={event => setPostId(event.target.value)}
           >
             <MenuItem value="all">Все</MenuItem>
@@ -159,6 +152,9 @@ const MyPostFilter = () => {
 
           <IconButton
             onClick={() => setIsOpenFilter(!isOpenFilter)}
+            sx={{
+              display: { xs: 'block', md: 'none' },
+            }}
             color={
               isOpenFilter || hasActiveSidebarFilters ? 'primary' : 'default'
             }
@@ -185,20 +181,11 @@ const MyPostFilter = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <DateCalendar
-          value={updatedDate ? dayjs(updatedDate) : null}
+        <DateCalendarFilter
+          value={updatedDate}
           onChange={handleDateChange}
-          views={['year', 'month', 'day']}
+          onClear={handleClearDate}
         />
-        {updatedDate && (
-          <Button
-            fullWidth
-            onClick={handleClearDate}
-            sx={{ mb: 2, mx: 2, width: 'calc(100% - 32px)' }}
-          >
-            Все даты
-          </Button>
-        )}
       </Popover>
 
       <Drawer

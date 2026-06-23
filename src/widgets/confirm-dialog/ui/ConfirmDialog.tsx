@@ -15,6 +15,7 @@ type ConfirmDialogProps = {
   width?: number;
   isOpen: boolean;
   onClose?: () => void;
+  withButtons?: boolean;
   onSuccess?: () => void;
   description?: string | React.ReactNode;
 };
@@ -25,6 +26,7 @@ export const ConfirmDialog = ({
   children,
   description,
   width = 600,
+  withButtons = true,
   onClose = undefined,
   onSuccess = undefined,
 }: PropsWithChildren<ConfirmDialogProps>) => {
@@ -72,36 +74,32 @@ export const ConfirmDialog = ({
           {children}
         </Box>
 
-        {!children && (
-          <>
-            {typeof description === 'string' ? (
-              <Typography
-                variant="body1"
-                sx={{ mt: 2 }}
-              >
-                {description}
-              </Typography>
-            ) : (
-              description
-            )}
+        {!children && typeof description === 'string' ? (
+          <Typography
+            variant="body1"
+            sx={{ mt: 2 }}
+          >
+            {description}
+          </Typography>
+        ) : (
+          description
+        )}
 
-            {(onClose || onSuccess) && (
-              <Stack
-                direction="row"
-                sx={{ mt: 4, justifyContent: 'flex-end' }}
+        {withButtons && (onClose || onSuccess) && (
+          <Stack
+            direction="row"
+            sx={{ mt: 4, justifyContent: 'flex-end' }}
+          >
+            {onClose && <Button onClick={onClose}>Отменить</Button>}
+            {onSuccess && (
+              <Button
+                onClick={onSuccess}
+                color="error"
               >
-                {onClose && <Button onClick={onClose}>Отменить</Button>}
-                {onSuccess && (
-                  <Button
-                    onClick={onSuccess}
-                    color="error"
-                  >
-                    Подтвердить
-                  </Button>
-                )}
-              </Stack>
+                Подтвердить
+              </Button>
             )}
-          </>
+          </Stack>
         )}
       </Box>
     </Dialog>

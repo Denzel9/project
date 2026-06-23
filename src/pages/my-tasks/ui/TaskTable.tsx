@@ -71,7 +71,11 @@ export const TaskTable = ({ tasks }: TaskTableProps) => {
               <TableRow
                 key={task.id}
                 hover
-                onClick={() => navigate(`${ROUTES.TASK}/${task.id}`)}
+                onClick={() =>
+                  navigate(
+                    `${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`
+                  )
+                }
                 sx={{
                   cursor: 'pointer',
                   '&:hover': { bgcolor: 'secondary.light' },

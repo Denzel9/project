@@ -38,7 +38,7 @@ const MyPostPage = () => {
     postId === 'all';
 
   return (
-    <PageLayout title="Мои посты">
+    <PageLayout title="Отклики">
       {Boolean(applications?.items?.length || !isFilterEmpty) && (
         <Box
           sx={{

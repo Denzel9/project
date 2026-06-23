@@ -11,18 +11,19 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { validateChatMediaFile } from '@/entities/chat';
 import {
   uploadTaskCommentMediaBatch,
   useCreateTaskCommentMutation,
   useUpdateTaskCommentMutation,
-  type Task,
+  validateChatMediaFile,
+  useGetUserByIdQuery,
+  type User,
+  type TaskComment,
   type TaskCommentMedia,
-} from '@/entities/task';
-import { useGetUserByIdQuery, type User } from '@/entities/user';
-import { useAuthStore } from '@/features/auth';
-import { ChatInput } from '@/shared/ui/messenger';
-import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
+} from '@/entities';
+import { useAuthStore } from '@/features';
+import { ChatInput } from '@/shared';
+import { FullScreenGallery } from '@/widgets';
 
 import {
   COMMENT_MEDIA_PLACEHOLDER,
@@ -35,11 +36,18 @@ import { TaskCommentItem } from './TaskCommentItem';
 import { TaskCommentSearchPanel } from './TaskCommentSearchPanel';
 
 type TaskCommentsProps = {
-  task: Task;
+  taskId: string;
   contact?: User;
+  comments: TaskComment[];
+  isExecutorApprove?: boolean;
 };
 
-export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
+export const TaskComments = ({
+  taskId,
+  comments,
+  contact,
+  isExecutorApprove,
+}: TaskCommentsProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const currentUserId = useAuthStore(state => state.id);
@@ -67,7 +75,6 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
   const { mutate: updateComment, isPending: isUpdating } =
     useUpdateTaskCommentMutation();
 
-  const comments = task.comments ?? [];
   const isPending = isCreating || isUpdating || isSendingMedia;
 
   const commentsListRef = useRef<HTMLDivElement>(null);
@@ -87,7 +94,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [task.id, comments.length]);
+  }, [comments.length]);
 
   const openGallery = useCallback(
     (media: TaskCommentMedia[] | undefined, initialSlide: number) => {
@@ -149,11 +156,11 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
       setSendError(null);
 
       const media = hasFiles
-        ? await uploadTaskCommentMediaBatch(task.id, pendingFiles)
+        ? await uploadTaskCommentMediaBatch(taskId, pendingFiles)
         : undefined;
 
       await createComment({
-        taskId: task.id,
+        taskId,
         body: {
           content: hasContent ? trimmed : COMMENT_MEDIA_PLACEHOLDER,
           media,
@@ -179,7 +186,7 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
     if (!trimmed) return;
 
     updateComment(
-      { taskId: task.id, commentId, body: { content: trimmed } },
+      { taskId, commentId, body: { content: trimmed } },
       {
         onSuccess: () => {
           setEditingId(null);
@@ -236,19 +243,28 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
         spacing={2}
         direction="column"
         sx={{
+          mb: 3,
+          width: '100%',
           minHeight: '200px',
           maxHeight: '500px',
           overflowY: 'auto',
-          mb: 3,
-          width: '100%',
         }}
       >
-        {comments.length === 0 && (
+        {Boolean(!comments.length) && isExecutorApprove && (
           <Typography
             variant="body2"
             color="text.secondary"
           >
             Комментариев пока нет
+          </Typography>
+        )}
+
+        {Boolean(!comments.length) && !isExecutorApprove && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            Комментарии станут доступны после назначения исполнителя
           </Typography>
         )}
 
@@ -284,43 +300,45 @@ export const TaskComments = ({ task, contact }: TaskCommentsProps) => {
 
       <ChatInput
         value={content}
-        pendingFiles={pendingFiles}
-        isSending={isPending}
-        placeholder="Написать комментарий…"
         onChange={setContent}
+        isSending={isPending}
+        executorId={contact?.id}
+        pendingFiles={pendingFiles}
         onAttachFiles={addPendingFiles}
         onRemoveFile={removePendingFile}
+        placeholder="Написать комментарий…"
         onSend={() => void handleCreate()}
+        isExecutorApprove={isExecutorApprove}
       />
 
       <DeleteCommentDialog
-        taskId={task?.id}
+        taskId={taskId}
         commentId={deletingId}
         open={isOpenDeleteDialog}
         onClose={() => setIsOpenDeleteDialog(false)}
       />
 
       <TaskCommentSearchPanel
-        open={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        taskId={task.id}
-        currentUserId={currentUserId}
-        userAvatar={user?.data?.avatar ?? undefined}
+        taskId={taskId}
         contact={contact}
+        open={isSearchOpen}
         onOpenGallery={openGallery}
+        currentUserId={currentUserId}
+        onClose={() => setIsSearchOpen(false)}
+        userAvatar={user?.data?.avatar ?? undefined}
       />
 
       <TaskCommentAttachmentsPanel
+        taskId={taskId}
         open={isAttachmentsOpen}
-        onClose={() => setIsAttachmentsOpen(false)}
-        taskId={task.id}
         onOpenGallery={openGalleryFromItems}
+        onClose={() => setIsAttachmentsOpen(false)}
       />
 
       <FullScreenGallery
-        isOpen={galleryOpen}
         isMobile={isMobile}
         items={galleryItems}
+        isOpen={galleryOpen}
         initialSlide={galleryInitialSlide}
         onClose={() => setGalleryOpen(false)}
       />

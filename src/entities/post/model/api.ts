@@ -5,18 +5,22 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
+import { taskKeys } from '@/entities/task'
 import { mainAxios } from '@/shared/api'
 import { prepareFileForUpload } from '@/shared/lib/media'
 
 import type {
   CreatePostDto,
+  CreatePostTaskDto,
   Post,
   PostListParams,
+  PostTasksParams,
   SearchPostsParams,
   UpdatePostDto,
   UploadMediaResponse,
   PostList,
 } from './types'
+import type { Task, TaskList } from '@/entities/task'
 
 export const postKeys = {
   all: ['posts'] as const,
@@ -28,6 +32,8 @@ export const postKeys = {
     [...postKeys.all, 'search', q, page, limit] as const,
   infiniteSearch: (params: Omit<SearchPostsParams, 'page'>) =>
     [...postKeys.all, 'infiniteSearch', params] as const,
+  postTasks: (postId: string, params?: Omit<PostTasksParams, 'postId'>) =>
+    [...postKeys.all, 'postTasks', postId, params ?? {}] as const,
 }
 
 const getPostListNextPageParam = (lastPage: PostList) =>
@@ -179,6 +185,59 @@ export const useUploadPostMediaMutation = () => {
     onSuccess: (_, { postId }) => {
       queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) })
       queryClient.invalidateQueries({ queryKey: postKeys.all })
+    },
+  })
+}
+
+export const usePostTasksQuery = (
+  postId: string | null,
+  params?: Omit<PostTasksParams, 'postId'>,
+  skip?: boolean,
+) =>
+  useQuery({
+    queryKey: ['postTasks'],
+    queryFn: async () => {
+      const { data } = await mainAxios.get<TaskList>('/tasks', {
+        params: { ...params, postId },
+      })
+      return data
+    },
+    enabled: Boolean(postId) && !skip,
+  })
+
+export const useCreatePostTaskMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: CreatePostTaskDto) => {
+      const { data } = await mainAxios.post<Task>('/tasks', body)
+      return data
+    },
+    onSuccess: (_, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: postKeys.postTasks(postId) })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
+      queryClient.invalidateQueries({ queryKey: taskKeys.all })
+    },
+  })
+}
+
+export const useDeletePostTaskMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+    }: {
+      taskId: string
+      postId: string
+    }) => {
+      await mainAxios.delete(`/tasks/${taskId}`)
+    },
+    onSuccess: (_, { postId, taskId }) => {
+      queryClient.invalidateQueries({ queryKey: postKeys.postTasks(postId) })
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
+      queryClient.invalidateQueries({ queryKey: taskKeys.all })
+      queryClient.removeQueries({ queryKey: taskKeys.detail(taskId) })
     },
   })
 }

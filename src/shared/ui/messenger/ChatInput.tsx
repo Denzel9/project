@@ -16,32 +16,36 @@ import {
   type MouseEvent,
 } from 'react';
 
-import { CHAT_MEDIA_ACCEPT } from '@/entities/chat';
+import { CHAT_MEDIA_ACCEPT } from '@/entities';
 
 import { ChatEmojiPicker } from './ChatEmojiPicker';
 
 type ChatInputProps = {
   value: string;
-  pendingFiles: File[];
-  isSending?: boolean;
+  onSend: () => void;
   disabled?: boolean;
+  executorId?: string;
+  isSending?: boolean;
+  pendingFiles: File[];
   placeholder?: string;
+  isExecutorApprove?: boolean;
   onChange: (value: string) => void;
   onAttachFiles: (files: File[]) => void;
   onRemoveFile: (index: number) => void;
-  onSend: () => void;
 };
 
 export const ChatInput = ({
   value,
-  pendingFiles,
-  isSending = false,
-  disabled = false,
-  placeholder = 'Введите сообщение…',
-  onChange,
-  onAttachFiles,
-  onRemoveFile,
   onSend,
+  onChange,
+  executorId,
+  onRemoveFile,
+  pendingFiles,
+  onAttachFiles,
+  disabled = false,
+  isExecutorApprove,
+  isSending = false,
+  placeholder = 'Введите сообщение…',
 }: ChatInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLTextAreaElement>(null);
@@ -135,7 +139,7 @@ export const ChatInput = ({
         multiline
         maxRows={4}
         inputRef={textInputRef}
-        disabled={disabled || isSending}
+        disabled={disabled || isSending || !executorId || !isExecutorApprove}
         value={value}
         placeholder={placeholder}
         onChange={event => onChange(event.target.value)}
@@ -147,7 +151,9 @@ export const ChatInput = ({
                 <IconButton
                   size="small"
                   color="inherit"
-                  disabled={disabled || isSending}
+                  disabled={
+                    disabled || isSending || !executorId || !isExecutorApprove
+                  }
                   onClick={handleOpenEmojiPicker}
                 >
                   <Mood />
@@ -156,7 +162,9 @@ export const ChatInput = ({
                 <IconButton
                   size="small"
                   color="inherit"
-                  disabled={disabled || isSending}
+                  disabled={
+                    disabled || isSending || !executorId || !isExecutorApprove
+                  }
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <AttachFile />

@@ -1,14 +1,29 @@
 import { Box } from '@mui/material';
 import { SideBar } from '@widgets/side-bar';
-import { useRef } from 'react';
+import { lazy, Suspense, useRef } from 'react';
 
-import { AuthModal } from '@/features/auth';
-import { GlobalDeletePostDialog } from '@/features/delete-post';
 import { useScrollToTop } from '@/shared';
-import { AddToCollectionDialog } from '@/widgets/post-item';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
 import type { ReactNode } from 'react';
+
+const AuthModal = lazy(() =>
+  import('@/features/auth/ui/AuthModal').then(module => ({
+    default: module.AuthModal,
+  }))
+);
+
+const GlobalDeletePostDialog = lazy(() =>
+  import('@/features/delete-post/ui/GlobalDeletePostDialog').then(module => ({
+    default: module.GlobalDeletePostDialog,
+  }))
+);
+
+const AddToCollectionDialog = lazy(() =>
+  import('@/widgets/post-item/ui/AddToCollectionDialog').then(module => ({
+    default: module.AddToCollectionDialog,
+  }))
+);
 
 export const MainLayout = ({ children }: { children: ReactNode }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -46,9 +61,11 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
         </Box>
       </Box>
 
-      <AuthModal />
-      <AddToCollectionDialog />
-      <GlobalDeletePostDialog />
+      <Suspense fallback={null}>
+        <AuthModal />
+        <AddToCollectionDialog />
+        <GlobalDeletePostDialog />
+      </Suspense>
     </Box>
   );
 };

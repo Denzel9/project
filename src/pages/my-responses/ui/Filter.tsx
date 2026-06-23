@@ -1,6 +1,5 @@
 import { CalendarMonthOutlined, Search } from '@mui/icons-material';
 import {
-  Button,
   Drawer,
   IconButton,
   MenuItem,
@@ -9,12 +8,12 @@ import {
   TextField,
   useMediaQuery,
 } from '@mui/material';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import dayjs, { type Dayjs } from 'dayjs';
+import { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
 import { SideBarFilter, useMainFilterStore } from '@/features';
+import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 import { useScroll } from '@/shared';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
@@ -126,20 +125,11 @@ const MyResponsesFilter = ({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <DateCalendar
-          value={updatedDate ? dayjs(updatedDate) : null}
+        <DateCalendarFilter
+          value={updatedDate}
           onChange={handleDateChange}
-          views={['year', 'month', 'day']}
+          onClear={handleClearDate}
         />
-        {updatedDate && (
-          <Button
-            fullWidth
-            onClick={handleClearDate}
-            sx={{ mb: 2, mx: 2, width: 'calc(100% - 32px)' }}
-          >
-            Все даты
-          </Button>
-        )}
       </Popover>
 
       <Drawer

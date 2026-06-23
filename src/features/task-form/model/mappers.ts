@@ -2,6 +2,7 @@ import type { TaskFormType } from './schema/schema'
 import type { Task, UpdateTaskDto } from '@/entities/task'
 
 export const mapTaskToForm = (task: Task): TaskFormType => ({
+  title: task.title,
   description: task.description,
   photoCount: task.photoCount,
   videoCount: task.videoCount,
@@ -10,7 +11,8 @@ export const mapTaskToForm = (task: Task): TaskFormType => ({
 
 export const mapFormToUpdateTask = (
   form: TaskFormType,
-): Pick<UpdateTaskDto, 'description' | 'photoCount' | 'videoCount' | 'finalDate'> => ({
+): Pick<UpdateTaskDto, 'title' | 'description' | 'photoCount' | 'videoCount' | 'finalDate'> => ({
+  title: form.title,
   description: form.description,
   photoCount: form.photoCount,
   videoCount: form.videoCount,

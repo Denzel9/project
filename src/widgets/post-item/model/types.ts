@@ -9,6 +9,7 @@ export type PostItemProps = {
     isCompact?: boolean;
     isCompany?: boolean;
     isApplied?: boolean;
+    isPrivate?: boolean;
     isFavorite?: boolean;
     applicationId?: string;
     permissions?: ACTION_BUTTONS_KEYS[];

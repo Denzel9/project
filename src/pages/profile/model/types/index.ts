@@ -6,7 +6,8 @@ export type MediaContentProps = {
 export enum MEDIA_TAB_VALUES {
     ACTIVE = 'Active',
     ARCHIVED = 'Archived',
+    PRIVATE = 'Private',
 }
 
-export type MediaTabValue = MEDIA_TAB_VALUES.ACTIVE | MEDIA_TAB_VALUES.ARCHIVED;
+export type MediaTabValue = MEDIA_TAB_VALUES.ACTIVE | MEDIA_TAB_VALUES.ARCHIVED | MEDIA_TAB_VALUES.PRIVATE;
 

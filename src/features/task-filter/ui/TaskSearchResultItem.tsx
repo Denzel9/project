@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { TASK_STATUS_LABELS, type Task } from '@/entities/task';
 import { getUserName, type User } from '@/entities/user';
 
-import { getKanbanColumnConfig } from '../model/kanbanColumns';
+import { getTaskConfig } from '../model/constants';
 
 type TaskSearchResultItemProps = {
   task: Task;
@@ -51,7 +51,7 @@ export const TaskSearchResultItem = ({
   highlightQuery,
   onOpen,
 }: TaskSearchResultItemProps) => {
-  const statusColor = getKanbanColumnConfig(task.status)?.color ?? 'primary';
+  const statusColor = getTaskConfig(task.status)?.color ?? 'primary';
 
   return (
     <Box

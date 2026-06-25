@@ -93,7 +93,7 @@ export const MyResponses = () => {
 
           <Grid
             container
-            spacing={2}
+            spacing={1}
             sx={{ width: '100%' }}
           >
             {applications?.items?.map(application => (

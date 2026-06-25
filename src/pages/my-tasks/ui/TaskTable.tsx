@@ -16,13 +16,15 @@ import { format, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useNavigate } from 'react-router';
 
-import { TASK_STATUS_LABELS, type Task } from '@/entities/task';
-import { getUserName, type User } from '@/entities/user';
-import { ROUTES } from '@/shared/config/routes';
-import { MarkdownContent } from '@/shared/ui/markdown';
-import { MediaPreview } from '@/widgets/media/ui/MediaPreview';
-
-import { getKanbanColumnConfig } from '../model/kanbanColumns';
+import {
+  TASK_STATUS_LABELS,
+  getUserName,
+  type User,
+  type Task,
+} from '@/entities';
+import { getTaskConfig } from '@/features';
+import { ROUTES, MarkdownContent } from '@/shared';
+import { MediaPreview } from '@/widgets';
 
 type TaskTableProps = {
   tasks: Task[];
@@ -63,7 +65,7 @@ export const TaskTable = ({ tasks }: TaskTableProps) => {
 
         <TableBody>
           {tasks.map(task => {
-            const columnConfig = getKanbanColumnConfig(task.status);
+            const columnConfig = getTaskConfig(task.status);
             const statusColor = columnConfig?.color ?? 'primary';
             const overdue = isTaskOverdue(task);
 

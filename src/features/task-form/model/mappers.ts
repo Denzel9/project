@@ -1,20 +1,24 @@
-import type { TaskFormType } from './schema/schema'
+import type { Post } from '@/entities/post'
 import type { Task, UpdateTaskDto } from '@/entities/task'
 
-export const mapTaskToForm = (task: Task): TaskFormType => ({
-  title: task.title,
-  description: task.description,
-  photoCount: task.photoCount,
-  videoCount: task.videoCount,
-  finalDate: task.finalDate,
-})
+import { mapPostToTaskDefaults, mapTaskToTaskForm } from './postDefaults'
+import { composeTaskDescription } from './taskTzFields'
+import type { TaskFormType } from './schema/schema'
+
+export const mapTaskToForm = (task: Task): TaskFormType =>
+  mapTaskToTaskForm(task)
+
+export const mapPostToForm = (post: Post): TaskFormType =>
+  mapPostToTaskDefaults(post)
 
 export const mapFormToUpdateTask = (
   form: TaskFormType,
-): Pick<UpdateTaskDto, 'title' | 'description' | 'photoCount' | 'videoCount' | 'finalDate'> => ({
+  isCompanyAction?: boolean,
+): UpdateTaskDto => ({
   title: form.title,
-  description: form.description,
+  description: composeTaskDescription(form),
   photoCount: form.photoCount,
   videoCount: form.videoCount,
   finalDate: form.finalDate,
+  isCompanyAction: isCompanyAction,
 })

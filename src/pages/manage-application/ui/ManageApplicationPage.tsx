@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { useSearchParams } from 'react-router';
 
 import { USER_ROLE, usePostByIdQuery } from '@/entities';
@@ -8,35 +8,49 @@ import { PageLayout } from '@/widgets';
 export const ManageApplicationPage = () => {
   const [searchParams] = useSearchParams();
   const postId = searchParams.get('id');
+  const isEdit = Boolean(postId);
 
   const { data: post, isLoading } = usePostByIdQuery(postId);
 
   const { role } = useAuthStore();
 
+  const isCompany = role === USER_ROLE.COMPANY;
+  const isCreator = role === USER_ROLE.CREATOR;
+
+  const showLoader = isEdit && isLoading;
+
   return (
     <PageLayout>
       <Box
         sx={{
-          p: 4,
+          p: { xs: 2, md: 4 },
           width: '100%',
           bgcolor: 'white',
-          borderRadius: '32px',
+          borderRadius: { xs: '24px', md: '32px' },
         }}
       >
-        {role === USER_ROLE.COMPANY && (
-          <ApplicationForm
-            data={post}
-            isEdit={Boolean(postId)}
-            isLoading={Boolean(postId) && isLoading}
-          />
-        )}
+        {showLoader ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {isCompany && (
+              <ApplicationForm
+                data={post}
+                isEdit={isEdit}
+                isLoading={false}
+              />
+            )}
 
-        {role === USER_ROLE.CREATOR && (
-          <UserPostForm
-            data={post}
-            isEdit={Boolean(postId)}
-            isLoading={Boolean(postId) && isLoading}
-          />
+            {isCreator && (
+              <UserPostForm
+                data={post}
+                isEdit={isEdit}
+                isLoading={false}
+              />
+            )}
+          </>
         )}
       </Box>
     </PageLayout>

@@ -6,14 +6,10 @@ import { useRef } from 'react';
 import { useDrag } from 'react-dnd';
 import { useNavigate } from 'react-router';
 
-import { getUserName, type User } from '@/entities/user';
-import { ROUTES } from '@/shared/config/routes';
-import { MarkdownContent } from '@/shared/ui/markdown';
-import { MediaPreview } from '@/widgets/media/ui/MediaPreview';
-
-import { getKanbanColumnConfig } from '../model/kanbanColumns';
-
-import type { Task, TaskStatus } from '@/entities/task';
+import { getUserName, type User, type Task, type TaskStatus } from '@/entities';
+import { getTaskConfig } from '@/features';
+import { ROUTES, MarkdownContent } from '@/shared';
+import { MediaPreview } from '@/widgets';
 
 export const KANBAN_TASK_DRAG_TYPE = 'KANBAN_TASK';
 
@@ -31,7 +27,7 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
 
-  const columnConfig = getKanbanColumnConfig(task.status);
+  const columnConfig = getTaskConfig(task.status);
   const accentColor = columnConfig?.color ?? 'primary';
 
   const isOverdue =

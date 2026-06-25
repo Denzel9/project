@@ -139,6 +139,18 @@ export const ProfileControl = ({
               >
                 Архивные
               </Button>
+
+              <Button
+                size="small"
+                onClick={() => setMediaTabValue(MEDIA_TAB_VALUES.PRIVATE)}
+                color={
+                  mediaTabValue === MEDIA_TAB_VALUES.PRIVATE
+                    ? 'primary'
+                    : 'info'
+                }
+              >
+                Приватные
+              </Button>
             </ButtonGroup>
 
             <TextField
@@ -160,7 +172,7 @@ export const ProfileControl = ({
             <Button
               size="small"
               variant="contained"
-              sx={{ ml: 2, display: { xs: 'none', md: 'block' } }}
+              sx={{ display: { xs: 'none', md: 'block' } }}
               onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
             >
               Добавить
@@ -175,13 +187,15 @@ export const ProfileControl = ({
             </IconButton>
           </Box>
 
-          <Typography
-            color="info"
-            variant="subtitle1"
-            sx={{ display: { xs: 'none', md: 'block' } }}
-          >
-            Доступно: 5
-          </Typography>
+          {!id && (
+            <Typography
+              color="info"
+              variant="subtitle1"
+              sx={{ display: { xs: 'none', md: 'block' } }}
+            >
+              Доступно: 5
+            </Typography>
+          )}
         </Stack>
       )}
     </Stack>

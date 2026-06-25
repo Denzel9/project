@@ -1,173 +1,161 @@
-import { Typography, Box, RadioGroup, Switch } from '@mui/material';
-import { useState } from 'react';
+import { MenuItem, Stack, useMediaQuery } from '@mui/material';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { PostContentTypeEnum } from '@/entities/post';
-import { RHFInput, RHFRadio } from '@/shared/ui/rhf';
+import {
+  BudgetTypeEnum,
+  PaymentTermsEnum,
+  getBudgetTypeLabel,
+  getPaymentTermsLabel,
+} from '@/entities/post';
+import { RHFDatePicker, RHFInput } from '@/shared/ui/rhf';
+
+import { DeliverablesField } from './components/DeliverablesField';
+import { FormSection } from './components/FormSection';
+
+const BUDGET_TYPE_OPTIONS = Object.values(BudgetTypeEnum).map(value => ({
+  value,
+  label: getBudgetTypeLabel(value),
+}));
+
+const PAYMENT_TERMS_OPTIONS = Object.values(PaymentTermsEnum).map(value => ({
+  value,
+  label: getPaymentTermsLabel(value),
+}));
 
 export const ProductInfo = () => {
-  const [isFinalPrice, setIsFinalPrice] = useState<boolean>(true);
-
   const { control } = useFormContext();
+  const budgetType = useWatch({ control, name: 'budgetType' });
 
-  const { contentType } = useWatch({
-    control,
-  });
-
-  const handleChangeFinalPrice = () => {
-    setIsFinalPrice(!isFinalPrice);
-  };
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
-      <Typography variant="h6">Информация о заявке</Typography>
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <RHFInput
-          name="description"
-          control={control}
-          maxLength={400}
-          props={{
-            rows: 5,
-            fullWidth: true,
-            multiline: true,
-            label: 'Описание',
-            sx: { mt: 2 },
-          }}
-        />
-
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2 }}
-          >
-            Тип контента
-          </Typography>
-
-          <RadioGroup
-            sx={{
-              gap: 2,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <RHFRadio
-              label="Только фото"
-              name="contentType"
-              control={control}
-              props={{ value: PostContentTypeEnum.PHOTO }}
-              description="Предполагается только фото контент."
-            />
-
-            <RHFRadio
-              name="contentType"
-              label="Только видео"
-              control={control}
-              props={{ value: PostContentTypeEnum.VIDEO }}
-              description="Предполагается только видео контент."
-            />
-
-            <RHFRadio
-              label="Видео и фото"
-              name="contentType"
-              control={control}
-              props={{ value: PostContentTypeEnum.PHOTO_VIDEO }}
-              description="Предполагается видео и фото контент."
-            />
-          </RadioGroup>
-        </Box>
-
-        {contentType === PostContentTypeEnum.PHOTO_VIDEO ? (
-          <>
-            <RHFInput
-              name="photoCount"
-              control={control}
-              props={{
-                fullWidth: true,
-                label: 'Кол-во фото',
-                sx: { width: { lg: '50%', xs: '100%' } },
-              }}
-            />
-            <RHFInput
-              name="videoCount"
-              control={control}
-              props={{
-                fullWidth: true,
-                label: 'Кол-во видео',
-                sx: { width: { lg: '50%', xs: '100%' } },
-              }}
-            />
-          </>
-        ) : (
-          <RHFInput
-            name={
-              contentType === PostContentTypeEnum.PHOTO
-                ? 'photoCount'
-                : 'videoCount'
-            }
-            control={control}
-            props={{
-              fullWidth: true,
-              label: `Кол-во ${contentType === PostContentTypeEnum.PHOTO ? 'фото' : 'видео'} `,
-              sx: { width: { lg: '50%', xs: '100%' } },
-            }}
-          />
-        )}
-      </Box>
-
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          my: 4,
-          justifyContent: 'space-between',
-          width: { lg: '50%', xs: '100%' },
-        }}
+    <Stack>
+      <FormSection
+        title="Описание и сроки"
+        description="Основная информация для карточки объявления"
       >
-        <Typography variant="body1">Окончательная цена</Typography>
-        <Switch
-          checked={isFinalPrice}
-          onChange={handleChangeFinalPrice}
-        />
-      </Box>
+        <Stack spacing={3}>
+          <RHFInput
+            name="description"
+            control={control}
+            maxLength={400}
+            props={{
+              rows: 5,
+              fullWidth: true,
+              multiline: true,
+              label: 'Описание',
+            }}
+          />
 
-      {isFinalPrice ? (
-        <RHFInput
-          name="finalPrice"
-          control={control}
-          endAdornment="₽"
-          props={{
-            label: 'Цена',
-            fullWidth: true,
-            sx: { width: { lg: '50%', xs: '100%' } },
-          }}
-        />
-      ) : (
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <RHFInput
-            name="rangePrice"
+          <RHFDatePicker
+            name="deadline"
             control={control}
-            endAdornment="₽"
-            startAdornment="от"
-            props={{
-              label: 'Цена',
-              sx: { width: { lg: '50%', xs: '100%' } },
-            }}
+            label="Дедлайн"
+            width={isMobile ? '100%' : 300}
           />
-          -
+        </Stack>
+      </FormSection>
+
+      <FormSection
+        title="Площадки и форматы"
+        description="Выберите площадку и формат — позиция добавится автоматически"
+      >
+        <DeliverablesField />
+      </FormSection>
+
+      <FormSection title="Бюджет">
+        <Stack spacing={3}>
           <RHFInput
-            name="rangePrice"
-            startAdornment="до"
+            name="budgetType"
             control={control}
-            endAdornment="₽"
             props={{
-              label: 'Цена',
-              sx: { width: { lg: '50%', xs: '100%' } },
+              select: true,
+              fullWidth: true,
+              label: 'Тип бюджета',
+              sx: { maxWidth: 320 },
             }}
-          />
-        </Box>
-      )}
-    </Box>
+          >
+            {BUDGET_TYPE_OPTIONS.map(option => (
+              <MenuItem
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </RHFInput>
+
+          {budgetType === BudgetTypeEnum.FIXED && (
+            <RHFInput
+              name="budgetAmount"
+              control={control}
+              endAdornment="₽"
+              props={{
+                fullWidth: true,
+                label: 'Сумма',
+                sx: { maxWidth: 320 },
+              }}
+            />
+          )}
+
+          {budgetType === BudgetTypeEnum.RANGE && (
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+            >
+              <RHFInput
+                name="budgetMinAmount"
+                control={control}
+                endAdornment="₽"
+                props={{ fullWidth: true, label: 'От' }}
+              />
+              <RHFInput
+                name="budgetMaxAmount"
+                control={control}
+                endAdornment="₽"
+                props={{ fullWidth: true, label: 'До' }}
+              />
+            </Stack>
+          )}
+
+          {budgetType === BudgetTypeEnum.BARTER && (
+            <RHFInput
+              name="barterDescription"
+              control={control}
+              props={{
+                fullWidth: true,
+                multiline: true,
+                rows: 3,
+                label: 'Описание бартера',
+              }}
+            />
+          )}
+
+          {budgetType !== BudgetTypeEnum.BARTER &&
+            budgetType !== BudgetTypeEnum.NEGOTIABLE && (
+              <RHFInput
+                name="paymentTerms"
+                control={control}
+                props={{
+                  select: true,
+                  fullWidth: true,
+                  label: 'Условия оплаты',
+                  sx: { maxWidth: 320 },
+                }}
+              >
+                <MenuItem value="">Не указано</MenuItem>
+                {PAYMENT_TERMS_OPTIONS.map(option => (
+                  <MenuItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </RHFInput>
+            )}
+        </Stack>
+      </FormSection>
+    </Stack>
   );
 };

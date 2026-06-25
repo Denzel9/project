@@ -11,42 +11,83 @@ import {
 import { useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
 
+import { TASK_STATUS_ENUM, type Task, type TaskStatus } from '@/entities';
+
 import {
   KanbanTaskCard,
   KANBAN_TASK_DRAG_TYPE,
   type KanbanTaskDragItem,
 } from './KanbanTaskCard';
 
-import type { KanbanColumnConfig } from '../model/kanbanColumns';
-import type { Task, TaskStatus } from '@/entities/task';
+import type { KanbanColumnConfig } from '@/features';
 
 type KanbanColumnProps = {
-  column: KanbanColumnConfig;
   tasks: Task[];
+  column: KanbanColumnConfig;
   canDragTask: (task: Task) => boolean;
-  onTaskDrop: (taskId: string, status: TaskStatus) => void;
   onHideColumn: (status: TaskStatus) => void;
+  onTaskDrop: (taskId: string, status: TaskStatus) => void;
 };
 
 export const KanbanColumn = ({
-  column,
   tasks,
-  canDragTask,
+  column,
   onTaskDrop,
+  canDragTask,
   onHideColumn,
 }: KanbanColumnProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const getIsOver = (item: KanbanTaskDragItem) => {
+    if (
+      item?.status === TASK_STATUS_ENUM.PREPARING &&
+      column?.status === TASK_STATUS_ENUM.PENDING_APPROVAL
+    ) {
+      return true;
+    } else if (
+      item?.status === TASK_STATUS_ENUM.PREPARING &&
+      column?.status === TASK_STATUS_ENUM.CANCELLED
+    ) {
+      return true;
+    } else if (
+      item?.status === TASK_STATUS_ENUM.PENDING_APPROVAL &&
+      column?.status === TASK_STATUS_ENUM.IN_PROGRESS
+    ) {
+      return true;
+    } else if (
+      (item?.status === TASK_STATUS_ENUM.IN_PROGRESS &&
+        column?.status === TASK_STATUS_ENUM.REVISION) ||
+      (item?.status === TASK_STATUS_ENUM.IN_PROGRESS &&
+        column?.status === TASK_STATUS_ENUM.CHECKING)
+    ) {
+      return true;
+    } else if (
+      item?.status === TASK_STATUS_ENUM.REVISION &&
+      column?.status === TASK_STATUS_ENUM.IN_PROGRESS
+    ) {
+      return true;
+    } else if (
+      (item?.status === TASK_STATUS_ENUM.CHECKING &&
+        column?.status === TASK_STATUS_ENUM.REVISION) ||
+      (item?.status === TASK_STATUS_ENUM.CHECKING &&
+        column?.status === TASK_STATUS_ENUM.COMPLETED)
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
   const [{ isOver }, drop] = useDrop({
     accept: KANBAN_TASK_DRAG_TYPE,
     drop: (item: KanbanTaskDragItem) => {
-      if (item.status !== column.status) {
+      if (getIsOver(item)) {
         onTaskDrop(item.taskId, column.status);
       }
     },
     collect: monitor => ({
-      isOver: monitor.isOver(),
+      isOver: getIsOver(monitor?.getItem()),
     }),
   });
 
@@ -57,15 +98,15 @@ export const KanbanColumn = ({
     <Box
       ref={ref}
       sx={{
+        p: 1.5,
         width: 320,
-        height: '100%',
-        flexShrink: 0,
         minHeight: 0,
+        flexShrink: 0,
+        height: '100%',
         display: 'flex',
-        flexDirection: 'column',
         overflow: 'hidden',
         borderRadius: '20px',
-        p: 1.5,
+        flexDirection: 'column',
         bgcolor: isOver ? 'info.light' : 'secondary.light',
         border: theme =>
           `1px solid ${isOver ? theme.palette.primary.main : theme.palette.secondary.main}`,
@@ -150,8 +191,8 @@ export const KanbanColumn = ({
 
         {tasks.map(task => (
           <KanbanTaskCard
-            key={task.id}
             task={task}
+            key={task.id}
             canDrag={canDragTask(task)}
           />
         ))}

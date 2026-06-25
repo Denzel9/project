@@ -2,6 +2,7 @@ import { Cyclone } from '@mui/icons-material';
 import { Box, Stack, Typography } from '@mui/material';
 import { Link } from 'react-router';
 
+import { BASE_COLOR } from '@/app/index';
 import { ROUTES } from '@/shared';
 
 const FOOTER_LINKS = [
@@ -54,7 +55,7 @@ export const PageFooter = () => {
             variant="h6"
             sx={{ fontWeight: 600, lineHeight: 1 }}
           >
-            LOGO
+            NIKS<span style={{ color: BASE_COLOR }}>SENS</span>
           </Typography>
         </Stack>
 
@@ -80,7 +81,7 @@ export const PageFooter = () => {
           variant="body2"
           sx={{ color: 'info.main' }}
         >
-          © {year} LOGO
+          © {year} NIKS<span style={{ color: BASE_COLOR }}>SENS</span>
         </Typography>
       </Stack>
     </Box>

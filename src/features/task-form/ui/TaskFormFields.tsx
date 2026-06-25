@@ -1,181 +1,216 @@
-import { Stack } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import dayjs, { type Dayjs } from 'dayjs';
-import { Controller, useFormContext, useWatch } from 'react-hook-form';
+import { SyncOutlined } from '@mui/icons-material';
+import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { useFormContext, useWatch } from 'react-hook-form';
 
-import { BASE_COLOR } from '@/app/index';
 import { TASK_STATUS_ENUM, type TaskStatus } from '@/entities';
-import { scrollMainToTop, RHFInput } from '@/shared';
-import { DatePickerProvider } from '@/widgets';
+import { RHFDateTimePicker, RHFInput } from '@/shared';
 
-import { DescriptionBlock } from './DescriptionBlock';
-import { EditField } from './EditField';
+import { RequirementCard } from './RequirementCard';
+import { TaskPostBrief } from './TaskPostBrief';
+import { TaskTzSections } from './TaskTzSections';
 
 import type { TaskFormType } from '../model/schema/schema';
+import type { Post } from '@/entities/post';
 
 type TaskFormFieldsProps = {
   isMe: boolean;
   isEdit: boolean;
   status: TaskStatus;
-  isOpenDescription: boolean;
-  setIsEdit: (isEdit: boolean) => void;
-  setIsOpenDescription: (isOpen: boolean) => void;
+  post?: Post;
+  showPrefillHint?: boolean;
+  onStartEdit: () => void;
+  onApplyFromPost?: () => void;
 };
+
+const SectionTitle = ({ children }: { children: string }) => (
+  <Typography
+    variant="subtitle2"
+    sx={{ fontWeight: 600, color: 'info.main' }}
+  >
+    {children}
+  </Typography>
+);
 
 export const TaskFormFields = ({
   isMe,
   status,
   isEdit,
-  setIsEdit,
-  isOpenDescription,
-  setIsOpenDescription,
+  post,
+  showPrefillHint,
+  onStartEdit,
+  onApplyFromPost,
 }: TaskFormFieldsProps) => {
   const { control } = useFormContext<TaskFormType>();
 
-  const { description } = useWatch({
+  const { title, photoCount, videoCount, finalDate } = useWatch({
     control,
   });
 
-  const handleOpenDescription = () => {
-    const willCollapse = isOpenDescription;
+  const isCancelled = [
+    TASK_STATUS_ENUM.CANCELLED,
+    TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
+  ].includes(status as TASK_STATUS_ENUM);
 
-    setIsOpenDescription(!isOpenDescription);
+  const isEditEnabled = isEdit && !isCancelled;
 
-    if (willCollapse) {
-      requestAnimationFrame(() => {
-        scrollMainToTop();
-      });
+  const handleStartEdit = () => {
+    if (isMe && !isCancelled) {
+      onStartEdit();
     }
   };
 
-  const isEditEnabled =
-    isEdit &&
-    ![TASK_STATUS_ENUM.CANCELLED, TASK_STATUS_ENUM.CANCELLED_EXECUTOR].includes(
-      status as TASK_STATUS_ENUM
-    );
-
   return (
-    <DatePickerProvider>
-      <Stack
-        spacing={4}
-        sx={{
-          mb: [
-            TASK_STATUS_ENUM.CANCELLED,
-            TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
-          ].includes(status as TASK_STATUS_ENUM)
-            ? 0
-            : 8,
-        }}
-      >
-        <EditField
-          name="title"
-          canEdit={isMe}
-          setIsEdit={setIsEdit}
-          fieldLabel="заголовок"
-          isEdit={isEditEnabled}
-        >
-          <RHFInput
-            name="title"
-            control={control}
-            props={{
-              label: 'Заголовок',
-              sx: { width: '50%' },
-            }}
-          />
-        </EditField>
+    <Stack spacing={3}>
+      {post && <TaskPostBrief post={post} />}
 
-        <DescriptionBlock
-          isMe={isMe}
-          isEdit={isEdit}
-          setIsEdit={setIsEdit}
-          description={description ?? ''}
-          isOpenDescription={isOpenDescription}
-          handleOpenDescription={handleOpenDescription}
-        />
-
+      <Box>
         <Stack
           direction="row"
-          spacing={2}
+          sx={{
+            mb: 1.5,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <EditField
-            name="photoCount"
-            label="Кол-во фото"
-            isEdit={isEditEnabled}
-            setIsEdit={setIsEdit}
-          >
-            <RHFInput
-              name="photoCount"
-              control={control}
-              props={{
-                label: 'Кол-во фото',
-                sx: { width: '50%' },
-              }}
-            />
-          </EditField>
+          <SectionTitle>Параметры задания</SectionTitle>
 
-          <EditField
-            name="videoCount"
-            label="Кол-во видео"
-            isEdit={isEditEnabled}
-            setIsEdit={setIsEdit}
-          >
-            <RHFInput
-              name="videoCount"
-              control={control}
-              props={{
-                label: 'Кол-во видео',
-                sx: { width: '50%' },
-              }}
-            />
-          </EditField>
+          {isMe && !isCancelled && onApplyFromPost && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SyncOutlined />}
+              onClick={onApplyFromPost}
+            >
+              Заполнить из объявления
+            </Button>
+          )}
+        </Stack>
 
-          <EditField
-            isDate
-            name="finalDate"
-            label="Дедлайн"
-            isEdit={isEditEnabled}
-            setIsEdit={setIsEdit}
+        {showPrefillHint && (
+          <Alert
+            severity="info"
+            sx={{ mb: 2, borderRadius: '16px' }}
           >
-            <Controller
-              name="finalDate"
-              control={control}
-              render={({ field, fieldState }) => (
-                <DateTimePicker
-                  label="Дедлайн"
-                  value={field.value ? dayjs(field.value) : null}
-                  onChange={(value: Dayjs | null) =>
-                    field.onChange(
-                      value?.isValid() ? value.toISOString() : null
-                    )
-                  }
-                  slotProps={{
-                    textField: {
-                      error: Boolean(fieldState.error),
-                      helperText: fieldState.error?.message,
-                    },
-                  }}
-                  sx={{
-                    width: '50%',
-                    '& .MuiPickersOutlinedInput-root': {
-                      borderRadius: '16px',
-                      '&:hover .MuiPickersOutlinedInput-notchedOutline': {
-                        borderColor: BASE_COLOR,
-                      },
-                      '&.Mui-focused .MuiPickersOutlinedInput-notchedOutline': {
-                        borderColor: BASE_COLOR,
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiDatePicker-inputLabel.Mui-focused': {
-                      color: BASE_COLOR,
-                    },
+            Нажмите «Заполнить из объявления», чтобы подставить данные из поста.
+          </Alert>
+        )}
+
+        <Stack spacing={4}>
+          <Box>
+            {isEditEnabled ? (
+              <RHFInput
+                name="title"
+                control={control}
+                props={{
+                  label: 'Заголовок',
+                  fullWidth: true,
+                }}
+              />
+            ) : title?.trim() ? (
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 600, cursor: isMe ? 'pointer' : 'default' }}
+                onClick={handleStartEdit}
+              >
+                {title}
+              </Typography>
+            ) : isMe ? (
+              <Typography
+                variant="body1"
+                onClick={handleStartEdit}
+                sx={{
+                  color: 'info.main',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  ':hover': { color: 'primary.main' },
+                }}
+              >
+                Добавить заголовок
+              </Typography>
+            ) : null}
+          </Box>
+
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+          >
+            <RequirementCard
+              isEdit={isEdit}
+              icon="photo"
+              label="Фото"
+              value={photoCount}
+              canEdit={isMe && !isCancelled}
+              placeholder="Указать количество"
+              emptyReadOnlyLabel={isMe ? undefined : '—'}
+              onEdit={handleStartEdit}
+            >
+              {isEditEnabled ? (
+                <RHFInput
+                  name="photoCount"
+                  control={control}
+                  props={{
+                    label: 'Кол-во фото',
+                    size: 'small',
+                    fullWidth: true,
+                    sx: { mt: 0.5 },
                   }}
                 />
-              )}
-            />
-          </EditField>
+              ) : undefined}
+            </RequirementCard>
+
+            <RequirementCard
+              isEdit={isEdit}
+              icon="video"
+              label="Видео"
+              value={videoCount}
+              canEdit={isMe && !isCancelled}
+              placeholder="Указать количество"
+              emptyReadOnlyLabel={isMe ? undefined : '—'}
+              onEdit={handleStartEdit}
+            >
+              {isEditEnabled ? (
+                <RHFInput
+                  name="videoCount"
+                  control={control}
+                  props={{
+                    label: 'Кол-во видео',
+                    size: 'small',
+                    fullWidth: true,
+                    sx: { mt: 0.5 },
+                  }}
+                />
+              ) : undefined}
+            </RequirementCard>
+
+            <RequirementCard
+              isEdit={isEdit}
+              icon="deadline"
+              label="Дедлайн"
+              value={finalDate}
+              canEdit={isMe && !isCancelled}
+              placeholder="Указать дату"
+              onEdit={handleStartEdit}
+            >
+              {isEditEnabled ? (
+                <Box sx={{ mt: 0.5 }}>
+                  <RHFDateTimePicker
+                    name="finalDate"
+                    label="Дедлайн"
+                    size="small"
+                    control={control}
+                  />
+                </Box>
+              ) : undefined}
+            </RequirementCard>
+          </Stack>
         </Stack>
-      </Stack>
-    </DatePickerProvider>
+      </Box>
+
+      <TaskTzSections
+        isMe={isMe}
+        isEdit={isEditEnabled}
+        onEdit={handleStartEdit}
+      />
+    </Stack>
   );
 };

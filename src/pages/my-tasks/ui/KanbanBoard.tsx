@@ -5,16 +5,17 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 import {
   canEditTaskStatus,
+  getIsCompanyAction,
+  isTaskOwner,
   taskKeys,
   useUpdateTaskMutation,
   type Task,
   type TaskList,
   type TaskListParams,
   type TaskStatus,
-} from '@/entities/task';
-import { useAuthStore } from '@/features/auth';
-
-import { KANBAN_COLUMNS } from '../model/kanbanColumns';
+} from '@/entities';
+import { useAuthStore, KANBAN_COLUMNS } from '@/features';
+import { useSnackbarStore } from '@/widgets';
 
 import { KanbanColumn } from './KanbanColumn';
 
@@ -31,8 +32,12 @@ export const KanbanBoard = ({
   queryParams,
   onHideColumn,
 }: KanbanBoardProps) => {
-  const currentUserId = useAuthStore(state => state.id);
+  const { id: currentUserId } = useAuthStore();
+
   const queryClient = useQueryClient();
+
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const { mutate: updateTask } = useUpdateTaskMutation();
 
   const columns = KANBAN_COLUMNS.filter(column =>
@@ -48,6 +53,9 @@ export const KanbanBoard = ({
     if (!task || task.status === newStatus) return;
     if (!canEditTaskStatus(task, currentUserId ?? null)) return;
 
+    const isOwner = isTaskOwner(task, currentUserId ?? null);
+    const isCompanyAction = getIsCompanyAction(task, isOwner, newStatus);
+
     const listQueryKey = taskKeys.list(queryParams);
     const previousData = queryClient.getQueryData<TaskList>(listQueryKey);
 
@@ -57,16 +65,21 @@ export const KanbanBoard = ({
       return {
         ...old,
         items: old.items.map(item =>
-          item.id === taskId ? { ...item, status: newStatus } : item
+          item.id === taskId
+            ? { ...item, status: newStatus, isCompanyAction }
+            : item
         ),
       };
     });
 
     updateTask(
-      { id: taskId, body: { status: newStatus } },
+      { id: taskId, body: { status: newStatus, isCompanyAction } },
       {
         onError: () => {
           queryClient.setQueryData(listQueryKey, previousData);
+        },
+        onSuccess: () => {
+          setSnackbarOpen?.(true, 'Статус успешно изменен');
         },
       }
     );

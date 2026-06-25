@@ -106,28 +106,29 @@ export type Task = {
   executor?: Executor
   post?: Post
   owner?: Owner
+  isCompanyAction?: boolean
 }
 
 export type TaskList = {
+  page: number
   items: Task[]
   total: number
-  page: number
   limit: number
 }
 
 export type TaskCommentList = {
-  items: TaskComment[]
-  total: number
   page: number
+  total: number
   limit: number
+  items: TaskComment[]
 }
 
 export type TaskListParams = {
-  role?: TaskRole
-  status?: TaskStatus
-  postId?: string
   page?: number
   limit?: number
+  role?: TaskRole
+  postId?: string
+  status?: TaskStatus
   updatedDate?: string
 }
 
@@ -143,20 +144,20 @@ export type TaskCommentListParams = {
 }
 
 export type TaskCommentAttachment = {
-  commentId: string
-  authorId: string
   url: string
   key: string
-  mimeType: string
   size: string
+  authorId: string
+  mimeType: string
+  commentId: string
   createdAt: string
 }
 
 export type TaskCommentAttachmentList = {
-  items: TaskCommentAttachment[]
-  total: number
   page: number
+  total: number
   limit: number
+  items: TaskCommentAttachment[]
 }
 
 export type SearchTaskCommentsParams = {
@@ -166,9 +167,9 @@ export type SearchTaskCommentsParams = {
 }
 
 export type TaskCommentAttachmentsParams = {
-  type?: 'image' | 'video' | 'document'
   page?: number
   limit?: number
+  type?: 'image' | 'video' | 'document'
 }
 
 export type TaskActivityPayload = {
@@ -179,12 +180,12 @@ export type TaskActivityPayload = {
 
 
 export type TaskActivity = {
+  id: string
+  taskId: string
   actorId: string
   createdAt: string
-  id: string
-  payload: TaskActivityPayload
-  taskId: string
   type: TaskActivityType
+  payload: TaskActivityPayload
 }
 
 export type TaskActivityList = {
@@ -201,10 +202,10 @@ export type TaskActivityListParams = {
 }
 
 export enum TaskActivityType {
-  STATUS_CHANGED = 'STATUS_CHANGED',
-  FIELD_UPDATED = 'FIELD_UPDATED',
   MEDIA_ADDED = 'MEDIA_ADDED',
+  FIELD_UPDATED = 'FIELD_UPDATED',
   MEDIA_REMOVED = 'MEDIA_REMOVED',
+  STATUS_CHANGED = 'STATUS_CHANGED',
 }
 
 export const TASK_ACTIVITY_LABELS: Record<TaskActivityType, string> = {
@@ -225,6 +226,7 @@ export type UpdateTaskDto = {
   urgent?: boolean
   executorId?: string
   isExecutorApprove?: boolean | null
+  isCompanyAction?: boolean
 }
 
 export type CreateTaskDto = {

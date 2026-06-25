@@ -35,8 +35,24 @@ export const useTaskMediaSave = ({
     if (!task || files.length > 0) return
 
     const media = kind === 'report' ? (task.reportMedia ?? []) : task.media
+    const serverImages = mapTaskMediaToPhotos(media)
 
-    setImages(mapTaskMediaToPhotos(media))
+    setImages(prev => {
+      if (prev.some(isLocalPreview)) return prev
+
+      const serverKeys = serverImages.map(image => image.key).join('|')
+      const prevServerKeys = prev
+        .filter(image => !isLocalPreview(image))
+        .map(image => image.key)
+        .join('|')
+
+      if (!serverImages.length && prevServerKeys) return prev
+      if (serverKeys === prevServerKeys && prev.length === serverImages.length) {
+        return prev
+      }
+
+      return serverImages
+    })
   }, [task, files.length, kind])
 
   const handleRemoveImage = async (key: string) => {
@@ -66,8 +82,26 @@ export const useTaskMediaSave = ({
   const handleSaveMedia = async () => {
     if (!task || !canEditMedia || files.length === 0) return
 
-    await uploadMedia({ taskId: task.id, files, kind })
+    const uploads = await uploadMedia({ taskId: task.id, files, kind })
+    const uploadedPhotos: Photo[] = uploads.map(upload => ({
+      id: upload.key,
+      url: upload.url,
+      key: upload.key,
+      mimeType: upload.mimeType,
+      size: String(upload.size),
+    }))
+
     setFiles([])
+    setImages(prev => {
+      prev
+        .filter(isLocalPreview)
+        .forEach(photo => URL.revokeObjectURL(photo.url))
+
+      return [
+        ...prev.filter(photo => !isLocalPreview(photo)),
+        ...uploadedPhotos,
+      ]
+    })
   }
 
   const handleCancel = () => {

@@ -195,7 +195,7 @@ export const usePostTasksQuery = (
   skip?: boolean,
 ) =>
   useQuery({
-    queryKey: ['postTasks'],
+    queryKey: postKeys.postTasks(postId ?? '', params),
     queryFn: async () => {
       const { data } = await mainAxios.get<TaskList>('/tasks', {
         params: { ...params, postId },

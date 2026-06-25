@@ -1,12 +1,5 @@
-import { Delete, Search, Tune } from '@mui/icons-material';
-import {
-  Drawer,
-  IconButton,
-  MenuItem,
-  Stack,
-  TextField,
-  useMediaQuery,
-} from '@mui/material';
+import { Delete, Search } from '@mui/icons-material';
+import { IconButton, MenuItem, Stack, TextField } from '@mui/material';
 import { useState } from 'react';
 
 import {
@@ -14,7 +7,6 @@ import {
   useFavoriteGroupsQuery,
   type FavoriteGroup,
 } from '@/entities/favorite';
-import { SideBarFilter, useMainFilterStore } from '@/features';
 import { useScroll } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -32,19 +24,9 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const { setSnackbarOpen } = useSnackbarStore();
-
-  const {
-    isOpenMainFilter,
-    setIsOpenMainFilter,
-    // filters,
-    // setFilters,
-    // postsType,
-    // setPostsType,
-  } = useMainFilterStore();
-
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const { data: groups, isLoading } = useFavoriteGroupsQuery();
 
@@ -97,8 +79,8 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
         sx={{
           px: 2,
           pb: 2,
-          pt: isScrolled ? 4 : 1,
           alignItems: 'center',
+          pt: isScrolled ? 4 : 1,
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
           bgcolor: isScrolled ? 'white' : 'transparent',
@@ -107,45 +89,65 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
-        <TextField
-          label="Подборки"
-          select
-          value={value}
-          disabled={isLoading}
-          size={isMobile ? 'small' : 'medium'}
-          sx={{ width: { xs: '100%', md: '35%' } }}
-          onChange={e => onChange(e.target.value as FavoriteGroupFilter)}
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ width: { xs: '100%', md: '50%' } }}
         >
-          <MenuItem value="all">Все</MenuItem>
-          <MenuItem value="ungrouped">Без подборки</MenuItem>
-          {groups?.map(group => (
-            <MenuItem
-              key={group.id}
-              value={group.id}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 1,
-              }}
-            >
-              <span>
-                {group.name} ({group.count})
-              </span>
-              <IconButton
-                size="small"
-                color="error"
-                disabled={isPending}
-                onMouseDown={e => e.stopPropagation()}
-                onClick={e => {
-                  e.stopPropagation();
-                  void handleDeleteClick(group);
+          <TextField
+            select
+            size="small"
+            value={value}
+            label="Подборки"
+            disabled={isLoading}
+            sx={{ width: { xs: '100%', md: '50%' } }}
+            onChange={e => onChange(e.target.value as FavoriteGroupFilter)}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="ungrouped">Без подборки</MenuItem>
+            {groups?.map(group => (
+              <MenuItem
+                key={group.id}
+                value={group.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: 1,
                 }}
               >
-                <Delete fontSize="small" />
-              </IconButton>
-            </MenuItem>
-          ))}
-        </TextField>
+                <span>
+                  {group.name} ({group.count})
+                </span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  disabled={isPending}
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    void handleDeleteClick(group);
+                  }}
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            size="small"
+            label="Категория"
+            disabled={isLoading}
+            value={categoryFilter}
+            sx={{ width: { xs: '100%', md: '50%' } }}
+            onChange={e => setCategoryFilter(e.target.value)}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="projects">Проекты</MenuItem>
+            <MenuItem value="users">Пользователи</MenuItem>
+          </TextField>
+        </Stack>
 
         <Stack
           direction="row"
@@ -153,10 +155,6 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
         >
           <IconButton onClick={() => setIsSearchOpen(true)}>
             <Search />
-          </IconButton>
-
-          <IconButton onClick={() => setIsOpenMainFilter(!isOpenMainFilter)}>
-            {isOpenMainFilter ? <Tune color="primary" /> : <Tune />}
           </IconButton>
         </Stack>
       </Stack>
@@ -173,22 +171,6 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
         onClose={() => setIsSearchOpen(false)}
         groupFilter={value}
       />
-
-      <Drawer
-        anchor="right"
-        open={isOpenMainFilter}
-        onClose={() => setIsOpenMainFilter(!isOpenMainFilter)}
-        sx={{
-          '& .MuiDrawer-paper': {
-            p: { xs: 2, md: 4 },
-            width: { xs: '100%', sm: '80%', md: '25%' },
-            borderTopLeftRadius: 32,
-            borderBottomLeftRadius: 32,
-          },
-        }}
-      >
-        <SideBarFilter />
-      </Drawer>
     </>
   );
 };

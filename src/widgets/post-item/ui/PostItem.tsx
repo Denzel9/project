@@ -35,6 +35,7 @@ const PostItem = ({
   isCompany = false,
   isCompact = false,
   isApplied = false,
+  isPrivate = false,
   applicationStatus,
   isFavorite = false,
   removePostFromCollection,
@@ -190,10 +191,12 @@ const PostItem = ({
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <ShareButton
-                postId={post.id}
-                title={post.title}
-              />
+              {!isPrivate && (
+                <ShareButton
+                  postId={post.id}
+                  title={post.title}
+                />
+              )}
 
               <IconButton onClick={handleClick}>
                 <MoreVert />

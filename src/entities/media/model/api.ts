@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { chatKeys } from '@/entities/chat'
 import { postKeys } from '@/entities/post'
-import { taskKeys } from '@/entities/task'
+import {
+  taskKeys,
+} from '@/entities/task'
 import { mainAxios } from '@/shared/api'
 
 import type { DeleteMediaParams } from './types'
@@ -30,8 +32,26 @@ export const useDeleteMediaMutation = () => {
       }
 
       if (taskId) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
-        queryClient.invalidateQueries({
+        // if (mediaId) {
+        //   removeTaskMediaFromCache(queryClient, taskId, mediaId)
+        // }
+
+        void queryClient.invalidateQueries({
+          queryKey: taskKeys.detail(taskId),
+        })
+
+        const cachedTask = queryClient.getQueryData<{ postId?: string }>(
+          taskKeys.detail(taskId),
+        )
+
+        if (cachedTask?.postId) {
+          void queryClient.invalidateQueries({
+            queryKey: [...postKeys.all, 'postTasks', cachedTask.postId],
+          })
+        }
+
+        void queryClient.invalidateQueries({ queryKey: taskKeys.all })
+        void queryClient.invalidateQueries({
           queryKey: [...taskKeys.all, 'activities', taskId],
         })
       }

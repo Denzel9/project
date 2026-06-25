@@ -8,9 +8,6 @@ import {
   Menu,
   MenuItem,
   Stack,
-  Step,
-  StepLabel,
-  Stepper,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -19,6 +16,7 @@ import {
   useGetUserByIdQuery,
   canEditTaskFields,
   canEditTaskStatus,
+  getIsCompanyAction,
   isTaskExecutor,
   isTaskOwner,
   useTaskActivitiesQuery,
@@ -44,6 +42,9 @@ import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
 import { Activity } from './Activity';
 import { TaskComments } from './TaskComments';
 import { TaskResultDropzone } from './TaskResultDropzone';
+import { TaskStatusStepper } from './TaskStatusStepper';
+
+import type { Post } from '@/entities/post';
 
 const finalStatuses = [
   TASK_STATUS_ENUM.IN_PROGRESS,
@@ -51,13 +52,24 @@ const finalStatuses = [
   TASK_STATUS_ENUM.COMPLETED,
 ];
 
+const CANCELLED_STATUSES = [
+  TASK_STATUS_ENUM.CANCELLED,
+  TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
+] as const;
+
+type TaskItemProps = {
+  task: Task;
+  post?: Post;
+  isLoading: boolean;
+  isPostLoading?: boolean;
+};
+
 export const TaskItem = ({
   task,
+  post,
   isLoading,
-}: {
-  task: Task;
-  isLoading: boolean;
-}) => {
+  isPostLoading = false,
+}: TaskItemProps) => {
   const currentUserId = useAuthStore(state => state.id);
 
   const { setSnackbarOpen } = useSnackbarStore();
@@ -67,12 +79,18 @@ export const TaskItem = ({
 
   const [isEdit, setIsEdit] = useState(false);
   const [status, setStatus] = useState<TaskStatus>('PREPARING');
-  const [isOpenDescription, setIsOpenDescription] = useState(false);
   const [isOpenCancelDialog, setIsOpenCancelDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activityType, setActivityType] = useState<
     TaskActivityType | undefined
   >(undefined);
+  const [activityLimit, setActivityLimit] = useState(20);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setActivityLimit(20);
+    }, 0);
+  }, [activityType, task?.id]);
 
   const isOwner = task ? canEditTaskFields(task, currentUserId) : false;
   const canChangeStatus = task ? canEditTaskStatus(task, currentUserId) : false;
@@ -112,10 +130,14 @@ export const TaskItem = ({
     task?.id ?? '',
     {
       page: 1,
-      limit: 20,
+      limit: activityLimit,
       type: activityType,
     }
   );
+
+  const activityTotal = data?.total ?? 0;
+  const activityItems = data?.items ?? [];
+  const hasMoreActivities = activityTotal > activityItems.length;
 
   const { data: contact } = useGetUserByIdQuery(
     (isOwner ? task?.executorId : task?.ownerId) || ''
@@ -135,7 +157,14 @@ export const TaskItem = ({
   ) => {
     if (!task) return;
 
-    const body: UpdateTaskDto = isOwner ? mapFormToUpdateTask(formValues) : {};
+    const body: UpdateTaskDto = isOwner
+      ? mapFormToUpdateTask(
+          formValues,
+          getIsCompanyAction(task, isOwner, newStatus)
+        )
+      : {
+          isCompanyAction: getIsCompanyAction(task, isOwner, newStatus),
+        };
 
     if (newStatus) {
       body.status = newStatus;
@@ -149,15 +178,15 @@ export const TaskItem = ({
 
     setIsEdit(false);
 
-    if (body['status']) {
+    if (body.status) {
       setSnackbarOpen?.(true, 'Статус успешно изменен');
+    } else {
+      setSnackbarOpen?.(true, 'Данные успешно сохранены');
     }
 
     requestAnimationFrame(() => {
       scrollMainToTop();
     });
-
-    setSnackbarOpen?.(true, 'Данные успешно сохранены');
   };
 
   const handleSimpleSaveForm = async (formValues: TaskFormType) => {
@@ -182,10 +211,12 @@ export const TaskItem = ({
 
   const handleCancel = () => {
     handleCancelMedia();
-    setIsOpenDescription(false);
   };
 
   const isLoadingTask = isUpdating || isMediaSaving || isReportMediaSaving;
+  const isCancelled = CANCELLED_STATUSES.includes(
+    status as (typeof CANCELLED_STATUSES)[number]
+  );
   const isEnabledCancel = [
     TASK_STATUS_ENUM.PREPARING,
     TASK_STATUS_ENUM.PENDING_APPROVAL,
@@ -210,91 +241,59 @@ export const TaskItem = ({
         </Typography>
       )}
 
-      {task && (
+      {status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR && (
         <Box
           sx={{
-            gap: 2,
-            display: 'flex',
-            borderRadius: '32px',
-            flexDirection: 'column',
+            bgcolor: 'error.light',
+            p: { xs: 2, md: 3 },
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: 'error.main',
           }}
         >
-          {status === TASK_STATUS_ENUM.CANCELLED && (
-            <Box
-              sx={{
-                bgcolor: 'white',
-                p: { xs: 3, md: 4 },
-                borderRadius: '32px',
-              }}
-            >
-              <Typography
-                variant="h5"
-                color="error"
-              >
-                Задача отменена
-              </Typography>
-            </Box>
-          )}
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 500, color: 'white' }}
+          >
+            Задача отменена исполнителем
+          </Typography>
+        </Box>
+      )}
 
-          {status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR && (
-            <Box
-              sx={{
-                bgcolor: 'white',
-                p: { xs: 3, md: 4 },
-                borderRadius: '32px',
-              }}
-            >
-              <Typography
-                variant="h5"
-                color="error"
-              >
-                Задача отменена исполнителем
-              </Typography>
-            </Box>
-          )}
+      {status === TASK_STATUS_ENUM.CANCELLED && (
+        <Box
+          sx={{
+            bgcolor: 'error.light',
+            p: { xs: 2, md: 3 },
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: 'error.main',
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 500, color: 'white' }}
+          >
+            Задача отменена заказчиком
+          </Typography>
+        </Box>
+      )}
 
-          {status !== TASK_STATUS_ENUM.CANCELLED && (
-            <Stepper
-              sx={{
-                bgcolor: 'white',
-                p: { xs: 3, md: 4 },
-                borderRadius: '32px',
-              }}
-              activeStep={0}
-              alternativeLabel
-              orientation="horizontal"
-            >
-              <Step active={status === TASK_STATUS_ENUM.PREPARING}>
-                <StepLabel>На подготовке</StepLabel>
-              </Step>
-              <Step active={status === TASK_STATUS_ENUM.PENDING_APPROVAL}>
-                <StepLabel>На согласовании</StepLabel>
-              </Step>
-              <Step active={status === TASK_STATUS_ENUM.REVISION}>
-                <StepLabel>На доработке</StepLabel>
-              </Step>
-              <Step active={status === TASK_STATUS_ENUM.IN_PROGRESS}>
-                <StepLabel>В работе</StepLabel>
-              </Step>
-              <Step active={status === TASK_STATUS_ENUM.CHECKING}>
-                <StepLabel>На проверке</StepLabel>
-              </Step>
-              <Step active={status === TASK_STATUS_ENUM.COMPLETED}>
-                <StepLabel>Исполнено</StepLabel>
-              </Step>
-            </Stepper>
-          )}
+      {!isCancelled && <TaskStatusStepper status={status} />}
 
+      {task && (
+        <Stack
+          spacing={2}
+          sx={{ mt: 2 }}
+        >
           <Stack
             spacing={2}
             direction={{ xs: 'column', lg: 'row' }}
+            sx={{ alignItems: 'flex-start' }}
           >
             <Stack
               spacing={2}
-              direction="column"
-              sx={{
-                width: { xs: '100%', lg: '70%' },
-              }}
+              sx={{ flex: 1, minWidth: 0, width: '100%' }}
             >
               {Boolean(
                 reportFiles.length ||
@@ -315,55 +314,51 @@ export const TaskItem = ({
                 />
               )}
 
-              <Stack
-                spacing={4}
-                direction="column"
+              <Box
                 sx={{
-                  width: '100%',
                   bgcolor: 'white',
-                  p: { xs: 3, md: 4 },
+                  p: { xs: 2.5, md: 3 },
                   borderRadius: '32px',
-                  height: 'fit-content',
                 }}
               >
                 <Stack
                   direction="row"
-                  sx={{ justifyContent: 'space-between' }}
+                  sx={{
+                    mb: 3,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
                 >
                   <Stack
                     direction="row"
-                    spacing={2}
-                    sx={{ alignItems: 'center' }}
+                    spacing={1.5}
+                    sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
                   >
                     <Typography
-                      sx={{
-                        mb: 2,
-                        fontWeight: 500,
-                        fontSize: '24px',
-                        color: 'info.main',
-                      }}
+                      variant="h6"
+                      sx={{ fontWeight: 600, color: 'info.main' }}
                     >
                       Техническое задание
                     </Typography>
+
                     {task.isExecutorApprove === false && (
                       <Chip
-                        label="Отклонено"
+                        size="small"
+                        label="Отклонено исполнителем"
                         color="error"
                       />
                     )}
                   </Stack>
 
-                  {status !== TASK_STATUS_ENUM.CANCELLED && (
+                  {!isCancelled && isOwner && (
                     <>
-                      <Box>
-                        <IconButton
-                          onClick={event =>
-                            setAnchorEl(anchorEl ? null : event.currentTarget)
-                          }
-                        >
-                          <MoreVert />
-                        </IconButton>
-                      </Box>
+                      <IconButton
+                        onClick={event =>
+                          setAnchorEl(anchorEl ? null : event.currentTarget)
+                        }
+                      >
+                        <MoreVert />
+                      </IconButton>
 
                       <Menu
                         anchorEl={anchorEl}
@@ -373,7 +368,7 @@ export const TaskItem = ({
                           setIsOpenCancelDialog(false);
                         }}
                       >
-                        {isEnabledCancel && isOwner && (
+                        {isEnabledCancel && (
                           <MenuItem onClick={() => setIsOpenCancelDialog(true)}>
                             <Typography color="error">
                               Отменить задачу
@@ -386,8 +381,8 @@ export const TaskItem = ({
                 </Stack>
 
                 {(canEditMedia || images.length > 0 || files.length > 0) &&
-                  status !== TASK_STATUS_ENUM.CANCELLED && (
-                    <Box sx={{ width: { xs: '100%', md: '70%' } }}>
+                  !isCancelled && (
+                    <Box sx={{ mb: 3 }}>
                       <Gallery
                         files={files}
                         images={images}
@@ -427,32 +422,38 @@ export const TaskItem = ({
                     </Box>
                   )}
 
-                <TaskForm
-                  task={task}
-                  isEdit={isEdit}
-                  status={status}
-                  onSubmit={handleSave}
-                  setIsEdit={setIsEdit}
-                  isLoading={isLoadingTask}
-                  activities={data?.items ?? []}
-                  canChangeStatus={canChangeStatus}
-                  imagesLength={reportImages.length}
-                  isOpenDescription={isOpenDescription}
-                  isExecutorApprove={task.isExecutorApprove}
-                  handleSimpleSaveForm={handleSimpleSaveForm}
-                  setIsOpenDescription={setIsOpenDescription}
-                />
-              </Stack>
+                {isPostLoading && !post ? (
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 4 }}
+                  >
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  <TaskForm
+                    task={task}
+                    post={post}
+                    isEdit={isEdit}
+                    status={status}
+                    onSubmit={handleSave}
+                    setIsEdit={setIsEdit}
+                    isLoading={isLoadingTask}
+                    activities={data?.items ?? []}
+                    canChangeStatus={canChangeStatus}
+                    imagesLength={reportImages.length}
+                    isExecutorApprove={task.isExecutorApprove}
+                    handleSimpleSaveForm={handleSimpleSaveForm}
+                  />
+                )}
+              </Box>
             </Stack>
 
             <Stack
               spacing={2}
-              direction="column"
               sx={{
-                minHeight: 0,
-                display: 'flex',
-                flex: { lg: '0 0 30%' },
                 width: { xs: '100%', lg: '30%' },
+                flexShrink: 0,
+                position: { lg: 'sticky' },
+                top: { lg: 16 },
               }}
             >
               <ContactCard
@@ -465,10 +466,15 @@ export const TaskItem = ({
               />
 
               <Activity
+                total={activityTotal}
+                ownerId={task.ownerId}
+                executorId={task.executorId}
                 activityType={activityType}
-                activities={data?.items ?? []}
+                activities={activityItems}
+                hasMore={hasMoreActivities}
                 isLoading={isLoadingActivities}
                 setActivityType={setActivityType}
+                onLoadMore={() => setActivityLimit(prev => prev + 20)}
               />
             </Stack>
           </Stack>
@@ -479,7 +485,7 @@ export const TaskItem = ({
             comments={task.comments ?? []}
             isExecutorApprove={task.isExecutorApprove}
           />
-        </Box>
+        </Stack>
       )}
 
       <ConfirmDialog

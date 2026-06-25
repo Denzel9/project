@@ -29,6 +29,13 @@ import {
   type FormProductType,
 } from '../model/schema/schema';
 
+import {
+  BloggerRequirementsSection,
+  BriefSection,
+  CooperationSection,
+  LocationSection,
+  MetaSection,
+} from './AdditionalSections';
 import { Gallery } from './Gallery';
 import { MainInfo } from './MainInfo';
 import { ProductInfo } from './ProductInfo';
@@ -168,6 +175,12 @@ export const ApplicationForm = ({
         />
 
         <ProductInfo />
+
+        <MetaSection />
+        <LocationSection />
+        <BloggerRequirementsSection />
+        <CooperationSection />
+        <BriefSection />
 
         {submitError && (
           <Box sx={{ color: 'error.main', mt: 2 }}>{submitError}</Box>

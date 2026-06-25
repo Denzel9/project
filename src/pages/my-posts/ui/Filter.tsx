@@ -6,7 +6,6 @@ import {
   Popover,
   Stack,
   TextField,
-  useMediaQuery,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
@@ -40,8 +39,6 @@ const MyPostFilter = () => {
     isOpenFilter,
     setIsOpenFilter,
   } = useMyPostFilterStore();
-
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const postOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -99,7 +96,7 @@ const MyPostFilter = () => {
             fullWidth
             label="Статус"
             value={status}
-            size={isMobile ? 'small' : 'medium'}
+            size="small"
             onChange={event =>
               setStatus(event.target.value as ApplicationStatusFilter)
             }
@@ -120,7 +117,7 @@ const MyPostFilter = () => {
             fullWidth
             value={postId}
             label="Объявление"
-            size={isMobile ? 'small' : 'medium'}
+            size="small"
             onChange={event => setPostId(event.target.value)}
           >
             <MenuItem value="all">Все</MenuItem>

@@ -67,9 +67,6 @@ export const FavoritePage = () => {
           flex: 1,
           width: '100%',
           display: 'flex',
-          bgcolor: 'white',
-          borderRadius: '32px',
-          p: { xs: 0, md: 4 },
           flexDirection: 'column',
         }}
       >

@@ -89,6 +89,7 @@ export const AddToCollectionDialog = () => {
       onClose={handleClose}
       sx={{
         '& .MuiDialog-paper': {
+          minWidth: 560,
           outline: 'none',
           overflow: 'visible',
           position: 'relative',

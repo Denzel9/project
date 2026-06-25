@@ -28,8 +28,6 @@ export const UserCard = ({
 
   const { id: userId } = useAuthStore();
 
-  const isMe = user?.id !== userId;
-
   return (
     <Box
       sx={{
@@ -41,7 +39,7 @@ export const UserCard = ({
         maxWidth: { xs: '100%', md: '350px' },
         minWidth: { xs: '100%', md: '350px' },
         position: { xs: 'relative', md: 'sticky' },
-        boxShadow: { xs: 'none', md: '0 0 10px 0 rgba(0, 0, 0, 0.1)' },
+        boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
       }}
     >
       <Box
@@ -65,7 +63,7 @@ export const UserCard = ({
             sx={{ width: '200px', height: '200px' }}
           />
 
-          {isMe && (
+          {user?.id === userId && (
             <IconButton
               sx={{ display: { xs: 'block', md: 'none' } }}
               onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
@@ -136,7 +134,7 @@ export const UserCard = ({
         )}
       </Stack>
 
-      {!isMe && (
+      {user?.id !== userId && (
         <Box sx={{ display: { xs: 'block', md: 'none' } }}>
           <Stack
             spacing={2}

@@ -20,16 +20,19 @@ import {
   type ApplicationList,
 } from '@/entities/application';
 import { POST_STATUS_ENUM } from '@/entities/post';
+import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 
 type IncomingApplicationsProps = {
   applications?: ApplicationList;
   isLoading: boolean;
+  emptyTitle?: string;
 };
 
 export const IncomingApplications = ({
   applications,
   isLoading,
+  emptyTitle = 'Пока нет откликов на этот пост',
 }: IncomingApplicationsProps) => {
   const navigate = useNavigate();
 
@@ -61,20 +64,16 @@ export const IncomingApplications = ({
     return (
       <Box
         sx={{
-          bgcolor: 'white',
-          borderRadius: '32px',
           flex: 1,
+          height: '100%',
           display: 'flex',
-          justifyContent: 'center',
+          bgcolor: 'white',
           alignItems: 'center',
+          borderRadius: '32px',
+          justifyContent: 'center',
         }}
       >
-        <Typography
-          color="info"
-          sx={{ fontWeight: 500, fontSize: '32px' }}
-        >
-          Пока нет откликов на этот пост
-        </Typography>
+        <EmptyBlock title={emptyTitle} />
       </Box>
     );
   }

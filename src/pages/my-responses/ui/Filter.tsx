@@ -6,15 +6,14 @@ import {
   Popover,
   Stack,
   TextField,
-  useMediaQuery,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
 import { SideBarFilter, useMainFilterStore } from '@/features';
-import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 import { useScroll } from '@/shared';
+import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
 
@@ -39,8 +38,6 @@ const MyResponsesFilter = ({
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
-
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const handleDateChange = (date: Dayjs | null) => {
     onUpdatedDateChange(date ? date.format('YYYY-MM-DD') : null);
@@ -74,7 +71,7 @@ const MyResponsesFilter = ({
           select
           label="Статус"
           value={status}
-          size={isMobile ? 'small' : 'medium'}
+          size="small"
           sx={{ width: { xs: '90%', md: '20%' } }}
           onChange={e =>
             onStatusChange(e.target.value as ApplicationStatusFilter)

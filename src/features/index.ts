@@ -7,3 +7,4 @@ export * from './main-filter';
 export * from './current-user';
 export * from './delete-post';
 export * from './main-filter/index';
+export * from './task-filter';

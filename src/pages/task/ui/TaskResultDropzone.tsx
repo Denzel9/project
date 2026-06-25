@@ -1,11 +1,20 @@
-import { CloudUpload, Delete } from '@mui/icons-material';
+import {
+  AddPhotoAlternateOutlined,
+  AssignmentTurnedInOutlined,
+  Close,
+  CloudUploadOutlined,
+  DeleteOutlined,
+  PlayCircleOutlined,
+  SaveOutlined,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
-  // Chip,
+  Chip,
   IconButton,
   Stack,
   Typography,
+  alpha,
   useMediaQuery,
 } from '@mui/material';
 import {
@@ -19,7 +28,6 @@ import {
 
 import { theme } from '@/app/index';
 import { TASK_STATUS_ENUM, type TaskStatus } from '@/entities/task';
-// import { validateChatMediaFile } from '@/entities/chat';
 import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
@@ -46,6 +54,55 @@ type TaskResultDropzoneProps = {
   onRemoveUploaded: (key: string) => void;
 };
 
+const formatFileSize = (size?: string) => {
+  const bytes = Number(size);
+
+  if (!bytes || Number.isNaN(bytes)) return null;
+
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+};
+
+const formatFileCount = (count: number) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod10 === 1 && mod100 !== 11) return `${count} файл`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return `${count} файла`;
+  }
+
+  return `${count} файлов`;
+};
+
+const getStatusHint = (
+  status: TaskStatus,
+  canUpload: boolean,
+  hasMedia: boolean
+) => {
+  if (status === TASK_STATUS_ENUM.IN_PROGRESS && canUpload) {
+    return hasMedia
+      ? 'Загрузите все материалы и нажмите «Сохранить», когда будете готовы отправить на проверку.'
+      : 'Перетащите фото или видео сюда — заказчик увидит результат после сохранения.';
+  }
+
+  if (status === TASK_STATUS_ENUM.CHECKING) {
+    return 'Материалы отправлены на проверку. Редактирование недоступно.';
+  }
+
+  if (status === TASK_STATUS_ENUM.COMPLETED && hasMedia) {
+    return 'Итоговые материалы по задаче.';
+  }
+
+  if (!hasMedia) {
+    return 'Исполнитель ещё не загрузил результат.';
+  }
+
+  return null;
+};
+
 export const TaskResultDropzone = ({
   files,
   images,
@@ -59,8 +116,7 @@ export const TaskResultDropzone = ({
   onRemoveUploaded,
 }: TaskResultDropzoneProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
-  // const [error, setError] = useState<string | null>(null);
-  const [isOpenAddMore, setIsOpenAddMore] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0);
 
@@ -70,40 +126,20 @@ export const TaskResultDropzone = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
+  const canEdit = canUpload && status === TASK_STATUS_ENUM.IN_PROGRESS;
+  const hasMedia = images.length > 0;
+  const hasPendingFiles = files.length > 0;
+  const showDropzone = canEdit && (isAdding || !hasMedia || hasPendingFiles);
+  const showEditControls = canEdit && hasMedia && !hasPendingFiles;
+  const statusHint = getStatusHint(status, canUpload, hasMedia);
+
+  const mediaCount = images.length;
+
   const addFiles = useCallback(
     (incoming: File[]) => {
-      const validFiles: File[] = [];
-      // let validationError: string | null = null;
-      // const existingNames = new Set([
-      //   ...files.map(file => file.name),
-      //   ...images.map(image => image.filename).filter(Boolean),
-      // ]);
+      if (!incoming.length) return;
 
-      for (const file of incoming) {
-        // if (existingNames.has(file.name)) {
-        //   validationError = 'Этот файл уже добавлен';
-        //   continue;
-        // }
-
-        // const fileError = validateChatMediaFile(file);
-
-        // if (fileError) {
-        //   validationError = fileError;
-        //   continue;
-        // }
-
-        validFiles.push(file);
-      }
-
-      // if (!validFiles.length) {
-      //   if (validationError) {
-      //     setError(validationError);
-      //   }
-
-      //   return;
-      // }
-
-      const newPhotos: Photo[] = validFiles.map(file => ({
+      const newPhotos: Photo[] = incoming.map(file => ({
         lastModified: '',
         filename: file.name,
         mimeType: file.type,
@@ -112,9 +148,9 @@ export const TaskResultDropzone = ({
         url: URL.createObjectURL(file),
       }));
 
-      setFiles([...files, ...validFiles]);
+      setFiles([...files, ...incoming]);
       setImages([...images, ...newPhotos]);
-      // setError(validationError);
+      setIsAdding(true);
     },
     [files, images, setFiles, setImages]
   );
@@ -171,7 +207,7 @@ export const TaskResultDropzone = ({
     dragCounterRef.current = 0;
     setIsDragActive(false);
 
-    if (!canUpload || isSaving) return;
+    if (!canEdit || isSaving) return;
 
     const droppedFiles = Array.from(event.dataTransfer.files);
 
@@ -190,91 +226,270 @@ export const TaskResultDropzone = ({
     event.target.value = '';
   };
 
-  // const pendingFiles = files.map(file => file.name);
+  const handleCancel = () => {
+    onCancel();
+    setIsAdding(false);
+  };
+
+  const handleSave = () => {
+    onSave();
+    setIsAdding(false);
+  };
 
   return (
-    <Box sx={{ bgcolor: 'white', p: 4, borderRadius: '32px' }}>
-      <Stack spacing={4}>
+    <Box
+      sx={{
+        bgcolor: 'white',
+        p: { xs: 2.5, md: 3 },
+        borderRadius: '32px',
+      }}
+    >
+      <Stack spacing={2.5}>
         <Stack
-          direction="row"
-          sx={{ width: '100%', justifyContent: 'space-between' }}
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}
         >
-          <Typography
-            sx={{
-              fontWeight: 500,
-              fontSize: '24px',
-              color: 'info.main',
-            }}
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{ alignItems: 'center', flex: 1, minWidth: 0 }}
           >
-            Результат работы
-          </Typography>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                display: 'flex',
+                flexShrink: 0,
+                borderRadius: '14px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'secondary.light',
+                color: 'primary.main',
+              }}
+            >
+              <AssignmentTurnedInOutlined />
+            </Box>
 
-          {!isOpenAddMore &&
-            canUpload &&
-            status !== TASK_STATUS_ENUM.CHECKING && (
-              <Button
-                size="small"
-                onClick={() => setIsOpenAddMore(true)}
-                sx={{ px: 2 }}
+            <Box sx={{ minWidth: 0 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}
               >
-                Редактировать
-              </Button>
-            )}
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 600, color: 'info.main' }}
+                >
+                  Результат работы
+                </Typography>
+
+                {hasMedia && (
+                  <Chip
+                    size="small"
+                    label={formatFileCount(mediaCount)}
+                    sx={{ bgcolor: 'secondary.light', fontWeight: 500 }}
+                  />
+                )}
+
+                {status === TASK_STATUS_ENUM.CHECKING && (
+                  <Chip
+                    size="small"
+                    color="warning"
+                    label="На проверке"
+                  />
+                )}
+              </Stack>
+
+              {statusHint && (
+                <Typography
+                  variant="body2"
+                  sx={{ mt: 0.5, color: 'text.secondary', lineHeight: 1.5 }}
+                >
+                  {statusHint}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+
+          {showEditControls && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<AddPhotoAlternateOutlined />}
+              onClick={() => setIsAdding(true)}
+              sx={{ flexShrink: 0, borderRadius: '12px' }}
+            >
+              Добавить файлы
+            </Button>
+          )}
         </Stack>
 
-        {Boolean(images.length) && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {hasMedia && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(2, minmax(0, 1fr))',
+                sm: 'repeat(3, minmax(0, 1fr))',
+                md: 'repeat(4, minmax(0, 1fr))',
+              },
+              gap: 1.5,
+            }}
+          >
             {images.map((image, index) => {
+              const isVideo = image.mimeType.startsWith('video/');
               const canOpenGallery = isGalleryMedia(image.mimeType);
+              const isPending = image.url.startsWith('blob:');
+              const canRemove = canEdit && (isAdding || isPending) && !isSaving;
 
               return (
                 <Box
                   key={image.key}
                   sx={{
-                    width: 100,
                     position: 'relative',
+                    aspectRatio: '4 / 5',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    bgcolor: 'secondary.light',
+                    border: '1px solid',
+                    borderColor: isPending ? 'primary.main' : 'divider',
+                    boxShadow: isPending
+                      ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}`
+                      : 'none',
                   }}
                 >
-                  {canUpload && isOpenAddMore && (
+                  <Box
+                    onClick={() => handleOpenGallery(index)}
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      cursor: canOpenGallery ? 'pointer' : 'default',
+                    }}
+                  >
+                    <MediaItem
+                      src={image.url}
+                      alt={image.filename || image.key}
+                      mimeType={image.mimeType}
+                    />
+                  </Box>
+
+                  {isPending && (
+                    <Chip
+                      size="small"
+                      label="Новый"
+                      color="primary"
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        height: 22,
+                        fontSize: 11,
+                      }}
+                    />
+                  )}
+
+                  {isVideo && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: 8,
+                        top: isPending ? 36 : 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: '999px',
+                        bgcolor: alpha('#000', 0.55),
+                        color: 'white',
+                      }}
+                    >
+                      <PlayCircleOutlined sx={{ fontSize: 16 }} />
+                      <Typography variant="caption">Видео</Typography>
+                    </Box>
+                  )}
+
+                  {canRemove && (
                     <IconButton
                       size="small"
-                      color="error"
+                      aria-label="Удалить файл"
                       onClick={event => {
                         event.stopPropagation();
                         handleRemovePending(image.key);
                       }}
                       sx={{
                         position: 'absolute',
-                        top: -12,
-                        right: -12,
-                        zIndex: 2,
+                        top: 6,
+                        right: 6,
+                        bgcolor: alpha('#fff', 0.92),
+                        boxShadow: 1,
+                        '&:hover': {
+                          bgcolor: 'error.light',
+                          color: 'error.main',
+                        },
                       }}
                     >
-                      <Delete fontSize="small" />
+                      <DeleteOutlined fontSize="small" />
                     </IconButton>
                   )}
 
-                  <Box
-                    onClick={() => handleOpenGallery(index)}
-                    sx={{
-                      width: '100%',
-                      height: 125,
-                      cursor: canOpenGallery ? 'pointer' : 'default',
-                    }}
-                  >
-                    <MediaItem
-                      src={image.url}
-                      alt={image.key}
-                      mimeType={image.mimeType}
-                    />
-                  </Box>
+                  {image.filename && !isVideo && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        px: 1,
+                        py: 0.75,
+                        background: `linear-gradient(transparent, ${alpha('#000', 0.65)})`,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: 'block',
+                          color: 'white',
+                          fontWeight: 500,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {image.filename}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               );
             })}
           </Box>
         )}
 
-        {((Boolean(files.length) && canUpload) || isOpenAddMore) && (
+        {!hasMedia && !canEdit && (
+          <Box
+            sx={{
+              py: 4,
+              px: 2,
+              textAlign: 'center',
+              borderRadius: '16px',
+              bgcolor: 'secondary.light',
+            }}
+          >
+            <CloudUploadOutlined
+              sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }}
+            />
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              {statusHint ?? 'Пока нет загруженных материалов'}
+            </Typography>
+          </Box>
+        )}
+
+        {showDropzone && (
           <Box
             role="button"
             tabIndex={0}
@@ -282,6 +497,7 @@ export const TaskResultDropzone = ({
             onKeyDown={event => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
+
                 if (!isSaving) {
                   fileInputRef.current?.click();
                 }
@@ -292,21 +508,23 @@ export const TaskResultDropzone = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             sx={{
-              py: 4,
+              py: hasMedia ? 2.5 : 4,
               px: 2,
               cursor: isSaving ? 'not-allowed' : 'pointer',
               textAlign: 'center',
-              borderRadius: '8px',
+              borderRadius: '16px',
               border: '2px dashed',
               borderColor: isDragActive ? 'primary.main' : 'divider',
-              bgcolor: isDragActive ? 'action.hover' : 'transparent',
+              bgcolor: isDragActive
+                ? alpha(theme.palette.primary.main, 0.06)
+                : 'secondary.light',
               opacity: isSaving ? 0.6 : 1,
               transition: 'border-color 0.2s ease, background-color 0.2s ease',
             }}
           >
-            <CloudUpload
+            <CloudUploadOutlined
               sx={{
-                fontSize: 40,
+                fontSize: hasMedia ? 32 : 40,
                 color: isDragActive ? 'primary.main' : 'text.disabled',
                 mb: 1,
               }}
@@ -314,16 +532,17 @@ export const TaskResultDropzone = ({
 
             <Typography
               variant="body1"
-              color="textPrimary"
+              sx={{ fontWeight: 500 }}
             >
-              Перетащите файлы сюда
+              {hasMedia ? 'Добавить ещё файлы' : 'Перетащите файлы сюда'}
             </Typography>
 
             <Typography
               variant="body2"
-              color="textSecondary"
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
             >
-              или нажмите для выбора
+              Фото и видео · или нажмите для выбора
             </Typography>
 
             <input
@@ -338,46 +557,89 @@ export const TaskResultDropzone = ({
           </Box>
         )}
 
-        {/* {error && (
-          <Typography
-            variant="body2"
-            color="error"
-          >
-            {error}
-          </Typography>
-        )} */}
-
-        {((canUpload && Boolean(files.length)) || isOpenAddMore) && (
+        {isAdding && hasMedia && !hasPendingFiles && (
           <Stack
-            spacing={2}
             direction="row"
+            sx={{ justifyContent: 'flex-end' }}
           >
             <Button
               size="small"
-              color="error"
-              variant="outlined"
-              onClick={() => {
-                onCancel();
-                setIsOpenAddMore(false);
-              }}
-              disabled={isSaving}
+              variant="text"
+              startIcon={<Close />}
+              onClick={() => setIsAdding(false)}
             >
-              Отменить
-            </Button>
-
-            <Button
-              size="small"
-              variant="outlined"
-              loading={isSaving}
-              disabled={Boolean(!files.length)}
-              onClick={() => {
-                onSave();
-                setIsOpenAddMore(false);
-              }}
-            >
-              Сохранить
+              Скрыть загрузку
             </Button>
           </Stack>
+        )}
+
+        {hasPendingFiles && (
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: '16px',
+              bgcolor: alpha(theme.palette.primary.main, 0.06),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.15),
+            }}
+          >
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 600 }}
+                >
+                  {formatFileCount(files.length)} к сохранению
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  {files
+                    .slice(0, 2)
+                    .map(file => {
+                      const size = formatFileSize(String(file.size));
+
+                      return size ? `${file.name} · ${size}` : file.name;
+                    })
+                    .join(', ')}
+                  {files.length > 2 ? ` и ещё ${files.length - 2}` : ''}
+                </Typography>
+              </Box>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ flexShrink: 0 }}
+              >
+                <Button
+                  size="small"
+                  color="inherit"
+                  variant="outlined"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  sx={{ borderRadius: '12px' }}
+                >
+                  Отменить
+                </Button>
+
+                <Button
+                  size="small"
+                  variant="contained"
+                  loading={isSaving}
+                  startIcon={<SaveOutlined />}
+                  onClick={handleSave}
+                  sx={{ borderRadius: '12px' }}
+                >
+                  Сохранить
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
         )}
       </Stack>
 

@@ -8,7 +8,15 @@ import {
   Typography,
 } from '@mui/material';
 
-import { PostContentTypeEnum, PostCooperationTypeEnum } from '@/entities/post';
+import {
+  BudgetTypeEnum,
+  PlacementFormatEnum,
+  PlatformEnum,
+  WorkFormatEnum,
+  getPlacementFormatLabel,
+  getPlatformLabel,
+  getWorkFormatLabel,
+} from '@/entities/post';
 
 import { useMainFilterStore } from '../model/store';
 
@@ -48,44 +56,71 @@ export const SideBarFilter = () => {
       />
 
       <TextField
-        label="Цена от"
-        fullWidth
-        disabled
-      />
-
-      <TextField
-        label="Цена до"
-        fullWidth
-        disabled
-      />
-
-      <TextField
-        label="Тип сотрудничества"
+        label="Тип бюджета"
         fullWidth
         select
         disabled
         defaultValue=""
       >
-        <MenuItem value={PostCooperationTypeEnum.ONE_TIME}>
-          Разовое сотрудничество
-        </MenuItem>
-        <MenuItem value={PostCooperationTypeEnum.LONG_TIME}>
-          Постоянное сотрудничество
-        </MenuItem>
+        {Object.values(BudgetTypeEnum).map(option => (
+          <MenuItem
+            key={option}
+            value={option}
+          >
+            {option}
+          </MenuItem>
+        ))}
       </TextField>
 
       <TextField
-        label="Тип контента"
+        label="Формат работы"
         fullWidth
         select
         disabled
         defaultValue=""
       >
-        <MenuItem value={PostContentTypeEnum.PHOTO}>Только фото</MenuItem>
-        <MenuItem value={PostContentTypeEnum.VIDEO}>Только видео</MenuItem>
-        <MenuItem value={PostContentTypeEnum.PHOTO_VIDEO}>
-          Фото и видео
-        </MenuItem>
+        {Object.values(WorkFormatEnum).map(option => (
+          <MenuItem
+            key={option}
+            value={option}
+          >
+            {getWorkFormatLabel(option)}
+          </MenuItem>
+        ))}
+      </TextField>
+
+      <TextField
+        label="Площадка"
+        fullWidth
+        select
+        disabled
+        defaultValue=""
+      >
+        {Object.values(PlatformEnum).map(option => (
+          <MenuItem
+            key={option}
+            value={option}
+          >
+            {getPlatformLabel(option)}
+          </MenuItem>
+        ))}
+      </TextField>
+
+      <TextField
+        label="Формат размещения"
+        fullWidth
+        select
+        disabled
+        defaultValue=""
+      >
+        {Object.values(PlacementFormatEnum).map(option => (
+          <MenuItem
+            key={option}
+            value={option}
+          >
+            {getPlacementFormatLabel(option)}
+          </MenuItem>
+        ))}
       </TextField>
 
       <TextField

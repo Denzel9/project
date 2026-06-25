@@ -7,17 +7,18 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
 
 import { USER_ROLE, useTasksQuery } from '@/entities';
 import { useAuthStore } from '@/features';
-import { ROUTES, EmptyBlock } from '@/shared';
+import {
+  useMyTaskFilterStore,
+  filterTasksByExecutorApprove,
+  toTasksParams,
+  MyTaskFilter,
+} from '@/features';
+import { EmptyBlock } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
-import { useMyTaskFilterStore } from '../model/store';
-import { filterTasksByExecutorApprove, toTasksParams } from '../model/utils';
-
-import { MyTaskFilter } from './Filter';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskItem } from './TaskItem';
 import { TaskTable } from './TaskTable';
@@ -34,17 +35,14 @@ export const MyTasks = () => {
 
   const { role } = useAuthStore();
 
-  const navigate = useNavigate();
-
   const {
     status,
     postId,
     viewMode,
     updatedDate,
-    isChangedFilters,
     toggleKanbanColumn,
     visibleKanbanColumns,
-    executorApproveFilter,
+    fastButtonValue,
   } = useMyTaskFilterStore();
 
   const queryParams = useMemo(
@@ -61,8 +59,12 @@ export const MyTasks = () => {
 
   const filteredTasks = useMemo(
     () =>
-      filterTasksByExecutorApprove(tasks?.items ?? [], executorApproveFilter),
-    [tasks?.items, executorApproveFilter]
+      filterTasksByExecutorApprove(
+        tasks?.items ?? [],
+        fastButtonValue,
+        role === USER_ROLE.COMPANY
+      ),
+    [tasks?.items, fastButtonValue, role]
   );
 
   const hasMultipleTasksForOnePost = tasks?.items?.some(
@@ -103,7 +105,6 @@ export const MyTasks = () => {
 
   const isKanban = viewMode === 'kanban';
   const isEmpty = !isLoading && !filteredTasks.length;
-  const hasTasks = Boolean(tasks?.items?.length);
 
   return (
     <PageLayout
@@ -123,22 +124,20 @@ export const MyTasks = () => {
           }),
         }}
       >
-        {Boolean(hasTasks || !isChangedFilters()) && (
-          <Box
-            sx={{
-              top: 0,
-              zIndex: 1000,
-              flexShrink: 0,
-              position: 'sticky',
-            }}
-          >
-            <MyTaskFilter
-              tasks={tasks?.items ?? []}
-              initialPosts={initialPosts}
-              isCompany={role === USER_ROLE.COMPANY}
-            />
-          </Box>
-        )}
+        <Box
+          sx={{
+            top: 0,
+            zIndex: 1000,
+            flexShrink: 0,
+            position: 'sticky',
+          }}
+        >
+          <MyTaskFilter
+            tasks={tasks?.items ?? []}
+            initialPosts={initialPosts}
+            isCompany={role === USER_ROLE.COMPANY}
+          />
+        </Box>
 
         {isEmpty && (
           <Box
@@ -153,12 +152,7 @@ export const MyTasks = () => {
           >
             <EmptyBlock
               buttonText="На главную"
-              title={
-                isChangedFilters()
-                  ? 'Попробуйте изменить фильтры'
-                  : 'У вас пока нет задач'
-              }
-              buttonOnClick={() => navigate(ROUTES.INDEX)}
+              title="У вас пока нет задач"
             />
           </Box>
         )}
@@ -192,7 +186,7 @@ export const MyTasks = () => {
             {viewMode === 'grid' && (
               <Grid
                 container
-                spacing={2}
+                spacing={1}
                 sx={{ width: '100%' }}
               >
                 {filteredTasks.map(task => (
@@ -220,8 +214,8 @@ export const MyTasks = () => {
                 <KanbanBoard
                   tasks={filteredTasks}
                   queryParams={queryParams}
-                  visibleColumns={visibleKanbanColumns}
                   onHideColumn={toggleKanbanColumn}
+                  visibleColumns={visibleKanbanColumns}
                 />
               </Box>
             )}

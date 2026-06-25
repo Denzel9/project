@@ -2,7 +2,10 @@ import { Box, Chip, Divider, Stack, Typography } from '@mui/material';
 import { diffWords } from 'diff';
 import { useEffect, useMemo, useRef } from 'react';
 
-type ActivityDiffViewProps = {
+import { MarkdownContent } from '@/shared';
+
+type ActivityFieldDiffViewProps = {
+  field?: string;
   from: string;
   to: string;
   isOpen?: boolean;
@@ -57,15 +60,8 @@ const DiffSide = ({
             component="span"
             sx={{
               px: 0.25,
-              ...(side === 'before'
-                ? {
-                    color: 'black',
-                    bgcolor: 'error.light',
-                  }
-                : {
-                    color: 'black',
-                    bgcolor: 'success.light',
-                  }),
+              color: 'black',
+              bgcolor: side === 'before' ? 'error.light' : 'success.light',
             }}
           >
             {part.value}
@@ -76,33 +72,48 @@ const DiffSide = ({
   );
 };
 
-export const ActivityDiffView = ({
+const MarkdownSide = ({ content }: { content: string }) => {
+  if (!content?.trim()) {
+    return (
+      <Typography
+        variant="body2"
+        color="text.secondary"
+      >
+        {EMPTY_PLACEHOLDER}
+      </Typography>
+    );
+  }
+
+  return <MarkdownContent content={content} />;
+};
+
+export const ActivityFieldDiffView = ({
+  field,
   from,
   to,
   isOpen = false,
-}: ActivityDiffViewProps) => {
+}: ActivityFieldDiffViewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const parts = useMemo(() => diffWords(from || '', to || ''), [from, to]);
+  const isDescription = field === 'description';
+  const parts = useMemo(
+    () => (isDescription ? [] : diffWords(from || '', to || '')),
+    [from, isDescription, to]
+  );
 
   const hasFrom = Boolean(from?.trim());
   const hasTo = Boolean(to?.trim());
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isDescription) return;
 
     const timer = window.setTimeout(() => {
-      const changedEl = containerRef.current?.querySelector(
-        '[data-diff-changed]'
-      );
-
-      changedEl?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
+      containerRef.current
+        ?.querySelector('[data-diff-changed]')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [isOpen, from, to]);
+  }, [isOpen, isDescription, from, to]);
 
   return (
     <Stack
@@ -116,6 +127,7 @@ export const ActivityDiffView = ({
           flex: 1,
           p: 2,
           borderRadius: '16px',
+          bgcolor: 'secondary.light',
           opacity: hasFrom ? 1 : 0.7,
         }}
       >
@@ -126,7 +138,9 @@ export const ActivityDiffView = ({
           sx={{ mb: 1.5 }}
         />
 
-        {hasFrom ? (
+        {isDescription ? (
+          <MarkdownSide content={from} />
+        ) : hasFrom ? (
           <DiffSide
             side="before"
             parts={parts}
@@ -151,6 +165,7 @@ export const ActivityDiffView = ({
           flex: 1,
           p: 2,
           borderRadius: '16px',
+          bgcolor: 'secondary.light',
           opacity: hasTo ? 1 : 0.7,
         }}
       >
@@ -161,7 +176,9 @@ export const ActivityDiffView = ({
           sx={{ mb: 1.5 }}
         />
 
-        {hasTo ? (
+        {isDescription ? (
+          <MarkdownSide content={to} />
+        ) : hasTo ? (
           <DiffSide
             side="after"
             parts={parts}
@@ -178,5 +195,3 @@ export const ActivityDiffView = ({
     </Stack>
   );
 };
-
-export default ActivityDiffView;

@@ -3,7 +3,6 @@ import { useFormContext } from 'react-hook-form';
 
 import { MY_PARAMETERS, MY_PARAMETERS_LABELS } from '@/entities';
 import { RHFDatePicker, RHFInput, RHFParametersInput } from '@/shared';
-import { DatePickerProvider } from '@/widgets';
 
 import { SIZE_OPTIONS, GENDER_OPTIONS } from '../../model/constants';
 
@@ -53,13 +52,11 @@ export const ParametersSection = () => {
         );
       case MY_PARAMETERS.BIRTHDAY:
         return (
-          <DatePickerProvider key={key}>
-            <RHFDatePicker
-              name={key}
-              control={control}
-              label={value}
-            />
-          </DatePickerProvider>
+          <RHFDatePicker
+            name={key}
+            control={control}
+            label={value}
+          />
         );
       case MY_PARAMETERS.GENDER:
         return (

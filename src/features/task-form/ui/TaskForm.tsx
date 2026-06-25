@@ -1,5 +1,5 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
@@ -11,35 +11,37 @@ import {
 import { useAuthStore } from '@/features';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
-import { mapTaskToForm } from '../model/mappers';
+import { mapPostToForm, mapTaskToForm } from '../model/mappers';
+import { hasUnsavedPostDefaults } from '../model/postDefaults';
 import {
   defaultValues,
   schema,
-  schemaKeys,
   type TaskFormType,
 } from '../model/schema/schema';
 
 import { Action } from './action/Action';
 import { TaskFormFields } from './TaskFormFields';
 
+import type { Post } from '@/entities/post';
+
 type TaskFormProps = {
   task: Task;
+  post?: Post;
   isEdit: boolean;
   status: TaskStatus;
   isLoading: boolean;
   imagesLength: number;
   canChangeStatus?: boolean;
   activities: TaskActivity[];
-  isOpenDescription: boolean;
   isExecutorApprove?: boolean;
   setIsEdit: (isEdit: boolean) => void;
-  setIsOpenDescription: (isOpen: boolean) => void;
   handleSimpleSaveForm: (values: TaskFormType) => void;
   onSubmit: (values: TaskFormType, status?: TaskStatus) => void;
 };
 
 export const TaskForm = ({
   task,
+  post,
   isEdit,
   status,
   onSubmit,
@@ -47,9 +49,7 @@ export const TaskForm = ({
   setIsEdit,
   activities,
   imagesLength,
-  isOpenDescription,
   isExecutorApprove,
-  setIsOpenDescription,
   handleSimpleSaveForm,
   canChangeStatus = false,
 }: TaskFormProps) => {
@@ -65,27 +65,65 @@ export const TaskForm = ({
     resolver: yupResolver(schema),
   });
 
-  const { handleSubmit, setValue, getValues } = methods;
+  const { handleSubmit, getValues, reset } = methods;
+
+  const editBaselineRef = useRef<TaskFormType | null>(null);
+
+  const isOwner = task.ownerId === id;
+  const showPrefillHint =
+    Boolean(post) &&
+    isOwner &&
+    hasUnsavedPostDefaults(task, post!) &&
+    [TASK_STATUS_ENUM.PREPARING, TASK_STATUS_ENUM.REVISION].includes(
+      status as TASK_STATUS_ENUM
+    );
 
   useEffect(() => {
     const formValues = mapTaskToForm(task);
 
-    schemaKeys.forEach(key => {
-      if (formValues[key] !== undefined) {
-        setValue(key, formValues[key] as TaskFormType[typeof key]);
-      }
-    });
-  }, [task, setValue]);
+    reset(formValues);
+    editBaselineRef.current = null;
+  }, [task, reset]);
+
+  const beginEditSession = () => {
+    if (!isEdit) {
+      editBaselineRef.current = mapTaskToForm(task);
+    }
+
+    setIsEdit(true);
+  };
+
+  const handleApplyFromPost = () => {
+    if (!post) return;
+
+    if (!isEdit) {
+      editBaselineRef.current = mapTaskToForm(task);
+    }
+
+    reset(mapPostToForm(post));
+    setIsEdit(true);
+  };
 
   const handleSave = () => {
     handleSimpleSaveForm(getValues());
+    editBaselineRef.current = null;
     setIsEdit(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleEdit = (isEdit: boolean) => {
-    setIsEdit(isEdit);
-    setIsOpenDescription(false);
+  const handleEdit = (editing: boolean) => {
+    if (editing) {
+      beginEditSession();
+      return;
+    }
+
+    setIsEdit(editing);
+  };
+
+  const handleCancelEdit = () => {
+    reset(editBaselineRef.current ?? mapTaskToForm(task));
+    editBaselineRef.current = null;
+    setIsEdit(false);
   };
 
   const handleGoToRevision = () => {
@@ -98,7 +136,7 @@ export const TaskForm = ({
   };
 
   const handleSubmitForm = (newStatus?: TaskStatus) => {
-    if (!imagesLength) {
+    if (!imagesLength && status === TASK_STATUS_ENUM.IN_PROGRESS) {
       setSnackbarOpen?.(
         true,
         'Для проверки необходимо загрузить результат работы'
@@ -124,12 +162,13 @@ export const TaskForm = ({
         )}
       >
         <TaskFormFields
+          post={post}
+          isMe={isOwner}
           status={status}
           isEdit={isEdit}
-          setIsEdit={setIsEdit}
-          isMe={task.ownerId === id}
-          isOpenDescription={isOpenDescription}
-          setIsOpenDescription={setIsOpenDescription}
+          onStartEdit={beginEditSession}
+          showPrefillHint={showPrefillHint}
+          onApplyFromPost={post ? handleApplyFromPost : undefined}
         />
 
         {canChangeStatus && (
@@ -140,6 +179,7 @@ export const TaskForm = ({
             isLoading={isLoading}
             activities={activities}
             handleEdit={handleEdit}
+            handleCancel={handleCancelEdit}
             handleSave={handleSave}
             taskOwnerId={task.ownerId}
             executorId={task.executor?.id}

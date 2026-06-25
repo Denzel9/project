@@ -1,37 +1,34 @@
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 
 import { usePostsInfiniteQuery } from '@/entities/post';
 import { useAuthStore } from '@/features/auth';
-import { InfiniteScrollSentinel } from '@/shared';
-import { ACTION_BUTTONS_KEYS, PostItem, PostItemSkeletonList } from '@/widgets';
+import { EmptyBlock, InfiniteScrollSentinel } from '@/shared';
+import { PostItem, PostItemSkeletonList } from '@/widgets';
 
 import { MEDIA_TAB_VALUES, type MediaContentProps } from '../model/types';
+import { getPostPermissions } from '../model/utils';
 
 export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
   const { id } = useAuthStore();
 
+  const isActive = mediaTabValue === MEDIA_TAB_VALUES.ACTIVE;
+  const isPrivate = mediaTabValue === MEDIA_TAB_VALUES.PRIVATE;
   const isArchived = mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED;
 
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
     usePostsInfiniteQuery({
-      ownerId: userId || id || '',
-      isArchived,
       limit: 20,
+      isArchived,
+      ownerId: userId || id || '',
+      isPrivate: isPrivate ? true : undefined,
     });
 
   const posts = data?.pages.flatMap(page => page.items) ?? [];
 
-  const postPermissions = isArchived
-    ? [
-        ACTION_BUTTONS_KEYS.EDIT,
-        ACTION_BUTTONS_KEYS.DELETE,
-        ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
-      ]
-    : [
-        ACTION_BUTTONS_KEYS.EDIT,
-        ACTION_BUTTONS_KEYS.DELETE,
-        ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE,
-      ];
+  const postPermissions = getPostPermissions({
+    isActive,
+    isPrivate,
+  });
 
   if (isLoading && !posts.length) {
     return (
@@ -62,6 +59,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
                   post={post}
                   permissions={postPermissions}
                   isMyPost={post.owner.id === id}
+                  isCompany={post.owner.id === id}
                 />
               </Box>
             ))}
@@ -71,8 +69,8 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
 
       {mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED && (
         <Stack
-          direction="column"
           spacing={2}
+          direction="column"
         >
           {posts.map(post => (
             <PostItem
@@ -81,6 +79,26 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
               key={post.id}
               permissions={postPermissions}
               isMyPost={post.owner.id === id}
+              isCompany={post.owner.id === id}
+            />
+          ))}
+        </Stack>
+      )}
+
+      {mediaTabValue === MEDIA_TAB_VALUES.PRIVATE && (
+        <Stack
+          spacing={2}
+          direction="column"
+        >
+          {posts.map(post => (
+            <PostItem
+              isCompact
+              isPrivate
+              post={post}
+              key={post.id}
+              permissions={postPermissions}
+              isMyPost={post.owner.id === id}
+              isCompany={post.owner.id === id}
             />
           ))}
         </Stack>
@@ -97,20 +115,14 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
             justifyContent: 'center',
           }}
         >
-          <Typography
-            variant="h4"
-            color="info"
-            sx={{ textAlign: 'center', py: 6 }}
-          >
-            Посты не найдены
-          </Typography>
+          <EmptyBlock title="Посты не найдены" />
         </Box>
       )}
 
       <InfiniteScrollSentinel
-        hasMore={Boolean(hasNextPage)}
-        isLoading={isFetchingNextPage}
         onLoadMore={fetchNextPage}
+        isLoading={isFetchingNextPage}
+        hasMore={Boolean(hasNextPage)}
       />
     </Box>
   );

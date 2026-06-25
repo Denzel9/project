@@ -13,13 +13,10 @@ import {
   MenuItem,
   Popover,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
-  useMediaQuery,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
 import { useState } from 'react';
@@ -27,17 +24,18 @@ import { useState } from 'react';
 import { TASK_STATUS_LABELS, type Task } from '@/entities';
 import { useScroll, DateCalendarFilter } from '@/shared';
 
-import { KANBAN_COLUMNS } from '../model/kanbanColumns';
+import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
 import { filterTasksByExecutorApprove } from '../model/utils';
 
 import { AddTaskDialog } from './AddTaskDialog';
+import { FastButtonGroup } from './FastButtonGroup';
 import { TaskSearchPanel } from './TaskSearchPanel';
 
 import type { TaskStatusFilter } from '../model/utils';
 
 export type { TaskViewMode } from '../model/store';
-export type { ExecutorApproveFilter } from '../model/utils';
+export type { FastButtonValueType } from '../model/utils';
 
 export const MyTaskFilter = ({
   tasks,
@@ -52,8 +50,6 @@ export const MyTaskFilter = ({
 
   const { isScrolled, ref } = useScroll(150);
 
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
-
   const {
     postId,
     status,
@@ -63,11 +59,9 @@ export const MyTaskFilter = ({
     setViewMode,
     updatedDate,
     setUpdatedDate,
-    toggleKanbanColumn,
     resetKanbanColumns,
+    toggleKanbanColumn,
     visibleKanbanColumns,
-    executorApproveFilter,
-    setExecutorApproveFilter,
   } = useMyTaskFilterStore();
 
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -85,12 +79,21 @@ export const MyTaskFilter = ({
     setAnchorEl(null);
   };
 
-  const activeTasks = filterTasksByExecutorApprove(tasks, 'active');
+  const activeTasks = filterTasksByExecutorApprove(
+    tasks,
+    'pending-action',
+    isCompany
+  );
   const pendingConfirmationTasks = filterTasksByExecutorApprove(
     tasks,
-    'pending-confirmation'
+    'pending-executor-assign',
+    isCompany
   );
-  const rejectedTasks = filterTasksByExecutorApprove(tasks, 'rejected');
+  const rejectedTasks = filterTasksByExecutorApprove(
+    tasks,
+    'cancelled',
+    isCompany
+  );
 
   return (
     <Stack
@@ -138,7 +141,7 @@ export const MyTaskFilter = ({
                 label="Статус"
                 value={status}
                 sx={{ width: { xs: '100%', md: '100%' } }}
-                size={isMobile ? 'small' : 'medium'}
+                size="small"
                 onChange={e => setStatus(e.target.value as TaskStatusFilter)}
               >
                 <MenuItem value="all">Все</MenuItem>
@@ -158,7 +161,7 @@ export const MyTaskFilter = ({
               sx={{ width: { xs: '100%', md: '100%' } }}
               label="Пост"
               value={postId}
-              size={isMobile ? 'small' : 'medium'}
+              size="small"
               onChange={e => setPostId(e.target.value)}
             >
               <MenuItem value="all">Все</MenuItem>
@@ -183,11 +186,6 @@ export const MyTaskFilter = ({
             </Button>
           )}
         </Stack>
-
-        <TaskSearchPanel
-          open={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-        />
 
         <Popover
           anchorEl={columnsAnchorEl}
@@ -262,28 +260,17 @@ export const MyTaskFilter = ({
 
       <Stack
         direction="row"
-        spacing={2}
-        sx={{ width: '100%', justifyContent: 'space-between' }}
+        sx={{
+          width: '100%',
+          justifyContent: 'space-between',
+          alignItems: 'end',
+        }}
       >
-        <Tabs
-          sx={{ mb: 2 }}
-          value={executorApproveFilter}
-          onChange={(_, value) => setExecutorApproveFilter(value)}
-          aria-label="view-mode-tabs"
-        >
-          <Tab
-            label={`Активные ${activeTasks.length ? activeTasks.length : ''}`}
-            value="active"
-          />
-          <Tab
-            label={`Ожидают подтверждения ${pendingConfirmationTasks.length ? pendingConfirmationTasks.length : ''}`}
-            value="pending-confirmation"
-          />
-          <Tab
-            label={`Отмененные ${rejectedTasks.length ? rejectedTasks.length : ''}`}
-            value="rejected"
-          />
-        </Tabs>
+        <FastButtonGroup
+          activeTasks={activeTasks}
+          rejectedTasks={rejectedTasks}
+          pendingConfirmationTasks={pendingConfirmationTasks}
+        />
 
         <Stack
           spacing={1}
@@ -343,6 +330,11 @@ export const MyTaskFilter = ({
           </ToggleButtonGroup>
         </Stack>
       </Stack>
+
+      <TaskSearchPanel
+        open={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </Stack>
   );
 };

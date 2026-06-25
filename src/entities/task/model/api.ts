@@ -30,6 +30,7 @@ import type {
   UpdateTaskCommentDto,
   UpdateTaskDto,
 } from './types'
+import type { TaskMedia } from './types'
 import type { UploadMediaResponse } from '@/entities/post'
 
 export const taskKeys = {
@@ -51,6 +52,108 @@ export const taskKeys = {
     [...taskKeys.all, 'activities', taskId, params ?? {}] as const,
 }
 
+const postTasksQueryPrefix = (postId: string) =>
+  ['posts', 'postTasks', postId] as const
+
+const uploadsToTaskMedia = (
+  uploads: UploadMediaResponse[],
+  kind: TaskMediaUploadKind,
+): TaskMedia[] =>
+  uploads.map(upload => ({
+    id: upload.key,
+    url: upload.url,
+    key: upload.key,
+    mimeType: upload.mimeType,
+    size: String(upload.size),
+    ...(kind === 'report' ? { kind: 'REPORT' as const } : {}),
+  }))
+
+const getTaskMediaField = (kind: TaskMediaUploadKind) =>
+  kind === 'report' ? 'reportMedia' as const : 'media' as const
+
+const mergeUploadedMediaIntoTaskCache = (
+  queryClient: QueryClient,
+  taskId: string,
+  uploads: UploadMediaResponse[],
+  kind: TaskMediaUploadKind,
+) => {
+  if (!uploads.length) return
+
+  const mediaField = getTaskMediaField(kind)
+  const appendedMedia = uploadsToTaskMedia(uploads, kind)
+
+  const patchTask = (task: Task): Task => {
+    const currentMedia = task[mediaField] ?? []
+    const existingKeys = new Set(currentMedia.map(item => item.key))
+    const nextMedia = [
+      ...currentMedia,
+      ...appendedMedia.filter(item => !existingKeys.has(item.key)),
+    ]
+
+    return { ...task, [mediaField]: nextMedia }
+  }
+
+  queryClient.setQueryData<Task>(taskKeys.detail(taskId), old =>
+    old ? patchTask(old) : old,
+  )
+
+  const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
+  const postId = cachedTask?.postId
+
+  if (!postId) return
+
+  queryClient.setQueriesData<TaskList>(
+    { queryKey: postTasksQueryPrefix(postId) },
+    old => {
+      if (!old?.items?.length) return old
+
+      return {
+        ...old,
+        items: old.items.map(item =>
+          item.id === taskId ? patchTask(item) : item,
+        ),
+      }
+    },
+  )
+}
+
+export const removeTaskMediaFromCache = (
+  queryClient: QueryClient,
+  taskId: string,
+  mediaId: string,
+) => {
+  const patchTask = (task: Task): Task => ({
+    ...task,
+    media: task.media?.filter(item => item.id !== mediaId && item.key !== mediaId),
+    reportMedia: task.reportMedia?.filter(
+      item => item.id !== mediaId && item.key !== mediaId,
+    ),
+  })
+
+  queryClient.setQueryData<Task>(taskKeys.detail(taskId), old =>
+    old ? patchTask(old) : old,
+  )
+
+  const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
+  const postId = cachedTask?.postId
+
+  if (!postId) return
+
+  queryClient.setQueriesData<TaskList>(
+    { queryKey: postTasksQueryPrefix(postId) },
+    old => {
+      if (!old?.items?.length) return old
+
+      return {
+        ...old,
+        items: old.items.map(item =>
+          item.id === taskId ? patchTask(item) : item,
+        ),
+      }
+    },
+  )
+}
+
 const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
   const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(task.id))
   const postId = task.postId || cachedTask?.postId
@@ -59,7 +162,13 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
   queryClient.setQueryData(taskKeys.detail(task.id), mergedTask)
 
   void queryClient.invalidateQueries({ queryKey: taskKeys.detail(task.id) })
-  void queryClient.invalidateQueries({ queryKey: ['postTasks', postId] })
+
+  if (postId) {
+    void queryClient.invalidateQueries({
+      queryKey: postTasksQueryPrefix(postId),
+    })
+  }
+
   void queryClient.invalidateQueries({ queryKey: ['user', task.executorId] })
   void queryClient.invalidateQueries({ queryKey: ['user', task.ownerId] })
   void queryClient.invalidateQueries({
@@ -371,9 +480,22 @@ export const useUploadTaskMediaMutation = () => {
       files: File[]
       kind?: TaskMediaUploadKind
     }) => uploadTaskMediaBatch(taskId, files, kind),
-    onSuccess: (_, { taskId }) => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
-      queryClient.invalidateQueries({
+    onSuccess: (uploads, { taskId, kind }) => {
+      mergeUploadedMediaIntoTaskCache(queryClient, taskId, uploads, kind ?? 'main')
+
+      const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
+      const postId = cachedTask?.postId
+
+      void queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
+
+      if (postId) {
+        void queryClient.invalidateQueries({
+          queryKey: postTasksQueryPrefix(postId),
+        })
+      }
+
+      void queryClient.invalidateQueries({ queryKey: taskKeys.all })
+      void queryClient.invalidateQueries({
         queryKey: [...taskKeys.all, 'activities', taskId],
       })
     },

@@ -11,7 +11,7 @@ import { useApplicationItemStore } from "../store";
 import type { ActionButton } from "../types";
 import type { UseActionsProps } from "../types/index";
 
-export const useActions = ({ permissions, id, }: UseActionsProps) => {
+export const useActions = ({ permissions, id }: UseActionsProps) => {
     const { mutateAsync: removeFavorite } = useRemoveFavoriteMutation();
     const { mutateAsync: updatePost } = useUpdatePostMutation();
 
@@ -43,12 +43,22 @@ export const useActions = ({ permissions, id, }: UseActionsProps) => {
 
     const handleAddToArchive = async () => {
         await updatePost({ id, body: { isArchived: true } });
-        setSnackbarOpen?.(true, 'Пост добавлен в архив');
+        setSnackbarOpen?.(true, 'Пост перемещен в архив');
     };
 
     const handleRemoveFromArchive = async () => {
         await updatePost({ id, body: { isArchived: false } });
-        setSnackbarOpen?.(true, 'Пост удален из архива');
+        setSnackbarOpen?.(true, 'Пост возвращен из архива');
+    };
+
+    const handleMakePrivate = async () => {
+        await updatePost({ id, body: { isPrivate: true } });
+        setSnackbarOpen?.(true, 'Пост сделан приватным');
+    };
+
+    const handleMakePublic = async () => {
+        await updatePost({ id, body: { isPrivate: false } });
+        setSnackbarOpen?.(true, 'Пост сделан публичным');
     };
 
     const handleAction = (action: ACTION_BUTTONS_KEYS) => {
@@ -66,6 +76,10 @@ export const useActions = ({ permissions, id, }: UseActionsProps) => {
             handleAddToArchive();
         } else if (action === ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE) {
             handleRemoveFromArchive();
+        } else if (action === ACTION_BUTTONS_KEYS.MAKE_PRIVATE) {
+            handleMakePrivate();
+        } else if (action === ACTION_BUTTONS_KEYS.MAKE_PUBLIC) {
+            handleMakePublic();
         }
     };
 

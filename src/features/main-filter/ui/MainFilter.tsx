@@ -36,13 +36,25 @@ export const MainFilter = () => {
           pt: isScrolled ? 4 : 1,
           alignItems: 'center',
           transition: 'all 0.3s ease',
-          justifyContent: { xs: 'space-between', md: 'flex-end' },
+          justifyContent: 'space-between',
           bgcolor: isScrolled ? 'white' : 'transparent',
           borderBottomLeftRadius: isScrolled ? '32px' : '0',
           borderBottomRightRadius: isScrolled ? '32px' : '0',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
+          {FILTERS.map(({ label, value }) => (
+            <Chip
+              key={value}
+              label={label}
+              color={filters.includes(value) ? 'primary' : 'default'}
+              sx={{ cursor: 'pointer' }}
+              onClick={() => handleFilter(value)}
+            />
+          ))}
+        </Box>
+
         <Chip
           label={FILTERS[0].label}
           onClick={() => handleFilter(FILTERS[0].value)}
@@ -62,18 +74,6 @@ export const MainFilter = () => {
           <IconButton onClick={() => setIsOpenMainFilter(!isOpenMainFilter)}>
             {isOpenMainFilter ? <Tune color="primary" /> : <Tune />}
           </IconButton>
-
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
-            {FILTERS.map(({ label, value }) => (
-              <Chip
-                key={value}
-                label={label}
-                color={filters.includes(value) ? 'primary' : 'default'}
-                sx={{ cursor: 'pointer' }}
-                onClick={() => handleFilter(value)}
-              />
-            ))}
-          </Box>
         </Stack>
       </Stack>
 

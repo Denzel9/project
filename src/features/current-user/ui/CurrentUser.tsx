@@ -116,12 +116,13 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   return (
     <TextField
       select
+      size="small"
       value={currentUser}
       onChange={e => handleChangeUser(e.target.value)}
       sx={{
-        width: { xs: '60%', md: '30%' },
         borderRadius: '16px',
         backgroundColor: 'white',
+        width: { xs: '60%', md: '30%' },
       }}
     >
       {data?.data?.map(item => (

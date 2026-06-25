@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 
 import {
@@ -6,77 +6,112 @@ import {
   useTaskByIdQuery,
   TASK_STATUS_ENUM,
   type Task,
+  usePostByIdQuery,
 } from '@/entities';
 
-export const useTaskData = () => {
-  const [currentTask, setCurrentTask] = useState<Task | null>(null);
+const CANCELLED_STATUSES = [
+  TASK_STATUS_ENUM.CANCELLED,
+  TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
+] as const;
 
-  const { id } = useParams<{ id: string }>();
+const pickTaskFromList = (items: Task[], inviteId?: string | null) => {
+  if (inviteId) {
+    const byInvite = items.find(item => item.id === inviteId);
+
+    if (byInvite) return byInvite;
+  }
+
+  return (
+    items.find(
+      item =>
+        !CANCELLED_STATUSES.includes(
+          item.status as (typeof CANCELLED_STATUSES)[number],
+        ),
+    ) ?? items[0]
+  );
+};
+
+const resolveFreshTask = (
+  task: Task,
+  taskById?: Task,
+  tasks?: Task[],
+) => {
+  const updated =
+    taskById?.id === task.id
+      ? taskById
+      : tasks?.find(item => item.id === task.id);
+
+  return updated ?? task;
+};
+
+export const useTaskData = () => {
+  const { id: postId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get('taskId');
   const inviteId = searchParams.get('inviteId');
 
-  const { data: tasks, isLoading } = usePostTasksQuery(
-    id ?? null,
+  const routeKey = `${postId ?? ''}:${taskId ?? ''}:${inviteId ?? ''}`;
+
+  const [overrideTask, setOverrideTask] = useState<Task | null>(null);
+  const [routeKeySnapshot, setRouteKeySnapshot] = useState(routeKey);
+
+  if (routeKeySnapshot !== routeKey) {
+    setRouteKeySnapshot(routeKey);
+    setOverrideTask(null);
+  }
+
+  const { data: tasks, isLoading: isTasksLoading } = usePostTasksQuery(
+    postId ?? null,
     {
       page: 1,
       limit: 20,
     },
-    Boolean(taskId)
+    Boolean(taskId),
   );
 
-  const { data: task } = useTaskByIdQuery(taskId ?? null, Boolean(!taskId));
+  const { data: taskById, isLoading: isTaskLoading } = useTaskByIdQuery(
+    taskId ?? null,
+    Boolean(!taskId),
+  );
 
-  useEffect(() => {
-    if (task && !tasks?.items?.length && !currentTask) {
-      setTimeout(() => {
-        setCurrentTask(task);
-      }, 0);
+
+
+  const routeTask = useMemo(() => {
+    if (taskId) {
+      return taskById?.id === taskId ? taskById : null;
     }
-  }, [task, tasks?.items?.length, currentTask]);
 
-  useEffect(() => {
-    if (tasks?.items?.length && !currentTask) {
-      setTimeout(() => {
-        const task = tasks?.items?.find(
-          task => ![TASK_STATUS_ENUM.CANCELLED, TASK_STATUS_ENUM.CANCELLED_EXECUTOR].includes(task.status as TASK_STATUS_ENUM) && task.id === inviteId
-        );
-        setCurrentTask(task ?? tasks?.items?.[0]);
-      }, 0);
-    }
-  }, [tasks, currentTask, inviteId]);
+    if (!tasks?.items?.length) return null;
 
-  useEffect(() => {
-    if (!currentTask?.id) return;
+    return pickTaskFromList(tasks.items, inviteId);
+  }, [taskId, taskById, tasks, inviteId]);
 
-    const updatedTask =
-      task?.id === currentTask.id
-        ? task
-        : tasks?.items?.find(item => item.id === currentTask.id);
+  const currentTask = useMemo(() => {
+    const selected = overrideTask ?? routeTask;
 
-    if (
-      updatedTask &&
-      (updatedTask.updatedAt !== currentTask.updatedAt ||
-        updatedTask.status !== currentTask.status ||
-        updatedTask.isExecutorApprove !== currentTask.isExecutorApprove)
-    ) {
-      setTimeout(() => {
-        setCurrentTask(updatedTask);
-      }, 0);
-    }
-  }, [
-    task,
-    tasks?.items,
-    currentTask?.id,
-    currentTask?.updatedAt,
-    currentTask?.status,
-    currentTask?.isExecutorApprove,
-  ]);
+    if (!selected) return null;
+
+    return resolveFreshTask(selected, taskById, tasks?.items);
+  }, [overrideTask, routeTask, taskById, tasks]);
+
+  const setCurrentTask = (task: Task | null) => {
+    setOverrideTask(task);
+  };
+
+  const { data: post, isFetching: isPostLoading } = usePostByIdQuery(
+    currentTask?.post?.id ?? null,
+  );
+
+
+
+  const isLoading = isTasksLoading || isTaskLoading;
 
   return {
-    id,
+    id: postId,
+    post,
     tasks,
     isLoading,
+    isPostLoading,
     currentTask,
     setCurrentTask,
   };

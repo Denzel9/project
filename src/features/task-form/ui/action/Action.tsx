@@ -27,6 +27,7 @@ type ActionProps = {
   handleGoToRevision: () => void;
   handleCompleteTask: () => void;
   handleEdit: (isEdit: boolean) => void;
+  handleCancel: () => void;
   handleSubmitForm: (newStatus?: TaskStatus) => void;
   handleSave: (e: MouseEvent<HTMLButtonElement>) => void;
 };
@@ -40,6 +41,7 @@ export const Action = ({
   executorId,
   handleSave,
   handleEdit,
+  handleCancel,
   taskOwnerId,
   handleSubmitForm,
   isExecutorApprove,
@@ -49,10 +51,7 @@ export const Action = ({
 
   const { id } = useAuthStore();
 
-  const {
-    formState: { errors },
-    clearErrors,
-  } = useFormContext();
+  const { formState: { errors }, clearErrors } = useFormContext();
 
   const { mutateAsync: updateTask } = useUpdateTaskMutation();
 
@@ -148,8 +147,6 @@ export const Action = ({
     }
   }, [clearErrors, errors, setSnackbarOpen]);
 
-  console.log({ isExecutorApprove });
-
   if (isExecutorApprove === null && !isMe) {
     return (
       <PendingInvite
@@ -219,7 +216,7 @@ export const Action = ({
           size="small"
           color="error"
           variant="outlined"
-          onClick={() => handleEdit(false)}
+          onClick={handleCancel}
         >
           Отменить
         </Button>

@@ -3,9 +3,10 @@ import { Avatar, Box, Chip, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
 import { Link } from 'react-router';
 
-import { TASK_STATUS_LABELS, type Task } from '@/entities/task';
-import { getUserName, type User } from '@/entities/user';
-import { ROUTES } from '@/shared/config/routes';
+import { type Task } from '@/entities';
+import { getUserName, type User } from '@/entities';
+import { getTaskConfig } from '@/features';
+import { ROUTES } from '@/shared';
 
 type TaskItemProps = {
   task: Task;
@@ -13,20 +14,12 @@ type TaskItemProps = {
 };
 
 export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
-  const getLink = () => {
-    if (isCompany) {
-      return `${ROUTES.TASK}/${task.post?.id}?inviteId=${task.id}`;
-    }
-
-    return `${ROUTES.TASK}/${task.post?.id}?&inviteId=${task.id}`;
-  };
-
-  const canNavigateToPost = !task?.post?.isPrivate || !isCompany;
+  const canNavigateToPost = task?.post?.isPrivate && !isCompany;
 
   return (
     <Box
       component={Link}
-      to={getLink()}
+      to={`${ROUTES.TASK}/${task.post?.id}?inviteId=${task.id}`}
       sx={{
         p: 2,
         color: 'inherit',
@@ -34,8 +27,8 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
         display: 'block',
         borderRadius: '24px',
         textDecoration: 'none',
-        border: theme => `1px solid ${theme.palette.secondary.main}`,
         transition: 'box-shadow 0.2s ease',
+        border: theme => `1px solid ${theme.palette.secondary.main}`,
         ':hover': {
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
         },
@@ -101,8 +94,8 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
 
           <Chip
             size="small"
-            label={TASK_STATUS_LABELS[task.status]}
-            color={task.status === 'COMPLETED' ? 'success' : 'primary'}
+            label={getTaskConfig(task.status)?.label}
+            color={getTaskConfig(task.status)?.color ?? 'primary'}
             sx={{ flexShrink: 0 }}
           />
         </Stack>
@@ -155,6 +148,7 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
               variant="body2"
               sx={{
                 cursor: 'pointer',
+                width: 'fit-content',
                 transition: 'all 0.3s ease',
                 ':hover': {
                   color: 'primary.main',

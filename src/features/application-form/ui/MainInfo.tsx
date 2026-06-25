@@ -1,24 +1,20 @@
 import { ChevronLeft } from '@mui/icons-material';
 import {
   Box,
-  Button,
   Chip,
   IconButton,
   MenuItem,
   RadioGroup,
-  Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
-import { PostCooperationTypeEnum } from '@/entities/post';
-import { RHFInput, RHFRadio } from '@/shared/ui/rhf';
+import { WorkFormatEnum, getWorkFormatLabel } from '@/entities/post';
+import { RHFInput, RHFRadio, RHFSwitch } from '@/shared/ui/rhf';
 
 import MenuButton from './MenuButton';
-
-import type { ChangeEvent } from 'react';
 
 const ADVANTAGE_OPTIONS = [
   'Удаленно',
@@ -36,7 +32,7 @@ const options = ['Удалить', 'Сохранить как черновик']
 export const MainInfo = ({ isEdit = false }: Props) => {
   const { control, setValue } = useFormContext();
 
-  const { chips, typeCooperation } = useWatch({
+  const { chips } = useWatch({
     control,
   });
 
@@ -61,19 +57,6 @@ export const MainInfo = ({ isEdit = false }: Props) => {
     }
   };
 
-  const handleChangeTypeCooperation = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    if (typeCooperation.includes(value)) {
-      setValue(
-        'typeCooperation',
-        typeCooperation.filter((type: string) => type !== value)
-      );
-    } else {
-      setValue('typeCooperation', [...typeCooperation, value]);
-    }
-  };
-
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -94,23 +77,10 @@ export const MainInfo = ({ isEdit = false }: Props) => {
           </Typography>
         </Box>
 
-        <Stack
-          direction="row"
-          spacing={2}
-        >
-          <Button
-            variant="text"
-            onClick={() => {}}
-            size="small"
-          >
-            Расширенные настройки
-          </Button>
-
-          <MenuButton
-            options={options}
-            onAction={handleAction}
-          />
-        </Stack>
+        <MenuButton
+          options={options}
+          onAction={handleAction}
+        />
       </Box>
 
       <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
@@ -146,27 +116,38 @@ export const MainInfo = ({ isEdit = false }: Props) => {
         </Box>
 
         <Controller
-          name="typeCooperation"
+          name="workFormat"
           control={control}
-          render={({ fieldState }) => (
+          render={({ field, fieldState }) => (
             <TextField
               select
-              label="Тип сотрудничества"
+              label="Формат работы"
               error={!!fieldState?.error}
-              value={typeCooperation || ''}
+              value={field.value || ''}
               helperText={fieldState?.error?.message}
-              onChange={handleChangeTypeCooperation}
+              onChange={field.onChange}
               sx={{ width: { lg: '50%', xs: '100%' } }}
             >
-              <MenuItem value={PostCooperationTypeEnum.ONE_TIME}>
-                Разовое сотрудничество
-              </MenuItem>
-              <MenuItem value={PostCooperationTypeEnum.LONG_TIME}>
-                Постоянное сотрудничество
-              </MenuItem>
+              {Object.values(WorkFormatEnum).map(option => (
+                <MenuItem
+                  key={option}
+                  value={option}
+                >
+                  {getWorkFormatLabel(option)}
+                </MenuItem>
+              ))}
             </TextField>
           )}
         />
+
+        <Box sx={{ my: 4 }}>
+          <RHFSwitch
+            name="isPrivate"
+            control={control}
+            label="Приватное объявление"
+            description="Видно только Вам"
+          />
+        </Box>
 
         <Box sx={{ my: 4 }}>
           <Typography

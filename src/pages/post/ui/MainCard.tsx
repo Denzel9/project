@@ -23,7 +23,12 @@ import {
 } from '@/entities';
 import { DeletePostDialog } from '@/features';
 import { ShareButton, ROUTES } from '@/shared';
-import { Media, Action } from '@/widgets';
+import {
+  Media,
+  Action,
+  AddToCollectionDialog,
+  useApplicationItemStore,
+} from '@/widgets';
 
 type MediaItem = {
   url: string;
@@ -50,17 +55,19 @@ export const MainCard = ({
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const { setOpenAddToCollectionDialog } = useApplicationItemStore();
+
   const open = Boolean(anchorEl);
 
-  const handleClose = () => {
+  const navigate = useNavigate();
+
+  const closeMenu = () => {
     setAnchorEl(null);
   };
 
   const handleClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-
-  const navigate = useNavigate();
 
   const { favoritePostIds } = useFavoritePostIds();
 
@@ -102,16 +109,18 @@ export const MainCard = ({
             <Stack
               spacing={1}
               direction="row"
-              sx={{ alignItems: 'center' }}
+              sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
             >
               <Typography sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
                 {post?.title}
               </Typography>
 
               {post?.urgent && (
-                <Whatshot
+                <Chip
                   color="error"
-                  sx={{ fontSize: 44 }}
+                  icon={<Whatshot />}
+                  label="Срочно"
+                  sx={{ fontWeight: 600 }}
                 />
               )}
             </Stack>
@@ -125,36 +134,49 @@ export const MainCard = ({
                 title={post?.title ?? ''}
               />
 
-              {isOwner && (
-                <IconButton onClick={handleClick}>
-                  <MoreVert />
-                </IconButton>
-              )}
+              <IconButton onClick={handleClick}>
+                <MoreVert />
+              </IconButton>
 
               <Menu
                 open={open}
                 anchorEl={anchorEl}
-                onClose={handleClose}
+                onClose={closeMenu}
               >
-                <MenuItem
-                  onClick={() => {
-                    navigate(
-                      `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`
-                    );
-                    handleClose();
-                  }}
-                >
-                  Редактировать
-                </MenuItem>
+                {isOwner && (
+                  <MenuItem
+                    onClick={() => {
+                      closeMenu();
+                      navigate(
+                        `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`,
+                      );
+                    }}
+                  >
+                    Редактировать
+                  </MenuItem>
+                )}
 
-                <MenuItem
-                  onClick={() => {
-                    setIsOpenDeleteDialog(true);
-                    handleClose();
-                  }}
-                >
-                  Удалить
-                </MenuItem>
+                {isOwner && (
+                  <MenuItem
+                    onClick={() => {
+                      closeMenu();
+                      setIsOpenDeleteDialog(true);
+                    }}
+                  >
+                    Удалить
+                  </MenuItem>
+                )}
+
+                {!isOwner && (
+                  <MenuItem
+                    onClick={() => {
+                      closeMenu();
+                      setOpenAddToCollectionDialog(true, post?.id ?? '');
+                    }}
+                  >
+                    Добавить в подборку
+                  </MenuItem>
+                )}
               </Menu>
             </Stack>
           </Stack>
@@ -232,6 +254,8 @@ export const MainCard = ({
         onClose={() => setIsOpenDeleteDialog(false)}
         onSuccess={() => navigate(ROUTES.INDEX)}
       />
+
+      <AddToCollectionDialog />
     </Box>
   );
 };

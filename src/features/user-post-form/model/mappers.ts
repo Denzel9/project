@@ -6,13 +6,25 @@ import {
 
 import type { FormProductType } from './schema/schema'
 
-export const mapFormToCreatePost = (form: FormProductType): CreatePostDto => ({
-  title: form.title,
-  chips: (form.chips ?? []) as string[],
-  description: form.description ?? '',
-  keyWords: (form.keyWords ?? []) as string[],
-  categories: (form.categories ?? []) as string[],
-})
+const parseStringArray = (values?: (string | undefined)[]) =>
+  values
+    ?.map(item => item?.trim())
+    .filter((item): item is string => Boolean(item)) ?? []
+
+export const mapFormToCreatePost = (form: FormProductType): CreatePostDto => {
+  const chips = parseStringArray(form.chips)
+  const keyWords = parseStringArray(form.keyWords)
+  const categories = parseStringArray(form.categories)
+
+  return {
+    title: form.title,
+    urgent: false,
+    ...(form.description?.trim() && { description: form.description.trim() }),
+    ...(chips.length > 0 && { chips }),
+    ...(keyWords.length > 0 && { keyWords }),
+    ...(categories.length > 0 && { categories }),
+  }
+}
 
 export const mapFormToUpdatePost = (form: FormProductType): UpdatePostDto => ({
   ...mapFormToCreatePost(form),

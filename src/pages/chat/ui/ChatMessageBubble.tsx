@@ -2,7 +2,7 @@ import { Box, Button, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/shared';
-import { MediaItem } from '@/widgets/media/ui/MediaItem';
+import { getMediaKind, MediaItem } from '@/widgets/media';
 
 import type { MessageSide } from '../model/types';
 import type { ChatMessageMedia } from '@/entities/chat';
@@ -88,6 +88,9 @@ export const ChatMessageBubble = ({
                 borderRadius: '12px',
                 overflow: 'hidden',
                 maxWidth: 280,
+                ...(getMediaKind(item.url, item.mimeType) !== 'document' && {
+                  minHeight: 120,
+                }),
               }}
               onClick={e => e.stopPropagation()}
             >
@@ -95,6 +98,7 @@ export const ChatMessageBubble = ({
                 src={item.url}
                 alt="Вложение"
                 mimeType={item.mimeType}
+                fileName={item.key.split('/').pop()}
               />
             </Box>
           ))}

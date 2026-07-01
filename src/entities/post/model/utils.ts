@@ -6,6 +6,7 @@ import type {
   Platform,
   PostBudget,
   PostDeliverable,
+  PostListParams,
   PostMedia,
   PostType,
   UsageRights,
@@ -353,4 +354,27 @@ export const getApplicationsCountLabel = (applications: Application[]) => {
   }
 
   return `${applications.length} откликов`
+}
+
+export const serializePostListParams = (
+  params?: PostListParams,
+): Record<string, string | number | boolean> | undefined => {
+  if (!params) return undefined
+
+  const result: Record<string, string | number | boolean> = {}
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') continue
+
+    if (Array.isArray(value)) {
+      if (value.length > 0) {
+        result[key] = value.join(',')
+      }
+      continue
+    }
+
+    result[key] = value as string | number | boolean
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined
 }

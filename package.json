@@ -1,5 +1,5 @@
 {
-  "name": "yougc",
+  "name": "nikssens",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -17,6 +17,7 @@
     "@mui/icons-material": "^9.0.1",
     "@mui/lab": "^9.0.0-beta.5",
     "@mui/material": "^9.1.1",
+    "@mui/x-charts": "^9.7.0",
     "@mui/x-date-pickers": "^9.4.0",
     "@react-input/mask": "^2.0.4",
     "@tanstack/react-query": "^5.100.14",

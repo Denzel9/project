@@ -7,7 +7,13 @@ import {
 
 import { taskKeys } from '@/entities/task'
 import { mainAxios } from '@/shared/api'
-import { prepareFileForUpload } from '@/shared/lib/media'
+import {
+  mapInBatches,
+  MEDIA_UPLOAD_CONCURRENCY,
+  prepareFileForUpload,
+} from '@/shared/lib/media'
+
+import { serializePostListParams } from './utils'
 
 import type {
   CreatePostDto,
@@ -43,7 +49,9 @@ export const usePostsQuery = (params?: PostListParams) =>
   useQuery({
     queryKey: postKeys.list(params),
     queryFn: async () => {
-      const { data } = await mainAxios.get<PostList>('/posts', { params })
+      const { data } = await mainAxios.get<PostList>('/posts', {
+        params: serializePostListParams(params),
+      })
       return data
     },
   })
@@ -57,7 +65,11 @@ export const usePostsInfiniteQuery = (
     queryKey: postKeys.infiniteList(params),
     queryFn: async ({ pageParam }) => {
       const { data } = await mainAxios.get<PostList>('/posts', {
-        params: { ...params, page: pageParam, limit },
+        params: serializePostListParams({
+          ...params,
+          page: pageParam,
+          limit,
+        }),
       })
       return data
     },
@@ -173,7 +185,13 @@ export const uploadPostMedia = async (postId: string, file: File) => {
 }
 
 export const uploadPostMediaBatch = async (postId: string, files: File[]) => {
-  return Promise.all(files.map(file => uploadPostMedia(postId, file)))
+  if (!files.length) return []
+
+  return mapInBatches(
+    files,
+    file => uploadPostMedia(postId, file),
+    MEDIA_UPLOAD_CONCURRENCY,
+  )
 }
 
 export const useUploadPostMediaMutation = () => {

@@ -143,6 +143,70 @@ export type TaskCommentListParams = {
   limit?: number
 }
 
+export type TaskCommentFeedParams = {
+  page?: number
+  limit?: number
+  role?: TaskRole
+  taskId?: string
+  q?: string
+}
+
+export type TaskCommentFeedItem = TaskComment & {
+  task?: TaskActivityFeedTask
+}
+
+export type TaskCommentFeedList = {
+  page: number
+  total: number
+  limit: number
+  items: TaskCommentFeedItem[]
+}
+
+export type TaskWithCommentsParams = {
+  page?: number
+  limit?: number
+  role?: TaskRole
+  postId?: string
+  status?: TaskStatus
+  q?: string
+  readAfter?: string
+}
+
+export type TaskWithCommentsItem = {
+  id: string
+  title?: string | null
+  ownerId: string
+  executorId?: string | null
+  postId?: string
+  status?: TaskStatus
+  isExecutorApprove?: boolean | null
+  post?: Pick<Post, 'id' | 'title'>
+  lastComment: TaskComment
+  commentsCount: number
+  unreadCount?: number
+}
+
+export type TaskWithCommentsRawItem = TaskWithCommentsItem & {
+  taskId?: string
+  task?: {
+    id?: string
+    title?: string | null
+    ownerId?: string
+    executorId?: string | null
+    postId?: string
+    status?: TaskStatus
+    isExecutorApprove?: boolean | null
+    post?: Pick<Post, 'id' | 'title'>
+  }
+}
+
+export type TaskWithCommentsList = {
+  items: TaskWithCommentsItem[]
+  total: number
+  page: number
+  limit: number
+}
+
 export type TaskCommentAttachment = {
   url: string
   key: string
@@ -173,9 +237,15 @@ export type TaskCommentAttachmentsParams = {
 }
 
 export type TaskActivityPayload = {
-  to: string
-  from: string
-  field: string
+  to?: string | null
+  from?: string | null
+  field?: string
+  key?: string
+  url?: string
+  kind?: string
+  size?: string
+  mediaId?: string
+  mimeType?: string
 }
 
 
@@ -199,6 +269,31 @@ export type TaskActivityListParams = {
   page?: number
   limit?: number
   type?: TaskActivityType
+}
+
+export type TaskActivityFeedParams = TaskActivityListParams & {
+  role?: TaskRole
+  taskId?: string
+}
+
+export type TaskActivityFeedTask = {
+  id: string
+  title?: string
+  ownerId: string
+  executorId?: string | null
+  postId?: string
+  post?: Pick<Post, 'id' | 'title'>
+}
+
+export type TaskActivityFeedItem = TaskActivity & {
+  task?: TaskActivityFeedTask
+}
+
+export type TaskActivityFeedList = {
+  items: TaskActivityFeedItem[]
+  total: number
+  page: number
+  limit: number
 }
 
 export enum TaskActivityType {

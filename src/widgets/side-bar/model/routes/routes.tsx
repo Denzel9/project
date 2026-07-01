@@ -2,12 +2,15 @@ import {
   HomeOutlined,
   FavoriteBorderOutlined,
   ChatOutlined,
-  DashboardOutlined,
   TopicOutlined,
   SettingsOutlined,
   PersonOutlined,
-  TaskOutlined,
   PostAddOutlined,
+  CalendarMonthOutlined,
+  DashboardOutlined,
+  TaskOutlined,
+  PeopleOutlined,
+  PublicOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
@@ -47,12 +50,6 @@ export const TOP_MENU_ROUTES: MenuRoute[] = [
     label: 'Отклики',
   },
   {
-    authTypes: [AUTH_TYPES.ALWAYS],
-    path: ROUTES.MY_TASKS,
-    icon: <TaskOutlined />,
-    label: 'Мои задачи',
-  },
-  {
     authTypes: [AUTH_TYPES.COMPANY, AUTH_TYPES.ALWAYS],
     path: ROUTES.MANAGE_POSTS,
     icon: <PostAddOutlined />,
@@ -60,12 +57,31 @@ export const TOP_MENU_ROUTES: MenuRoute[] = [
   },
 ];
 
-export const MENU_ROUTES_PRIME: MenuRoute[] = [
+export const CRM_MENU_ITEMS: MenuRoute[] = [
   {
-    authTypes: [AUTH_TYPES.ONLY_AUTH],
+    label: 'Дашборд',
     path: ROUTES.CRM,
-    icon: <DashboardOutlined />,
-    label: 'CRM',
+    icon: <DashboardOutlined fontSize="small" />,
+  },
+  {
+    label: 'Мои задачи',
+    path: ROUTES.MY_TASKS,
+    icon: <TaskOutlined fontSize="small" />,
+  },
+  {
+    label: 'Календарь',
+    path: ROUTES.CALENDAR,
+    icon: <CalendarMonthOutlined fontSize="small" />,
+  },
+  {
+    label: 'Пользователи',
+    path: ROUTES.EXECUTORS,
+    icon: <PeopleOutlined fontSize="small" />,
+  },
+  {
+    label: 'Публикации',
+    path: ROUTES.PUBLICATIONS,
+    icon: <PublicOutlined fontSize="small" />,
   },
 ];
 

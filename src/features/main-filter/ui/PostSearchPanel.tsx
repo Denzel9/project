@@ -44,8 +44,10 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
 
   useEffect(() => {
     if (!open) {
-      setQuery('');
-      setDebouncedQuery('');
+      setTimeout(() => {
+        setQuery('');
+        setDebouncedQuery('');
+      }, 0);
     }
   }, [open]);
 

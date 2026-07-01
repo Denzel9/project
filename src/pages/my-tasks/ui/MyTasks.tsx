@@ -6,21 +6,25 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { USER_ROLE, useTasksQuery } from '@/entities';
+import { USER_ROLE, useAllTasksQuery } from '@/entities';
 import { useAuthStore } from '@/features';
 import {
   useMyTaskFilterStore,
-  filterTasksByExecutorApprove,
-  toTasksParams,
+  getVisibleTasks,
+  toTaskFilterParams,
   MyTaskFilter,
 } from '@/features';
 import { EmptyBlock } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
+import { useTasksLoadMore } from '../model/useTasksLoadMore';
+import { useTasksPagination } from '../model/useTasksPagination';
+
 import { KanbanBoard } from './KanbanBoard';
 import { TaskItem } from './TaskItem';
+import { TasksLoadMoreButton } from './TasksLoadMoreButton';
 import { TaskTable } from './TaskTable';
 
 type InitialPost = {
@@ -43,11 +47,12 @@ export const MyTasks = () => {
     toggleKanbanColumn,
     visibleKanbanColumns,
     fastButtonValue,
+    extraFilter,
   } = useMyTaskFilterStore();
 
-  const queryParams = useMemo(
+  const filterParams = useMemo(
     () =>
-      toTasksParams({
+      toTaskFilterParams({
         updatedDate,
         status: viewMode === 'kanban' ? 'all' : status,
         postId: postId === 'all' ? undefined : postId,
@@ -55,20 +60,50 @@ export const MyTasks = () => {
     [updatedDate, viewMode, status, postId]
   );
 
-  const { data: tasks, isLoading } = useTasksQuery(queryParams);
+  const { data: tasks = [], isLoading } = useAllTasksQuery(filterParams);
 
   const filteredTasks = useMemo(
     () =>
-      filterTasksByExecutorApprove(
-        tasks?.items ?? [],
+      getVisibleTasks(tasks, {
+        viewMode,
+        status,
         fastButtonValue,
-        role === USER_ROLE.COMPANY
-      ),
-    [tasks?.items, fastButtonValue, role]
+        extraFilter,
+        isCompany: role === USER_ROLE.COMPANY,
+      }),
+    [tasks, viewMode, status, fastButtonValue, extraFilter, role]
   );
 
-  const hasMultipleTasksForOnePost = tasks?.items?.some(
-    task => task.postId === tasks?.items?.[0]?.postId
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const paginationResetKey = useMemo(
+    () =>
+      [
+        viewMode,
+        status,
+        postId,
+        fastButtonValue,
+        extraFilter ?? '',
+        updatedDate ?? '',
+      ].join('|'),
+    [viewMode, status, postId, fastButtonValue, extraFilter, updatedDate]
+  );
+
+  const { page, onPageChange } = useTasksPagination(
+    filteredTasks,
+    paginationResetKey,
+    {
+      scrollTargetRef: contentRef,
+    }
+  );
+
+  const { visibleItems, hasMore, hiddenCount, loadMore } = useTasksLoadMore(
+    filteredTasks,
+    paginationResetKey
+  );
+
+  const hasMultipleTasksForOnePost = tasks.some(
+    task => task.postId === tasks[0]?.postId
   );
 
   useEffect(() => {
@@ -82,8 +117,8 @@ export const MyTasks = () => {
   }, [hasMultipleTasksForOnePost]);
 
   useEffect(() => {
-    if (tasks?.items?.length && !initialPosts?.length) {
-      const preparedTasks = tasks?.items?.map(task => ({
+    if (tasks.length && !initialPosts?.length) {
+      const preparedTasks = tasks.map(task => ({
         id: task?.post?.id,
         title: task.post?.title,
       }));
@@ -96,7 +131,7 @@ export const MyTasks = () => {
         setInitialPosts(uniqueTasks);
       }, 0);
     }
-  }, [initialPosts?.length, tasks?.items]);
+  }, [initialPosts?.length, tasks]);
 
   const handleClosePrimeRecommendation = () => {
     setIsOpenPrimeRecommendation(false);
@@ -104,12 +139,14 @@ export const MyTasks = () => {
   };
 
   const isKanban = viewMode === 'kanban';
+  const isTable = viewMode === 'table';
+  const isFullHeightView = isKanban || isTable;
   const isEmpty = !isLoading && !filteredTasks.length;
 
   return (
     <PageLayout
-      title="Мои задачи"
-      isScreenHeight={isKanban}
+      withFooter={false}
+      isScreenHeight={isFullHeightView}
     >
       <Box
         sx={{
@@ -117,7 +154,7 @@ export const MyTasks = () => {
           flexDirection: 'column',
           height: '100%',
           flex: 1,
-          ...(isKanban && {
+          ...(isFullHeightView && {
             flex: 1,
             minHeight: 0,
             height: '100%',
@@ -133,7 +170,7 @@ export const MyTasks = () => {
           }}
         >
           <MyTaskFilter
-            tasks={tasks?.items ?? []}
+            tasks={tasks}
             initialPosts={initialPosts}
             isCompany={role === USER_ROLE.COMPANY}
           />
@@ -142,12 +179,14 @@ export const MyTasks = () => {
         {isEmpty && (
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              bgcolor: 'white',
-              borderRadius: '32px',
-              height: '100%',
               flex: 1,
+              height: '100%',
+              display: 'flex',
+              bgcolor: 'white',
+              border: '1px solid',
+              borderRadius: '32px',
+              borderColor: 'divider',
+              justifyContent: 'center',
             }}
           >
             <EmptyBlock
@@ -160,108 +199,141 @@ export const MyTasks = () => {
         {!isEmpty && !isLoading && (
           <Box
             sx={{
-              gap: 2,
+              gap: 1,
               width: '100%',
               display: 'flex',
+              flexDirection: 'column',
               borderRadius: '32px',
-              ...(isKanban
-                ? {
-                    flex: 1,
-                    minHeight: 0,
-                    flexDirection: 'column',
-                  }
-                : {
-                    flex: 1,
-                    alignItems: isEmpty ? 'center' : 'start',
-                    justifyContent: isEmpty ? 'center' : 'start',
-                  }),
+              ...(isFullHeightView && {
+                flex: 1,
+                minHeight: 0,
+              }),
             }}
           >
-            {isLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-                <CircularProgress />
-              </Box>
-            )}
+            <Box
+              ref={contentRef}
+              sx={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                ...(isFullHeightView
+                  ? {
+                      flex: 1,
+                      minHeight: 0,
+                    }
+                  : {}),
+              }}
+            >
+              {isLoading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                  <CircularProgress />
+                </Box>
+              )}
 
-            {viewMode === 'grid' && (
-              <Grid
-                container
-                spacing={1}
-                sx={{ width: '100%' }}
-              >
-                {filteredTasks.map(task => (
-                  <Grid
-                    key={task.id}
-                    size={{ xs: 12, sm: 6, md: 4 }}
-                  >
-                    <TaskItem
-                      task={task}
-                      isCompany={role === USER_ROLE.COMPANY}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            )}
+              {viewMode === 'grid' && (
+                <Grid
+                  container
+                  spacing={1}
+                  sx={{ width: '100%' }}
+                >
+                  {visibleItems.map(task => (
+                    <Grid
+                      key={task.id}
+                      size={{ xs: 12, sm: 6, md: 4 }}
+                    >
+                      <TaskItem
+                        task={task}
+                        isCompany={role === USER_ROLE.COMPANY}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
 
-            {viewMode === 'kanban' && (
-              <Box
-                sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  display: 'flex',
-                }}
-              >
-                <KanbanBoard
-                  tasks={filteredTasks}
-                  queryParams={queryParams}
-                  onHideColumn={toggleKanbanColumn}
-                  visibleColumns={visibleKanbanColumns}
-                />
-              </Box>
-            )}
+              {viewMode === 'kanban' && (
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                  }}
+                >
+                  <KanbanBoard
+                    tasks={visibleItems}
+                    filterParams={filterParams}
+                    onHideColumn={toggleKanbanColumn}
+                    visibleColumns={visibleKanbanColumns}
+                  />
+                </Box>
+              )}
 
-            {viewMode === 'table' && <TaskTable tasks={filteredTasks} />}
+              {viewMode === 'table' && (
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    width: '100%',
+                  }}
+                >
+                  <TaskTable
+                    tasks={filteredTasks}
+                    page={page}
+                    onPageChange={onPageChange}
+                  />
+                </Box>
+              )}
+            </Box>
+
+            {hasMore && viewMode !== 'table' && (
+              <TasksLoadMoreButton
+                hiddenCount={hiddenCount}
+                onClick={loadMore}
+              />
+            )}
           </Box>
         )}
+
+        {/* TODO PRIME */}
+        <ConfirmDialog
+          withButtons={false}
+          isOpen={isOpenPrimeRecommendation}
+          onClose={() => setIsOpenPrimeRecommendation(false)}
+        >
+          <Typography variant="h6">
+            Найдено несколько задач по одному объявлению
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ mt: 2 }}
+          >
+            Prime-аккаунт позволяет объединить задачи по одному объявлению в
+            одну.
+          </Typography>
+
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ mt: 4 }}
+          >
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleClosePrimeRecommendation}
+            >
+              Отказаться
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setIsOpenPrimeRecommendation(false)}
+            >
+              Подключить
+            </Button>
+          </Stack>
+        </ConfirmDialog>
       </Box>
-
-      {/* PRIME */}
-      <ConfirmDialog
-        withButtons={false}
-        isOpen={isOpenPrimeRecommendation}
-        onClose={() => setIsOpenPrimeRecommendation(false)}
-      >
-        <Typography variant="h6">
-          Найдено несколько задач по одному объявлению
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ mt: 2 }}
-        >
-          Prime-аккаунт позволяет объединить задачи по одному объявлению в одну.
-        </Typography>
-
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ mt: 4 }}
-        >
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleClosePrimeRecommendation}
-          >
-            Отказаться
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => setIsOpenPrimeRecommendation(false)}
-          >
-            Подключить
-          </Button>
-        </Stack>
-      </ConfirmDialog>
     </PageLayout>
   );
 };

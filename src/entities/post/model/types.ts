@@ -282,14 +282,40 @@ export type PostListParams = {
   page?: number
   limit?: number
   q?: string
+  title?: string
+  urgent?: boolean
+  chips?: string[]
+  categories?: string[]
   platforms?: Platform[]
   placementFormats?: PlacementFormat[]
   niche?: string[]
-  workFormat?: WorkFormat
-  budgetType?: BudgetType
-  deadlineFrom?: string
-  deadlineTo?: string
   tags?: string[]
+  workFormat?: WorkFormat
+  createdDate?: string
+  deadlineDate?: string
+  budgetType?: BudgetType
+  budgetCurrency?: PostCurrency
+  paymentTerms?: PaymentTerms
+  locationCity?: string
+  locationCountry?: string
+  shootingRequired?: boolean
+  minFollowers?: number
+  maxFollowers?: number
+  minEngagementRate?: number
+  verifiedAccount?: boolean
+  experienceWithAds?: boolean
+  contentStyle?: ContentStyle[]
+  exclusivity?: boolean
+  exclusivityDays?: number
+  usageRights?: UsageRights
+  usageDurationDays?: number
+  requiresMarking?: boolean
+  requiresContract?: boolean
+  ndaRequired?: boolean
+  briefHashtag?: string
+  briefMention?: string
+  deliverablePlatform?: Platform
+  deliverableFormat?: PlacementFormat
 }
 
 export type SearchPostsParams = {

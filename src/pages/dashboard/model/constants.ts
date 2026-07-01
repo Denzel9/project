@@ -1,0 +1,15 @@
+export const UPCOMING_DEADLINE_DAYS = 7;
+
+export const MAX_DASHBOARD_LIST_ITEMS = 5;
+
+export const DASHBOARD_TABLE_PAGE_SIZE = 10;
+
+export const DASHBOARD_ACTIVITY_ITEMS_LIMIT = 10;
+
+export const DASHBOARD_COMMENTS_ITEMS_LIMIT = 10;
+
+export const DASHBOARD_COMMENTS_THREAD_LIMIT = 10;
+
+export const DASHBOARD_COMMENTS_READ_AFTER_KEY = 'dashboard.comments.readAfter';
+
+export const DASHBOARD_COMMENT_CARD_COLLAPSE_MS = 280;

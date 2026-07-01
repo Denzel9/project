@@ -10,7 +10,6 @@ import {
   taskKeys,
   useUpdateTaskMutation,
   type Task,
-  type TaskList,
   type TaskListParams,
   type TaskStatus,
 } from '@/entities';
@@ -22,14 +21,14 @@ import { KanbanColumn } from './KanbanColumn';
 type KanbanBoardProps = {
   tasks: Task[];
   visibleColumns: TaskStatus[];
-  queryParams: TaskListParams;
+  filterParams: Omit<TaskListParams, 'page' | 'limit'>;
   onHideColumn: (status: TaskStatus) => void;
 };
 
 export const KanbanBoard = ({
   tasks,
   visibleColumns,
-  queryParams,
+  filterParams,
   onHideColumn,
 }: KanbanBoardProps) => {
   const { id: currentUserId } = useAuthStore();
@@ -56,27 +55,24 @@ export const KanbanBoard = ({
     const isOwner = isTaskOwner(task, currentUserId ?? null);
     const isCompanyAction = getIsCompanyAction(task, isOwner, newStatus);
 
-    const listQueryKey = taskKeys.list(queryParams);
-    const previousData = queryClient.getQueryData<TaskList>(listQueryKey);
+    const allTasksQueryKey = taskKeys.allTasks(filterParams);
+    const previousData = queryClient.getQueryData<Task[]>(allTasksQueryKey);
 
-    queryClient.setQueryData<TaskList>(listQueryKey, old => {
+    queryClient.setQueryData<Task[]>(allTasksQueryKey, old => {
       if (!old) return old;
 
-      return {
-        ...old,
-        items: old.items.map(item =>
-          item.id === taskId
-            ? { ...item, status: newStatus, isCompanyAction }
-            : item
-        ),
-      };
+      return old.map(item =>
+        item.id === taskId
+          ? { ...item, status: newStatus, isCompanyAction }
+          : item
+      );
     });
 
     updateTask(
       { id: taskId, body: { status: newStatus, isCompanyAction } },
       {
         onError: () => {
-          queryClient.setQueryData(listQueryKey, previousData);
+          queryClient.setQueryData(allTasksQueryKey, previousData);
         },
         onSuccess: () => {
           setSnackbarOpen?.(true, 'Статус успешно изменен');

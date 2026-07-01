@@ -3,7 +3,11 @@ import { create } from 'zustand';
 import { ALL_TASK_STATUSES } from '../constants';
 import { getKanbanColumnsForFastButton } from '../utils';
 
-import type { TaskStatusFilter, FastButtonValueType } from '../utils';
+import type {
+  TaskStatusFilter,
+  FastButtonValueType,
+  TaskExtraFilter,
+} from '../utils';
 import type { TaskStatus } from '@/entities';
 
 export type TaskViewMode = 'grid' | 'kanban' | 'table';
@@ -52,10 +56,12 @@ type MyTaskFilterStore = {
     updatedDate: string | null;
     visibleKanbanColumns: TaskStatus[];
     fastButtonValue: FastButtonValueType;
+    extraFilter: TaskExtraFilter | null;
 
     resetKanbanColumns: () => void;
     setPostId: (postId: string) => void;
     setStatus: (status: TaskStatusFilter) => void;
+    setExtraFilter: (extraFilter: TaskExtraFilter | null) => void;
     setViewMode: (viewMode: TaskViewMode) => void;
     toggleKanbanColumn: (status: TaskStatus) => void;
     setUpdatedDate: (updatedDate: string | null) => void;
@@ -82,9 +88,17 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     fastButtonValue: initialFastButtonValue,
 
-    setPostId: postId => set({ postId }),
+    extraFilter: null,
 
-    setStatus: status => set({ status }),
+    setPostId: postId => set({ postId, extraFilter: null }),
+
+    setStatus: status => set({ status, extraFilter: null }),
+
+    setExtraFilter: extraFilter =>
+        set({
+            extraFilter,
+            ...(extraFilter && { status: 'all' as const }),
+        }),
 
     setViewMode: viewMode =>
         set(state => ({
@@ -101,8 +115,10 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
     setFastButtonValue: fastButtonValue =>
         set(state => ({
             fastButtonValue,
+            extraFilter: null,
             ...(state.viewMode === 'kanban' && {
-                visibleKanbanColumns: getKanbanColumnsForFastButton(fastButtonValue),
+                visibleKanbanColumns:
+                    getKanbanColumnsForFastButton(fastButtonValue),
             }),
         })),
 

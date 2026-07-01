@@ -47,6 +47,7 @@ export const ConversationItem = ({
         >
           {peer.displayName}
         </Typography>
+
         <Typography
           variant="body2"
           sx={{ ...(isSelected && { color: 'common.white' }) }}
@@ -54,6 +55,7 @@ export const ConversationItem = ({
           {preview}
         </Typography>
       </Stack>
+
       <Typography
         variant="body2"
         sx={{ ...(isSelected && { color: 'common.white' }) }}

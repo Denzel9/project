@@ -1,11 +1,11 @@
-import type { Favorite } from '@/entities/favorite';
+import type { FavoritePostItem } from '@/entities/favorite';
 
 import type { FavoriteGroupFilter } from './utils';
 
 const UNGROUPED_LABEL = 'Без подборки';
 
 const isInCurrentGroup = (
-  favorite: Favorite,
+  favorite: FavoritePostItem,
   groupFilter: FavoriteGroupFilter,
 ): boolean => {
   if (groupFilter === 'all') {
@@ -20,11 +20,11 @@ const isInCurrentGroup = (
 };
 
 export const partitionFavoriteSearchResults = (
-  favorites: Favorite[],
+  favorites: FavoritePostItem[],
   groupFilter: FavoriteGroupFilter,
 ): {
-  inCurrentGroup: Favorite[];
-  otherGroups: { groupLabel: string; items: Favorite[] }[];
+  inCurrentGroup: FavoritePostItem[];
+  otherGroups: { groupLabel: string; items: FavoritePostItem[] }[];
 } => {
   if (groupFilter === 'all') {
     return { inCurrentGroup: favorites, otherGroups: [] };
@@ -38,7 +38,7 @@ export const partitionFavoriteSearchResults = (
     favorite => !isInCurrentGroup(favorite, groupFilter),
   );
 
-  const groupsMap = new Map<string, Favorite[]>();
+  const groupsMap = new Map<string, FavoritePostItem[]>();
 
   for (const favorite of otherMatches) {
     const groupLabel = favorite.groupName ?? UNGROUPED_LABEL;

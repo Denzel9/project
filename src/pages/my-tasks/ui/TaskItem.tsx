@@ -1,165 +1,206 @@
 import { Whatshot } from '@mui/icons-material';
 import { Avatar, Box, Chip, Stack, Typography } from '@mui/material';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
-import { type Task } from '@/entities';
+import { isTaskOverdue, type Task } from '@/entities';
 import { getUserName, type User } from '@/entities';
 import { getTaskConfig } from '@/features';
 import { ROUTES } from '@/shared';
+
+import { TaskActionsMenu } from './TaskActionsMenu';
 
 type TaskItemProps = {
   task: Task;
   isCompany: boolean;
 };
 
+const getContact = (task: Task, isCompany: boolean) => {
+  if (isCompany) {
+    const name = [task.executor?.name, task.executor?.lastName]
+      .filter(Boolean)
+      .join(' ');
+
+    return {
+      name: name || 'Исполнитель не назначен',
+      avatar: task.executor?.avatar ?? '',
+      label: 'Исполнитель',
+    };
+  }
+
+  return {
+    name: getUserName(task.owner as Partial<User>) || 'Компания',
+    avatar: task.owner?.avatar ?? '',
+    label: 'Заказчик',
+  };
+};
+
 export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
-  const canNavigateToPost = task?.post?.isPrivate && !isCompany;
+  const taskConfig = getTaskConfig(task.status);
+  const accentColor = taskConfig?.color ?? 'primary';
+  const contact = getContact(task, isCompany);
+  const overdue = isTaskOverdue(task);
 
   return (
     <Box
       component={Link}
-      to={`${ROUTES.TASK}/${task.post?.id}?inviteId=${task.id}`}
+      to={`${ROUTES.TASK}/${task.post?.id}?taskId=${task.id}&inviteId=${task.id}`}
       sx={{
         p: 2,
+        height: '100%',
         color: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
         bgcolor: 'white',
-        display: 'block',
         borderRadius: '24px',
         textDecoration: 'none',
-        transition: 'box-shadow 0.2s ease',
-        border: theme => `1px solid ${theme.palette.secondary.main}`,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderLeftWidth: 4,
+        borderLeftColor: theme => theme.palette[accentColor].main,
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
         ':hover': {
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+          transform: 'translateY(-2px)',
         },
       }}
     >
       <Stack
         direction="row"
         spacing={1}
-        sx={{ alignItems: 'start', justifyContent: 'space-between' }}
+        sx={{
+          mb: 1.5,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
         <Stack
           direction="row"
-          spacing={2}
-          sx={{ alignItems: 'start' }}
+          spacing={0.75}
+          sx={{ flexWrap: 'wrap', gap: 0.75 }}
         >
-          <Avatar
-            src={task.owner?.avatar ?? ''}
-            sx={{ width: 60, height: 60 }}
+          <Chip
+            size="small"
+            label={taskConfig?.label}
+            color={accentColor}
           />
-          <Stack
-            direction="column"
-            spacing={0}
-            onClick={e => e.stopPropagation()}
-          >
-            <Link
-              to={canNavigateToPost ? '' : `${ROUTES.POST}/${task?.post?.id}`}
-              style={{
-                color: 'inherit',
-                textDecoration: 'none',
-                cursor: canNavigateToPost ? 'default' : 'pointer',
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  cursor: canNavigateToPost ? 'default' : 'pointer',
-                  transition: 'text-decoration 0.2s ease',
-                  ':hover': canNavigateToPost
-                    ? {}
-                    : {
-                        color: 'primary.main',
-                      },
-                }}
-              >
-                {task.post?.title}
-              </Typography>
 
-              <Typography
-                variant="body2"
-                color="info"
-              >
-                {task?.title}
-              </Typography>
-            </Link>
-          </Stack>
+          {task.urgent && (
+            <Chip
+              size="small"
+              icon={<Whatshot />}
+              label="Срочно"
+              color="error"
+              variant="outlined"
+            />
+          )}
         </Stack>
 
         <Stack
           direction="row"
-          spacing={1}
+          spacing={0.5}
+          sx={{ alignItems: 'center' }}
         >
-          {task.urgent && <Whatshot color="error" />}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            {formatDistanceToNow(new Date(task.updatedAt), {
+              addSuffix: true,
+              locale: ru,
+            })}
+          </Typography>
 
-          <Chip
-            size="small"
-            label={getTaskConfig(task.status)?.label}
-            color={getTaskConfig(task.status)?.color ?? 'primary'}
-            sx={{ flexShrink: 0 }}
-          />
+          <Box
+            component="span"
+            onClick={event => event.stopPropagation()}
+            onMouseDown={event => event.stopPropagation()}
+          >
+            <TaskActionsMenu
+              task={task}
+              size="small"
+            />
+          </Box>
         </Stack>
       </Stack>
 
-      {task.finalDate && (
+      <Typography
+        variant="subtitle1"
+        sx={{
+          mb: 0.5,
+          fontWeight: 600,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
+        {task.post?.title ?? 'Без названия'}
+      </Typography>
+
+      {task.title && (
         <Typography
           variant="body2"
-          color="info"
-          sx={{ fontSize: '12px', textAlign: 'right' }}
+          color="text.secondary"
+          sx={{
+            mb: 1.5,
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
         >
-          Дедлайн: {format(new Date(task.finalDate ?? ''), 'dd.MM.yyyy')}
+          {task.title}
         </Typography>
       )}
 
-      <Box
-        onClick={e => e.stopPropagation()}
-        sx={{ mt: 4 }}
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: 'end',
+          minWidth: 0,
+          mt: 2,
+          justifyContent: 'space-between',
+        }}
       >
-        {isCompany && (
-          <Link
-            target="_blank"
-            to={`${ROUTES.PROFILE}?userId=${task.executorId}`}
-            style={{ textDecoration: 'none', color: 'inherit' }}
-          >
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'center' }}
+        >
+          <Avatar
+            src={contact.avatar || undefined}
+            sx={{ width: 32, height: 32 }}
+          />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', lineHeight: 1.2 }}
+            >
+              {contact.label}
+            </Typography>
             <Typography
               variant="body2"
-              sx={{
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                ':hover': {
-                  color: 'primary.main',
-                },
-              }}
+              noWrap
+              sx={{ lineHeight: 1.3 }}
             >
-              {task?.executor?.name && task?.executor?.lastName
-                ? `${task?.executor?.name} ${task?.executor?.lastName}`
-                : 'Не назначено'}
+              {contact.name}
             </Typography>
-          </Link>
-        )}
+          </Box>
+        </Stack>
 
-        {!isCompany && (
-          <Link
-            target="_blank"
-            to={`${ROUTES.PROFILE}?userId=${task.ownerId}`}
-            style={{ textDecoration: 'none', color: 'inherit' }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                cursor: 'pointer',
-                width: 'fit-content',
-                transition: 'all 0.3s ease',
-                ':hover': {
-                  color: 'primary.main',
-                },
-              }}
-            >
-              {getUserName(task.owner as Partial<User>)}
-            </Typography>
-          </Link>
+        {task.finalDate && (
+          <Chip
+            size="small"
+            label={`Дедлайн: ${format(new Date(task.finalDate), 'dd.MM.yyyy')}`}
+            color={overdue ? 'error' : 'default'}
+            variant={overdue ? 'filled' : 'outlined'}
+          />
         )}
-      </Box>
+      </Stack>
     </Box>
   );
 };

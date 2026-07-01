@@ -6,6 +6,7 @@ import {
   IconButton,
   List,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -13,45 +14,51 @@ import { BASE_COLOR } from '@/app/index';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
-import {
-  TOP_MENU_ROUTES,
-  BOTTOM_MENU_ROUTES,
-  MENU_ROUTES_PRIME,
-} from '../model/routes/routes';
+import { TOP_MENU_ROUTES, BOTTOM_MENU_ROUTES } from '../model/routes/routes';
+import { useSideBarStore } from '../model/store/store';
 import { getIsVisibleRoute } from '../model/utils';
 
+import { CRMCollapseMenu } from './CRMCollapseMenu';
 import { MenuItem } from './MenuItem';
 import { SettingsCollapseMenu } from './SettingsCollapseMenu';
 
 import type { USER_ROLE } from '@/entities';
 
 type SideBarContentProps = {
-  isExpanded: boolean;
+  isExpanded?: boolean;
   onNavigate?: () => void;
 };
 
 export const SideBarContent = ({
   isExpanded,
   onNavigate,
-}: SideBarContentProps) => {
+}: SideBarContentProps = {}) => {
+  const { isOpenSideBar } = useSideBarStore();
+
   const { isAuth, role } = useAuthStore();
+
+  const isSidebarExpanded = isExpanded ?? isOpenSideBar;
+
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const navigate = useNavigate();
 
-  const pathname = useLocation()?.pathname;
+  const { pathname } = useLocation();
 
   return (
     <Box
       sx={{
         py: 4,
         display: 'flex',
+        overflow: 'scroll',
+        scrollbarWidth: 'none',
         flexDirection: 'column',
         justifyContent: 'space-between',
         height: { xs: 'auto', md: '100%' },
       }}
     >
-      <List sx={{ gap: 1, display: 'flex', flexDirection: 'column' }}>
-        {isExpanded ? (
+      <List sx={{ gap: 1, display: 'flex', flexDirection: 'column', mb: 10 }}>
+        {isSidebarExpanded ? (
           <Typography
             variant="h4"
             sx={{ pb: 10, px: 4 }}
@@ -74,37 +81,34 @@ export const SideBarContent = ({
               key={route.path}
               pathname={pathname}
               navigate={navigate}
-              isOpenSideBar={isExpanded}
+              isOpenSideBar={isSidebarExpanded}
               onNavigate={onNavigate}
             />
           );
         })}
 
-        {isAuth && <Divider sx={{ mt: 2 }} />}
+        {isAuth && (
+          <>
+            <Divider sx={{ mt: 2 }} />
 
-        {isAuth &&
-          MENU_ROUTES_PRIME.map(route => (
-            <MenuItem
-              route={route}
-              key={route.path}
+            <CRMCollapseMenu
               pathname={pathname}
-              navigate={navigate}
-              isOpenSideBar={isExpanded}
+              isSidebarExpanded={isSidebarExpanded}
               onNavigate={onNavigate}
             />
-          ))}
 
-        {isAuth && <Divider sx={{ mb: 2 }} />}
+            <Divider sx={{ mb: 2 }} />
+          </>
+        )}
 
         {BOTTOM_MENU_ROUTES.map(route => {
           if (!getIsVisibleRoute(route, isAuth, role as USER_ROLE)) return null;
 
-          if (route.path === ROUTES.SETTINGS && onNavigate) {
+          if (route.path === ROUTES.SETTINGS && isMobile) {
             return (
               <SettingsCollapseMenu
                 key={route.path}
                 pathname={pathname}
-                onNavigate={onNavigate}
               />
             );
           }
@@ -115,14 +119,14 @@ export const SideBarContent = ({
               key={route.path}
               pathname={pathname}
               navigate={navigate}
-              isOpenSideBar={isExpanded}
+              isOpenSideBar={isSidebarExpanded}
               onNavigate={onNavigate}
             />
           );
         })}
       </List>
 
-      {isExpanded ? (
+      {isSidebarExpanded ? (
         <Box
           sx={{
             p: 2,

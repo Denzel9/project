@@ -59,7 +59,7 @@ export type SearchMessagesParams = {
 }
 
 export type AttachmentsParams = {
-  type?: 'image' | 'video'
+  type?: 'image' | 'video' | 'document'
   page?: number
   limit?: number
 }

@@ -1,8 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 
 import { taskKeys } from '@/entities/task'
+import { getUserName, type User } from '@/entities/user'
 import { mainAxios } from '@/shared/api'
+import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
 import type {
   Application,
@@ -25,7 +32,16 @@ export const applicationKeys = {
     [...applicationKeys.all, 'search', params] as const,
   forPosts: (postIds: string[]) =>
     [...applicationKeys.all, 'forPosts', postIds] as const,
+  allMineMap: () => [...applicationKeys.all, 'allMineMap'] as const,
+  infiniteMine: (params?: Omit<ApplicationListParams, 'page'>) =>
+    [...applicationKeys.all, 'infiniteMine', params ?? {}] as const,
+  companyOptions: () => [...applicationKeys.all, 'companyOptions'] as const,
 }
+
+const getApplicationListNextPageParam = (lastPage: ApplicationList) =>
+  lastPage.page * lastPage.limit < lastPage.total
+    ? lastPage.page + 1
+    : undefined
 
 export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
   useQuery({
@@ -37,6 +53,59 @@ export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
       )
       return data
     },
+  })
+
+export const useMyApplicationsInfiniteQuery = (
+  params?: Omit<ApplicationListParams, 'page'>,
+) => {
+  const limit = params?.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: applicationKeys.infiniteMine(params),
+    queryFn: async ({ pageParam }) => {
+      const { data } = await mainAxios.get<ApplicationList>(
+        '/applications/mine',
+        { params: { ...params, page: pageParam, limit } },
+      )
+      return data
+    },
+    initialPageParam: 1,
+    getNextPageParam: getApplicationListNextPageParam,
+  })
+}
+
+export const useMyApplicationsCompanyOptionsQuery = () =>
+  useQuery({
+    queryKey: applicationKeys.companyOptions(),
+    queryFn: async () => {
+      const items = await fetchAllPages(async (page, limit) => {
+        const { data } = await mainAxios.get<ApplicationList>(
+          '/applications/mine',
+          { params: { page, limit } },
+        )
+
+        return data
+      })
+
+      const map = new Map<string, string>()
+
+      items.forEach(application => {
+        const ownerId =
+          application.post?.ownerId ?? application.post?.owner?.id
+        const companyName = getUserName(
+          application.post?.owner as Partial<User> | undefined,
+        )?.trim()
+
+        if (ownerId && companyName) {
+          map.set(ownerId, companyName)
+        }
+      })
+
+      return Array.from(map.entries())
+        .map(([ownerId, companyName]) => ({ ownerId, companyName }))
+        .sort((a, b) => a.companyName.localeCompare(b.companyName, 'ru'))
+    },
+    staleTime: 5 * 60 * 1000,
   })
 
 export const useSearchMyApplicationsQuery = (params: SearchApplicationsParams) => {
@@ -128,52 +197,68 @@ export const useMyApplicationsMap = () => {
 export const useMyApplicationsMapForPosts = (postIds: string[]) => {
   const queryClient = useQueryClient()
 
-  const sortedPostIds = useMemo(
-    () => [...postIds].sort(),
-    [postIds],
-  )
-
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: applicationKeys.forPosts(sortedPostIds),
+  const { data: allApplicationsMap, isLoading, isFetching } = useQuery({
+    queryKey: applicationKeys.allMineMap(),
     queryFn: async () => {
-      const limit = Math.min(Math.max(sortedPostIds.length, 20), 100)
-      const { data } = await mainAxios.get<ApplicationList>(
-        '/applications/mine',
-        { params: { page: 1, limit } },
-      )
+      const items = await fetchAllPages(async (page, limit) => {
+        const { data } = await mainAxios.get<ApplicationList>(
+          '/applications/mine',
+          { params: { page, limit } },
+        )
+
+        return data
+      })
 
       const map = new Map<string, Application>()
 
-      data.items.forEach(application => {
-        if (sortedPostIds.includes(application.post?.id ?? '')) {
-          map.set(application.post?.id ?? '', application)
+      items.forEach(application => {
+        const postId = application.post?.id
+
+        if (postId) {
+          map.set(postId, application)
         }
       })
 
       return map
     },
-    enabled: sortedPostIds.length > 0,
-    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
   })
+
+  const map = useMemo(() => {
+    const result = new Map<string, Application>()
+
+    if (!allApplicationsMap) return result
+
+    postIds.forEach(postId => {
+      const application = allApplicationsMap.get(postId)
+
+      if (application) {
+        result.set(postId, application)
+      }
+    })
+
+    return result
+  }, [allApplicationsMap, postIds])
 
   const removePostFromCollection = useCallback(
     (postId: string) => {
       queryClient.setQueryData<Map<string, Application>>(
-        applicationKeys.forPosts(sortedPostIds),
+        applicationKeys.allMineMap(),
         previousMap => {
           if (!previousMap) return previousMap
 
           const nextMap = new Map(previousMap)
           nextMap.delete(postId)
+
           return nextMap
         },
       )
     },
-    [queryClient, sortedPostIds],
+    [queryClient],
   )
 
   return {
-    map: data ?? new Map<string, Application>(),
+    map,
     isLoading,
     isFetching,
     removePostFromCollection,

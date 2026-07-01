@@ -6,6 +6,7 @@ import {
   useDeleteFavoriteGroupMutation,
   useFavoriteGroupsQuery,
   type FavoriteGroup,
+  type FavoriteType,
 } from '@/entities/favorite';
 import { useScroll } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
@@ -17,24 +18,32 @@ import type { FavoriteGroupFilter } from '../model/utils';
 
 type FavoriteFilterProps = {
   value: FavoriteGroupFilter;
+  favoriteType: FavoriteType;
   onChange: (value: FavoriteGroupFilter) => void;
+  onTypeChange: (value: FavoriteType) => void;
 };
 
-const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
+const FavoriteFilter = ({
+  value,
+  favoriteType,
+  onChange,
+  onTypeChange,
+}: FavoriteFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const { setSnackbarOpen } = useSnackbarStore();
 
-  const { data: groups, isLoading } = useFavoriteGroupsQuery();
+  const { data: groups, isLoading } = useFavoriteGroupsQuery(
+    favoriteType === 'POST',
+  );
 
   const { mutateAsync: deleteGroup, isPending } =
     useDeleteFavoriteGroupMutation();
 
   const [groupToDelete, setGroupToDelete] = useState<FavoriteGroup | null>(
-    null
+    null,
   );
 
   const handleDeleteSuccess = (group: FavoriteGroup) => {
@@ -46,7 +55,7 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
       true,
       group.count > 0
         ? 'Подборка удалена. Посты остались в избранном.'
-        : 'Подборка удалена.'
+        : 'Подборка удалена.',
     );
   };
 
@@ -69,6 +78,14 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
 
     await handleDeleteGroup(groupToDelete);
     setGroupToDelete(null);
+  };
+
+  const handleTypeChange = (nextType: FavoriteType) => {
+    onTypeChange(nextType);
+
+    if (nextType !== 'POST' && value !== 'all') {
+      onChange('all');
+    }
   };
 
   return (
@@ -97,56 +114,57 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
           <TextField
             select
             size="small"
-            value={value}
-            label="Подборки"
-            disabled={isLoading}
-            sx={{ width: { xs: '100%', md: '50%' } }}
-            onChange={e => onChange(e.target.value as FavoriteGroupFilter)}
+            label="Категория"
+            value={favoriteType}
+            sx={{ width: { xs: '100%', md: favoriteType === 'POST' ? '50%' : '100%' } }}
+            onChange={e => handleTypeChange(e.target.value as FavoriteType)}
           >
-            <MenuItem value="all">Все</MenuItem>
-            <MenuItem value="ungrouped">Без подборки</MenuItem>
-            {groups?.map(group => (
-              <MenuItem
-                key={group.id}
-                value={group.id}
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                }}
-              >
-                <span>
-                  {group.name} ({group.count})
-                </span>
-                <IconButton
-                  size="small"
-                  color="error"
-                  disabled={isPending}
-                  onMouseDown={e => e.stopPropagation()}
-                  onClick={e => {
-                    e.stopPropagation();
-                    void handleDeleteClick(group);
-                  }}
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </MenuItem>
-            ))}
+            <MenuItem value="POST">Посты</MenuItem>
+            <MenuItem value="CREATOR">Креаторы</MenuItem>
+            <MenuItem value="COMPANY">Компании</MenuItem>
           </TextField>
 
-          <TextField
-            select
-            size="small"
-            label="Категория"
-            disabled={isLoading}
-            value={categoryFilter}
-            sx={{ width: { xs: '100%', md: '50%' } }}
-            onChange={e => setCategoryFilter(e.target.value)}
-          >
-            <MenuItem value="all">Все</MenuItem>
-            <MenuItem value="projects">Проекты</MenuItem>
-            <MenuItem value="users">Пользователи</MenuItem>
-          </TextField>
+          {favoriteType === 'POST' && (
+            <TextField
+              select
+              size="small"
+              value={value}
+              label="Подборки"
+              disabled={isLoading}
+              sx={{ width: { xs: '100%', md: '50%' } }}
+              onChange={e => onChange(e.target.value as FavoriteGroupFilter)}
+            >
+              <MenuItem value="all">Все</MenuItem>
+              <MenuItem value="ungrouped">Без подборки</MenuItem>
+              {groups?.map(group => (
+                <MenuItem
+                  key={group.id}
+                  value={group.id}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                  }}
+                >
+                  <span>
+                    {group.name} ({group.count})
+                  </span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={isPending}
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={e => {
+                      e.stopPropagation();
+                      void handleDeleteClick(group);
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
         </Stack>
 
         <Stack
@@ -170,6 +188,7 @@ const FavoriteFilter = ({ value, onChange }: FavoriteFilterProps) => {
         open={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         groupFilter={value}
+        favoriteType={favoriteType}
       />
     </>
   );

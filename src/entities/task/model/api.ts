@@ -1,4 +1,5 @@
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -6,9 +7,14 @@ import {
 } from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
-import { prepareFileForUpload } from '@/shared/lib/media'
+import {
+  mapInBatches,
+  MEDIA_UPLOAD_CONCURRENCY,
+  prepareFileForUpload,
+} from '@/shared/lib/media'
+import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
-import { toTaskCommentMedia } from './utils'
+import { toTaskCommentMedia, normalizeTaskWithCommentsItem, getCommentsTailPage } from './utils'
 
 import type {
   CreateTaskCommentDto,
@@ -16,11 +22,17 @@ import type {
   Task,
   TaskActivityList,
   TaskActivityListParams,
+  TaskActivityFeedList,
+  TaskActivityFeedParams,
   TaskComment,
   TaskCommentAttachmentList,
   TaskCommentAttachmentsParams,
   TaskCommentList,
   TaskCommentListParams,
+  TaskCommentFeedList,
+  TaskCommentFeedParams,
+  TaskWithCommentsParams,
+  TaskWithCommentsRawItem,
   TaskCommentMedia,
   SearchTaskCommentsParams,
   TaskList,
@@ -50,6 +62,15 @@ export const taskKeys = {
   ) => [...taskKeys.all, 'comments', taskId, 'attachments', params ?? {}] as const,
   activities: (taskId: string, params?: TaskActivityListParams) =>
     [...taskKeys.all, 'activities', taskId, params ?? {}] as const,
+  allActivities: (params?: Omit<TaskActivityFeedParams, 'page'>) =>
+    [...taskKeys.all, 'allActivities', params ?? {}] as const,
+  allComments: (params?: Omit<TaskCommentFeedParams, 'page'>) =>
+    [...taskKeys.all, 'allComments', params ?? {}] as const,
+  withComments: (params?: Omit<TaskWithCommentsParams, 'page'>) =>
+    [...taskKeys.all, 'withComments', params ?? {}] as const,
+  executorByPostMap: () => [...taskKeys.all, 'executorByPostMap'] as const,
+  allTasks: (params?: Omit<TaskListParams, 'page' | 'limit'>) =>
+    [...taskKeys.all, 'allTasks', params ?? {}] as const,
 }
 
 const postTasksQueryPrefix = (postId: string) =>
@@ -163,6 +184,10 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
 
   void queryClient.invalidateQueries({ queryKey: taskKeys.detail(task.id) })
 
+  void queryClient.invalidateQueries({
+    queryKey: [...taskKeys.all, 'allActivities'],
+  })
+
   if (postId) {
     void queryClient.invalidateQueries({
       queryKey: postTasksQueryPrefix(postId),
@@ -183,6 +208,51 @@ export const useTasksQuery = (params?: TaskListParams) =>
       const { data } = await mainAxios.get<TaskList>('/tasks', { params })
       return data
     },
+    refetchOnWindowFocus: true,
+  })
+
+export const useExecutorTasksByPostMap = () =>
+  useQuery({
+    queryKey: taskKeys.executorByPostMap(),
+    queryFn: async () => {
+      const items = await fetchAllPages(async (page, limit) => {
+        const { data } = await mainAxios.get<TaskList>('/tasks', {
+          params: { page, limit, role: 'executor' },
+        })
+
+        return data
+      })
+
+      const map = new Map<string, Task>()
+
+      items.forEach(task => {
+        if (task.postId) {
+          map.set(task.postId, task)
+        }
+      })
+
+      return map
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+
+export const useAllTasksQuery = (
+  params?: Omit<TaskListParams, 'page' | 'limit'>,
+) =>
+  useQuery({
+    queryKey: taskKeys.allTasks(params),
+    queryFn: async () => {
+      const items = await fetchAllPages(async (page, limit) => {
+        const { data } = await mainAxios.get<TaskList>('/tasks', {
+          params: { ...params, page, limit },
+        })
+
+        return data
+      })
+
+      return items
+    },
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   })
 
@@ -272,6 +342,58 @@ export const useTaskCommentsQuery = (
     enabled: Boolean(taskId),
   })
 
+export const fetchTaskCommentsPage = async (
+  taskId: string,
+  page: number,
+  limit: number,
+) => {
+  const { data } = await mainAxios.get<TaskCommentList>(
+    `/tasks/${taskId}/comments`,
+    { params: { page, limit } },
+  )
+
+  return data
+}
+
+export const useTaskCommentsTailQuery = (
+  taskId: string | null,
+  limit: number,
+  enabled = true,
+  lastCommentId?: string,
+) =>
+  useQuery({
+    queryKey: [...taskKeys.comments(taskId ?? ''), 'tail', limit, lastCommentId] as const,
+    queryFn: async () => {
+      const { data: meta } = await mainAxios.get<TaskCommentList>(
+        `/tasks/${taskId}/comments`,
+        { params: { page: 1, limit: 1 } },
+      )
+
+      const page = getCommentsTailPage(Math.max(meta.total, 1), limit)
+
+      const { data } = await mainAxios.get<TaskCommentList>(
+        `/tasks/${taskId}/comments`,
+        { params: { page, limit } },
+      )
+
+      const hasLastComment =
+        !lastCommentId ||
+        data.items.some(comment => comment.id === lastCommentId)
+
+      if (hasLastComment || page === 1) {
+        return data
+      }
+
+      const { data: newestPage } = await mainAxios.get<TaskCommentList>(
+        `/tasks/${taskId}/comments`,
+        { params: { page: 1, limit } },
+      )
+
+      return newestPage
+    },
+    enabled: enabled && Boolean(taskId),
+  })
+
 export const useSearchTaskCommentsQuery = (
   taskId: string | null,
   params: SearchTaskCommentsParams,
@@ -339,6 +461,115 @@ export const useTaskActivitiesQuery = (
     enabled: Boolean(taskId),
   })
 
+export const useAllTaskActivitiesQuery = (
+  params?: TaskActivityFeedParams,
+) =>
+  useQuery({
+    queryKey: taskKeys.allActivities(params),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<TaskActivityFeedList>(
+        '/tasks/activities',
+        { params },
+      )
+      return data
+    },
+  })
+
+export const useAllTaskActivitiesInfiniteQuery = (
+  params?: Omit<TaskActivityFeedParams, 'page'>,
+) => {
+  const limit = params?.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: taskKeys.allActivities(params),
+    queryFn: async ({ pageParam }) => {
+      const { data } = await mainAxios.get<TaskActivityFeedList>(
+        '/tasks/activities',
+        {
+          params: {
+            ...params,
+            page: pageParam,
+            limit,
+          },
+        },
+      )
+
+      return data
+    },
+    initialPageParam: 1,
+    getNextPageParam: lastPage =>
+      lastPage.page * lastPage.limit < lastPage.total
+        ? lastPage.page + 1
+        : undefined,
+  })
+}
+
+export const useAllTaskCommentsInfiniteQuery = (
+  params?: Omit<TaskCommentFeedParams, 'page'>,
+) => {
+  const limit = params?.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: taskKeys.allComments(params),
+    queryFn: async ({ pageParam }) => {
+      const { data } = await mainAxios.get<TaskCommentFeedList>(
+        '/tasks/comments',
+        {
+          params: {
+            ...params,
+            page: pageParam,
+            limit,
+          },
+        },
+      )
+
+      return data
+    },
+    initialPageParam: 1,
+    getNextPageParam: lastPage =>
+      lastPage.page * lastPage.limit < lastPage.total
+        ? lastPage.page + 1
+        : undefined,
+  })
+}
+
+export const useTasksWithCommentsInfiniteQuery = (
+  params?: Omit<TaskWithCommentsParams, 'page'>,
+) => {
+  const limit = params?.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: taskKeys.withComments(params),
+    queryFn: async ({ pageParam }) => {
+      const { data } = await mainAxios.get<{
+        items: TaskWithCommentsRawItem[]
+        total: number
+        page: number
+        limit: number
+      }>(
+        '/tasks/with-comments',
+        {
+          params: {
+            ...params,
+            page: pageParam,
+            limit,
+          },
+        },
+      )
+
+      return {
+        ...data,
+        items: data.items.map(normalizeTaskWithCommentsItem),
+      }
+    },
+    initialPageParam: 1,
+    getNextPageParam: lastPage =>
+      lastPage.page * lastPage.limit < lastPage.total
+        ? lastPage.page + 1
+        : undefined,
+  })
+}
+
 export const useCreateTaskCommentMutation = () => {
   const queryClient = useQueryClient()
 
@@ -368,6 +599,12 @@ export const useCreateTaskCommentMutation = () => {
             : old,
       )
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'allComments'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'withComments'],
+      })
     },
   })
 }
@@ -405,6 +642,12 @@ export const useUpdateTaskCommentMutation = () => {
             : old,
       )
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'allComments'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'withComments'],
+      })
     },
   })
 }
@@ -437,7 +680,12 @@ export const uploadTaskMediaBatch = async (
   taskId: string,
   files: File[],
   kind: TaskMediaUploadKind = 'main',
-) => Promise.all(files.map(file => uploadTaskMedia(taskId, file, kind)))
+) =>
+  mapInBatches(
+    files,
+    file => uploadTaskMedia(taskId, file, kind),
+    MEDIA_UPLOAD_CONCURRENCY,
+  )
 
 export const uploadTaskCommentMedia = async (taskId: string, file: File) => {
   const prepared = await prepareFileForUpload(file)
@@ -460,8 +708,10 @@ export const uploadTaskCommentMediaBatch = async (
   taskId: string,
   files: File[],
 ): Promise<TaskCommentMedia[]> => {
-  const uploads = await Promise.all(
-    files.map(file => uploadTaskCommentMedia(taskId, file)),
+  const uploads = await mapInBatches(
+    files,
+    file => uploadTaskCommentMedia(taskId, file),
+    MEDIA_UPLOAD_CONCURRENCY,
   )
 
   return uploads.map(toTaskCommentMedia)
@@ -530,6 +780,12 @@ export const useDeleteTaskCommentMutation = () => {
             : old,
       )
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'allComments'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'withComments'],
+      })
     },
   })
 }

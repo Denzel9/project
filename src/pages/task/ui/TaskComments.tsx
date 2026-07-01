@@ -1,10 +1,17 @@
-import { MoreVert, Search } from '@mui/icons-material';
+import {
+  AttachFile,
+  ChatBubbleOutlined,
+  MoreVert,
+  Search,
+} from '@mui/icons-material';
 import {
   Box,
+  Chip,
   IconButton,
   Menu,
   MenuItem,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -12,6 +19,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  canEditComment,
   uploadTaskCommentMediaBatch,
   useCreateTaskCommentMutation,
   useUpdateTaskCommentMutation,
@@ -27,6 +35,7 @@ import { FullScreenGallery } from '@/widgets';
 
 import {
   COMMENT_MEDIA_PLACEHOLDER,
+  hasCommentText,
   toGalleryItems,
 } from '../model/lib/commentMedia';
 
@@ -82,19 +91,32 @@ export const TaskComments = ({
   useEffect(() => {
     if (comments.length === 0) return;
 
+    const hash = window.location.hash;
+    const commentHashMatch = hash.match(/^#comment-(.+)$/);
+    const targetCommentId = commentHashMatch?.[1];
+
     const timer = window.setTimeout(() => {
+      if (targetCommentId) {
+        const target = document.getElementById(`comment-${targetCommentId}`);
+
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+
       const listEl = commentsListRef.current;
 
       if (!listEl) return;
 
       listEl.scrollTo({
         top: listEl.scrollHeight,
-        behavior: 'auto',
+        behavior: 'smooth',
       });
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [comments.length]);
+  }, [comments]);
 
   const openGallery = useCallback(
     (media: TaskCommentMedia[] | undefined, initialSlide: number) => {
@@ -177,16 +199,27 @@ export const TaskComments = ({
   };
 
   const handleStartEdit = (commentId: string, text: string) => {
+    const comment = comments.find(item => item.id === commentId);
+
+    if (!comment || !canEditComment(comment.createdAt)) return;
+
     setEditingId(commentId);
-    setEditContent(text);
+    setEditContent(hasCommentText(text) ? text : '');
   };
 
   const handleSaveEdit = (commentId: string) => {
+    const comment = comments.find(item => item.id === commentId);
     const trimmed = editContent.trim();
-    if (!trimmed) return;
+    const hasMedia = Boolean(comment?.media?.length);
+
+    if (!trimmed && !hasMedia) return;
 
     updateComment(
-      { taskId, commentId, body: { content: trimmed } },
+      {
+        taskId,
+        commentId,
+        body: { content: trimmed || COMMENT_MEDIA_PLACEHOLDER },
+      },
       {
         onSuccess: () => {
           setEditingId(null);
@@ -208,24 +241,107 @@ export const TaskComments = ({
     setIsAttachmentsOpen(true);
   };
 
+  const emptyMessage = isExecutorApprove
+    ? 'Комментариев пока нет — напишите первым'
+    : 'Комментарии станут доступны после назначения исполнителя';
+
   return (
-    <Box sx={{ bgcolor: 'white', p: { xs: 3, md: 4 }, borderRadius: '32px' }}>
+    <Box
+      sx={{
+        bgcolor: 'white',
+        overflow: 'hidden',
+        borderRadius: '32px',
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
       <Stack
         direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+        spacing={1.5}
+        sx={{
+          px: { xs: 2.5, md: 3 },
+          py: 2,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
       >
-        <Typography variant="h6">Комментарии</Typography>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: 'center', minWidth: 0 }}
+        >
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              flexShrink: 0,
+              borderRadius: '12px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
+          >
+            <ChatBubbleOutlined fontSize="small" />
+          </Box>
+
+          <Box sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center' }}
+            >
+              <Typography variant="h6">Комментарии</Typography>
+              {comments.length > 0 && (
+                <Chip
+                  size="small"
+                  label={comments.length}
+                  color="primary"
+                  variant="outlined"
+                />
+              )}
+            </Stack>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: { xs: 'none', sm: 'block' } }}
+            >
+              Обсуждение задачи с исполнителем
+            </Typography>
+          </Box>
+        </Stack>
 
         <Stack
           direction="row"
-          spacing={1}
+          spacing={0.5}
         >
-          <IconButton onClick={() => setIsSearchOpen(true)}>
-            <Search />
-          </IconButton>
+          <Tooltip title="Поиск">
+            <IconButton
+              size="small"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              <Search fontSize="small" />
+            </IconButton>
+          </Tooltip>
 
-          <IconButton onClick={event => setMenuAnchor(event.currentTarget)}>
-            <MoreVert />
+          <Tooltip title="Вложения">
+            <IconButton
+              size="small"
+              onClick={() => setIsAttachmentsOpen(true)}
+            >
+              <AttachFile fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <IconButton
+            size="small"
+            onClick={event => setMenuAnchor(event.currentTarget)}
+          >
+            <MoreVert fontSize="small" />
           </IconButton>
 
           <Menu
@@ -233,83 +349,108 @@ export const TaskComments = ({
             open={Boolean(menuAnchor)}
             onClose={handleCloseMenu}
           >
-            <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
+            <MenuItem onClick={handleOpenAttachments}>Все вложения</MenuItem>
           </Menu>
         </Stack>
       </Stack>
 
-      <Stack
-        ref={commentsListRef}
-        spacing={2}
-        direction="column"
-        sx={{
-          mb: 3,
-          width: '100%',
-          minHeight: '200px',
-          maxHeight: '500px',
-          overflowY: 'auto',
-        }}
-      >
-        {Boolean(!comments.length) && isExecutorApprove && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            Комментариев пока нет
-          </Typography>
-        )}
-
-        {Boolean(!comments.length) && !isExecutorApprove && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            Комментарии станут доступны после назначения исполнителя
-          </Typography>
-        )}
-
-        {comments.map(comment => (
-          <TaskCommentItem
-            key={comment.id}
-            comment={comment}
-            currentUserId={currentUserId}
-            userAvatar={user?.data?.avatar ?? undefined}
-            contactAvatar={contact?.avatar ?? undefined}
-            isPending={isPending}
-            isEditing={editingId === comment.id}
-            editContent={editContent}
-            onEditContentChange={setEditContent}
-            onStartEdit={handleStartEdit}
-            onSaveEdit={handleSaveEdit}
-            onCancelEdit={() => setEditingId(null)}
-            onDelete={handleDelete}
-            onOpenGallery={openGallery}
-          />
-        ))}
-      </Stack>
-
-      {sendError && (
-        <Typography
-          color="error"
-          variant="body2"
-          sx={{ mb: 1 }}
+      <Box sx={{ px: { xs: 2, md: 3 }, py: 2 }}>
+        <Stack
+          ref={commentsListRef}
+          spacing={1.5}
+          direction="column"
+          sx={{
+            mb: 2,
+            width: '100%',
+            minHeight: 220,
+            maxHeight: 480,
+            overflowY: 'auto',
+            p: comments.length ? 1.5 : 0,
+            borderRadius: '20px',
+            bgcolor: comments.length ? 'grey.50' : 'transparent',
+            border: comments.length ? '1px solid' : 'none',
+            borderColor: 'divider',
+          }}
         >
-          {sendError}
-        </Typography>
-      )}
+          {!comments.length && (
+            <Box
+              sx={{
+                py: 6,
+                px: 2,
+                textAlign: 'center',
+                borderRadius: '20px',
+                bgcolor: 'grey.50',
+                border: '1px dashed',
+                borderColor: 'divider',
+              }}
+            >
+              <ChatBubbleOutlined
+                sx={{
+                  mb: 1,
+                  fontSize: 40,
+                  color: 'text.disabled',
+                }}
+              />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                {emptyMessage}
+              </Typography>
+            </Box>
+          )}
 
-      <ChatInput
-        value={content}
-        onChange={setContent}
-        isSending={isPending}
-        executorId={contact?.id}
-        pendingFiles={pendingFiles}
-        onAttachFiles={addPendingFiles}
-        onRemoveFile={removePendingFile}
-        placeholder="Написать комментарий…"
-        onSend={() => void handleCreate()}
-        isExecutorApprove={isExecutorApprove}
-      />
+          {comments.map(comment => (
+            <TaskCommentItem
+              key={comment.id}
+              comment={comment}
+              currentUserId={currentUserId}
+              userAvatar={user?.data?.avatar ?? undefined}
+              contactAvatar={contact?.avatar ?? undefined}
+              isPending={isPending}
+              isEditing={editingId === comment.id}
+              editContent={editContent}
+              onEditContentChange={setEditContent}
+              onStartEdit={handleStartEdit}
+              onSaveEdit={handleSaveEdit}
+              onCancelEdit={() => setEditingId(null)}
+              onDelete={handleDelete}
+              onOpenGallery={openGallery}
+            />
+          ))}
+        </Stack>
+
+        {sendError && (
+          <Typography
+            color="error"
+            variant="body2"
+            sx={{ mb: 1 }}
+          >
+            {sendError}
+          </Typography>
+        )}
+
+        <Box
+          sx={{
+            pt: 2,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <ChatInput
+            value={content}
+            onChange={setContent}
+            isSending={isPending}
+            executorId={contact?.id}
+            pendingFiles={pendingFiles}
+            onAttachFiles={addPendingFiles}
+            onRemoveFile={removePendingFile}
+            placeholder="Написать комментарий…"
+            onSend={() => void handleCreate()}
+            isExecutorApprove={isExecutorApprove}
+          />
+        </Box>
+      </Box>
 
       <DeleteCommentDialog
         taskId={taskId}

@@ -10,10 +10,11 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router';
 
+import { useFavoriteUserIds } from '@/entities/favorite';
 import { getUserName, type User } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
 import { ROUTES } from '@/shared';
-import { FavoriteButton } from '@/widgets';
+import { UserFavoriteButton } from '@/widgets';
 
 import { UserCardItem } from './UserCardItem';
 
@@ -27,6 +28,7 @@ export const UserCard = ({
   const navigate = useNavigate();
 
   const { id: userId } = useAuthStore();
+  const { favoriteUserIds } = useFavoriteUserIds();
 
   return (
     <Box
@@ -148,10 +150,9 @@ export const UserCard = ({
             >
               Написать сообщение
             </Button>
-            {/* TODO: add postId to user */}
-            <FavoriteButton
-              postId={'postId'}
-              isFavorite={false}
+            <UserFavoriteButton
+              userId={user?.id ?? ''}
+              isFavorite={favoriteUserIds.has(user?.id ?? '')}
             />
           </Stack>
         </Box>

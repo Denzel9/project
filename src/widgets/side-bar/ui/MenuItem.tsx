@@ -23,6 +23,7 @@ export const MenuItem = ({
     }
     return pathname.includes(route.path) && route.path !== '/' ? '""' : 'none';
   };
+
   return (
     <ListItemButton
       key={route.path}

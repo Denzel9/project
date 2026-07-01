@@ -1,22 +1,32 @@
-import type { FavoriteListParams } from '@/entities/favorite';
+import type { FavoriteListParams, FavoriteType } from '@/entities/favorite';
 
 export type FavoriteGroupFilter = 'all' | 'ungrouped' | string;
 
 export const toFavoriteListParams = (
   filter: FavoriteGroupFilter,
-  pagination?: { page?: number; limit?: number },
+  options?: {
+    type?: FavoriteType;
+    pagination?: { page?: number; limit?: number };
+  },
 ): FavoriteListParams => ({
-  page: pagination?.page ?? 1,
-  limit: pagination?.limit ?? 20,
+  type: options?.type ?? 'POST',
+  page: options?.pagination?.page ?? 1,
+  limit: options?.pagination?.limit ?? 20,
   ...(filter === 'ungrouped' && { ungrouped: true }),
   ...(filter !== 'all' && filter !== 'ungrouped' && { groupId: filter }),
 });
 
 export const toFavoriteInfiniteListParams = (
   filter: FavoriteGroupFilter,
-  pagination?: { limit?: number },
+  options?: {
+    type?: FavoriteType;
+    limit?: number;
+  },
 ): Omit<FavoriteListParams, 'page'> => ({
-  limit: pagination?.limit ?? 20,
-  ...(filter === 'ungrouped' && { ungrouped: true }),
-  ...(filter !== 'all' && filter !== 'ungrouped' && { groupId: filter }),
+  type: options?.type ?? 'POST',
+  limit: options?.limit ?? 20,
+  ...(options?.type === 'POST' && filter === 'ungrouped' && { ungrouped: true }),
+  ...(options?.type === 'POST' &&
+    filter !== 'all' &&
+    filter !== 'ungrouped' && { groupId: filter }),
 });

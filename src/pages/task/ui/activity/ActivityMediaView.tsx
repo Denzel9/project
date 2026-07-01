@@ -1,77 +1,104 @@
-import { Link, Stack, Typography } from '@mui/material';
+import { Box, Link, Stack, Typography } from '@mui/material';
 
-import { TaskActivityType } from '@/entities/task';
+import {
+  getActivityMediaFromPayload,
+  TaskActivityType,
+  type TaskActivityPayload,
+} from '@/entities/task';
+import { MediaItem } from '@/widgets/media';
 
 type ActivityMediaViewProps = {
   type: TaskActivityType.MEDIA_ADDED | TaskActivityType.MEDIA_REMOVED;
-  from: string;
-  to: string;
+  payload: TaskActivityPayload;
 };
 
-const isUrl = (value: string) => /^https?:\/\//i.test(value);
+const isPreviewableMedia = (url: string, mimeType?: string) => {
+  if (mimeType?.startsWith('image/') || mimeType?.startsWith('video/')) {
+    return true
+  }
 
-const MediaValue = ({ value, label }: { value: string; label: string }) => {
-  if (!value?.trim() || value === '—') {
-    return (
+  return /\.(jpe?g|png|gif|webp|bmp|svg|mp4|webm|mov|m4v|ogg|avi)(\?|$)/i.test(
+    url,
+  )
+}
+
+const getMediaFileName = (url: string, key?: string) => {
+  if (key?.trim()) {
+    const segments = key.split('/').filter(Boolean)
+    return segments[segments.length - 1] ?? key
+  }
+
+  try {
+    const parsedUrl = new URL(url)
+    const segments = parsedUrl.pathname.split('/').filter(Boolean)
+    return segments[segments.length - 1] ?? url
+  } catch {
+    return url
+  }
+}
+
+export const ActivityMediaView = ({
+  type,
+  payload,
+}: ActivityMediaViewProps) => {
+  const media = getActivityMediaFromPayload(type, payload)
+
+  return (
+    <Stack
+      spacing={1.5}
+      sx={{ mt: 2 }}
+    >
       <Typography
         variant="body2"
         color="text.secondary"
       >
-        {label}: —
+        {type === TaskActivityType.MEDIA_ADDED
+          ? 'Файл добавлен в материалы задачи.'
+          : 'Файл удалён из материалов задачи.'}
       </Typography>
-    );
-  }
 
-  if (isUrl(value)) {
-    return (
-      <Typography variant="body2">
-        {label}:{' '}
-        <Link
-          href={value}
-          target="_blank"
-          rel="noopener noreferrer"
+      {media ? (
+        <>
+          <Typography variant="body2">
+            Файл:{' '}
+            <Link
+              href={media.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {getMediaFileName(media.url, media.key)}
+            </Link>
+          </Typography>
+
+          {isPreviewableMedia(media.url, media.mimeType) && (
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 480,
+                height: { xs: 220, sm: 320 },
+                borderRadius: '16px',
+                overflow: 'hidden',
+                bgcolor: 'secondary.light',
+              }}
+            >
+              <MediaItem
+                src={media.url}
+                alt={media.key ?? 'Медиа'}
+                mimeType={media.mimeType}
+                withControls
+                loading="eager"
+              />
+            </Box>
+          )}
+        </>
+      ) : (
+        <Typography
+          variant="body2"
+          color="text.secondary"
         >
-          {value}
-        </Link>
-      </Typography>
-    );
-  }
-
-  return (
-    <Typography variant="body2">
-      {label}: {value}
-    </Typography>
-  );
-};
-
-export const ActivityMediaView = ({
-  type,
-  from,
-  to,
-}: ActivityMediaViewProps) => (
-  <Stack
-    spacing={1.5}
-    sx={{ mt: 2 }}
-  >
-    <Typography
-      variant="body2"
-      color="text.secondary"
-    >
-      {type === TaskActivityType.MEDIA_ADDED
-        ? 'Файл добавлен в материалы задачи.'
-        : 'Файл удалён из материалов задачи.'}
-    </Typography>
-
-    {type === TaskActivityType.MEDIA_ADDED ? (
-      <MediaValue
-        label="Файл"
-        value={to !== '—' ? to : from}
-      />
-    ) : (
-      <MediaValue
-        label="Файл"
-        value={from !== '—' ? from : to}
-      />
-    )}
-  </Stack>
-);
+          Файл: —
+        </Typography>
+      )}
+    </Stack>
+  )
+}

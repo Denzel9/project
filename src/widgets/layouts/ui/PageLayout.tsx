@@ -1,9 +1,17 @@
-import { Box, Stack, Typography, useMediaQuery } from '@mui/material';
+import { HelpOutlineTwoTone } from '@mui/icons-material';
+import {
+  Box,
+  IconButton,
+  Stack,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
 import { type PropsWithChildren } from 'react';
 
 import { CurrentUser } from '@/features/current-user';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
+import { NotificationsMenu } from './NotificationsMenu';
 import { PageFooter } from './PageFooter';
 
 import type { PageLayoutProps } from '../model/types';
@@ -11,6 +19,7 @@ import type { PageLayoutProps } from '../model/types';
 export const PageLayout = ({
   sx = {},
   children,
+  withFooter = true,
   title = undefined,
   isScreenHeight = false,
 }: PropsWithChildren<PageLayoutProps>) => {
@@ -40,11 +49,13 @@ export const PageLayout = ({
         sx={{
           p: { xs: 2, md: 4 },
           bgcolor: 'white',
+          border: '1px solid',
           alignItems: 'center',
+          borderColor: 'divider',
+          justifyContent: 'space-between',
           borderTopLeftRadius: { xs: '16px', md: '32px' },
           borderBottomLeftRadius: { xs: '16px', md: '32px' },
           borderBottomRightRadius: { xs: '16px', md: '32px' },
-          justifyContent: 'space-between',
           ...(isScreenHeight && { flexShrink: 0 }),
         }}
       >
@@ -76,7 +87,19 @@ export const PageLayout = ({
           )}
         </Stack>
 
-        <CurrentUser isButton={isMobile} />
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: 'center' }}
+        >
+          <IconButton>
+            <HelpOutlineTwoTone />
+          </IconButton>
+
+          <NotificationsMenu />
+
+          <CurrentUser isButton={isMobile} />
+        </Stack>
       </Stack>
 
       <Box
@@ -93,7 +116,7 @@ export const PageLayout = ({
         {children}
       </Box>
 
-      {!isScreenHeight && <PageFooter />}
+      {!isScreenHeight && withFooter && <PageFooter />}
     </Box>
   );
 };

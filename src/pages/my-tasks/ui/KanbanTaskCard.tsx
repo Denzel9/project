@@ -11,6 +11,8 @@ import { getTaskConfig } from '@/features';
 import { ROUTES, MarkdownContent } from '@/shared';
 import { MediaPreview } from '@/widgets';
 
+import { TaskActionsMenu } from './TaskActionsMenu';
+
 export const KANBAN_TASK_DRAG_TYPE = 'KANBAN_TASK';
 
 export type KanbanTaskDragItem = {
@@ -93,15 +95,32 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
           <Box />
         )}
 
-        <Typography
-          variant="caption"
-          color="text.secondary"
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{ alignItems: 'center' }}
         >
-          {formatDistanceToNow(new Date(task.updatedAt), {
-            addSuffix: true,
-            locale: ru,
-          })}
-        </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            {formatDistanceToNow(new Date(task.updatedAt), {
+              addSuffix: true,
+              locale: ru,
+            })}
+          </Typography>
+
+          <Box
+            component="span"
+            onClick={event => event.stopPropagation()}
+            onMouseDown={event => event.stopPropagation()}
+          >
+            <TaskActionsMenu
+              task={task}
+              size="small"
+            />
+          </Box>
+        </Stack>
       </Stack>
 
       <Typography

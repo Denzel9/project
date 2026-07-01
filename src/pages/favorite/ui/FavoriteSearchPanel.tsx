@@ -14,8 +14,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
+  getFavoriteUserName,
+  isFavoritePostItem,
+  isFavoriteUserItem,
   useSearchFavoritesInfiniteQuery,
-  type Favorite,
+  type FavoritePostItem,
+  type FavoriteType,
+  type FavoriteUserItem,
 } from '@/entities/favorite';
 import type { Post } from '@/entities/post';
 import { InfiniteScrollSentinel } from '@/shared';
@@ -29,6 +34,7 @@ type FavoriteSearchPanelProps = {
   open: boolean;
   onClose: () => void;
   groupFilter: FavoriteGroupFilter;
+  favoriteType: FavoriteType;
 };
 
 const escapeRegExp = (value: string) =>
@@ -77,7 +83,7 @@ const FavoriteSearchResultItem = ({
   highlight,
   onOpen,
 }: {
-  favorite: Favorite;
+  favorite: FavoritePostItem;
   highlight: string;
   onOpen: (postId: string) => void;
 }) => (
@@ -115,10 +121,47 @@ const FavoriteSearchResultItem = ({
   </Box>
 );
 
+const FavoriteUserSearchResultItem = ({
+  favorite,
+  highlight,
+  onOpen,
+}: {
+  favorite: FavoriteUserItem;
+  highlight?: string;
+  onOpen: (userId: string) => void;
+}) => (
+  <Box
+    onClick={() => onOpen(favorite.userId)}
+    sx={{
+      p: 1.5,
+      borderRadius: '16px',
+      cursor: 'pointer',
+      border: '1px solid',
+      borderColor: 'divider',
+      ':hover': { bgcolor: 'action.hover' },
+    }}
+  >
+    <Typography
+      variant="subtitle2"
+      sx={{ fontWeight: 600 }}
+    >
+      {renderHighlightedText(getFavoriteUserName(favorite.user), highlight)}
+    </Typography>
+
+    <Typography
+      variant="caption"
+      color="text.secondary"
+    >
+      {favorite.type === 'COMPANY' ? 'Компания' : 'Креатор'}
+    </Typography>
+  </Box>
+);
+
 export const FavoriteSearchPanel = ({
   open,
   onClose,
   groupFilter,
+  favoriteType,
 }: FavoriteSearchPanelProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -145,11 +188,13 @@ export const FavoriteSearchPanel = ({
     () => ({
       q: debouncedQuery,
       limit: 20,
-      ...(groupFilter === 'ungrouped' && { ungrouped: true }),
-      ...(groupFilter !== 'all' &&
+      type: favoriteType,
+      ...(favoriteType === 'POST' && groupFilter === 'ungrouped' && { ungrouped: true }),
+      ...(favoriteType === 'POST' &&
+        groupFilter !== 'all' &&
         groupFilter !== 'ungrouped' && { groupId: groupFilter }),
     }),
-    [debouncedQuery, groupFilter],
+    [debouncedQuery, groupFilter, favoriteType],
   );
 
   const {
@@ -162,19 +207,39 @@ export const FavoriteSearchPanel = ({
   } = useSearchFavoritesInfiniteQuery(searchParams);
 
   const items = data?.pages.flatMap(page => page.items) ?? [];
+  const postItems = items.filter(isFavoritePostItem);
+  const userItems = items.filter(isFavoriteUserItem);
 
   const { inCurrentGroup, otherGroups } = useMemo(
-    () => partitionFavoriteSearchResults(items, groupFilter),
-    [items, groupFilter],
+    () =>
+      favoriteType === 'POST'
+        ? partitionFavoriteSearchResults(postItems, groupFilter)
+        : { inCurrentGroup: [], otherGroups: [] },
+    [postItems, groupFilter, favoriteType],
   );
 
   const canSearch = debouncedQuery.length >= 2;
-  const hasResults = inCurrentGroup.length > 0 || otherGroups.length > 0;
+  const hasResults =
+    favoriteType === 'POST'
+      ? inCurrentGroup.length > 0 || otherGroups.length > 0
+      : userItems.length > 0;
 
   const handleOpenPost = (postId: string) => {
     navigate(`${ROUTES.POST}/${postId}`);
     onClose();
   };
+
+  const handleOpenProfile = (userId: string) => {
+    navigate(`${ROUTES.PROFILE}?userId=${userId}`);
+    onClose();
+  };
+
+  const searchPlaceholder =
+    favoriteType === 'POST'
+      ? 'Поиск по постам…'
+      : favoriteType === 'CREATOR'
+        ? 'Поиск по креаторам…'
+        : 'Поиск по компаниям…';
 
   return (
     <Drawer
@@ -207,7 +272,7 @@ export const FavoriteSearchPanel = ({
         fullWidth
         size="small"
         value={query}
-        placeholder="Поиск по избранным…"
+        placeholder={searchPlaceholder}
         onChange={event => setQuery(event.target.value)}
       />
 
@@ -260,6 +325,7 @@ export const FavoriteSearchPanel = ({
 
         {canSearch &&
           !error &&
+          favoriteType === 'POST' &&
           inCurrentGroup.map(favorite => (
             <FavoriteSearchResultItem
               key={favorite.postId}
@@ -271,6 +337,7 @@ export const FavoriteSearchPanel = ({
 
         {canSearch &&
           !error &&
+          favoriteType === 'POST' &&
           otherGroups.map(({ groupLabel, items: groupItems }) => (
             <Box
               key={groupLabel}
@@ -295,6 +362,18 @@ export const FavoriteSearchPanel = ({
                 ))}
               </Stack>
             </Box>
+          ))}
+
+        {canSearch &&
+          !error &&
+          favoriteType !== 'POST' &&
+          userItems.map(favorite => (
+            <FavoriteUserSearchResultItem
+              key={favorite.userId}
+              favorite={favorite}
+              highlight={debouncedQuery}
+              onOpen={handleOpenProfile}
+            />
           ))}
 
         {canSearch && (

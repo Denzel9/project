@@ -56,7 +56,10 @@ export const ActivityDetailDialog = ({
       sx={{
         '& .MuiDialog-paper': {
           borderRadius: '32px',
+          maxHeight: '90vh',
           overflow: 'visible',
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
@@ -74,7 +77,14 @@ export const ActivityDetailDialog = ({
         <Close />
       </IconButton>
 
-      <Box sx={{ p: { xs: 2.5, md: 4 } }}>
+      <Box
+        sx={{
+          p: { xs: 2.5, md: 4 },
+          overflowY: 'auto',
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
         <Typography
           variant="h6"
           sx={{ fontWeight: 600 }}
@@ -132,8 +142,7 @@ export const ActivityDetailDialog = ({
             activity.type === TaskActivityType.MEDIA_REMOVED) && (
             <ActivityMediaView
               type={activity.type}
-              from={detail.from}
-              to={detail.to}
+              payload={activity.payload}
             />
           )}
       </Box>

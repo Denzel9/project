@@ -1,6 +1,8 @@
 import styled from '@emotion/styled';
 
 import type { Photo } from '@/entities/photo';
+import { filterValidMediaFiles, MEDIA_POST_ACCEPT } from '@/shared/lib/media';
+
 import type { ChangeEvent } from 'react';
 
 interface UploadButtonProps {
@@ -8,6 +10,7 @@ interface UploadButtonProps {
   images?: Photo[];
   setFiles: (files: File[]) => void;
   onChange?: (images: Photo[]) => void;
+  onValidationError?: (message: string) => void;
 }
 
 const VisuallyHiddenInput = styled('input')({
@@ -27,6 +30,7 @@ export const UploadButton = ({
   images,
   files,
   setFiles,
+  onValidationError,
 }: UploadButtonProps) => {
   const filesName = files?.map(file => file.name);
 
@@ -41,26 +45,40 @@ export const UploadButton = ({
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (filesName.includes(Array.from(event.target.files || [])[0].name)) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+
+    if (!selectedFiles.length) return;
+
+    const firstFile = selectedFiles[0];
+
+    if (filesName.includes(firstFile.name)) {
       handleAddedIsSameFile();
       return;
     }
 
-    const newFiles: Photo[] = Array.from(event.target.files || []).map(
-      file => ({
+    const { valid, errors } = filterValidMediaFiles(selectedFiles);
+
+    if (errors.length) {
+      onValidationError?.(errors[0]);
+    }
+
+    if (!valid.length) return;
+
+    const newFiles: Photo[] = valid.map(file => {
+      const previewUrl = URL.createObjectURL(file);
+
+      return {
         lastModified: '',
         filename: file.name,
         mimeType: file.type,
         size: String(file.size),
-        key: URL.createObjectURL(file),
-        url: URL.createObjectURL(file),
-      })
-    );
+        key: previewUrl,
+        url: previewUrl,
+      };
+    });
 
-    if (newFiles.length > 0) {
-      setFiles([...files, ...Array.from(event.target.files || [])]);
-      onChange?.([...(images || []), ...newFiles]);
-    }
+    setFiles([...files, ...valid]);
+    onChange?.([...(images || []), ...newFiles]);
   };
 
   return (
@@ -68,7 +86,7 @@ export const UploadButton = ({
       max={6}
       multiple
       type="file"
-      accept="image/*, video/*"
+      accept={MEDIA_POST_ACCEPT}
       onChange={handleFileChange}
     />
   );

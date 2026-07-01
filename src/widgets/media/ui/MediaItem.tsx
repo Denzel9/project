@@ -1,3 +1,4 @@
+import { Description } from '@mui/icons-material';
 import { Box, Skeleton, Typography } from '@mui/material';
 import {
   useEffect,
@@ -7,13 +8,17 @@ import {
   type ImgHTMLAttributes,
 } from 'react';
 
-import { getMediaKind } from '../lib/getMediaKind';
+import {
+  getFileNameFromKey,
+  getMediaKind,
+} from '../lib/getMediaKind';
 
 type MediaItemProps = {
   src: string;
   alt?: string;
   size?: number;
   mimeType?: string;
+  fileName?: string;
   isActive?: boolean;
   onLoad?: () => void;
   onError?: () => void;
@@ -36,6 +41,7 @@ export const MediaItem = ({
   onError,
   alt = '',
   mimeType,
+  fileName,
   loading = 'lazy',
   withControls = false,
   isActive = true,
@@ -62,6 +68,12 @@ export const MediaItem = ({
   };
 
   useEffect(() => {
+    setStatus('loading');
+  }, [src, mimeType]);
+
+  useEffect(() => {
+    if (kind === 'document') return;
+
     if (kind === 'image') {
       const img = imgRef.current;
 
@@ -90,6 +102,46 @@ export const MediaItem = ({
 
     video.pause();
   }, [isActive, kind]);
+
+  if (kind === 'document') {
+    const displayName = fileName ?? getFileNameFromKey(src);
+
+    return (
+      <Box
+        component="a"
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={event => event.stopPropagation()}
+        sx={{
+          gap: 1,
+          p: 1.5,
+          display: 'flex',
+          minHeight: 56,
+          borderRadius: '12px',
+          alignItems: 'center',
+          textDecoration: 'none',
+          color: 'text.primary',
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          '&:hover': {
+            bgcolor: 'action.hover',
+          },
+        }}
+      >
+        <Description color="action" />
+
+        <Typography
+          variant="body2"
+          noWrap
+          sx={{ flex: 1, minWidth: 0 }}
+        >
+          {displayName}
+        </Typography>
+      </Box>
+    );
+  }
 
   if (status === 'error') {
     return (
@@ -142,6 +194,7 @@ export const MediaItem = ({
           alt={alt}
           ref={imgRef}
           loading={loading}
+          decoding="async"
           style={mediaStyle}
           onLoad={handleLoad}
           onError={handleError}

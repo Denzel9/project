@@ -1,4 +1,4 @@
-import { Close, Delete } from '@mui/icons-material';
+import { Close, Delete, Description } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -17,9 +17,13 @@ import { useEffect, useState } from 'react';
 import { useAttachmentsQuery, type ChatAttachment } from '@/entities/chat';
 import { useDeleteMediaMutation } from '@/entities/media';
 import { useAuthStore } from '@/features/auth';
+import {
+  getFileNameFromKey,
+  isGalleryMedia,
+} from '@/widgets/media/lib/getMediaKind';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
-type AttachmentFilter = 'all' | 'image' | 'video';
+type AttachmentFilter = 'all' | 'image' | 'video' | 'document';
 
 type ChatAttachmentsPanelProps = {
   open: boolean;
@@ -156,6 +160,11 @@ export const ChatAttachmentsPanel = ({
           color={filter === 'video' ? 'primary' : 'default'}
           onClick={() => setFilter('video')}
         />
+        <Chip
+          label="Документы"
+          color={filter === 'document' ? 'primary' : 'default'}
+          onClick={() => setFilter('document')}
+        />
       </Stack>
 
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
@@ -196,6 +205,7 @@ export const ChatAttachmentsPanel = ({
           {items.map(item => {
             const canDelete =
               Boolean(currentUserId) && item.senderId === currentUserId;
+            const isMedia = isGalleryMedia(item.mimeType, item.url);
 
             return (
               <Box
@@ -225,11 +235,33 @@ export const ChatAttachmentsPanel = ({
                   </IconButton>
                 )}
 
-                <MediaItem
-                  src={item.url}
-                  alt="Вложение"
-                  mimeType={item.mimeType}
-                />
+                {isMedia ? (
+                  <MediaItem
+                    src={item.url}
+                    alt="Вложение"
+                    mimeType={item.mimeType}
+                  />
+                ) : (
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: '12px',
+                      alignItems: 'center',
+                      bgcolor: 'secondary.light',
+                    }}
+                  >
+                    <Description color="action" />
+                    <Typography
+                      variant="caption"
+                      noWrap
+                      sx={{ flex: 1 }}
+                    >
+                      {getFileNameFromKey(item.key)}
+                    </Typography>
+                  </Stack>
+                )}
                 <Typography
                   variant="caption"
                   color="text.secondary"

@@ -52,8 +52,13 @@ export const ChatInput = ({
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
 
   const hasDraft = value.trim().length > 0;
+  const requiresExecutorApproval = isExecutorApprove !== undefined;
+  const isInputDisabled =
+    disabled ||
+    isSending ||
+    (requiresExecutorApproval && (!executorId || !isExecutorApprove));
   const canSend =
-    (hasDraft || pendingFiles.length > 0) && !isSending && !disabled;
+    (hasDraft || pendingFiles.length > 0) && !isSending && !isInputDisabled;
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -136,10 +141,11 @@ export const ChatInput = ({
 
       <TextField
         fullWidth
+        size="small"
         multiline
         maxRows={4}
         inputRef={textInputRef}
-        disabled={disabled || isSending || !executorId || !isExecutorApprove}
+        disabled={isInputDisabled}
         value={value}
         placeholder={placeholder}
         onChange={event => onChange(event.target.value)}
@@ -151,9 +157,7 @@ export const ChatInput = ({
                 <IconButton
                   size="small"
                   color="inherit"
-                  disabled={
-                    disabled || isSending || !executorId || !isExecutorApprove
-                  }
+                  disabled={isInputDisabled}
                   onClick={handleOpenEmojiPicker}
                 >
                   <Mood />
@@ -162,9 +166,7 @@ export const ChatInput = ({
                 <IconButton
                   size="small"
                   color="inherit"
-                  disabled={
-                    disabled || isSending || !executorId || !isExecutorApprove
-                  }
+                  disabled={isInputDisabled}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <AttachFile />

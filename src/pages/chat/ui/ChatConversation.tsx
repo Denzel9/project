@@ -154,6 +154,8 @@ export const ChatConversation = ({
     <Stack
       direction="column"
       sx={{
+        border: '1px solid',
+        borderColor: 'divider',
         flex: 1,
         minHeight: 0,
         p: { xs: 2, md: 4 },

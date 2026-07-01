@@ -122,7 +122,6 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
       sx={{
         borderRadius: '16px',
         backgroundColor: 'white',
-        width: { xs: '60%', md: '30%' },
       }}
     >
       {data?.data?.map(item => (

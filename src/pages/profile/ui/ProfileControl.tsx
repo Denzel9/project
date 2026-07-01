@@ -13,8 +13,9 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router';
 
+import { useFavoriteUserIds } from '@/entities/favorite';
 import { ROUTES } from '@/shared';
-import { FavoriteButton } from '@/widgets';
+import { UserFavoriteButton } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
 
@@ -38,6 +39,7 @@ export const ProfileControl = ({
   setMediaTabValue,
 }: ProfileControlProps) => {
   const navigate = useNavigate();
+  const { favoriteUserIds } = useFavoriteUserIds();
 
   return (
     <Stack
@@ -82,10 +84,9 @@ export const ProfileControl = ({
               >
                 Написать сообщение
               </Button>
-              {/* TODO: add postId to user */}
-              <FavoriteButton
-                postId={'postId'}
-                isFavorite={false}
+              <UserFavoriteButton
+                userId={id}
+                isFavorite={favoriteUserIds.has(id)}
               />
             </Stack>
           ) : (

@@ -1,19 +1,14 @@
-import { ArrowBack, MoreVert, Search } from '@mui/icons-material';
 import {
-  Avatar,
   Box,
   Button,
   CircularProgress,
-  IconButton,
-  Menu,
-  MenuItem,
   Stack,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { format } from 'date-fns';
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useMessenger } from '@/features/chat';
@@ -22,6 +17,7 @@ import { PageLayout } from '@/widgets';
 
 import { ChatAttachmentsPanel } from './ChatAttachmentsPanel';
 import { ChatConversation } from './ChatConversation';
+import { ChatHeader } from './ChatHeader';
 import { ChatSearchPanel } from './ChatSearchPanel';
 import { Contacts } from './Contacts';
 
@@ -32,7 +28,6 @@ export const ChatPage = () => {
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const {
     conversations,
@@ -79,24 +74,6 @@ export const ChatPage = () => {
 
   const handleBackToContacts = () => {
     setMobileShowChat(false);
-  };
-
-  const handleOpenMenu = (event: MouseEvent<HTMLButtonElement>) => {
-    setMenuAnchor(event.currentTarget);
-  };
-
-  const handleCloseMenu = () => {
-    setMenuAnchor(null);
-  };
-
-  const handleOpenAttachments = () => {
-    handleCloseMenu();
-    setIsAttachmentsOpen(true);
-  };
-
-  const handleOpenProfile = () => {
-    handleCloseMenu();
-    navigate(`${ROUTES.PROFILE}?userId=${peer?.id}`);
   };
 
   const showContacts = !isMobile || !mobileShowChat;
@@ -212,97 +189,17 @@ export const ChatPage = () => {
               width: { xs: '100%', md: '70%' },
             }}
           >
-            {peer && (
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                  p: { xs: 2, md: 4 },
-                  width: '100%',
-                  flexShrink: 0,
-                  bgcolor: 'white',
-                  alignItems: 'center',
-                  borderRadius: { xs: '16px', md: '32px' },
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  sx={{ alignItems: 'center', minWidth: 0, cursor: 'pointer' }}
-                  onClick={() =>
-                    navigate(`${ROUTES.PROFILE}?userId=${peer.id}`)
-                  }
-                >
-                  {isMobile && (
-                    <IconButton
-                      size="small"
-                      onClick={handleBackToContacts}
-                    >
-                      <ArrowBack />
-                    </IconButton>
-                  )}
-
-                  <Avatar
-                    alt={peer.displayName}
-                    src={peer.avatar ?? undefined}
-                    sx={{ width: 50, height: 50 }}
-                  />
-                  <Stack
-                    direction="column"
-                    sx={{ minWidth: 0 }}
-                  >
-                    <Typography
-                      variant="body1"
-                      noWrap
-                      sx={{
-                        transition: 'color 0.2s ease-in-out',
-                        ':hover': { color: 'primary.main' },
-                      }}
-                    >
-                      {peer.displayName}
-                    </Typography>
-
-                    {headerTime && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        {headerTime}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Stack>
-
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center', flexShrink: 0 }}
-                >
-                  <IconButton onClick={() => setIsSearchOpen(true)}>
-                    <Search />
-                  </IconButton>
-
-                  <IconButton onClick={handleOpenMenu}>
-                    <MoreVert />
-                  </IconButton>
-
-                  <Menu
-                    anchorEl={menuAnchor}
-                    open={Boolean(menuAnchor)}
-                    onClose={handleCloseMenu}
-                  >
-                    <MenuItem onClick={handleOpenProfile}>
-                      Перейти к профилю
-                    </MenuItem>
-
-                    <MenuItem onClick={handleOpenAttachments}>
-                      Вложения
-                    </MenuItem>
-                  </Menu>
-                </Stack>
-              </Stack>
-            )}
+            <ChatHeader
+              isMobile={isMobile}
+              headerTime={headerTime}
+              peer={peer ?? undefined}
+              onBackToContacts={handleBackToContacts}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              onOpenAttachments={() => setIsAttachmentsOpen(true)}
+              onOpenProfile={() =>
+                navigate(`${ROUTES.PROFILE}?userId=${peer?.id}`)
+              }
+            />
 
             <ChatConversation
               messages={messages}

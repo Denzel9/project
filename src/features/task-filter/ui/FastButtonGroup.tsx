@@ -1,71 +1,88 @@
-import { Stack, Badge, Chip } from '@mui/material';
+import { Chip, Stack } from '@mui/material';
 
 import { useMyTaskFilterStore } from '../model/store';
+import {
+  FAST_BUTTON_OPTIONS,
+  filterTasksByExecutorApprove,
+  getFastButtonLabel,
+} from '../model/utils';
 
+import type { FastButtonValueType } from '../model/utils';
 import type { Task } from '@/entities';
 
 type FastButtonGroupProps = {
-  activeTasks: Task[];
-  rejectedTasks: Task[];
-  pendingConfirmationTasks: Task[];
+  tasks: Task[];
+  isCompany: boolean;
 };
 
-export const FastButtonGroup = ({
-  activeTasks,
-  rejectedTasks,
-  pendingConfirmationTasks,
-}: FastButtonGroupProps) => {
-  const { fastButtonValue, setFastButtonValue } = useMyTaskFilterStore();
+type FastChipProps = {
+  label: string;
+  count: number;
+  isActive: boolean;
+  onClick: () => void;
+};
+
+const FastChip = ({ label, count, isActive, onClick }: FastChipProps) => (
+  <Chip
+    size="small"
+    label={count > 0 ? `${label} · ${count}` : label}
+    onClick={onClick}
+    color={isActive ? 'primary' : 'default'}
+    variant={isActive ? 'filled' : 'outlined'}
+    sx={{
+      flexShrink: 0,
+      borderRadius: '10px',
+      fontWeight: isActive ? 600 : 400,
+      cursor: 'pointer',
+    }}
+  />
+);
+
+export const FastButtonGroup = ({ tasks, isCompany }: FastButtonGroupProps) => {
+  const {
+    status,
+    postId,
+    viewMode,
+    fastButtonValue,
+    setStatus,
+    setPostId,
+    setFastButtonValue,
+  } = useMyTaskFilterStore();
+
+  const isFastFilterLocked =
+    postId !== 'all' || (viewMode !== 'kanban' && status !== 'all');
+
+  const handleFastButtonClick = (value: FastButtonValueType) => {
+    if (isFastFilterLocked) {
+      setStatus('all');
+      setPostId('all');
+    }
+
+    setFastButtonValue(value);
+  };
+
   return (
     <Stack
       direction="row"
-      spacing={2}
-      sx={{ width: '100%', justifyContent: 'space-between' }}
+      spacing={1}
+      sx={{
+        gap: 1,
+        flexWrap: { xs: 'nowrap', md: 'wrap' },
+        overflowX: { xs: 'auto', md: 'visible' },
+        pb: { xs: 0.5, md: 0 },
+        scrollbarWidth: 'none',
+        '&::-webkit-scrollbar': { display: 'none' },
+      }}
     >
-      <Stack
-        direction="row"
-        spacing={2}
-      >
-        <Badge
-          badgeContent={activeTasks.length}
-          color="info"
-        >
-          <Chip
-            label="Ожидают действия"
-            sx={{ cursor: 'pointer' }}
-            onClick={() => setFastButtonValue('pending-action')}
-            color={fastButtonValue === 'pending-action' ? 'primary' : 'default'}
-          />
-        </Badge>
-
-        <Badge
-          badgeContent={pendingConfirmationTasks.length}
-          color="info"
-        >
-          <Chip
-            label="Ожидают назначения"
-            color={
-              fastButtonValue === 'pending-executor-assign'
-                ? 'primary'
-                : 'default'
-            }
-            sx={{ cursor: 'pointer' }}
-            onClick={() => setFastButtonValue('pending-executor-assign')}
-          />
-        </Badge>
-
-        <Badge
-          badgeContent={rejectedTasks.length}
-          color="info"
-        >
-          <Chip
-            label="Отмененные"
-            color={fastButtonValue === 'cancelled' ? 'primary' : 'default'}
-            sx={{ cursor: 'pointer' }}
-            onClick={() => setFastButtonValue('cancelled')}
-          />
-        </Badge>
-      </Stack>
+      {FAST_BUTTON_OPTIONS.map(value => (
+        <FastChip
+          key={value}
+          label={getFastButtonLabel(value)}
+          onClick={() => handleFastButtonClick(value)}
+          isActive={!isFastFilterLocked && fastButtonValue === value}
+          count={filterTasksByExecutorApprove(tasks, value, isCompany).length}
+        />
+      ))}
     </Stack>
   );
 };

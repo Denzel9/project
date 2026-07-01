@@ -45,4 +45,4 @@ export const getAttachmentGalleryIndex = (
 };
 
 export const hasCommentText = (content: string) =>
-  Boolean(content.trim()) && content !== COMMENT_MEDIA_PLACEHOLDER;
+  Boolean(content?.trim()) && content !== COMMENT_MEDIA_PLACEHOLDER;

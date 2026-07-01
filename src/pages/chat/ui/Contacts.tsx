@@ -36,6 +36,8 @@ export const Contacts = ({
         mt: 2,
         width: { xs: '100%', md: '30%' },
         bgcolor: 'white',
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: '32px',
         display: 'flex',
         flexDirection: 'column',

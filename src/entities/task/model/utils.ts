@@ -1,12 +1,17 @@
+import { isPast, startOfDay } from 'date-fns'
+
 import {
   TaskActivityType,
   TASK_ACTIVITY_LABELS,
   TASK_STATUS_ENUM,
   type Task,
   type TaskActivity,
+  type TaskActivityPayload,
   type TaskMedia,
   type TaskStatus,
   type TaskCommentMedia,
+  type TaskWithCommentsItem,
+  type TaskWithCommentsRawItem,
 } from './types'
 
 import type { Photo } from '@/entities/photo'
@@ -36,6 +41,16 @@ export const TASK_ROLE_LABELS = {
   owner: 'Заказчик',
   executor: 'Исполнитель',
 } as const
+
+export const isTaskTerminal = (task: Task) =>
+  task.status === TASK_STATUS_ENUM.COMPLETED ||
+  task.status === TASK_STATUS_ENUM.CANCELLED ||
+  task.status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR
+
+export const isTaskOverdue = (task: Task) =>
+  Boolean(task.finalDate) &&
+  isPast(startOfDay(new Date(task.finalDate!))) &&
+  !isTaskTerminal(task)
 
 const TASK_FIELD_LABELS: Record<string, string> = {
   title: 'Заголовок',
@@ -97,16 +112,98 @@ const truncateSummary = (text: string, maxLength = 80) => {
   return `${lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated}…`
 }
 
-const formatMediaActivityValue = (value?: string) => {
-  if (!value?.trim()) return '—'
+export type ActivityMediaPayload = {
+  url: string
+  mimeType?: string
+  key?: string
+  id?: string
+}
+
+const normalizeActivityMediaObject = (
+  value: Record<string, unknown>,
+): ActivityMediaPayload | null => {
+  if (typeof value.url !== 'string' || !value.url.trim()) return null
+
+  return {
+    url: value.url,
+    mimeType:
+      typeof value.mimeType === 'string' ? value.mimeType : undefined,
+    key: typeof value.key === 'string' ? value.key : undefined,
+    id:
+      typeof value.mediaId === 'string'
+        ? value.mediaId
+        : typeof value.id === 'string'
+          ? value.id
+          : undefined,
+  }
+}
+
+export const parseActivityMediaPayload = (
+  value?: string | Record<string, unknown> | null,
+): ActivityMediaPayload | null => {
+  if (!value) return null
+
+  if (typeof value === 'object') {
+    return normalizeActivityMediaObject(value)
+  }
+
+  if (!value.trim()) return null
 
   try {
-    const url = new URL(value)
+    const parsed = JSON.parse(value) as Record<string, unknown>
+
+    if (typeof parsed === 'object' && parsed !== null) {
+      return normalizeActivityMediaObject(parsed)
+    }
+  } catch {
+    // plain URL or filename
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return { url: value }
+  }
+
+  return null
+}
+
+export const getActivityMediaFromPayload = (
+  type: TaskActivityType.MEDIA_ADDED | TaskActivityType.MEDIA_REMOVED,
+  payload: TaskActivityPayload,
+): ActivityMediaPayload | null => {
+  if (payload.url) {
+    return normalizeActivityMediaObject(
+      payload as unknown as Record<string, unknown>,
+    )
+  }
+
+  const rawValue =
+    type === TaskActivityType.MEDIA_ADDED
+      ? payload.to ?? payload.from
+      : payload.from ?? payload.to
+
+  return parseActivityMediaPayload(rawValue ?? null)
+}
+
+const formatMediaActivityPayload = (
+  type: TaskActivityType.MEDIA_ADDED | TaskActivityType.MEDIA_REMOVED,
+  payload: TaskActivityPayload,
+) => {
+  const media = getActivityMediaFromPayload(type, payload)
+
+  if (!media) return '—'
+
+  if (media.key) {
+    const segments = media.key.split('/').filter(Boolean)
+    return segments[segments.length - 1] ?? media.key
+  }
+
+  try {
+    const url = new URL(media.url)
     const segments = url.pathname.split('/').filter(Boolean)
 
-    return segments[segments.length - 1] ?? value
+    return segments[segments.length - 1] ?? media.url
   } catch {
-    return value
+    return media.url
   }
 }
 
@@ -155,25 +252,11 @@ export const getTaskActivitySummary = (activity: TaskActivity) => {
   if (activity.type === TaskActivityType.STATUS_CHANGED) {
     const from = formatActivityValue('status', activity.payload.from)
     const to = formatActivityValue('status', activity.payload.to)
-    return `Статус: ${from} → ${to}`
+    return `${from} → ${to}`
   }
 
-  if (activity.type === TaskActivityType.MEDIA_ADDED) {
-    const fileName = formatMediaActivityValue(
-      activity.payload.to || activity.payload.from,
-    )
-    return fileName !== '—'
-      ? `Загружено: ${fileName}`
-      : TASK_ACTIVITY_LABELS[activity.type]
-  }
-
-  if (activity.type === TaskActivityType.MEDIA_REMOVED) {
-    const fileName = formatMediaActivityValue(
-      activity.payload.from || activity.payload.to,
-    )
-    return fileName !== '—'
-      ? `Удалено: ${fileName}`
-      : TASK_ACTIVITY_LABELS[activity.type]
+  if ([TaskActivityType.MEDIA_ADDED, TaskActivityType.MEDIA_REMOVED].includes(activity.type)) {
+    return
   }
 
   if (activity.type === TaskActivityType.FIELD_UPDATED && activity.payload.field) {
@@ -202,20 +285,30 @@ export const getTaskActivityDetail = (
   }
 
   if (activity.type === TaskActivityType.MEDIA_ADDED) {
+    const fileName = formatMediaActivityPayload(
+      activity.type,
+      activity.payload,
+    )
+
     return {
       title: TASK_ACTIVITY_LABELS[activity.type],
-      from: formatMediaActivityValue(activity.payload.from),
-      to: formatMediaActivityValue(activity.payload.to),
+      from: '—',
+      to: fileName,
       showDiff: false,
       variant: 'media',
     }
   }
 
   if (activity.type === TaskActivityType.MEDIA_REMOVED) {
+    const fileName = formatMediaActivityPayload(
+      activity.type,
+      activity.payload,
+    )
+
     return {
       title: TASK_ACTIVITY_LABELS[activity.type],
-      from: formatMediaActivityValue(activity.payload.from),
-      to: formatMediaActivityValue(activity.payload.to),
+      from: fileName,
+      to: '—',
       showDiff: false,
       variant: 'media',
     }
@@ -289,7 +382,11 @@ export const canManageComment = (
   userId: string | null,
 ) => Boolean(userId && commentAuthorId === userId)
 
+const COMMENT_EDIT_WINDOW_MS = 3 * 60 * 1000
 const COMMENT_DELETE_WINDOW_MS = 5 * 60 * 1000
+
+export const canEditComment = (createdAt: string) =>
+  Date.now() - new Date(createdAt).getTime() < COMMENT_EDIT_WINDOW_MS
 
 export const canDeleteComment = (createdAt: string) =>
   Date.now() - new Date(createdAt).getTime() < COMMENT_DELETE_WINDOW_MS
@@ -319,5 +416,34 @@ export const getTaskStatusColor = (
       return 'info'
     default:
       return 'primary'
+  }
+}
+
+export const getCommentsTailPage = (commentsCount: number, limit = 10) =>
+  Math.max(1, Math.ceil(commentsCount / limit))
+
+export const normalizeTaskWithCommentsItem = (
+  raw: TaskWithCommentsRawItem,
+): TaskWithCommentsItem => {
+  const embedded = raw.task
+  const id =
+    raw.id ??
+    raw.taskId ??
+    embedded?.id ??
+    raw.lastComment?.taskId ??
+    ''
+
+  return {
+    id,
+    title: raw.title ?? embedded?.title ?? null,
+    ownerId: raw.ownerId ?? embedded?.ownerId ?? '',
+    executorId: raw.executorId ?? embedded?.executorId ?? null,
+    postId: raw.postId ?? embedded?.postId,
+    status: raw.status ?? embedded?.status,
+    isExecutorApprove: raw.isExecutorApprove ?? embedded?.isExecutorApprove,
+    post: raw.post ?? embedded?.post,
+    lastComment: raw.lastComment,
+    commentsCount: raw.commentsCount,
+    unreadCount: raw.unreadCount,
   }
 }

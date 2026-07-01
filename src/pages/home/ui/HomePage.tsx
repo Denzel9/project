@@ -1,4 +1,4 @@
-import { Box, Drawer, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { useMemo } from 'react';
 
 import { useMyApplicationsMapForPosts } from '@/entities/application';
@@ -8,8 +8,8 @@ import {
   MainFilter,
   toPostInfiniteListParams,
   useMainFilterStore,
+  hasActivePostFilters,
 } from '@/features/main-filter';
-import { SideBarFilter } from '@/features/main-filter/ui/SideBarFilter';
 import { EmptyBlock, InfiniteScrollSentinel } from '@/shared';
 import {
   ACTION_BUTTONS_KEYS,
@@ -19,30 +19,37 @@ import {
 } from '@/widgets';
 
 export const HomePage = () => {
-  const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
+  const { filters, postFilters } = useMainFilterStore();
 
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    usePostsInfiniteQuery(toPostInfiniteListParams());
+  const listParams = useMemo(
+    () => toPostInfiniteListParams({ filters, postFilters }),
+    [filters, postFilters],
+  );
+
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePostsInfiniteQuery(listParams);
 
   const posts = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data]
+    [data],
   );
   const postIds = useMemo(() => posts.map(post => post.id), [posts]);
 
-  const { favoritePostIds, isLoading: isFavoritesLoading } =
-    useFavoritePostIdsForPosts(postIds);
+  const { favoritePostIds } = useFavoritePostIdsForPosts(postIds);
 
-  const {
-    map: myApplicationsMap,
-    isLoading: isApplicationsLoading,
-    removePostFromCollection,
-  } = useMyApplicationsMapForPosts(postIds);
+  const { map: myApplicationsMap, removePostFromCollection } =
+    useMyApplicationsMapForPosts(postIds);
 
   const isInitialPostsLoading = isLoading && !posts.length;
-  const isMetaLoading =
-    postIds.length > 0 && (isFavoritesLoading || isApplicationsLoading);
-  const isFeedReady = !isInitialPostsLoading && !isMetaLoading;
+  const hasActiveFilters =
+    filters.length > 0 || hasActivePostFilters(postFilters);
 
   return (
     <PageLayout>
@@ -59,22 +66,56 @@ export const HomePage = () => {
       <Box
         sx={{
           gap: 2,
+          flex: 1,
           width: '100%',
-          height: '100%',
           display: 'flex',
-          alignItems: 'center',
           flexDirection: 'column',
-          justifyContent: 'center',
           borderRadius: { xs: '16px', md: '32px' },
         }}
       >
-        {!isFeedReady && <PostItemSkeletonList count={5} />}
+        {isInitialPostsLoading && <PostItemSkeletonList count={5} />}
 
-        {isFeedReady && !posts.length && (
-          <EmptyBlock title="Пока нет объявлений" />
+        {isError && (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              bgcolor: 'white',
+              borderRadius: '32px',
+              justifyContent: 'center',
+              py: 6,
+            }}
+          >
+            <EmptyBlock
+              title="Не удалось загрузить объявления"
+              buttonText="Повторить"
+              buttonOnClick={() => refetch()}
+            />
+          </Box>
         )}
 
-        {isFeedReady && posts.length > 0 && (
+        {!isInitialPostsLoading && !isError && !posts.length && (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              bgcolor: 'white',
+              borderRadius: '32px',
+              justifyContent: 'center',
+              py: 6,
+            }}
+          >
+            <EmptyBlock
+              title={
+                hasActiveFilters
+                  ? 'По выбранным фильтрам ничего не найдено'
+                  : 'Пока нет объявлений'
+              }
+            />
+          </Box>
+        )}
+
+        {!isInitialPostsLoading && !isError && posts.length > 0 && (
           <Stack
             direction="column"
             spacing={1}
@@ -113,22 +154,6 @@ export const HomePage = () => {
           </Stack>
         )}
       </Box>
-
-      <Drawer
-        anchor="right"
-        open={isOpenMainFilter}
-        onClose={() => setIsOpenMainFilter(!isOpenMainFilter)}
-        sx={{
-          '& .MuiDrawer-paper': {
-            p: { xs: 2, md: 4 },
-            borderTopLeftRadius: { xs: 0, md: 32 },
-            borderBottomLeftRadius: { xs: 0, md: 32 },
-            width: { xs: '100%', sm: '80%', md: '25%' },
-          },
-        }}
-      >
-        <SideBarFilter />
-      </Drawer>
     </PageLayout>
   );
 };

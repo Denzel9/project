@@ -6,7 +6,11 @@ import {
 } from '@tanstack/react-query'
 
 import { mainAxios, queryClient } from '@/shared/api'
-import { prepareFileForUpload } from '@/shared/lib/media'
+import {
+  mapInBatches,
+  MEDIA_UPLOAD_CONCURRENCY,
+  prepareFileForUpload,
+} from '@/shared/lib/media'
 
 import { toChatMessageMedia } from './utils'
 
@@ -140,8 +144,10 @@ export const uploadConversationMediaBatch = async (
   conversationId: string,
   files: File[],
 ): Promise<ChatMessageMedia[]> => {
-  const uploads = await Promise.all(
-    files.map(file => uploadConversationMedia(conversationId, file)),
+  const uploads = await mapInBatches(
+    files,
+    file => uploadConversationMedia(conversationId, file),
+    MEDIA_UPLOAD_CONCURRENCY,
   )
 
   return uploads.map(toChatMessageMedia)

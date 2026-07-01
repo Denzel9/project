@@ -38,6 +38,9 @@ const MyTasksPage = lazy(() => import('./my-tasks'));
 const TaskPage = lazy(() => import('./task'));
 const MyPostPage = lazy(() => import('./my-posts'));
 const DashboardPage = lazy(() => import('./dashboard'));
+const CalendarPage = lazy(() => import('./calendar'));
+const ExecutorsPage = lazy(() => import('./executors'));
+const PublicationsPage = lazy(() => import('./publications'));
 
 export const Router = () => {
   return (
@@ -85,16 +88,6 @@ export const Router = () => {
             <Route
               path={`${ROUTES.MY_RESPONSES}`}
               element={<MyResponsesPage />}
-            />
-
-            <Route
-              path={`${ROUTES.MY_TASKS}`}
-              element={<MyTasksPage />}
-            />
-
-            <Route
-              path={`${ROUTES.TASK}/:id`}
-              element={<TaskPage />}
             />
 
             <Route
@@ -162,6 +155,31 @@ export const Router = () => {
             <Route
               path={`${ROUTES.CRM}`}
               element={<DashboardPage />}
+            />
+
+            <Route
+              path={`${ROUTES.MY_TASKS}`}
+              element={<MyTasksPage />}
+            />
+
+            <Route
+              path={`${ROUTES.CALENDAR}`}
+              element={<CalendarPage />}
+            />
+
+            <Route
+              path={`${ROUTES.EXECUTORS}`}
+              element={<ExecutorsPage />}
+            />
+
+            <Route
+              path={`${ROUTES.PUBLICATIONS}`}
+              element={<PublicationsPage />}
+            />
+
+            <Route
+              path={`${ROUTES.TASK}/:id`}
+              element={<TaskPage />}
             />
           </>
         }

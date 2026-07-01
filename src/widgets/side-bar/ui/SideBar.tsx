@@ -11,9 +11,14 @@ export const SideBar = () => {
     <Box
       sx={{
         top: 0,
+        overflow: 'scroll',
+        height: '100vh',
         width: '100%',
         bgcolor: 'white',
         position: 'sticky',
+        border: '1px solid',
+        scrollbarWidth: 'none',
+        borderColor: 'divider',
         flexDirection: 'column',
         borderTopRightRadius: 32,
         transition: 'all 0.3s ease',
@@ -22,7 +27,7 @@ export const SideBar = () => {
         display: { xs: 'none', md: 'flex' },
       }}
     >
-      <SideBarContent isExpanded={isOpenSideBar} />
+      <SideBarContent />
     </Box>
   );
 };

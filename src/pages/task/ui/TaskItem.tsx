@@ -2,7 +2,6 @@ import { MoreVert } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Chip,
   CircularProgress,
   IconButton,
   Menu,
@@ -329,26 +328,12 @@ export const TaskItem = ({
                     justifyContent: 'space-between',
                   }}
                 >
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 600, color: 'info.main' }}
                   >
-                    <Typography
-                      variant="h6"
-                      sx={{ fontWeight: 600, color: 'info.main' }}
-                    >
-                      Техническое задание
-                    </Typography>
-
-                    {task.isExecutorApprove === false && (
-                      <Chip
-                        size="small"
-                        label="Отклонено исполнителем"
-                        color="error"
-                      />
-                    )}
-                  </Stack>
+                    Техническое задание
+                  </Typography>
 
                   {!isCancelled && isOwner && (
                     <>

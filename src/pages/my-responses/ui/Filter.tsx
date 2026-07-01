@@ -1,6 +1,5 @@
 import { CalendarMonthOutlined, Search } from '@mui/icons-material';
 import {
-  Drawer,
   IconButton,
   MenuItem,
   Popover,
@@ -11,33 +10,44 @@ import { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
-import { SideBarFilter, useMainFilterStore } from '@/features';
 import { useScroll } from '@/shared';
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
 
-import type { ApplicationStatusFilter } from '../model/utils';
+import type {
+  ApplicationStatusFilter,
+  CompanyFilter,
+} from '../model/utils';
+
+type CompanyOption = {
+  ownerId: string;
+  companyName: string;
+};
 
 type MyResponsesFilterProps = {
   status: ApplicationStatusFilter;
+  companyId: CompanyFilter;
   onStatusChange: (value: ApplicationStatusFilter) => void;
+  onCompanyChange: (value: CompanyFilter) => void;
   updatedDate: string | null;
   onUpdatedDateChange: (value: string | null) => void;
+  companyOptions: CompanyOption[];
 };
 
 const MyResponsesFilter = ({
   status,
+  companyId,
   onStatusChange,
+  onCompanyChange,
   updatedDate,
   onUpdatedDateChange,
+  companyOptions,
 }: MyResponsesFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-
-  const { isOpenMainFilter, setIsOpenMainFilter } = useMainFilterStore();
 
   const handleDateChange = (date: Dayjs | null) => {
     onUpdatedDateChange(date ? date.format('YYYY-MM-DD') : null);
@@ -67,26 +77,51 @@ const MyResponsesFilter = ({
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
-        <TextField
-          select
-          label="Статус"
-          value={status}
-          size="small"
-          sx={{ width: { xs: '90%', md: '20%' } }}
-          onChange={e =>
-            onStatusChange(e.target.value as ApplicationStatusFilter)
-          }
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ width: { xs: '90%', md: '50%' } }}
         >
-          <MenuItem value="all">Все</MenuItem>
-          {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
-            <MenuItem
-              key={value}
-              value={value}
-            >
-              {label}
-            </MenuItem>
-          ))}
-        </TextField>
+          <TextField
+            select
+            fullWidth
+            label="Статус"
+            value={status}
+            size="small"
+            onChange={e =>
+              onStatusChange(e.target.value as ApplicationStatusFilter)
+            }
+          >
+            <MenuItem value="all">Все</MenuItem>
+            {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
+              <MenuItem
+                key={value}
+                value={value}
+              >
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            fullWidth
+            label="Компания"
+            value={companyId}
+            size="small"
+            onChange={e => onCompanyChange(e.target.value)}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            {companyOptions.map(({ ownerId, companyName }) => (
+              <MenuItem
+                key={ownerId}
+                value={ownerId}
+              >
+                {companyName}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
 
         <Stack
           direction="row"
@@ -128,22 +163,6 @@ const MyResponsesFilter = ({
           onClear={handleClearDate}
         />
       </Popover>
-
-      <Drawer
-        anchor="right"
-        open={isOpenMainFilter}
-        onClose={() => setIsOpenMainFilter(!isOpenMainFilter)}
-        sx={{
-          '& .MuiDrawer-paper': {
-            p: { xs: 2, md: 4 },
-            width: { xs: '100%', sm: '80%', md: '25%' },
-            borderTopLeftRadius: 32,
-            borderBottomLeftRadius: 32,
-          },
-        }}
-      >
-        <SideBarFilter />
-      </Drawer>
     </>
   );
 };

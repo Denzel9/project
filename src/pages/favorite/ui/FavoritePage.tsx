@@ -1,10 +1,13 @@
-import { Box } from '@mui/material';
+import { Box, Grid } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
+  isFavoritePostItem,
+  isFavoriteUserItem,
   useMyApplicationsMapForPosts,
   useFavoritesInfiniteQuery,
+  type FavoriteType,
 } from '@/entities';
 import { EmptyBlock, InfiniteScrollSentinel, ROUTES } from '@/shared';
 import {
@@ -20,33 +23,61 @@ import {
 } from '../model/utils';
 
 import FavoriteFilter from './Filter';
+import { FavoriteUserItemCard } from './FavoriteUserItemCard';
 
 export const FavoritePage = () => {
   const [groupFilter, setGroupFilter] = useState<FavoriteGroupFilter>('all');
+  const [favoriteType, setFavoriteType] = useState<FavoriteType>('POST');
 
   const navigate = useNavigate();
 
+  const listParams = useMemo(
+    () => toFavoriteInfiniteListParams(groupFilter, { type: favoriteType }),
+    [groupFilter, favoriteType],
+  );
+
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useFavoritesInfiniteQuery(toFavoriteInfiniteListParams(groupFilter));
+    useFavoritesInfiniteQuery(listParams);
 
   const favorites = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data]
+    [data],
+  );
+
+  const postFavorites = useMemo(
+    () => favorites.filter(isFavoritePostItem),
+    [favorites],
+  );
+
+  const userFavorites = useMemo(
+    () => favorites.filter(isFavoriteUserItem),
+    [favorites],
   );
 
   const postIds = useMemo(
-    () => favorites.map(favorite => favorite.postId),
-    [favorites]
+    () => postFavorites.map(favorite => favorite.postId),
+    [postFavorites],
   );
 
   const { map: myApplicationsMap } = useMyApplicationsMapForPosts(postIds);
 
-  const isInitialLoading = isLoading && !favorites?.length;
-  const isFilterEmpty = groupFilter === 'all';
+  const isInitialLoading = isLoading && !favorites.length;
+  const isFilterEmpty =
+    favoriteType === 'POST' ? groupFilter === 'all' : true;
+  const visibleItems =
+    favoriteType === 'POST' ? postFavorites : userFavorites;
+  const isEmpty = !isInitialLoading && !visibleItems.length;
+
+  const emptyTitle =
+    favoriteType === 'POST'
+      ? 'В избранном пока нет постов'
+      : favoriteType === 'CREATOR'
+        ? 'В избранном пока нет креаторов'
+        : 'В избранном пока нет компаний';
 
   return (
     <PageLayout title="Избранное">
-      {Boolean(favorites.length || !isFilterEmpty) && (
+      {Boolean(favorites.length || !isFilterEmpty || favoriteType !== 'POST') && (
         <Box
           sx={{
             top: 0,
@@ -56,7 +87,9 @@ export const FavoritePage = () => {
         >
           <FavoriteFilter
             value={groupFilter}
+            favoriteType={favoriteType}
             onChange={setGroupFilter}
+            onTypeChange={setFavoriteType}
           />
         </Box>
       )}
@@ -72,7 +105,7 @@ export const FavoritePage = () => {
       >
         {isInitialLoading && <PostItemSkeletonList count={5} />}
 
-        {!favorites?.length && (
+        {isEmpty && (
           <Box
             sx={{
               flex: 1,
@@ -85,32 +118,49 @@ export const FavoritePage = () => {
           >
             <EmptyBlock
               buttonText="На главную"
-              title="В избранном пока ничего нет"
+              title={emptyTitle}
               buttonOnClick={() => navigate(ROUTES.INDEX)}
             />
           </Box>
         )}
 
-        {favorites?.map(favorite => {
-          const application = myApplicationsMap.get(favorite.postId);
+        {favoriteType === 'POST' &&
+          postFavorites.map(favorite => {
+            const application = myApplicationsMap.get(favorite.postId);
 
-          return (
-            <PostItem
-              key={favorite.postId}
-              post={favorite.post}
-              isFavorite
-              isApplied={Boolean(application)}
-              applicationStatus={application?.status}
-              applicationId={application?.id}
-              permissions={[
-                ...(favorite.groupId === null
-                  ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
-                  : []),
-                ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
-              ]}
-            />
-          );
-        })}
+            return (
+              <PostItem
+                key={favorite.postId}
+                post={favorite.post}
+                isFavorite
+                isApplied={Boolean(application)}
+                applicationStatus={application?.status}
+                applicationId={application?.id}
+                permissions={[
+                  ...(favorite.groupId === null
+                    ? [ACTION_BUTTONS_KEYS.ADD_TO_FAVORITE_GROUP]
+                    : []),
+                  ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION,
+                ]}
+              />
+            );
+          })}
+
+        {favoriteType !== 'POST' && (
+          <Grid
+            container
+            spacing={1.5}
+          >
+            {userFavorites.map(favorite => (
+              <Grid
+                key={favorite.userId}
+                size={{ xs: 12, md: 6 }}
+              >
+                <FavoriteUserItemCard favorite={favorite} />
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
         {hasNextPage && (
           <InfiniteScrollSentinel

@@ -30,6 +30,9 @@ export const PageFooter = () => {
         flexShrink: 0,
         p: { xs: 2, md: 4 },
         bgcolor: 'white',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderBottomLeftRadius: { xs: '16px', md: '32px' },
         borderTopLeftRadius: { xs: '16px', md: '32px' },
         borderTopRightRadius: { xs: '16px', md: '32px' },
       }}

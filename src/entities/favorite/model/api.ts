@@ -7,14 +7,19 @@ import {
 import { useMemo } from 'react'
 
 import { mainAxios } from '@/shared/api'
+import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
+
+import { isFavoriteUserItem } from './types'
 
 import type {
   AddFavoriteDto,
   CreateFavoriteGroupDto,
-  Favorite,
   FavoriteGroup,
   FavoriteList,
+  FavoriteListItem,
   FavoriteListParams,
+  FavoritePostItem,
+  FavoriteUserItem,
   SearchFavoritesParams,
 } from './types'
 
@@ -31,10 +36,41 @@ export const favoriteKeys = {
     [...favoriteKeys.all, 'infiniteSearch', params] as const,
   forPosts: (postIds: string[]) =>
     [...favoriteKeys.all, 'forPosts', postIds] as const,
+  allPostIds: () => [...favoriteKeys.all, 'allPostIds'] as const,
+  allUserIds: () => [...favoriteKeys.all, 'allUserIds'] as const,
 }
 
 const getFavoriteListNextPageParam = (lastPage: FavoriteList) =>
   lastPage.page * lastPage.limit < lastPage.total ? lastPage.page + 1 : undefined
+
+const fetchFavoriteUserIds = async () => {
+  const [creators, companies] = await Promise.all([
+    fetchAllPages<FavoriteListItem>(async (page, limit) => {
+      const { data } = await mainAxios.get<FavoriteList>('/favorites', {
+        params: { type: 'CREATOR', page, limit },
+      })
+
+      return data
+    }),
+    fetchAllPages<FavoriteListItem>(async (page, limit) => {
+      const { data } = await mainAxios.get<FavoriteList>('/favorites', {
+        params: { type: 'COMPANY', page, limit },
+      })
+
+      return data
+    }),
+  ])
+
+  const userIds = new Set<string>()
+
+  ;[...creators, ...companies].forEach(item => {
+    if (isFavoriteUserItem(item)) {
+      userIds.add(item.userId)
+    }
+  })
+
+  return userIds
+}
 
 export const useFavoritesQuery = (params?: FavoriteListParams) =>
   useQuery({
@@ -78,6 +114,7 @@ export const useSearchFavoritesQuery = (params: SearchFavoritesParams) => {
           q: trimmedQuery,
           page,
           limit,
+          ...(params.type && { type: params.type }),
           ...(params.groupId && { groupId: params.groupId }),
           ...(params.ungrouped && { ungrouped: params.ungrouped }),
         },
@@ -106,6 +143,7 @@ export const useSearchFavoritesInfiniteQuery = (
           q: trimmedQuery,
           page: pageParam,
           limit,
+          ...(params.type && { type: params.type }),
           ...(params.groupId && { groupId: params.groupId }),
           ...(params.ungrouped && { ungrouped: params.ungrouped }),
         },
@@ -126,14 +164,18 @@ export const useFavoriteGroupsQuery = (enabled: boolean = false) =>
       return data
     },
     enabled,
-
   })
 
 export const useFavoritePostIds = () => {
-  const { data } = useFavoritesQuery({ page: 1, limit: 100 })
+  const { data } = useFavoritesQuery({ type: 'POST', page: 1, limit: 100 })
 
   const favoritePostIds = useMemo(
-    () => new Set(data?.items?.map(item => item.postId) ?? []),
+    () =>
+      new Set(
+        data?.items
+          ?.map(item => ('postId' in item ? item.postId : null))
+          .filter((id): id is string => Boolean(id)) ?? [],
+      ),
     [data],
   )
 
@@ -141,35 +183,56 @@ export const useFavoritePostIds = () => {
 }
 
 export const useFavoritePostIdsForPosts = (postIds: string[]) => {
-  const sortedPostIds = useMemo(
-    () => [...postIds].sort(),
-    [postIds],
-  )
-
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: favoriteKeys.forPosts(sortedPostIds),
+  const { data: allFavoritePostIds, isLoading, isFetching } = useQuery({
+    queryKey: favoriteKeys.allPostIds(),
     queryFn: async () => {
-      const limit = Math.min(Math.max(sortedPostIds.length, 20), 100)
-      const { data } = await mainAxios.get<FavoriteList>('/favorites', {
-        params: { page: 1, limit },
+      const items = await fetchAllPages<FavoriteListItem>(async (page, limit) => {
+        const { data } = await mainAxios.get<FavoriteList>('/favorites', {
+          params: { type: 'POST', page, limit },
+        })
+
+        return data
       })
 
-      const favoritePostIds = new Set<string>()
-
-      data.items.forEach(item => {
-        if (sortedPostIds.includes(item.postId)) {
-          favoritePostIds.add(item.postId)
-        }
-      })
-
-      return favoritePostIds
+      return new Set(
+        items
+          .map(item => ('postId' in item ? item.postId : null))
+          .filter((id): id is string => Boolean(id)),
+      )
     },
-    enabled: sortedPostIds.length > 0,
-    placeholderData: previousData => previousData,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const favoritePostIds = useMemo(() => {
+    const result = new Set<string>()
+
+    if (!allFavoritePostIds) return result
+
+    postIds.forEach(postId => {
+      if (allFavoritePostIds.has(postId)) {
+        result.add(postId)
+      }
+    })
+
+    return result
+  }, [allFavoritePostIds, postIds])
+
+  return {
+    favoritePostIds,
+    isLoading,
+    isFetching,
+  }
+}
+
+export const useFavoriteUserIds = () => {
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: favoriteKeys.allUserIds(),
+    queryFn: fetchFavoriteUserIds,
+    staleTime: 5 * 60 * 1000,
   })
 
   return {
-    favoritePostIds: data ?? new Set<string>(),
+    favoriteUserIds: data ?? new Set<string>(),
     isLoading,
     isFetching,
   }
@@ -180,7 +243,10 @@ export const useAddFavoriteMutation = () => {
 
   return useMutation({
     mutationFn: async (dto: AddFavoriteDto) => {
-      const { data } = await mainAxios.post<Favorite>('/favorites', dto)
+      const { data } = await mainAxios.post<FavoritePostItem | FavoriteUserItem>(
+        '/favorites',
+        dto,
+      )
       return data
     },
     onSuccess: () => {
@@ -225,6 +291,19 @@ export const useRemoveFavoriteMutation = () => {
   return useMutation({
     mutationFn: async (postId: string) => {
       await mainAxios.delete(`/favorites/${postId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: favoriteKeys.all })
+    },
+  })
+}
+
+export const useRemoveFavoriteUserMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      await mainAxios.delete(`/favorites/users/${userId}`)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoriteKeys.all })

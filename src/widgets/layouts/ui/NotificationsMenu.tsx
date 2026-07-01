@@ -102,16 +102,17 @@ export const NotificationsMenu = () => {
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
         <Box sx={{ px: 2, py: 1.5 }}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            Уведомления
-          </Typography>
+          <Typography variant="subtitle1">Уведомления</Typography>
         </Box>
 
         <Divider />
 
         {MOCK_NOTIFICATIONS.length === 0 ? (
           <MenuItem disabled>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
               Нет уведомлений
             </Typography>
           </MenuItem>
@@ -128,12 +129,7 @@ export const NotificationsMenu = () => {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="body2"
-                  fontWeight={item.isRead ? 400 : 600}
-                >
-                  {item.title}
-                </Typography>
+                <Typography variant="body2">{item.title}</Typography>
                 <Typography
                   variant="body2"
                   color="text.secondary"

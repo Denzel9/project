@@ -1,5 +1,4 @@
-import { formatDistanceToNow, isValid } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { isValid } from 'date-fns';
 
 import type { PartnerApplicationCompanyItem, PartnerProfile, PartnerTaskContactItem } from './types';
 

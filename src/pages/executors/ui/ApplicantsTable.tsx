@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router';
 import {
   APPLICATION_STATUS_LABELS,
   getApplicantName,
+  type ApplicationApplicant,
   type PartnerApplicantItem,
 } from '@/entities';
 import { ROUTES } from '@/shared';
@@ -60,7 +61,9 @@ export const ApplicantsTable = ({
 
         <TableBody>
           {items.map(item => {
-            const applicantName = getApplicantName(item.applicant);
+            const applicantName = getApplicantName(
+              item?.applicant as ApplicationApplicant
+            );
 
             return (
               <TableRow

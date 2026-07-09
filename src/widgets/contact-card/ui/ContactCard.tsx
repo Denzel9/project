@@ -21,7 +21,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
@@ -37,6 +37,7 @@ import {
 import { ROUTES } from '@/shared';
 
 import { AddExecutorDialog } from './AddExecutorDialog';
+import { ContactRow } from './ContactRow';
 
 type ContactCardProps = {
   taskId: string;
@@ -44,7 +45,7 @@ type ContactCardProps = {
   isMyPost?: boolean;
   withTitle?: boolean;
   status?: TaskStatus;
-  isExecutorApprove?: boolean;
+  isExecutorApprove?: boolean | null;
 };
 
 const cardSx = {
@@ -55,64 +56,13 @@ const cardSx = {
   p: { xs: 2.5, md: 3 },
 } as const;
 
-type ContactRowProps = {
-  href: string;
-  icon: ReactNode;
-  children: ReactNode;
-  label?: string;
-};
-
-const ContactRow = ({ href, icon, children, label }: ContactRowProps) => (
-  <Box
-    component={Link}
-    to={href}
-    target="_blank"
-    sx={{
-      display: 'flex',
-      alignItems: label ? 'flex-start' : 'center',
-      gap: 1.5,
-      p: 1.5,
-      borderRadius: '16px',
-      bgcolor: 'secondary.light',
-      color: 'inherit',
-      textDecoration: 'none',
-      transition: 'all 0.2s ease',
-      '&:hover': {
-        bgcolor: 'info.light',
-        color: 'primary.main',
-      },
-    }}
-  >
-    <Box sx={{ mt: label ? 0.25 : 0, color: 'primary.main', display: 'flex' }}>
-      {icon}
-    </Box>
-
-    <Box sx={{ minWidth: 0, flex: 1 }}>
-      {label && (
-        <Typography
-          variant="caption"
-          sx={{ display: 'block', mb: 0.25, color: 'info.main', fontWeight: 500 }}
-        >
-          {label}
-        </Typography>
-      )}
-      <Typography
-        variant="body2"
-        sx={{ fontWeight: label ? 500 : 400, wordBreak: 'break-word' }}
-      >
-        {children}
-      </Typography>
-    </Box>
-  </Box>
-);
-
 export const ContactCard = ({
   taskId,
   status,
   contact,
   withTitle = false,
   isMyPost = false,
-  isExecutorApprove = false,
+  isExecutorApprove = null,
 }: ContactCardProps) => {
   const [isOpenAddExecutorDialog, setIsOpenAddExecutorDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -234,9 +184,7 @@ export const ContactCard = ({
                 justifyContent: 'center',
               }}
             >
-              <PersonAddOutlined
-                sx={{ fontSize: 32, color: 'primary.main' }}
-              />
+              <PersonAddOutlined sx={{ fontSize: 32, color: 'primary.main' }} />
             </Box>
 
             <Box>
@@ -371,9 +319,7 @@ export const ContactCard = ({
           </Typography>
 
           <Tooltip title="Prime-аккаунт">
-            <RocketLaunch
-              sx={{ fontSize: 20, color: 'primary.main' }}
-            />
+            <RocketLaunch sx={{ fontSize: 20, color: 'primary.main' }} />
           </Tooltip>
         </Stack>
       </Stack>

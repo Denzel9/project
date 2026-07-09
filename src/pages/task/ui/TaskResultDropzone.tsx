@@ -271,45 +271,68 @@ export const TaskResultDropzone = ({
               <AssignmentTurnedInOutlined />
             </Box>
 
-            <Box sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              sx={{
+                width: '100%',
+                alignItems: 'start',
+                justifyContent: 'space-between',
+              }}
+            >
               <Stack
                 direction="row"
                 spacing={1}
-                sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}
+                sx={{ alignItems: 'start' }}
               >
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 600, color: 'info.main' }}
-                >
-                  Результат работы
-                </Typography>
+                <Box sx={{ width: '100%' }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center' }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, color: 'info.main' }}
+                    >
+                      Результат работы
+                    </Typography>
+                    {hasMedia && (
+                      <Chip
+                        size="small"
+                        label={formatFileCount(mediaCount)}
+                        sx={{ bgcolor: 'secondary.light', fontWeight: 500 }}
+                      />
+                    )}
 
-                {hasMedia && (
-                  <Chip
-                    size="small"
-                    label={formatFileCount(mediaCount)}
-                    sx={{ bgcolor: 'secondary.light', fontWeight: 500 }}
-                  />
-                )}
+                    {status === TASK_STATUS_ENUM.CHECKING && (
+                      <Chip
+                        size="small"
+                        color="warning"
+                        label="На проверке"
+                      />
+                    )}
+                  </Stack>
 
-                {status === TASK_STATUS_ENUM.CHECKING && (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    label="На проверке"
-                  />
-                )}
+                  {statusHint && (
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      {statusHint}
+                    </Typography>
+                  )}
+                </Box>
               </Stack>
 
-              {statusHint && (
-                <Typography
-                  variant="body2"
-                  sx={{ mt: 0.5, color: 'text.secondary', lineHeight: 1.5 }}
+              {status === TASK_STATUS_ENUM.COMPLETED && (
+                <Button
+                  size="small"
+                  sx={{ px: 2 }}
                 >
-                  {statusHint}
-                </Typography>
+                  Перейти к публикации
+                </Button>
               )}
-            </Box>
+            </Stack>
           </Stack>
 
           {showEditControls && (

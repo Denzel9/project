@@ -1,102 +1,89 @@
 import { Box, Grid } from '@mui/material';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { TASK_STATUS_ENUM, USER_ROLE, useAllTasksQuery } from '@/entities';
-import { useAuthStore } from '@/features';
+import { TASK_STATUS_ENUM, USER_ROLE, useTaskStatsQuery } from '@/entities';
 import {
-  DASHBOARD_FAST_BUTTON_OPTIONS,
-  filterTasksByExecutorApprove,
+  getDashboardCardOptions,
   getFastButtonLabel,
+  useAuthStore,
   useMyTaskFilterStore,
   type FastButtonValueType,
 } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
 import { PageLayout } from '@/widgets';
 
-import {
-  DASHBOARD_METRIC_CARD_LABELS,
-  DASHBOARD_METRIC_CARD_OPTIONS,
-  type DashboardMetricCardVariant,
-} from '../model/types';
-import {
-  getCheckingTasks,
-  getNearestDeadlineTasks,
-  getOverdueTasks,
-  getUrgentTasks,
-} from '../model/utils';
+import { getDashboardCardCount } from '../model/utils';
 
 import { DashboardActivityPanel } from './DashboardActivityPanel';
 import { DashboardCard } from './DashboardCard';
 import { DashboardCommentsPanel } from './DashboardCommentsPanel';
 import { DashboardUpcomingTasksTable } from './DashboardUpcomingTasksTable';
 
+import type { MyTasksLocationState } from '@/pages/my-tasks/model/navigation';
+
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { role } = useAuthStore();
+  const [isUpcomingTasksError, setIsUpcomingTasksError] = useState(false);
   const setFastButtonValue = useMyTaskFilterStore(
     state => state.setFastButtonValue
   );
   const setStatus = useMyTaskFilterStore(state => state.setStatus);
-  const setViewMode = useMyTaskFilterStore(state => state.setViewMode);
-  const setExtraFilter = useMyTaskFilterStore(state => state.setExtraFilter);
+  const viewMode = useMyTaskFilterStore(state => state.viewMode);
+  const ensureKanbanColumnVisible = useMyTaskFilterStore(
+    state => state.ensureKanbanColumnVisible,
+  );
   const isCompany = role === USER_ROLE.COMPANY;
 
-  const { data: tasks = [], isLoading, isError, refetch } = useAllTasksQuery();
-
-  const fastCounts = useMemo(
-    () =>
-      Object.fromEntries(
-        DASHBOARD_FAST_BUTTON_OPTIONS.map(value => [
-          value,
-          filterTasksByExecutorApprove(tasks, value, isCompany).length,
-        ])
-      ) as Record<FastButtonValueType, number>,
-    [tasks, isCompany]
+  const cardOptions = useMemo(
+    () => getDashboardCardOptions(isCompany),
+    [isCompany]
   );
 
-  const metricCounts = useMemo(
-    () => ({
-      overdue: getOverdueTasks(tasks).length,
-      urgent: getUrgentTasks(tasks).length,
-      checking: getCheckingTasks(tasks).length,
-    }),
-    [tasks]
-  );
+  const {
+    data: stats,
+    isLoading: isStatsLoading,
+    isError: isStatsError,
+    refetch: refetchStats,
+  } = useTaskStatsQuery();
 
-  const nearestTasks = useMemo(
-    () => getNearestDeadlineTasks(tasks, isCompany),
-    [tasks, isCompany]
-  );
+  const handleUpcomingTasksErrorChange = useCallback((isError: boolean) => {
+    setIsUpcomingTasksError(isError);
+  }, []);
 
-  const handleFastCardClick = (value: FastButtonValueType) => {
-    setExtraFilter(null);
-    setFastButtonValue(value);
-    navigate(ROUTES.MY_TASKS);
+  const handleRefetch = () => {
+    void refetchStats();
   };
 
-  const handleMetricCardClick = (variant: DashboardMetricCardVariant) => {
-    setViewMode('grid');
-
-    if (variant === 'checking') {
-      setExtraFilter(null);
-      setStatus(TASK_STATUS_ENUM.CHECKING);
-      navigate(ROUTES.MY_TASKS);
+  const handleCardClick = (value: FastButtonValueType) => {
+    if (value === 'checking' && viewMode === 'kanban') {
+      setFastButtonValue(null);
+      ensureKanbanColumnVisible(TASK_STATUS_ENUM.CHECKING);
+      navigate(ROUTES.MY_TASKS, {
+        state: {
+          fromDashboard: true,
+          scrollToKanbanColumn: TASK_STATUS_ENUM.CHECKING,
+        } satisfies MyTasksLocationState,
+      });
       return;
     }
 
-    if (variant === 'overdue' || variant === 'urgent') {
-      setExtraFilter(variant);
-      navigate(ROUTES.MY_TASKS);
+    if (value === 'checking') {
+      setFastButtonValue(null);
+      setStatus(TASK_STATUS_ENUM.CHECKING);
+    } else {
+      setFastButtonValue(value);
     }
+
+    navigate(ROUTES.MY_TASKS, { state: { fromDashboard: true } });
   };
 
+  const isPageError = isStatsError || isUpcomingTasksError;
+
   return (
-    <PageLayout
-      title="Дашборд"
-      withFooter={false}
-    >
-      {isError && (
+    <PageLayout>
+      {isPageError && (
         <Box
           sx={{
             py: 4,
@@ -110,8 +97,8 @@ export const DashboardPage = () => {
         >
           <EmptyBlock
             buttonText="Повторить"
-            title="Не удалось загрузить задачи"
-            buttonOnClick={() => void refetch()}
+            title="Не удалось загрузить данные дашборда"
+            buttonOnClick={handleRefetch}
           />
         </Box>
       )}
@@ -123,32 +110,17 @@ export const DashboardPage = () => {
           mb: 1,
         }}
       >
-        {DASHBOARD_FAST_BUTTON_OPTIONS.map(value => (
+        {cardOptions.map(value => (
           <Grid
             key={value}
             size={{ xs: 12, sm: 6, md: 4 }}
           >
             <DashboardCard
               variant={value}
-              count={fastCounts[value]}
-              isLoading={isLoading || isError}
+              count={getDashboardCardCount(value, stats)}
+              isLoading={isStatsLoading || isStatsError}
               label={getFastButtonLabel(value)}
-              onClick={() => handleFastCardClick(value)}
-            />
-          </Grid>
-        ))}
-
-        {DASHBOARD_METRIC_CARD_OPTIONS.map(value => (
-          <Grid
-            key={value}
-            size={{ xs: 12, sm: 6, md: 4 }}
-          >
-            <DashboardCard
-              variant={value}
-              count={metricCounts[value]}
-              isLoading={isLoading || isError}
-              label={DASHBOARD_METRIC_CARD_LABELS[value]}
-              onClick={() => handleMetricCardClick(value)}
+              onClick={() => handleCardClick(value)}
             />
           </Grid>
         ))}
@@ -158,19 +130,25 @@ export const DashboardPage = () => {
         container
         spacing={1}
       >
-        <Grid size={{ xs: 12, lg: 8 }}>
+        <Grid
+          size={{ xs: 12, lg: 8 }}
+          sx={{ display: 'flex' }}
+        >
           <DashboardUpcomingTasksTable
-            tasks={nearestTasks}
-            isLoading={isLoading || isError}
+            isCompany={isCompany}
+            onErrorChange={handleUpcomingTasksErrorChange}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <DashboardActivityPanel tasks={tasks} />
+        <Grid
+          size={{ xs: 12, lg: 4 }}
+          sx={{ display: 'flex' }}
+        >
+          <DashboardActivityPanel />
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <DashboardCommentsPanel tasks={tasks} />
+          <DashboardCommentsPanel />
         </Grid>
       </Grid>
     </PageLayout>

@@ -35,7 +35,7 @@ export const MyResponses = () => {
 
   const listParams = useMemo(
     () => toMyApplicationsParams({ status, updatedDate }),
-    [status, updatedDate],
+    [status, updatedDate]
   );
 
   const {
@@ -53,12 +53,12 @@ export const MyResponses = () => {
 
   const applications = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data],
+    [data]
   );
 
   const visibleApplications = useMemo(
     () => filterApplicationsByCompany(applications, companyId),
-    [applications, companyId],
+    [applications, companyId]
   );
 
   const postIds = useMemo(
@@ -66,7 +66,7 @@ export const MyResponses = () => {
       visibleApplications
         .map(application => application.post?.id)
         .filter((id): id is string => Boolean(id)),
-    [visibleApplications],
+    [visibleApplications]
   );
 
   const { favoritePostIds } = useFavoritePostIdsForPosts(postIds);
@@ -79,8 +79,7 @@ export const MyResponses = () => {
     companyId,
   });
 
-  const isFilterEmpty =
-    !updatedDate && status === 'all' && companyId === 'all';
+  const isFilterEmpty = !updatedDate && status === 'all' && companyId === 'all';
 
   const isInitialLoading = isLoading && !applications.length;
   const isEmpty = !isInitialLoading && !isError && !visibleApplications.length;
@@ -119,7 +118,7 @@ export const MyResponses = () => {
   };
 
   return (
-    <PageLayout title="Мои отклики">
+    <PageLayout>
       {showFilter && (
         <Box
           sx={{
@@ -179,9 +178,7 @@ export const MyResponses = () => {
             spacing={2}
             sx={{ alignItems: 'center', maxWidth: 400 }}
           >
-            <ReplyAllOutlined
-              sx={{ fontSize: 56, color: 'text.disabled' }}
-            />
+            <ReplyAllOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />
             <Typography
               variant="h6"
               color="text.secondary"
@@ -203,9 +200,7 @@ export const MyResponses = () => {
             <Button
               variant="contained"
               onClick={() =>
-                hasActiveFilters
-                  ? handleResetFilters()
-                  : navigate(ROUTES.INDEX)
+                hasActiveFilters ? handleResetFilters() : navigate(ROUTES.INDEX)
               }
             >
               {hasActiveFilters ? 'Сбросить фильтры' : 'На главную'}

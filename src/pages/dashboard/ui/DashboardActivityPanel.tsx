@@ -1,16 +1,17 @@
-import { HistoryOutlined } from '@mui/icons-material';
+import { FilterList, HistoryOutlined } from '@mui/icons-material';
 import {
   Box,
   Button,
   Chip,
   CircularProgress,
+  IconButton,
   MenuItem,
   Skeleton,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   TASK_ACTIVITY_LABELS,
@@ -19,9 +20,8 @@ import {
   type TaskActivityType,
 } from '@/entities';
 import { ActivityDetailDialog } from '@/pages/task/ui/activity/ActivityDetailDialog';
-import { ActivityFilterChips } from '@/pages/task/ui/activity/ActivityFilterChips';
 
-import { DASHBOARD_ACTIVITY_ITEMS_LIMIT } from '../model/constants';
+import { DASHBOARD_ACTIVITY_PAGE_SIZE } from '../model/constants';
 import {
   getDashboardTaskOptions,
   mapActivityFeedItem,
@@ -30,49 +30,70 @@ import {
 
 import { DashboardActivityListItem } from './DashboardActivityListItem';
 
-type DashboardActivityPanelProps = {
-  tasks?: Task[];
-};
-
-export const DashboardActivityPanel = ({
-  tasks = [],
-}: DashboardActivityPanelProps) => {
+export const DashboardActivityPanel = () => {
   const [activityType, setActivityType] = useState<
     TaskActivityType | undefined
   >();
   const [taskId, setTaskId] = useState('all');
+  const [isOpenFilter, setIsOpenFilter] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(
+    DASHBOARD_ACTIVITY_PAGE_SIZE
+  );
   const [selectedItem, setSelectedItem] =
     useState<DashboardActivityItem | null>(null);
 
-  const taskMap = useMemo(
-    () => new Map(tasks.map(task => [task.id, task])),
-    [tasks]
-  );
-
-  const taskOptions = useMemo(() => getDashboardTaskOptions(tasks), [tasks]);
-
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useAllTaskActivitiesInfiniteQuery({
-      limit: DASHBOARD_ACTIVITY_ITEMS_LIMIT,
+      limit: DASHBOARD_ACTIVITY_PAGE_SIZE,
       ...(activityType && { type: activityType }),
       ...(taskId !== 'all' && { taskId }),
     });
 
+  const feedItems = useMemo(
+    () => data?.pages.flatMap(page => page.items) ?? [],
+    [data?.pages],
+  );
+
+  const taskMap = useMemo(() => {
+    const map = new Map<string, Task>();
+
+    feedItems.forEach(item => {
+      if (!item.task || map.has(item.taskId)) return;
+
+      map.set(item.taskId, {
+        id: item.task.id,
+        title: item.task.title ?? '',
+        ownerId: item.task.ownerId,
+        executorId: item.task.executorId ?? '',
+        postId: item.task.postId ?? '',
+        post: item.task.post,
+      } as Task);
+    });
+
+    return map;
+  }, [feedItems]);
+
+  const taskOptions = useMemo(
+    () => getDashboardTaskOptions(Array.from(taskMap.values())),
+    [taskMap],
+  );
+
   const items = useMemo(
-    () =>
-      (data?.pages.flatMap(page => page.items) ?? []).map(item =>
-        mapActivityFeedItem(item, taskMap)
-      ),
-    [data?.pages, taskMap]
+    () => feedItems.map(item => mapActivityFeedItem(item, taskMap)),
+    [feedItems, taskMap],
   );
 
   const total = data?.pages[0]?.total ?? 0;
   const hasActiveFilters = Boolean(activityType) || taskId !== 'all';
+  const visibleItems = items.slice(0, visibleCount);
+  const hasMoreToShow = visibleCount < total;
 
   const selectedTaskTitle = useMemo(
     () => taskOptions.find(task => task.id === taskId)?.title,
     [taskId, taskOptions]
   );
+
+  const countLabel = String(total);
 
   const emptyMessage = useMemo(() => {
     if (activityType) {
@@ -86,9 +107,23 @@ export const DashboardActivityPanel = ({
     return 'Пока нет активности';
   }, [activityType, taskId]);
 
+  useEffect(() => {
+    setVisibleCount(DASHBOARD_ACTIVITY_PAGE_SIZE);
+  }, [activityType, taskId]);
+
   const handleResetFilters = () => {
     setActivityType(undefined);
     setTaskId('all');
+  };
+
+  const handleLoadMore = async () => {
+    const nextCount = visibleCount + DASHBOARD_ACTIVITY_PAGE_SIZE;
+
+    if (nextCount > items.length && hasNextPage) {
+      await fetchNextPage();
+    }
+
+    setVisibleCount(nextCount);
   };
 
   return (
@@ -107,103 +142,175 @@ export const DashboardActivityPanel = ({
       }}
     >
       <Stack
-        direction="row"
+        direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
         sx={{
           mb: 1.5,
-          alignItems: 'center',
+          alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 600 }}
-        >
-          Активность
-        </Typography>
-
-        {!isLoading && total > 0 && (
-          <Chip
-            size="small"
-            variant="outlined"
-            label={`${items.length} из ${total}`}
-          />
-        )}
-      </Stack>
-
-      <Box
-        sx={{
-          mb: 1.5,
-          p: 1.25,
-          flexShrink: 0,
-          borderRadius: '16px',
-          bgcolor: 'grey.50',
-          border: '1px solid',
-          borderColor: 'divider',
         }}
       >
         <Stack
           direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center' }}
+          spacing={1.5}
+          sx={{ alignItems: 'center', minWidth: 0 }}
         >
-          <ActivityFilterChips
-            activityType={activityType}
-            onChange={setActivityType}
-          />
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              display: 'flex',
+              borderRadius: '12px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'secondary.light',
+              color: 'primary.main',
+            }}
+          >
+            <HistoryOutlined fontSize="small" />
+          </Box>
 
-          <TextField
-            select
-            fullWidth
-            size="small"
-            label="Задача"
-            value={taskId}
-            onChange={event => setTaskId(event.target.value)}
+          <Stack
+            spacing={0}
             sx={{ minWidth: 0 }}
           >
-            <MenuItem value="all">Все задачи</MenuItem>
-            {taskOptions.map(task => (
-              <MenuItem
-                key={task.id}
-                value={task.id}
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ lineHeight: 1.2 }}
               >
-                {task.title}
-              </MenuItem>
-            ))}
-          </TextField>
+                Активность
+              </Typography>
+
+              {!isLoading && total > 0 && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={countLabel}
+                />
+              )}
+            </Stack>
+
+            <Typography
+              variant="caption"
+              sx={{ color: 'info.main', lineHeight: 1.3 }}
+            >
+              Последние события по задачам
+            </Typography>
+          </Stack>
         </Stack>
 
-        {hasActiveFilters && (
+        <IconButton
+          size="small"
+          onClick={() => setIsOpenFilter(prev => !prev)}
+          sx={{
+            color: hasActiveFilters ? 'primary.main' : 'text.secondary',
+          }}
+        >
+          <FilterList fontSize="small" />
+        </IconButton>
+      </Stack>
+
+      {isOpenFilter && (
+        <Box
+          sx={{
+            mb: 1.5,
+            p: 1.25,
+            flexShrink: 0,
+            borderRadius: '16px',
+            bgcolor: 'grey.50',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
           <Stack
-            direction="row"
-            spacing={0.75}
-            sx={{ mt: 1.25, flexWrap: 'wrap', gap: 0.75 }}
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { sm: 'center' } }}
           >
-            {activityType && (
-              <Chip
-                size="small"
-                label={TASK_ACTIVITY_LABELS[activityType]}
-                onDelete={() => setActivityType(undefined)}
-              />
-            )}
-
-            {taskId !== 'all' && selectedTaskTitle && (
-              <Chip
-                size="small"
-                label={selectedTaskTitle}
-                onDelete={() => setTaskId('all')}
-              />
-            )}
-
-            <Chip
+            <TextField
+              select
+              fullWidth
               size="small"
-              variant="outlined"
-              label="Сбросить"
-              onClick={handleResetFilters}
-            />
+              label="Тип события"
+              value={activityType ?? 'all'}
+              onChange={event => {
+                const value = event.target.value;
+                setActivityType(
+                  value === 'all' ? undefined : (value as TaskActivityType)
+                );
+              }}
+              sx={{ minWidth: 0 }}
+            >
+              <MenuItem value="all">Все типы</MenuItem>
+              {Object.entries(TASK_ACTIVITY_LABELS).map(([key, label]) => (
+                <MenuItem
+                  key={key}
+                  value={key}
+                >
+                  {label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Задача"
+              value={taskId}
+              onChange={event => setTaskId(event.target.value)}
+              sx={{ minWidth: 0 }}
+            >
+              <MenuItem value="all">Все задачи</MenuItem>
+              {taskOptions.map(task => (
+                <MenuItem
+                  key={task.id}
+                  value={task.id}
+                >
+                  {task.title}
+                </MenuItem>
+              ))}
+            </TextField>
           </Stack>
-        )}
-      </Box>
+
+          {hasActiveFilters && (
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ mt: 1.25, flexWrap: 'wrap', gap: 0.75 }}
+            >
+              {activityType && (
+                <Chip
+                  size="small"
+                  label={TASK_ACTIVITY_LABELS[activityType]}
+                  onDelete={() => setActivityType(undefined)}
+                />
+              )}
+
+              {taskId !== 'all' && selectedTaskTitle && (
+                <Chip
+                  size="small"
+                  label={selectedTaskTitle}
+                  onDelete={() => setTaskId('all')}
+                />
+              )}
+
+              <Chip
+                size="small"
+                variant="outlined"
+                label="Сбросить"
+                onClick={handleResetFilters}
+              />
+            </Stack>
+          )}
+        </Box>
+      )}
 
       {isLoading && items.length === 0 && (
         <Stack spacing={1}>
@@ -241,7 +348,7 @@ export const DashboardActivityPanel = ({
         </Stack>
       )}
 
-      {items.length > 0 && (
+      {visibleItems.length > 0 && (
         <Box
           sx={{
             minHeight: 0,
@@ -251,7 +358,7 @@ export const DashboardActivityPanel = ({
           }}
         >
           <Stack spacing={1}>
-            {items.map(item => (
+            {visibleItems.map(item => (
               <DashboardActivityListItem
                 key={item.activity.id}
                 item={item}
@@ -260,13 +367,13 @@ export const DashboardActivityPanel = ({
             ))}
           </Stack>
 
-          {hasNextPage && (
+          {hasMoreToShow && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1.5 }}>
               <Button
                 size="small"
                 variant="text"
                 disabled={isFetchingNextPage}
-                onClick={() => void fetchNextPage()}
+                onClick={() => void handleLoadMore()}
               >
                 {isFetchingNextPage ? (
                   <CircularProgress size={16} />

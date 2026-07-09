@@ -1,10 +1,11 @@
 import {
   CalendarMonthOutlined,
   Close,
-  FilterList,
-  GridView,
+  DownloadOutlined,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  PrintOutlined,
   Search,
-  TableRows,
   ViewColumn,
   Whatshot,
 } from '@mui/icons-material';
@@ -12,6 +13,7 @@ import {
   Box,
   Button,
   Checkbox,
+  CircularProgress,
   Collapse,
   Divider,
   FormControlLabel,
@@ -20,22 +22,21 @@ import {
   Popover,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { TASK_STATUS_LABELS, type Task } from '@/entities';
+import { TASK_STATUS_LABELS } from '@/entities';
 import { useScroll, DateCalendarFilter } from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
 
 import { AddTaskDialog } from './AddTaskDialog';
-import { FastButtonGroup } from './FastButtonGroup';
+import { FastButtonGroup } from './components/FastButtonGroup';
+import { TaskViewModeToggle } from './components/TaskViewModeToggle';
 import { TaskSearchPanel } from './TaskSearchPanel';
 
 import type { TaskStatusFilter } from '../model/utils';
@@ -43,14 +44,22 @@ import type { TaskStatusFilter } from '../model/utils';
 export type { TaskViewMode } from '../model/store';
 export type { FastButtonValueType } from '../model/utils';
 
+export type TaskTableReportControls = {
+  disabled: boolean;
+  isExporting: boolean;
+  isPrinting?: boolean;
+  onPrint: () => void;
+  onExport: () => void;
+};
+
 export const MyTaskFilter = ({
-  tasks,
   isCompany,
   initialPosts,
+  tableReport,
 }: {
-  tasks: Task[];
   isCompany: boolean;
   initialPosts: { id?: string; title?: string }[];
+  tableReport?: TaskTableReportControls;
 }) => {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isBottomSectionOpen, setIsBottomSectionOpen] = useState(true);
@@ -60,15 +69,18 @@ export const MyTaskFilter = ({
     postId,
     status,
     viewMode,
+    extraFilter,
     setStatus,
     setPostId,
-    setViewMode,
     updatedDate,
     setUpdatedDate,
+    setExtraFilter,
     resetKanbanColumns,
     toggleKanbanColumn,
     visibleKanbanColumns,
   } = useMyTaskFilterStore();
+
+  const isUrgentActive = extraFilter === 'urgent';
 
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -86,13 +98,19 @@ export const MyTaskFilter = ({
   };
 
   const hasActiveSelectFilters = useMemo(
-    () => status !== 'all' || postId !== 'all',
-    [status, postId]
+    () =>
+      (viewMode !== 'kanban' && status !== 'all') ||
+      postId !== 'all' ||
+      extraFilter !== null ||
+      updatedDate !== null,
+    [viewMode, status, postId, extraFilter, updatedDate],
   );
 
   const handleResetSelectFilters = () => {
     setStatus('all');
     setPostId('all');
+    setExtraFilter(null);
+    setUpdatedDate(null);
   };
 
   const toggleBottomSection = () => {
@@ -105,6 +123,7 @@ export const MyTaskFilter = ({
         ref={ref}
         direction="column"
         spacing={2}
+        className="print-no-print"
         sx={{
           p: 4,
           mb: 2,
@@ -171,9 +190,31 @@ export const MyTaskFilter = ({
               ))}
             </TextField>
 
-            <IconButton>
-              <Whatshot color="info" />
-            </IconButton>
+            <Tooltip
+              title={updatedDate ? `Дата: ${updatedDate}` : 'Фильтр по дате'}
+            >
+              <IconButton
+                size="small"
+                color={updatedDate ? 'primary' : 'default'}
+                onClick={event => setAnchorEl(event.currentTarget)}
+              >
+                <CalendarMonthOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip
+              title={
+                isUrgentActive ? 'Показать все задачи' : 'Только срочные задачи'
+              }
+            >
+              <IconButton
+                size="small"
+                aria-pressed={isUrgentActive}
+                onClick={() => setExtraFilter(isUrgentActive ? null : 'urgent')}
+              >
+                <Whatshot color={isUrgentActive ? 'error' : 'action'} />
+              </IconButton>
+            </Tooltip>
 
             {hasActiveSelectFilters && (
               <Button
@@ -216,7 +257,11 @@ export const MyTaskFilter = ({
                 color={isBottomSectionOpen ? 'primary' : 'default'}
                 onClick={toggleBottomSection}
               >
-                <FilterList fontSize="small" />
+                {isBottomSectionOpen ? (
+                  <KeyboardArrowUp fontSize="small" />
+                ) : (
+                  <KeyboardArrowDown fontSize="small" />
+                )}
               </IconButton>
             </Tooltip>
           </Stack>
@@ -239,10 +284,7 @@ export const MyTaskFilter = ({
             }}
           >
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <FastButtonGroup
-                tasks={tasks}
-                isCompany={isCompany}
-              />
+              <FastButtonGroup />
             </Box>
 
             <Stack
@@ -250,6 +292,62 @@ export const MyTaskFilter = ({
               spacing={0.5}
               sx={{ flexShrink: 0, alignItems: 'center' }}
             >
+              {viewMode === 'table' && tableReport && (
+                <>
+                  <Tooltip title="Печать">
+                    <span>
+                      <IconButton
+                        size="small"
+                        disabled={
+                          tableReport.disabled || tableReport.isPrinting
+                        }
+                        onClick={tableReport.onPrint}
+                      >
+                        {tableReport.isPrinting ? (
+                          <CircularProgress
+                            size={16}
+                            color="inherit"
+                          />
+                        ) : (
+                          <PrintOutlined fontSize="small" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+
+                  <Tooltip title="Экспорт CSV">
+                    <span>
+                      <IconButton
+                        size="small"
+                        disabled={
+                          tableReport.disabled || tableReport.isExporting
+                        }
+                        onClick={tableReport.onExport}
+                      >
+                        {tableReport.isExporting ? (
+                          <CircularProgress
+                            size={16}
+                            color="inherit"
+                          />
+                        ) : (
+                          <DownloadOutlined fontSize="small" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </>
+              )}
+
+              <Tooltip title="Поиск">
+                <IconButton
+                  size="small"
+                  color={isSearchOpen ? 'primary' : 'default'}
+                  onClick={() => setIsSearchOpen(true)}
+                >
+                  <Search fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
               {viewMode === 'kanban' && (
                 <Tooltip title="Колонки Kanban">
                   <IconButton
@@ -262,78 +360,7 @@ export const MyTaskFilter = ({
                 </Tooltip>
               )}
 
-              <Tooltip
-                title={updatedDate ? `Дата: ${updatedDate}` : 'Фильтр по дате'}
-              >
-                <IconButton
-                  size="small"
-                  color={updatedDate ? 'primary' : 'default'}
-                  onClick={event => setAnchorEl(event.currentTarget)}
-                >
-                  <CalendarMonthOutlined fontSize="small" />
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title="Поиск">
-                <IconButton
-                  size="small"
-                  color={isSearchOpen ? 'primary' : 'default'}
-                  onClick={() => setIsSearchOpen(true)}
-                >
-                  <Search fontSize="small" />
-                </IconButton>
-              </Tooltip>
-
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                value={viewMode}
-                onChange={(_, value) => {
-                  if (value) setViewMode(value);
-                }}
-                sx={{
-                  bgcolor: 'grey.50',
-                  borderRadius: '10px',
-                  '& .MuiToggleButton-root': {
-                    border: 'none',
-                    borderRadius: '8px !important',
-                    mx: 0.25,
-                    px: 1,
-                    py: 0.5,
-                    '&.Mui-selected': {
-                      bgcolor: 'white',
-                      boxShadow: 1,
-                    },
-                  },
-                }}
-              >
-                <Tooltip title="Сетка">
-                  <ToggleButton
-                    value="grid"
-                    aria-label="Сетка"
-                  >
-                    <GridView fontSize="small" />
-                  </ToggleButton>
-                </Tooltip>
-
-                <Tooltip title="Kanban">
-                  <ToggleButton
-                    value="kanban"
-                    aria-label="Kanban"
-                  >
-                    <ViewColumn fontSize="small" />
-                  </ToggleButton>
-                </Tooltip>
-
-                <Tooltip title="Таблица">
-                  <ToggleButton
-                    value="table"
-                    aria-label="Таблица"
-                  >
-                    <TableRows fontSize="small" />
-                  </ToggleButton>
-                </Tooltip>
-              </ToggleButtonGroup>
+              <TaskViewModeToggle />
             </Stack>
           </Stack>
         </Collapse>

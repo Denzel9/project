@@ -41,7 +41,7 @@ const MyPostPage = () => {
       q,
       postId,
       type: postType,
-    }),
+    })
   );
 
   useEffect(() => {
@@ -61,11 +61,12 @@ const MyPostPage = () => {
 
   const hasActiveFilters = !isFilterEmpty;
   const isInitialLoading = isLoading && applicationItems.length === 0;
-  const isEmpty = !isInitialLoading && !isError && applicationItems.length === 0;
+  const isEmpty =
+    !isInitialLoading && !isError && applicationItems.length === 0;
   const showFilter = Boolean(applicationItems.length || hasActiveFilters);
 
   return (
-    <PageLayout title="Отклики">
+    <PageLayout>
       {showFilter && (
         <Box
           sx={{
@@ -149,26 +150,26 @@ const MyPostPage = () => {
       )}
 
       {!isInitialLoading && !isError && applicationItems.length > 0 && (
-          <Box
-            sx={{
-              gap: 1.5,
-              width: '100%',
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                lg: 'repeat(3, minmax(0, 1fr))',
-              },
-            }}
-          >
-            {applicationItems.map(application => (
-              <IncomingApplicationItem
-                key={application.id}
-                application={application}
-              />
-            ))}
-          </Box>
-        )}
+        <Box
+          sx={{
+            gap: 1.5,
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: 'repeat(3, minmax(0, 1fr))',
+            },
+          }}
+        >
+          {applicationItems.map(application => (
+            <IncomingApplicationItem
+              key={application.id}
+              application={application}
+            />
+          ))}
+        </Box>
+      )}
     </PageLayout>
   );
 };

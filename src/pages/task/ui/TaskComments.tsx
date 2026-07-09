@@ -7,6 +7,7 @@ import {
 import {
   Box,
   Chip,
+  CircularProgress,
   IconButton,
   Menu,
   MenuItem,
@@ -21,12 +22,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   canEditComment,
   uploadTaskCommentMediaBatch,
+  useAllTaskCommentsQuery,
   useCreateTaskCommentMutation,
   useUpdateTaskCommentMutation,
   validateChatMediaFile,
   useGetUserByIdQuery,
   type User,
-  type TaskComment,
   type TaskCommentMedia,
 } from '@/entities';
 import { useAuthStore } from '@/features';
@@ -47,13 +48,11 @@ import { TaskCommentSearchPanel } from './TaskCommentSearchPanel';
 type TaskCommentsProps = {
   taskId: string;
   contact?: User;
-  comments: TaskComment[];
-  isExecutorApprove?: boolean;
+  isExecutorApprove?: boolean | null;
 };
 
 export const TaskComments = ({
   taskId,
-  comments,
   contact,
   isExecutorApprove,
 }: TaskCommentsProps) => {
@@ -79,6 +78,8 @@ export const TaskComments = ({
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0);
 
   const { data: user } = useGetUserByIdQuery(currentUserId || '');
+  const { data: comments = [], isLoading: isCommentsLoading } =
+    useAllTaskCommentsQuery(taskId);
   const { mutateAsync: createComment, isPending: isCreating } =
     useCreateTaskCommentMutation();
   const { mutate: updateComment, isPending: isUpdating } =
@@ -288,31 +289,22 @@ export const TaskComments = ({
             <ChatBubbleOutlined fontSize="small" />
           </Box>
 
-          <Box sx={{ minWidth: 0 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center' }}
-            >
-              <Typography variant="h6">Комментарии</Typography>
-              {comments.length > 0 && (
-                <Chip
-                  size="small"
-                  label={comments.length}
-                  color="primary"
-                  variant="outlined"
-                />
-              )}
-            </Stack>
+          <Stack
+            spacing={1}
+            direction="row"
+            sx={{ alignItems: 'center' }}
+          >
+            <Typography variant="h6">Комментарии</Typography>
 
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: { xs: 'none', sm: 'block' } }}
-            >
-              Обсуждение задачи с исполнителем
-            </Typography>
-          </Box>
+            {comments.length > 0 && !isCommentsLoading && (
+              <Chip
+                size="small"
+                label={comments.length}
+                color="primary"
+                variant="outlined"
+              />
+            )}
+          </Stack>
         </Stack>
 
         <Stack
@@ -372,7 +364,7 @@ export const TaskComments = ({
             borderColor: 'divider',
           }}
         >
-          {!comments.length && (
+          {!isCommentsLoading && !comments.length && (
             <Box
               sx={{
                 py: 6,
@@ -400,24 +392,37 @@ export const TaskComments = ({
             </Box>
           )}
 
-          {comments.map(comment => (
-            <TaskCommentItem
-              key={comment.id}
-              comment={comment}
-              currentUserId={currentUserId}
-              userAvatar={user?.data?.avatar ?? undefined}
-              contactAvatar={contact?.avatar ?? undefined}
-              isPending={isPending}
-              isEditing={editingId === comment.id}
-              editContent={editContent}
-              onEditContentChange={setEditContent}
-              onStartEdit={handleStartEdit}
-              onSaveEdit={handleSaveEdit}
-              onCancelEdit={() => setEditingId(null)}
-              onDelete={handleDelete}
-              onOpenGallery={openGallery}
-            />
-          ))}
+          {isCommentsLoading && (
+            <Box
+              sx={{
+                py: 6,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
+              <CircularProgress size={28} />
+            </Box>
+          )}
+
+          {!isCommentsLoading &&
+            comments.map(comment => (
+              <TaskCommentItem
+                key={comment.id}
+                comment={comment}
+                currentUserId={currentUserId}
+                userAvatar={user?.data?.avatar ?? undefined}
+                contactAvatar={contact?.avatar ?? undefined}
+                isPending={isPending}
+                isEditing={editingId === comment.id}
+                editContent={editContent}
+                onEditContentChange={setEditContent}
+                onStartEdit={handleStartEdit}
+                onSaveEdit={handleSaveEdit}
+                onCancelEdit={() => setEditingId(null)}
+                onDelete={handleDelete}
+                onOpenGallery={openGallery}
+              />
+            ))}
         </Stack>
 
         {sendError && (

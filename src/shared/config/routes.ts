@@ -25,6 +25,10 @@ export const ROUTES = {
     MANAGE_APPLICATION: "/manage-application",
     SETTINGS_NOTIFICATION: "/settings/notification",
     SETTINGS_LANGUAGE: "/settings/language-and-region",
+    SETTINGS_CRM: "/settings/crm",
+    SETTINGS_CRM_TASKS: "/settings/crm/tasks",
+    SETTINGS_CRM_PIPELINE: "/settings/crm/pipeline",
+    SETTINGS_CRM_AUTOMATION: "/settings/crm/automation",
 } as const;
 
 

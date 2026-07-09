@@ -29,7 +29,7 @@ export const DashboardCard = ({
         overflow: 'hidden',
         border: '1px solid',
         position: 'relative',
-        borderRadius: '32px',
+        borderRadius: '24px',
         alignItems: 'center',
         flexDirection: 'row',
         fontFamily: 'inherit',
@@ -65,7 +65,7 @@ export const DashboardCard = ({
       >
         <Typography
           variant="caption"
-          color="text.secondary"
+          color="info"
           sx={{
             fontWeight: 500,
             lineHeight: 1.3,
@@ -105,7 +105,7 @@ export const DashboardCard = ({
 
             <Typography
               variant="caption"
-              color={isEmpty ? 'text.disabled' : 'text.secondary'}
+              color={isEmpty ? 'disabled' : 'info'}
             >
               {getTasksLabel(count)}
             </Typography>

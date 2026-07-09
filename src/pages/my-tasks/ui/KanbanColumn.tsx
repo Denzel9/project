@@ -12,6 +12,10 @@ import { useRef, useState } from 'react';
 import { useDrop } from 'react-dnd';
 
 import { TASK_STATUS_ENUM, type Task, type TaskStatus } from '@/entities';
+import { InfiniteScrollSentinel } from '@/shared';
+
+import { KANBAN_COLUMN_PAGE_SIZE } from '../model/constants';
+import { useTasksLoadMore } from '../model/useTasksLoadMore';
 
 import {
   KanbanTaskCard,
@@ -24,7 +28,11 @@ import type { KanbanColumnConfig } from '@/features';
 type KanbanColumnProps = {
   tasks: Task[];
   column: KanbanColumnConfig;
+  resetKey: string;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
   canDragTask: (task: Task) => boolean;
+  onFetchNextPage?: () => void;
   onHideColumn: (status: TaskStatus) => void;
   onTaskDrop: (taskId: string, status: TaskStatus) => void;
 };
@@ -32,10 +40,19 @@ type KanbanColumnProps = {
 export const KanbanColumn = ({
   tasks,
   column,
+  resetKey,
   onTaskDrop,
   canDragTask,
   onHideColumn,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  onFetchNextPage,
 }: KanbanColumnProps) => {
+  const { visibleItems, hasMore, loadMore } = useTasksLoadMore(
+    tasks,
+    `${resetKey}|${column.status}`,
+    { step: KANBAN_COLUMN_PAGE_SIZE },
+  );
   const ref = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -93,6 +110,19 @@ export const KanbanColumn = ({
 
   // eslint-disable-next-line react-hooks/refs
   drop(ref);
+
+  const handleLoadMore = () => {
+    if (hasMore) {
+      loadMore();
+      return;
+    }
+
+    if (hasNextPage) {
+      onFetchNextPage?.();
+    }
+  };
+
+  const sentinelHasMore = hasMore || hasNextPage;
 
   return (
     <Box
@@ -189,13 +219,19 @@ export const KanbanColumn = ({
           </Typography>
         )}
 
-        {tasks.map(task => (
+        {visibleItems.map(task => (
           <KanbanTaskCard
             task={task}
             key={task.id}
             canDrag={canDragTask(task)}
           />
         ))}
+
+        <InfiniteScrollSentinel
+          hasMore={sentinelHasMore}
+          isLoading={isFetchingNextPage}
+          onLoadMore={handleLoadMore}
+        />
       </Stack>
     </Box>
   );

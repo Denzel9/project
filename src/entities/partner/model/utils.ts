@@ -1,6 +1,10 @@
 import { isValid } from 'date-fns';
 
-import type { PartnerApplicationCompanyItem, PartnerProfile, PartnerTaskContactItem } from './types';
+import type {
+  PartnerApplicationCompanyItem,
+  PartnerProfile,
+  PartnerUserItem,
+} from './types';
 
 const pickIsoDate = (...values: unknown[]) => {
   for (const value of values) {
@@ -14,8 +18,11 @@ const pickIsoDate = (...values: unknown[]) => {
   return undefined;
 };
 
-type RawPartnerTaskContact = PartnerTaskContactItem & {
+type RawPartnerUser = Partial<PartnerUserItem> & {
   user?: PartnerProfile;
+  applicant?: PartnerProfile;
+  tasksTotal?: number;
+  lastActivityAt?: string;
   lastActivity?: string;
   updatedAt?: string;
 };
@@ -26,28 +33,31 @@ type RawPartnerApplicationCompany = PartnerApplicationCompanyItem & {
   updatedAt?: string;
 };
 
-export const normalizePartnerTaskContact = (
-  item: RawPartnerTaskContact,
-): PartnerTaskContactItem => {
-  const profile = item.user ?? item;
+export const normalizePartnerUser = (item: RawPartnerUser): PartnerUserItem => {
+  const profile = item.user ?? item.applicant ?? item;
 
   return {
-    id: profile.id,
-    role: profile.role,
-    avatar: profile.avatar,
-    name: profile.name,
-    lastName: profile.lastName,
-    companyName: profile.companyName,
-    tasksTotal: item.tasksTotal ?? 0,
-    tasksActive: item.tasksActive ?? 0,
-    lastActivityAt:
+    id: profile.id ?? item.id ?? '',
+    role: profile.role ?? item.role ?? 'CREATOR',
+    avatar: profile.avatar ?? item.avatar,
+    bio: profile.bio ?? item.bio ?? null,
+    name: profile.name ?? item.name,
+    lastName: profile.lastName ?? item.lastName,
+    companyName: profile.companyName ?? item.companyName,
+    followers: item.followers ?? 0,
+    interactionsCount: item.interactionsCount ?? item.tasksTotal ?? 0,
+    lastInteractionAt:
       pickIsoDate(
+        item.lastInteractionAt,
         item.lastActivityAt,
         item.lastActivity,
         item.updatedAt,
       ) ?? '',
   };
 };
+
+/** @deprecated use normalizePartnerUser */
+export const normalizePartnerTaskContact = normalizePartnerUser;
 
 export const normalizePartnerApplicationCompany = (
   item: RawPartnerApplicationCompany,
@@ -89,15 +99,17 @@ export const getPartnerKind = (
   profile: Pick<PartnerProfile, 'role'>,
 ): 'CREATOR' | 'COMPANY' => profile.role;
 
-export const mapTaskContactToRow = (item: PartnerTaskContactItem) => ({
+export const mapPartnerUserToRow = (item: PartnerUserItem) => ({
   id: item.id,
   name: getPartnerName(item),
   avatar: item.avatar ?? undefined,
   kind: getPartnerKind(item),
-  tasksTotal: item.tasksTotal,
-  tasksActive: item.tasksActive,
-  lastActivityAt: item.lastActivityAt || undefined,
+  interactionsCount: item.interactionsCount,
+  lastInteractionAt: item.lastInteractionAt || undefined,
 });
+
+/** @deprecated use mapPartnerUserToRow */
+export const mapTaskContactToRow = mapPartnerUserToRow;
 
 export const mapApplicationCompanyToRow = (item: PartnerApplicationCompanyItem) => ({
   id: item.id,

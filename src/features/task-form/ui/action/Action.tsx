@@ -23,11 +23,12 @@ type ActionProps = {
   executorId?: string;
   taskOwnerId: string;
   activities: TaskActivity[];
-  isExecutorApprove?: boolean;
+  isExecutorApprove?: boolean | null;
+
+  handleCancel: () => void;
   handleGoToRevision: () => void;
   handleCompleteTask: () => void;
   handleEdit: (isEdit: boolean) => void;
-  handleCancel: () => void;
   handleSubmitForm: (newStatus?: TaskStatus) => void;
   handleSave: (e: MouseEvent<HTMLButtonElement>) => void;
 };
@@ -51,7 +52,10 @@ export const Action = ({
 
   const { id } = useAuthStore();
 
-  const { formState: { errors }, clearErrors } = useFormContext();
+  const {
+    formState: { errors },
+    clearErrors,
+  } = useFormContext();
 
   const { mutateAsync: updateTask } = useUpdateTaskMutation();
 
@@ -156,7 +160,9 @@ export const Action = ({
     );
   }
 
-  if (isExecutorApprove === false) {
+  console.log({ isExecutorApprove });
+
+  if (isExecutorApprove !== null && !isExecutorApprove) {
     return (
       <RejectInvite
         isMe={isMe}

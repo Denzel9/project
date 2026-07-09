@@ -37,18 +37,24 @@ import type {
   SearchTaskCommentsParams,
   TaskList,
   TaskListParams,
+  TaskStats,
+  TaskStatsParams,
+  TaskCalendarList,
+  TaskCalendarParams,
   TaskMediaUploadKind,
   SearchTasksParams,
   UpdateTaskCommentDto,
   UpdateTaskDto,
 } from './types'
-import type { TaskMedia } from './types'
+import type { TaskMedia, TaskMediaKind } from './types'
 import type { UploadMediaResponse } from '@/entities/post'
 
 export const taskKeys = {
   all: ['tasks'] as const,
   list: (params?: TaskListParams) =>
     [...taskKeys.all, 'list', params ?? {}] as const,
+  infiniteList: (params?: Omit<TaskListParams, 'page'>) =>
+    [...taskKeys.all, 'list', 'infinite', params ?? {}] as const,
   search: (params: SearchTasksParams) =>
     [...taskKeys.all, 'search', params] as const,
   detail: (id: string) => [...taskKeys.all, 'detail', id] as const,
@@ -69,8 +75,12 @@ export const taskKeys = {
   withComments: (params?: Omit<TaskWithCommentsParams, 'page'>) =>
     [...taskKeys.all, 'withComments', params ?? {}] as const,
   executorByPostMap: () => [...taskKeys.all, 'executorByPostMap'] as const,
-  allTasks: (params?: Omit<TaskListParams, 'page' | 'limit'>) =>
-    [...taskKeys.all, 'allTasks', params ?? {}] as const,
+  pendingApproval: (params?: Omit<TaskListParams, 'page' | 'limit' | 'role'>) =>
+    [...taskKeys.all, 'pendingApproval', params ?? {}] as const,
+  calendar: (params?: Omit<TaskCalendarParams, 'page' | 'limit'>) =>
+    [...taskKeys.all, 'calendar', params ?? {}] as const,
+  stats: (params?: TaskStatsParams) =>
+    [...taskKeys.all, 'stats', params ?? {}] as const,
 }
 
 const postTasksQueryPrefix = (postId: string) =>
@@ -86,7 +96,7 @@ const uploadsToTaskMedia = (
     key: upload.key,
     mimeType: upload.mimeType,
     size: String(upload.size),
-    ...(kind === 'report' ? { kind: 'REPORT' as const } : {}),
+    kind: (kind === 'report' ? 'REPORT' : 'MAIN') as TaskMediaKind,
   }))
 
 const getTaskMediaField = (kind: TaskMediaUploadKind) =>
@@ -196,18 +206,93 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
 
   void queryClient.invalidateQueries({ queryKey: ['user', task.executorId] })
   void queryClient.invalidateQueries({ queryKey: ['user', task.ownerId] })
-  void queryClient.invalidateQueries({
-    queryKey: ['executor', 'pending-approval-tasks'],
+  void queryClient.invalidateQueries({ queryKey: taskKeys.pendingApproval() })
+}
+
+export const serializeTaskListParams = (
+  params: TaskListParams,
+): Record<string, string> => {
+  const serialized: Record<string, string> = {}
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue
+
+    serialized[key] = value === null ? 'null' : String(value)
+  }
+
+  return serialized
+}
+
+export const fetchTasksList = async (params?: TaskListParams) => {
+  const { data } = await mainAxios.get<TaskList>('/tasks', {
+    params: params ? serializeTaskListParams(params) : undefined,
+  })
+
+  return data
+}
+
+export const getTasksListNextPageParam = (lastPage: TaskList | undefined) => {
+  if (!lastPage?.page || !lastPage?.limit || lastPage.total == null) {
+    return undefined
+  }
+
+  return lastPage.page * lastPage.limit < lastPage.total
+    ? lastPage.page + 1
+    : undefined
+}
+
+export const useTasksQuery = (
+  params?: TaskListParams,
+  options?: { enabled?: boolean },
+) =>
+  useQuery({
+    queryKey: taskKeys.list(params),
+    queryFn: () => fetchTasksList(params),
+    refetchOnWindowFocus: true,
+    enabled: options?.enabled ?? true,
+  })
+
+export const useTasksInfiniteQuery = (
+  params?: Omit<TaskListParams, 'page'>,
+  options?: { enabled?: boolean; limit?: number },
+) => {
+  const limit = options?.limit ?? params?.limit ?? 20
+
+  return useInfiniteQuery({
+    queryKey: taskKeys.infiniteList({ ...params, limit }),
+    queryFn: async ({ pageParam }) =>
+      fetchTasksList({
+        ...params,
+        page: pageParam,
+        limit,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: getTasksListNextPageParam,
+    refetchOnWindowFocus: true,
+    enabled: options?.enabled ?? true,
   })
 }
 
-export const useTasksQuery = (params?: TaskListParams) =>
+export const fetchTasksCalendar = async (
+  params?: Omit<TaskCalendarParams, 'page' | 'limit'>,
+) =>
+  fetchAllPages(async (page, limit) => {
+    const { data } = await mainAxios.get<TaskCalendarList>('/tasks/calendar', {
+      params: { ...params, page, limit },
+    })
+
+    return data
+  }, 500)
+
+export const useTasksCalendarQuery = (
+  params?: Omit<TaskCalendarParams, 'page' | 'limit'>,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
-    queryKey: taskKeys.list(params),
-    queryFn: async () => {
-      const { data } = await mainAxios.get<TaskList>('/tasks', { params })
-      return data
-    },
+    queryKey: taskKeys.calendar(params),
+    queryFn: () => fetchTasksCalendar(params),
+    enabled: options?.enabled ?? true,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   })
 
@@ -236,24 +321,29 @@ export const useExecutorTasksByPostMap = () =>
     staleTime: 5 * 60 * 1000,
   })
 
-export const useAllTasksQuery = (
+export const fetchAllTasks = async (
   params?: Omit<TaskListParams, 'page' | 'limit'>,
 ) =>
+  fetchAllPages(async (page, limit) => {
+    return fetchTasksList({ ...params, page, limit })
+  })
+
+export const fetchTaskStats = async (params?: TaskStatsParams) => {
+  const { data } = await mainAxios.get<TaskStats>('/tasks/stats', { params })
+
+  return data
+}
+
+export const useTaskStatsQuery = (
+  params?: TaskStatsParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
-    queryKey: taskKeys.allTasks(params),
-    queryFn: async () => {
-      const items = await fetchAllPages(async (page, limit) => {
-        const { data } = await mainAxios.get<TaskList>('/tasks', {
-          params: { ...params, page, limit },
-        })
-
-        return data
-      })
-
-      return items
-    },
+    queryKey: taskKeys.stats(params),
+    queryFn: () => fetchTaskStats(params),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
+    enabled: options?.enabled ?? true,
   })
 
 export const useSearchTasksQuery = (params: SearchTasksParams) => {
@@ -354,6 +444,27 @@ export const fetchTaskCommentsPage = async (
 
   return data
 }
+
+export const useAllTaskCommentsQuery = (
+  taskId: string | null,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: [...taskKeys.comments(taskId ?? ''), 'all'] as const,
+    queryFn: async () => {
+      const items = await fetchAllPages(
+        (page, limit) => fetchTaskCommentsPage(taskId!, page, limit),
+        100,
+      )
+
+      return [...items].sort(
+        (left, right) =>
+          new Date(left.createdAt).getTime() -
+          new Date(right.createdAt).getTime(),
+      )
+    },
+    enabled: enabled && Boolean(taskId),
+  })
 
 export const useTaskCommentsTailQuery = (
   taskId: string | null,
@@ -570,6 +681,17 @@ export const useTasksWithCommentsInfiniteQuery = (
   })
 }
 
+const patchAllTaskCommentsCache = (
+  queryClient: QueryClient,
+  taskId: string,
+  updater: (comments: TaskComment[]) => TaskComment[],
+) => {
+  queryClient.setQueriesData<TaskComment[]>(
+    { queryKey: [...taskKeys.comments(taskId), 'all'] },
+    old => (old ? updater(old) : old),
+  )
+}
+
 export const useCreateTaskCommentMutation = () => {
   const queryClient = useQueryClient()
 
@@ -588,16 +710,10 @@ export const useCreateTaskCommentMutation = () => {
       return data
     },
     onSuccess: (comment, { taskId }) => {
-      queryClient.setQueryData<Task | undefined>(
-        taskKeys.detail(taskId),
-        old =>
-          old
-            ? {
-              ...old,
-              comments: [...(old.comments ?? []), comment],
-            }
-            : old,
-      )
+      patchAllTaskCommentsCache(queryClient, taskId, comments => [
+        ...comments,
+        comment,
+      ])
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
       queryClient.invalidateQueries({
         queryKey: [...taskKeys.all, 'allComments'],
@@ -629,17 +745,8 @@ export const useUpdateTaskCommentMutation = () => {
       return data
     },
     onSuccess: (comment, { taskId }) => {
-      queryClient.setQueryData<Task | undefined>(
-        taskKeys.detail(taskId),
-        old =>
-          old
-            ? {
-              ...old,
-              comments: (old.comments ?? []).map(item =>
-                item.id === comment.id ? comment : item,
-              ),
-            }
-            : old,
+      patchAllTaskCommentsCache(queryClient, taskId, comments =>
+        comments.map(item => (item.id === comment.id ? comment : item)),
       )
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
       queryClient.invalidateQueries({
@@ -767,17 +874,8 @@ export const useDeleteTaskCommentMutation = () => {
       return commentId
     },
     onSuccess: (commentId, { taskId }) => {
-      queryClient.setQueryData<Task>(
-        taskKeys.detail(taskId),
-        old =>
-          old
-            ? {
-              ...old,
-              comments: (old.comments ?? []).filter(
-                item => item.id !== commentId,
-              ),
-            }
-            : old,
+      patchAllTaskCommentsCache(queryClient, taskId, comments =>
+        comments.filter(item => item.id !== commentId),
       )
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
       queryClient.invalidateQueries({
@@ -790,12 +888,22 @@ export const useDeleteTaskCommentMutation = () => {
   })
 }
 
-export const usePendingApprovalTasksQuery = () => {
-  return useQuery({
-    queryKey: ['executor', 'pending-approval-tasks'],
+export const usePendingApprovalTasksQuery = (
+  params?: Omit<TaskListParams, 'page' | 'limit' | 'role'>,
+) =>
+  useQuery({
+    queryKey: taskKeys.pendingApproval(params),
     queryFn: async () => {
-      const { data } = await mainAxios.get<TaskList>('/tasks/pending-approval')
-      return data
+      const items = await fetchAllPages(async (page, limit) => {
+        const { data } = await mainAxios.get<TaskList>('/tasks/pending-approval', {
+          params: { ...params, page, limit },
+        })
+
+        return data
+      })
+
+      return items
     },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   })
-}

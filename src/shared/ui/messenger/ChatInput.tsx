@@ -28,7 +28,7 @@ type ChatInputProps = {
   isSending?: boolean;
   pendingFiles: File[];
   placeholder?: string;
-  isExecutorApprove?: boolean;
+  isExecutorApprove?: boolean | null;
   onChange: (value: string) => void;
   onAttachFiles: (files: File[]) => void;
   onRemoveFile: (index: number) => void;

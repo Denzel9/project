@@ -83,10 +83,7 @@ export const ChatPage = () => {
 
   if (isInitialLoading) {
     return (
-      <PageLayout
-        title="Мессенджер"
-        isScreenHeight
-      >
+      <PageLayout isScreenHeight>
         <Box
           sx={{
             display: 'flex',
@@ -108,10 +105,7 @@ export const ChatPage = () => {
     !isOpeningConversation
   ) {
     return (
-      <PageLayout
-        title="Мессенджер"
-        isScreenHeight
-      >
+      <PageLayout isScreenHeight>
         <Box
           sx={{
             mt: 2,
@@ -156,10 +150,7 @@ export const ChatPage = () => {
   }
 
   return (
-    <PageLayout
-      title="Мессенджер"
-      isScreenHeight
-    >
+    <PageLayout isScreenHeight>
       <Stack
         direction="row"
         spacing={2}

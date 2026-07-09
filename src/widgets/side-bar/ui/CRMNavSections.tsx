@@ -8,6 +8,8 @@ import { NavLink } from 'react-router';
 
 import { CRM_MENU_ITEMS } from '../model/routes/routes';
 
+import { sidebarSubmenuIconSx } from './sidebarItemStyles';
+
 type CRMNavSectionsProps = {
   pathname: string;
   onItemClick?: () => void;
@@ -40,7 +42,7 @@ export const CRMNavSections = ({
               color: 'info.main',
               textDecoration: 'none',
               mb: isPopover ? 0 : 0.5,
-              pl: isDrawer ? 4 : isPopover ? 2 : 2,
+              px: isDrawer ? '24px' : 2,
               borderRadius: isDrawer || isPopover ? 0 : '12px',
               bgcolor: isActive ? 'secondary.light' : 'transparent',
               '&:hover': {
@@ -48,9 +50,7 @@ export const CRMNavSections = ({
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
-              {item.icon}
-            </ListItemIcon>
+            <ListItemIcon sx={sidebarSubmenuIconSx}>{item.icon}</ListItemIcon>
             <ListItemText
               primary={item.label}
               slotProps={{

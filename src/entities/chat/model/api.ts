@@ -73,7 +73,7 @@ export const appendMessageToCache = (
   )
 }
 
-export const useConversationsQuery = () =>
+export const useConversationsQuery = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: chatKeys.conversations(),
     queryFn: async () => {
@@ -82,6 +82,7 @@ export const useConversationsQuery = () =>
       )
       return data
     },
+    enabled: options?.enabled ?? true,
   })
 
 export const useMessagesQuery = (

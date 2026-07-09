@@ -61,27 +61,27 @@ export const CRM_MENU_ITEMS: MenuRoute[] = [
   {
     label: 'Дашборд',
     path: ROUTES.CRM,
-    icon: <DashboardOutlined fontSize="small" />,
+    icon: <DashboardOutlined />,
   },
   {
     label: 'Мои задачи',
     path: ROUTES.MY_TASKS,
-    icon: <TaskOutlined fontSize="small" />,
+    icon: <TaskOutlined />,
   },
   {
     label: 'Календарь',
     path: ROUTES.CALENDAR,
-    icon: <CalendarMonthOutlined fontSize="small" />,
+    icon: <CalendarMonthOutlined />,
   },
   {
     label: 'Пользователи',
     path: ROUTES.EXECUTORS,
-    icon: <PeopleOutlined fontSize="small" />,
+    icon: <PeopleOutlined />,
   },
   {
     label: 'Публикации',
     path: ROUTES.PUBLICATIONS,
-    icon: <PublicOutlined fontSize="small" />,
+    icon: <PublicOutlined />,
   },
 ];
 

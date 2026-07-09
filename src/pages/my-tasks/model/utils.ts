@@ -6,11 +6,15 @@ import {
   type Task,
   type User,
 } from '@/entities';
+import { ROUTES } from '@/shared';
 
 import type { TaskSortField, TaskSortOrder } from './types';
 
+export const getTaskPath = (task: Task) =>
+  `${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`;
+
 export const getTaskTitle = (task: Task) =>
-  task.post?.title ?? task.title ?? 'Без названия';
+  task.title || '—';
 
 export const getTaskCustomerName = (task: Task) =>
   (task.owner?.companyProfile?.companyName ??

@@ -1,5 +1,11 @@
 import { ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 
+import {
+  getSidebarItemButtonSx,
+  getSidebarItemIconSx,
+  getSidebarItemTextSx,
+} from './sidebarItemStyles';
+
 import type { MenuRoute } from '../model/types/types';
 
 type MenuItemProps = {
@@ -32,10 +38,7 @@ export const MenuItem = ({
         onNavigate?.();
       }}
       sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        px: '32px !important',
+        ...getSidebarItemButtonSx(isOpenSideBar),
         ':after': {
           content: getActivePath(),
           position: 'absolute',
@@ -48,28 +51,17 @@ export const MenuItem = ({
         },
       }}
     >
-      <ListItemIcon
-        sx={{
-          minWidth: isOpenSideBar ? 40 : 0,
-          color: 'info.main',
-
-          svg: {
-            width: isOpenSideBar ? 24 : 28,
-            height: isOpenSideBar ? 24 : 28,
-          },
-        }}
-      >
+      <ListItemIcon sx={{ ...getSidebarItemIconSx(isOpenSideBar), color: 'info.main' }}>
         {route.icon}
       </ListItemIcon>
 
-      {isOpenSideBar && (
-        <ListItemText
-          primary={route.label}
-          sx={{
-            color: 'info.main',
-          }}
-        />
-      )}
+      <ListItemText
+        primary={route.label}
+        sx={{
+          ...getSidebarItemTextSx(isOpenSideBar),
+          color: 'info.main',
+        }}
+      />
     </ListItemButton>
   );
 };

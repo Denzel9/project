@@ -7,7 +7,7 @@ import { useTaskCommentComposer } from '../model/useTaskCommentComposer';
 type TaskCommentComposerProps = {
   taskId: string;
   executorId?: string | null;
-  isExecutorApprove?: boolean;
+  isExecutorApprove?: boolean | null;
   placeholder?: string;
   showCancel?: boolean;
   onSuccess?: () => void;

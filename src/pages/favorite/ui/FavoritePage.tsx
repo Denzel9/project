@@ -22,8 +22,8 @@ import {
   type FavoriteGroupFilter,
 } from '../model/utils';
 
-import FavoriteFilter from './Filter';
 import { FavoriteUserItemCard } from './FavoriteUserItemCard';
+import FavoriteFilter from './Filter';
 
 export const FavoritePage = () => {
   const [groupFilter, setGroupFilter] = useState<FavoriteGroupFilter>('all');
@@ -33,7 +33,7 @@ export const FavoritePage = () => {
 
   const listParams = useMemo(
     () => toFavoriteInfiniteListParams(groupFilter, { type: favoriteType }),
-    [groupFilter, favoriteType],
+    [groupFilter, favoriteType]
   );
 
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -41,31 +41,29 @@ export const FavoritePage = () => {
 
   const favorites = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data],
+    [data]
   );
 
   const postFavorites = useMemo(
     () => favorites.filter(isFavoritePostItem),
-    [favorites],
+    [favorites]
   );
 
   const userFavorites = useMemo(
     () => favorites.filter(isFavoriteUserItem),
-    [favorites],
+    [favorites]
   );
 
   const postIds = useMemo(
     () => postFavorites.map(favorite => favorite.postId),
-    [postFavorites],
+    [postFavorites]
   );
 
   const { map: myApplicationsMap } = useMyApplicationsMapForPosts(postIds);
 
   const isInitialLoading = isLoading && !favorites.length;
-  const isFilterEmpty =
-    favoriteType === 'POST' ? groupFilter === 'all' : true;
-  const visibleItems =
-    favoriteType === 'POST' ? postFavorites : userFavorites;
+  const isFilterEmpty = favoriteType === 'POST' ? groupFilter === 'all' : true;
+  const visibleItems = favoriteType === 'POST' ? postFavorites : userFavorites;
   const isEmpty = !isInitialLoading && !visibleItems.length;
 
   const emptyTitle =
@@ -76,8 +74,10 @@ export const FavoritePage = () => {
         : 'В избранном пока нет компаний';
 
   return (
-    <PageLayout title="Избранное">
-      {Boolean(favorites.length || !isFilterEmpty || favoriteType !== 'POST') && (
+    <PageLayout>
+      {Boolean(
+        favorites.length || !isFilterEmpty || favoriteType !== 'POST'
+      ) && (
         <Box
           sx={{
             top: 0,
@@ -87,8 +87,8 @@ export const FavoritePage = () => {
         >
           <FavoriteFilter
             value={groupFilter}
-            favoriteType={favoriteType}
             onChange={setGroupFilter}
+            favoriteType={favoriteType}
             onTypeChange={setFavoriteType}
           />
         </Box>

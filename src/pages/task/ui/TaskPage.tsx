@@ -17,8 +17,15 @@ export const TaskPage = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [anchorElMore, setAnchorElMore] = useState<null | HTMLElement>(null);
 
-  const { currentTask, setCurrentTask, tasks, isLoading, isPostLoading, id, post } =
-    useTaskData();
+  const {
+    currentTask,
+    setCurrentTask,
+    tasks,
+    isLoading,
+    isPostLoading,
+    id,
+    post,
+  } = useTaskData();
 
   const handleChangeTask = (taskId: string) => {
     const task = tasks?.items?.find(item => item.id === taskId);
@@ -74,7 +81,7 @@ export const TaskPage = () => {
   const showSwitcher = Boolean(cancelledTasks.length) || activeTasks.length > 1;
 
   return (
-    <PageLayout title="Задача">
+    <PageLayout>
       {showSwitcher && (
         <>
           <TaskSwitcher
@@ -120,8 +127,8 @@ export const TaskPage = () => {
 
       {currentTask && (
         <TaskItem
-          task={currentTask}
           post={post}
+          task={currentTask}
           isLoading={isLoading}
           isPostLoading={isPostLoading}
         />

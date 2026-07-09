@@ -1,5 +1,9 @@
 export {
   partnerKeys,
+  fetchPartnerApplicants,
+  fetchPartnerApplicationCompanies,
+  fetchPartnerCustomers,
+  fetchPartnerExecutors,
   usePartnerApplicantsQuery,
   usePartnerApplicationCompaniesQuery,
   usePartnerCustomersQuery,
@@ -10,9 +14,11 @@ export {
   getPartnerKind,
   getPartnerName,
   mapApplicationCompanyToRow,
+  mapPartnerUserToRow,
   mapTaskContactToRow,
   normalizePartnerApplicationCompany,
   normalizePartnerTaskContact,
+  normalizePartnerUser,
 } from './model/utils';
 
 export type {
@@ -27,4 +33,5 @@ export type {
   PartnerTaskContactItem,
   PartnerTaskContactList,
   PartnerTaskContactsParams,
+  PartnerUserItem,
 } from './model/types';

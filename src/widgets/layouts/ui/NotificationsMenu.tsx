@@ -1,71 +1,69 @@
 import { Notifications } from '@mui/icons-material';
 import {
+  Avatar,
   Badge,
   Box,
+  Button,
+  CircularProgress,
   Divider,
   IconButton,
   Menu,
   MenuItem,
+  Stack,
   Typography,
 } from '@mui/material';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useState, type MouseEvent } from 'react';
+import { useMemo, useState, type MouseEvent } from 'react';
+import { useNavigate } from 'react-router';
 
-type NotificationItem = {
-  id: string;
-  title: string;
-  description: string;
-  createdAt: string;
-  isRead: boolean;
-};
+import {
+  getNotificationActorName,
+  getNotificationLink,
+  isNotificationUnread,
+  useMarkAllNotificationsReadMutation,
+  useMarkNotificationReadMutation,
+  useNotificationsInfiniteQuery,
+  useNotificationsUnreadCountQuery,
+} from '@/entities/notification';
+import { useAuthStore } from '@/features/auth';
 
-const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: '1',
-    title: 'Новый отклик на задачу',
-    description: 'Иван Петров откликнулся на «Разработка лендинга»',
-    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    isRead: false,
-  },
-  {
-    id: '2',
-    title: 'Задача выполнена',
-    description: '«Подготовка презентации» отмечена как выполненная',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    isRead: false,
-  },
-  {
-    id: '3',
-    title: 'Новый комментарий',
-    description: 'Мария Сидорова оставила комментарий в задаче «Аудит сайта»',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '4',
-    title: 'Приглашение в задачу',
-    description: 'Вас пригласили исполнителем в «Настройка CRM»',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '5',
-    title: 'Дедлайн приближается',
-    description: 'До срока выполнения «Сбор аналитики» осталось 2 дня',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-    isRead: true,
-  },
-];
+const NOTIFICATIONS_MENU_LIMIT = 20;
 
 const formatRelativeTime = (createdAt: string) =>
   formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: ru });
 
 export const NotificationsMenu = () => {
+  const navigate = useNavigate();
+  const isAuth = useAuthStore(state => state.isAuth);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter(item => !item.isRead).length;
+  const { data: unreadCountData } = useNotificationsUnreadCountQuery({
+    enabled: isAuth,
+  });
+
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useNotificationsInfiniteQuery(
+    { limit: NOTIFICATIONS_MENU_LIMIT },
+    { enabled: isAuth && open },
+  );
+
+  const { mutate: markRead } = useMarkNotificationReadMutation();
+  const { mutate: markAllRead, isPending: isMarkingAllRead } =
+    useMarkAllNotificationsReadMutation();
+
+  const notifications = useMemo(
+    () => data?.pages.flatMap(page => page.items) ?? [],
+    [data?.pages],
+  );
+
+  const unreadCount = unreadCountData?.count ?? 0;
 
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -75,12 +73,41 @@ export const NotificationsMenu = () => {
     setAnchorEl(null);
   };
 
+  const handleNotificationClick = (notificationId: string) => {
+    const notification = notifications.find(item => item.id === notificationId);
+    if (!notification) {
+      handleClose();
+      return;
+    }
+
+    if (isNotificationUnread(notification)) {
+      markRead(notification.id);
+    }
+
+    const link = getNotificationLink(notification);
+    handleClose();
+
+    if (link) {
+      navigate(link);
+    }
+  };
+
+  const handleMarkAllRead = () => {
+    if (!unreadCount) return;
+    markAllRead();
+  };
+
+  if (!isAuth) {
+    return null;
+  }
+
   return (
     <>
       <IconButton onClick={handleOpen}>
         <Badge
           badgeContent={unreadCount}
           color="primary"
+          max={99}
         >
           <Notifications />
         </Badge>
@@ -95,59 +122,118 @@ export const NotificationsMenu = () => {
             sx: {
               width: 360,
               maxHeight: 420,
+              display: 'flex',
+              flexDirection: 'column',
             },
           },
         }}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <Box sx={{ px: 2, py: 1.5 }}>
+        <Stack
+          direction="row"
+          sx={{
+            px: 2,
+            py: 1.5,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Typography variant="subtitle1">Уведомления</Typography>
-        </Box>
+
+          {unreadCount > 0 && (
+            <Button
+              size="small"
+              disabled={isMarkingAllRead}
+              onClick={handleMarkAllRead}
+            >
+              Прочитать все
+            </Button>
+          )}
+        </Stack>
 
         <Divider />
 
-        {MOCK_NOTIFICATIONS.length === 0 ? (
-          <MenuItem disabled>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              Нет уведомлений
-            </Typography>
-          </MenuItem>
-        ) : (
-          MOCK_NOTIFICATIONS.map(item => (
-            <MenuItem
-              key={item.id}
-              onClick={handleClose}
-              sx={{
-                alignItems: 'flex-start',
-                whiteSpace: 'normal',
-                py: 1.5,
-                bgcolor: item.isRead ? 'transparent' : 'action.hover',
-              }}
-            >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2">{item.title}</Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.25 }}
-                >
-                  {item.description}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.disabled"
-                  sx={{ mt: 0.5, display: 'block' }}
-                >
-                  {formatRelativeTime(item.createdAt)}
-                </Typography>
-              </Box>
+        <Box sx={{ overflowY: 'auto', flex: 1 }}>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : notifications.length === 0 ? (
+            <MenuItem disabled>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Нет уведомлений
+              </Typography>
             </MenuItem>
-          ))
-        )}
+          ) : (
+            notifications.map(item => {
+              const actorName = getNotificationActorName(item.actor);
+              const isUnread = isNotificationUnread(item);
+
+              return (
+                <MenuItem
+                  key={item.id}
+                  onClick={() => handleNotificationClick(item.id)}
+                  sx={{
+                    alignItems: 'flex-start',
+                    whiteSpace: 'normal',
+                    py: 1.5,
+                    gap: 1.5,
+                    bgcolor: isUnread ? 'action.hover' : 'transparent',
+                  }}
+                >
+                  {item.actor?.avatar ? (
+                    <Avatar
+                      src={item.actor.avatar}
+                      sx={{ width: 32, height: 32, mt: 0.25 }}
+                    />
+                  ) : (
+                    <Avatar sx={{ width: 32, height: 32, mt: 0.25 }}>
+                      {actorName.charAt(0) || '?'}
+                    </Avatar>
+                  )}
+
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography variant="body2">{item.title}</Typography>
+
+                    {item.body && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.25 }}
+                      >
+                        {item.body}
+                      </Typography>
+                    )}
+
+                    <Typography
+                      variant="caption"
+                      color="text.disabled"
+                      sx={{ mt: 0.5, display: 'block' }}
+                    >
+                      {formatRelativeTime(item.createdAt)}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              );
+            })
+          )}
+
+          {hasNextPage && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+              <Button
+                size="small"
+                disabled={isFetchingNextPage}
+                onClick={() => void fetchNextPage()}
+              >
+                {isFetchingNextPage ? 'Загрузка…' : 'Показать ещё'}
+              </Button>
+            </Box>
+          )}
+        </Box>
       </Menu>
     </>
   );

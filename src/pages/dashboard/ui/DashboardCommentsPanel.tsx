@@ -46,13 +46,7 @@ const listFlexCollapseSx = {
   },
 } as const;
 
-type DashboardCommentsPanelProps = {
-  tasks?: Task[];
-};
-
-export const DashboardCommentsPanel = ({
-  tasks = [],
-}: DashboardCommentsPanelProps) => {
+export const DashboardCommentsPanel = () => {
   const [taskId, setTaskId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
@@ -61,13 +55,6 @@ export const DashboardCommentsPanel = ({
 
   const { setSnackbarOpen } = useSnackbarStore();
 
-  const taskMap = useMemo(
-    () => new Map(tasks.map(task => [task.id, task])),
-    [tasks]
-  );
-
-  const taskOptions = useMemo(() => getDashboardTaskOptions(tasks), [tasks]);
-
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useTasksWithCommentsInfiniteQuery({
       limit: DASHBOARD_COMMENTS_ITEMS_LIMIT,
@@ -75,12 +62,42 @@ export const DashboardCommentsPanel = ({
       ...(readAfter && { readAfter }),
     });
 
+  const rawItems = useMemo(
+    () => data?.pages.flatMap(page => page.items) ?? [],
+    [data?.pages],
+  );
+
+  const taskMap = useMemo(() => {
+    const map = new Map<string, Task>();
+
+    rawItems.forEach(item => {
+      const id = item.id || item.lastComment?.taskId;
+
+      if (!id || map.has(id)) return;
+
+      map.set(id, {
+        id,
+        title: item.title ?? '',
+        ownerId: item.ownerId,
+        executorId: item.executorId ?? '',
+        postId: item.postId ?? '',
+        status: item.status,
+        isExecutorApprove: item.isExecutorApprove ?? undefined,
+        post: item.post,
+      } as Task);
+    });
+
+    return map;
+  }, [rawItems]);
+
+  const taskOptions = useMemo(
+    () => getDashboardTaskOptions(Array.from(taskMap.values())),
+    [taskMap],
+  );
+
   const apiItems = useMemo(
-    () =>
-      (data?.pages.flatMap(page => page.items) ?? []).map(item =>
-        mapTaskWithCommentsItem(item, taskMap)
-      ),
-    [data?.pages, taskMap]
+    () => rawItems.map(item => mapTaskWithCommentsItem(item, taskMap)),
+    [rawItems, taskMap],
   );
 
   const items = useMemo(
@@ -88,7 +105,7 @@ export const DashboardCommentsPanel = ({
       taskId !== 'all'
         ? apiItems.filter(item => item.task.id === taskId)
         : apiItems,
-    [apiItems, taskId]
+    [apiItems, taskId],
   );
 
   const hasActiveFilters = taskId !== 'all' || Boolean(appliedQuery);

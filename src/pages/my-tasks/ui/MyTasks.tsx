@@ -6,26 +6,36 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 
-import { USER_ROLE, useAllTasksQuery } from '@/entities';
+import {
+  USER_ROLE,
+  useTasksInfiniteQuery,
+  useTasksQuery,
+  type Task,
+  type TaskStatus,
+} from '@/entities';
 import { useAuthStore } from '@/features';
 import {
   useMyTaskFilterStore,
-  getVisibleTasks,
-  toTaskFilterParams,
+  toMyTasksQueryParams,
   MyTaskFilter,
 } from '@/features';
 import { EmptyBlock } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
-import { useTasksLoadMore } from '../model/useTasksLoadMore';
-import { useTasksPagination } from '../model/useTasksPagination';
+import { TASK_TABLE_PAGE_SIZE } from '../model/constants';
+import { exportTasksReport } from '../model/exportTasksReport';
+import { fetchTasksForReport } from '../model/fetchTasksForReport';
 
-import { KanbanBoard } from './KanbanBoard';
+import { KanbanBoard, type KanbanBoardHandle } from './KanbanBoard';
 import { TaskItem } from './TaskItem';
 import { TasksLoadMoreButton } from './TasksLoadMoreButton';
+import { TasksPrintHeader } from './TasksPrintHeader';
 import { TaskTable } from './TaskTable';
+
+import type { MyTasksLocationState } from '../model/navigation';
 
 type InitialPost = {
   id?: string;
@@ -33,48 +43,90 @@ type InitialPost = {
 };
 
 export const MyTasks = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const applyDefaultFastFilter = useMyTaskFilterStore(
+    state => state.applyDefaultFastFilter,
+  );
+  const pendingDashboardNavRef = useRef(false);
+  const pendingKanbanScrollRef = useRef<TaskStatus | null>(null);
+  const kanbanBoardRef = useRef<KanbanBoardHandle>(null);
   const [initialPosts, setInitialPosts] = useState<InitialPost[]>([]);
   const [isOpenPrimeRecommendation, setIsOpenPrimeRecommendation] =
     useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [reportTasks, setReportTasks] = useState<Task[] | null>(null);
+  const [pendingPrint, setPendingPrint] = useState(false);
 
   const { role } = useAuthStore();
+  const isCompany = role === USER_ROLE.COMPANY;
 
   const {
     status,
     postId,
     viewMode,
     updatedDate,
+    extraFilter,
+    setViewMode,
+    fastButtonValue,
     toggleKanbanColumn,
     visibleKanbanColumns,
-    fastButtonValue,
-    extraFilter,
   } = useMyTaskFilterStore();
 
-  const filterParams = useMemo(
-    () =>
-      toTaskFilterParams({
-        updatedDate,
-        status: viewMode === 'kanban' ? 'all' : status,
-        postId: postId === 'all' ? undefined : postId,
-      }),
-    [updatedDate, viewMode, status, postId]
+  useEffect(() => {
+    const state = location.state as MyTasksLocationState | null;
+    const fromDashboard = Boolean(state?.fromDashboard);
+
+    if (fromDashboard) {
+      pendingDashboardNavRef.current = true;
+
+      if (state?.scrollToKanbanColumn) {
+        pendingKanbanScrollRef.current = state.scrollToKanbanColumn;
+      }
+
+      navigate(location.pathname, { replace: true, state: null });
+      return;
+    }
+
+    if (pendingDashboardNavRef.current) {
+      pendingDashboardNavRef.current = false;
+      return;
+    }
+
+    applyDefaultFastFilter();
+  }, [applyDefaultFastFilter, location.key, location.pathname, location.state, navigate]);
+
+  const queryFilters = useMemo(
+    () => ({
+      postId,
+      status,
+      viewMode,
+      updatedDate,
+      extraFilter,
+      fastButtonValue,
+      isCompany,
+    }),
+    [
+      postId,
+      status,
+      viewMode,
+      updatedDate,
+      extraFilter,
+      fastButtonValue,
+      isCompany,
+    ],
   );
 
-  const { data: tasks = [], isLoading } = useAllTasksQuery(filterParams);
-
-  const filteredTasks = useMemo(
-    () =>
-      getVisibleTasks(tasks, {
-        viewMode,
-        status,
-        fastButtonValue,
-        extraFilter,
-        isCompany: role === USER_ROLE.COMPANY,
-      }),
-    [tasks, viewMode, status, fastButtonValue, extraFilter, role]
+  const baseParams = useMemo(
+    () => toMyTasksQueryParams(queryFilters),
+    [queryFilters],
   );
 
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [tablePageState, setTablePageState] = useState({
+    filterKey: '',
+    page: 0,
+  });
 
   const paginationResetKey = useMemo(
     () =>
@@ -86,24 +138,70 @@ export const MyTasks = () => {
         extraFilter ?? '',
         updatedDate ?? '',
       ].join('|'),
-    [viewMode, status, postId, fastButtonValue, extraFilter, updatedDate]
+    [
+      viewMode,
+      status,
+      postId,
+      fastButtonValue,
+      extraFilter,
+      updatedDate,
+    ],
   );
 
-  const { page, onPageChange } = useTasksPagination(
-    filteredTasks,
-    paginationResetKey,
-    {
-      scrollTargetRef: contentRef,
-    }
+  const tablePage =
+    tablePageState.filterKey === paginationResetKey ? tablePageState.page : 0;
+
+  const isTableView = viewMode === 'table';
+
+  const tableQueryParams = useMemo(
+    () => ({
+      ...baseParams,
+      page: tablePage + 1,
+      limit: TASK_TABLE_PAGE_SIZE,
+    }),
+    [baseParams, tablePage],
   );
 
-  const { visibleItems, hasMore, hiddenCount, loadMore } = useTasksLoadMore(
-    filteredTasks,
-    paginationResetKey
+  const {
+    data: tableData,
+    isLoading: isTableLoading,
+  } = useTasksQuery(tableQueryParams, { enabled: isTableView });
+
+  const listQueryParams = useMemo(
+    () => ({ ...baseParams, limit: TASK_TABLE_PAGE_SIZE }),
+    [baseParams],
   );
 
-  const hasMultipleTasksForOnePost = tasks.some(
-    task => task.postId === tasks[0]?.postId
+  const {
+    data: infiniteData,
+    isLoading: isInfiniteLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useTasksInfiniteQuery(baseParams, {
+    enabled: !isTableView,
+    limit: TASK_TABLE_PAGE_SIZE,
+  });
+
+  const listTasks = useMemo(
+    () => infiniteData?.pages.flatMap(page => page.items) ?? [],
+    [infiniteData?.pages],
+  );
+
+  const filteredTasks = isTableView ? (tableData?.items ?? []) : listTasks;
+  const totalTasks = isTableView ? tableData?.total : infiniteData?.pages[0]?.total;
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleTablePageChange = (_: unknown, nextPage: number) => {
+    setTablePageState({ filterKey: paginationResetKey, page: nextPage });
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const isLoading = isTableView ? isTableLoading : isInfiniteLoading;
+
+  const hasMultipleTasksForOnePost = listTasks.some(
+    task => task.postId === listTasks[0]?.postId,
   );
 
   useEffect(() => {
@@ -117,38 +215,149 @@ export const MyTasks = () => {
   }, [hasMultipleTasksForOnePost]);
 
   useEffect(() => {
-    if (tasks.length && !initialPosts?.length) {
-      const preparedTasks = tasks.map(task => ({
+    if (listTasks.length && !initialPosts?.length) {
+      const preparedTasks = listTasks.map(task => ({
         id: task?.post?.id,
         title: task.post?.title,
       }));
 
       const uniqueTasks = preparedTasks.filter(
-        (task, index, self) => index === self.findIndex(t => t.id === task.id)
+        (task, index, self) => index === self.findIndex(t => t.id === task.id),
       );
 
       setTimeout(() => {
         setInitialPosts(uniqueTasks);
       }, 0);
     }
-  }, [initialPosts?.length, tasks]);
+  }, [initialPosts?.length, listTasks]);
 
   const handleClosePrimeRecommendation = () => {
     setIsOpenPrimeRecommendation(false);
     localStorage.setItem('prime-recommendation-closed', 'true');
   };
 
-  const isKanban = viewMode === 'kanban';
-  const isTable = viewMode === 'table';
-  const isFullHeightView = isKanban || isTable;
+  const isFullHeightView = viewMode === 'kanban' || viewMode === 'table';
   const isEmpty = !isLoading && !filteredTasks.length;
+  const tableReportDisabled = isLoading || isEmpty;
+
+  useEffect(() => {
+    const column = pendingKanbanScrollRef.current;
+
+    if (!column || viewMode !== 'kanban' || isLoading || isEmpty) return;
+
+    const frameId = requestAnimationFrame(() => {
+      if (!kanbanBoardRef.current) return;
+
+      kanbanBoardRef.current.scrollToColumn(column);
+      pendingKanbanScrollRef.current = null;
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [viewMode, isLoading, isEmpty, visibleKanbanColumns, paginationResetKey]);
+
+  const reportOptions = useMemo(
+    () => ({
+      postId,
+      viewMode,
+      status,
+      updatedDate,
+      fastButtonValue,
+      extraFilter,
+      isCompany,
+    }),
+    [
+      postId,
+      viewMode,
+      status,
+      updatedDate,
+      fastButtonValue,
+      extraFilter,
+      isCompany,
+    ],
+  );
+
+  const printTasks = reportTasks ?? filteredTasks;
+
+  const gridHiddenCount = hasNextPage
+    ? Math.max((totalTasks ?? 0) - filteredTasks.length, 0)
+    : 0;
+
+  useEffect(() => {
+    if (!pendingPrint || viewMode !== 'table' || !reportTasks) return;
+
+    let cancelled = false;
+    let innerFrameId = 0;
+
+    const outerFrameId = requestAnimationFrame(() => {
+      innerFrameId = requestAnimationFrame(() => {
+        if (cancelled) return;
+
+        const handleAfterPrint = () => {
+          setPendingPrint(false);
+          setReportTasks(null);
+        };
+
+        window.addEventListener('afterprint', handleAfterPrint, { once: true });
+        window.print();
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(outerFrameId);
+      cancelAnimationFrame(innerFrameId);
+    };
+  }, [pendingPrint, viewMode, reportTasks]);
+
+  const handlePrint = useCallback(async () => {
+    setIsPrinting(true);
+
+    try {
+      const tasks = await fetchTasksForReport(reportOptions);
+
+      setReportTasks(tasks);
+      setViewMode('table');
+      setPendingPrint(true);
+    } catch (error) {
+      console.error('Failed to prepare tasks report for print', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [reportOptions, setViewMode]);
+
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+
+    try {
+      const tasks = await fetchTasksForReport(reportOptions);
+
+      exportTasksReport(tasks);
+    } catch (error) {
+      console.error('Failed to export tasks report', error);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [reportOptions]);
+
+  const tableReport = useMemo(
+    () => ({
+      disabled: tableReportDisabled,
+      isExporting,
+      isPrinting,
+      onPrint: handlePrint,
+      onExport: handleExport,
+    }),
+    [handleExport, handlePrint, isExporting, isPrinting, tableReportDisabled],
+  );
 
   return (
     <PageLayout
       withFooter={false}
       isScreenHeight={isFullHeightView}
+      printHide={viewMode === 'table'}
     >
       <Box
+        className={viewMode === 'table' ? 'print-root' : undefined}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -159,6 +368,12 @@ export const MyTasks = () => {
             minHeight: 0,
             height: '100%',
           }),
+          '@media print': {
+            height: 'auto',
+            minHeight: 'auto',
+            overflow: 'visible',
+            flex: 'none',
+          },
         }}
       >
         <Box
@@ -170,9 +385,9 @@ export const MyTasks = () => {
           }}
         >
           <MyTaskFilter
-            tasks={tasks}
+            tableReport={tableReport}
             initialPosts={initialPosts}
-            isCompany={role === USER_ROLE.COMPANY}
+            isCompany={isCompany}
           />
         </Box>
 
@@ -237,14 +452,14 @@ export const MyTasks = () => {
                   spacing={1}
                   sx={{ width: '100%' }}
                 >
-                  {visibleItems.map(task => (
+                  {filteredTasks.map(task => (
                     <Grid
                       key={task.id}
                       size={{ xs: 12, sm: 6, md: 4 }}
                     >
                       <TaskItem
                         task={task}
-                        isCompany={role === USER_ROLE.COMPANY}
+                        isCompany={isCompany}
                       />
                     </Grid>
                   ))}
@@ -260,36 +475,68 @@ export const MyTasks = () => {
                   }}
                 >
                   <KanbanBoard
-                    tasks={visibleItems}
-                    filterParams={filterParams}
+                    ref={kanbanBoardRef}
+                    tasks={filteredTasks}
+                    resetKey={paginationResetKey}
+                    filterParams={listQueryParams}
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    onFetchNextPage={() => void fetchNextPage()}
                     onHideColumn={toggleKanbanColumn}
                     visibleColumns={visibleKanbanColumns}
                   />
                 </Box>
               )}
 
-              {viewMode === 'table' && (
-                <Box
-                  sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    display: 'flex',
-                    width: '100%',
-                  }}
-                >
-                  <TaskTable
-                    tasks={filteredTasks}
-                    page={page}
-                    onPageChange={onPageChange}
-                  />
-                </Box>
+              {(viewMode === 'table' || reportTasks) && (
+                <>
+                  <TasksPrintHeader total={printTasks.length} />
+
+                  {viewMode === 'table' && (
+                    <Box
+                      className="print-no-print"
+                      sx={{
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        width: '100%',
+                      }}
+                    >
+                      <TaskTable
+                        page={tablePage}
+                        total={tableData?.total}
+                        tasks={filteredTasks}
+                        serverPagination
+                        onPageChange={handleTablePageChange}
+                        isCompany={isCompany}
+                      />
+                    </Box>
+                  )}
+
+                  <Box
+                    className="print-only"
+                    sx={{
+                      display: 'none',
+                      '@media print': {
+                        display: 'flex',
+                        width: '100%',
+                      },
+                    }}
+                  >
+                    <TaskTable
+                      tasks={printTasks}
+                      paginated={false}
+                      forPrint
+                    />
+                  </Box>
+                </>
               )}
             </Box>
 
-            {hasMore && viewMode !== 'table' && (
+            {viewMode === 'grid' && hasNextPage && (
               <TasksLoadMoreButton
-                hiddenCount={hiddenCount}
-                onClick={loadMore}
+                hiddenCount={gridHiddenCount}
+                onClick={() => void fetchNextPage()}
               />
             )}
           </Box>

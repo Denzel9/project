@@ -1,12 +1,12 @@
-import { Alert, Box } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { Alert, Box, Stack } from '@mui/material';
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   USER_ROLE,
   mapApplicationCompanyToRow,
-  mapTaskContactToRow,
+  mapPartnerUserToRow,
   normalizePartnerApplicationCompany,
-  normalizePartnerTaskContact,
+  normalizePartnerUser,
   usePartnerApplicantsQuery,
   usePartnerApplicationCompaniesQuery,
   usePartnerCustomersQuery,
@@ -15,17 +15,20 @@ import {
 import { useAuthStore } from '@/features';
 import { PageLayout } from '@/widgets';
 
+import { exportPartnersReport } from '../model/exportPartnersReport';
 import {
   DEFAULT_APPLICANT_STATUSES,
   getPartnersPageConfig,
 } from '../model/utils';
-import type { PartnersTabId } from '../model/types';
 
-import { ApplicantsTable } from './ApplicantsTable';
 import { ApplicationCompaniesTable } from './ApplicationCompaniesTable';
+import { PartnersPrintHeader } from './PartnersPrintHeader';
+import { PartnersReportToolbar } from './PartnersReportToolbar';
 import { PartnersTableSkeleton } from './PartnersTableSkeleton';
 import { PartnersTabs } from './PartnersTabs';
 import { TaskContactsTable } from './TaskContactsTable';
+
+import type { PartnersTabId } from '../model/types';
 
 const EMPTY_MESSAGES: Record<PartnersTabId, string> = {
   executors: 'Пока нет исполнителей',
@@ -36,34 +39,38 @@ const EMPTY_MESSAGES: Record<PartnersTabId, string> = {
 
 const CONTACT_LABELS: Partial<Record<PartnersTabId, string>> = {
   executors: 'Исполнитель',
+  applicants: 'Кандидат',
   customers: 'Заказчик',
 };
 
 export const ExecutorsPage = () => {
   const { role } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
+  const [isExporting, setIsExporting] = useState(false);
 
   const pageConfig = useMemo(() => getPartnersPageConfig(role), [role]);
-  const [activeTab, setActiveTab] = useState<PartnersTabId>(pageConfig.defaultTab);
+  const [activeTab, setActiveTab] = useState<PartnersTabId>(
+    pageConfig.defaultTab
+  );
 
   const executorsQuery = usePartnerExecutorsQuery(
     { sort: 'name' },
-    { enabled: isCompany && activeTab === 'executors' },
+    { enabled: isCompany && activeTab === 'executors' }
   );
 
   const applicantsQuery = usePartnerApplicantsQuery(
     { statuses: [...DEFAULT_APPLICANT_STATUSES] },
-    { enabled: isCompany && activeTab === 'applicants' },
+    { enabled: isCompany && activeTab === 'applicants' }
   );
 
   const customersQuery = usePartnerCustomersQuery(
     { sort: 'name' },
-    { enabled: !isCompany && activeTab === 'customers' },
+    { enabled: !isCompany && activeTab === 'customers' }
   );
 
   const companiesQuery = usePartnerApplicationCompaniesQuery(
     { sort: 'recent', limit: 20 },
-    { enabled: !isCompany && activeTab === 'companies' },
+    { enabled: !isCompany && activeTab === 'companies' }
   );
 
   const activeQuery = useMemo(() => {
@@ -87,20 +94,37 @@ export const ExecutorsPage = () => {
     executorsQuery,
   ]);
 
+  const activeTabLabel = useMemo(
+    () => pageConfig.tabs.find(tab => tab.id === activeTab)?.label ?? activeTab,
+    [activeTab, pageConfig.tabs]
+  );
+
+  const activeTotal = activeQuery.data?.total ?? 0;
+  const reportDisabled =
+    activeQuery.isLoading || activeQuery.isError || activeTotal === 0;
+
   const executorRows = useMemo(
     () =>
       (executorsQuery.data?.items ?? [])
-        .map(normalizePartnerTaskContact)
-        .map(mapTaskContactToRow),
-    [executorsQuery.data?.items],
+        .map(normalizePartnerUser)
+        .map(mapPartnerUserToRow),
+    [executorsQuery.data?.items]
+  );
+
+  const applicantRows = useMemo(
+    () =>
+      (applicantsQuery.data?.items ?? [])
+        .map(normalizePartnerUser)
+        .map(mapPartnerUserToRow),
+    [applicantsQuery.data?.items]
   );
 
   const customerRows = useMemo(
     () =>
       (customersQuery.data?.items ?? [])
-        .map(normalizePartnerTaskContact)
-        .map(mapTaskContactToRow),
-    [customersQuery.data?.items],
+        .map(normalizePartnerUser)
+        .map(mapPartnerUserToRow),
+    [customersQuery.data?.items]
   );
 
   const companyRows = useMemo(
@@ -108,8 +132,24 @@ export const ExecutorsPage = () => {
       (companiesQuery.data?.items ?? [])
         .map(normalizePartnerApplicationCompany)
         .map(mapApplicationCompanyToRow),
-    [companiesQuery.data?.items],
+    [companiesQuery.data?.items]
   );
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+
+    try {
+      await exportPartnersReport(activeTab);
+    } catch (error) {
+      console.error('Failed to export partners report', error);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [activeTab]);
 
   const renderContent = () => {
     if (activeQuery.isLoading) {
@@ -136,8 +176,9 @@ export const ExecutorsPage = () => {
 
       case 'applicants':
         return (
-          <ApplicantsTable
-            items={applicantsQuery.data?.items ?? []}
+          <TaskContactsTable
+            items={applicantRows}
+            contactColumnLabel={CONTACT_LABELS.applicants ?? 'Кандидат'}
             emptyMessage={EMPTY_MESSAGES.applicants}
           />
         );
@@ -166,16 +207,52 @@ export const ExecutorsPage = () => {
 
   return (
     <PageLayout
-      title={pageConfig.title}
       withFooter={false}
+      printHide
     >
-      <PartnersTabs
-        tabs={pageConfig.tabs}
-        value={activeTab}
-        onChange={setActiveTab}
-      />
+      <Box
+        className="partners-print-root"
+        sx={{ pb: 2 }}
+      >
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            p: 4,
+            mb: 2,
+            gap: 1,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '32px',
+            bgcolor: 'white',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <PartnersTabs
+            tabs={pageConfig.tabs}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
 
-      <Box>{renderContent()}</Box>
+          <PartnersReportToolbar
+            disabled={reportDisabled}
+            isExporting={isExporting}
+            onPrint={handlePrint}
+            onExport={handleExport}
+          />
+        </Stack>
+
+        <PartnersPrintHeader
+          pageTitle={pageConfig.title}
+          tabLabel={activeTabLabel}
+          total={activeTotal}
+        />
+
+        {/* TODO добавить сортировку */}
+        <Box>{renderContent()}</Box>
+      </Box>
     </PageLayout>
   );
 };

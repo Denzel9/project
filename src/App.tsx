@@ -2,6 +2,7 @@ import { ThemeProvider } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './app/providers/AuthProvider';
+import { NotificationsProvider } from './app/providers/NotificationsProvider';
 import { theme } from './app/theme/theme';
 import { Router } from './pages';
 import { queryClient } from './shared';
@@ -12,8 +13,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <AuthProvider>
-          <Router />
-          <SnackbarLocal />
+          <NotificationsProvider>
+            <Router />
+            <SnackbarLocal />
+          </NotificationsProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

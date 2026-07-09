@@ -7,42 +7,41 @@ export type PartnerProfile = {
   id: string;
   role: PartnerRole;
   avatar?: string | null;
+  bio?: string | null;
   name?: string | null;
   lastName?: string | null;
   companyName?: string | null;
+  followers?: number;
 };
 
-export type PartnerTaskContactItem = {
+export type PartnerUserItem = {
   id: string;
   role: PartnerRole;
   avatar?: string | null;
+  bio?: string | null;
   name?: string | null;
   lastName?: string | null;
   companyName?: string | null;
-  tasksTotal: number;
-  tasksActive: number;
-  lastActivityAt: string;
+  followers: number;
+  interactionsCount: number;
+  lastInteractionAt: string;
 };
 
+/** @deprecated use PartnerUserItem */
+export type PartnerTaskContactItem = PartnerUserItem;
+
 export type PartnerTaskContactList = {
-  items: PartnerTaskContactItem[];
+  items: PartnerUserItem[];
   total: number;
   page: number;
   limit: number;
 };
 
-export type PartnerApplicantItem = {
-  id: string;
-  status: ApplicationStatus;
-  createdAt: string;
-  updatedAt: string;
-  postId: string;
-  postTitle?: string | null;
-  applicant: PartnerProfile;
-};
+/** @deprecated use PartnerUserItem */
+export type PartnerApplicantItem = PartnerUserItem;
 
 export type PartnerApplicantList = {
-  items: PartnerApplicantItem[];
+  items: PartnerUserItem[];
   total: number;
   page: number;
   limit: number;
@@ -68,25 +67,40 @@ export type PartnerApplicationCompanyList = {
 };
 
 export type PartnerTaskContactsParams = {
-  status?: TaskStatus;
-  sort?: 'name' | 'recent' | 'tasks';
-  q?: string;
-  urgent?: boolean;
-  page?: number;
-  limit?: number;
-};
+  q?: string
+  postId?: string
+  taskId?: string
+  userId?: string
+  status?: TaskStatus
+  statuses?: TaskStatus[]
+  createdDate?: string
+  isExecutorApprove?: boolean | null
+  urgent?: boolean
+  sort?: 'name' | 'recent'
+  page?: number
+  limit?: number
+}
 
 export type PartnerApplicantsParams = {
-  postId?: string;
-  statuses?: ApplicationStatus[];
   q?: string;
+  postId?: string;
+  userId?: string;
+  status?: ApplicationStatus;
+  statuses?: ApplicationStatus[];
+  createdDate?: string;
+  sort?: 'recent' | 'name';
   page?: number;
   limit?: number;
 };
 
 export type PartnerApplicationCompaniesParams = {
-  sort?: 'recent' | 'name';
   q?: string;
+  postId?: string;
+  userId?: string;
+  status?: ApplicationStatus;
+  statuses?: ApplicationStatus[];
+  createdDate?: string;
+  sort?: 'recent' | 'name';
   page?: number;
   limit?: number;
 };

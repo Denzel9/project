@@ -1,41 +1,27 @@
-import { startOfDay } from 'date-fns';
-import dayjs from 'dayjs';
 
 import {
-  isTaskOverdue,
-  isTaskTerminal,
   TASK_STATUS_ENUM,
-  TASK_STATUS_LABELS,
   type Task,
   type TaskActivity,
   type TaskActivityFeedItem,
   type TaskComment,
-  type TaskStatus,
   type TaskWithCommentsItem,
 } from '@/entities';
-import {
-  ACTIVE_KANBAN_STATUSES,
-  getTaskConfig,
-  type KanbanColumnColor,
-} from '@/features';
+import { getTaskStatsCount, type TaskStats } from '@/entities';
+import { getUserName, type User } from '@/entities/user';
 import { hasCommentText } from '@/pages/task/model/lib/commentMedia';
 import { ROUTES } from '@/shared';
 
 import {
   DASHBOARD_COMMENTS_READ_AFTER_KEY,
-  MAX_DASHBOARD_LIST_ITEMS,
-  UPCOMING_DEADLINE_DAYS,
 } from './constants';
 
-import type { Theme } from '@mui/material/styles';
+import type { DashboardCardVariant } from './types';
 
-export type StatusChartDatum = {
-  status: TaskStatus;
-  id: TaskStatus;
-  label: string;
-  value: number;
-  color: string;
-};
+export const getDashboardCardCount = (
+  variant: DashboardCardVariant,
+  stats?: TaskStats,
+): number => getTaskStatsCount(variant, stats);
 
 export type DashboardActivityItem = {
   activity: TaskActivity;
@@ -98,6 +84,18 @@ export const getCommentsLabel = (count: number) => {
   }
 
   return 'комментариев';
+};
+
+export const getTasksLabel = (count: number) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod10 === 1 && mod100 !== 11) return 'задача';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return 'задачи';
+  }
+
+  return 'задач';
 };
 
 export const canCommentOnTask = (task: Task) =>
@@ -173,152 +171,8 @@ export const mapActivityFeedItem = (
   };
 };
 
-const getPaletteColor = (palette: Theme['palette'], color: KanbanColumnColor) =>
-  palette[color].main;
-
-export const getTasksLabel = (count: number) => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-
-  if (mod10 === 1 && mod100 !== 11) return 'задача';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return 'задачи';
-  }
-
-  return 'задач';
-};
-
 const getTaskTitle = (task: Task) =>
   task.title || task.post?.title || 'Задача';
-
-const sortByFinalDateAsc = (left: Task, right: Task) => {
-  const leftDate = dayjs(left.finalDate).valueOf();
-  const rightDate = dayjs(right.finalDate).valueOf();
-
-  if (leftDate !== rightDate) return leftDate - rightDate;
-
-  return getTaskTitle(left).localeCompare(getTaskTitle(right), 'ru');
-};
-
-export const getStatusCounts = (tasks: Task[]): Partial<Record<TaskStatus, number>> => {
-  const counts: Partial<Record<TaskStatus, number>> = {};
-
-  tasks.forEach(task => {
-    if (!ACTIVE_KANBAN_STATUSES.includes(task.status)) return;
-
-    counts[task.status] = (counts[task.status] ?? 0) + 1;
-  });
-
-  return counts;
-};
-
-export const getStatusChartData = (
-  statusCounts: Partial<Record<TaskStatus, number>>,
-  palette: Theme['palette'],
-): StatusChartDatum[] =>
-  ACTIVE_KANBAN_STATUSES.flatMap(status => {
-    const value = statusCounts[status] ?? 0;
-
-    if (value <= 0) return [];
-
-    const config = getTaskConfig(status);
-
-    return [
-      {
-        status,
-        id: status,
-        value,
-        label: TASK_STATUS_LABELS[status],
-        color: getPaletteColor(palette, config?.color ?? 'primary'),
-      },
-    ];
-  });
-
-export const getOverdueTasks = (tasks: Task[]) =>
-  tasks
-    .filter(task => Boolean(task.finalDate) && isTaskOverdue(task))
-    .sort(sortByFinalDateAsc);
-
-export const getUpcomingDeadlineTasks = (
-  tasks: Task[],
-  days = UPCOMING_DEADLINE_DAYS,
-) => {
-  const today = startOfDay(new Date());
-  const endDate = dayjs(today).add(days, 'day').endOf('day');
-
-  return tasks
-    .filter(task => {
-      if (!task.finalDate || isTaskTerminal(task) || isTaskOverdue(task)) {
-        return false;
-      }
-
-      const deadline = dayjs(task.finalDate);
-
-      return (
-        !deadline.isBefore(dayjs(today), 'day') &&
-        !deadline.isAfter(endDate)
-      );
-    })
-    .sort(sortByFinalDateAsc);
-};
-
-export const getCheckingTasks = (tasks: Task[]) =>
-  tasks.filter(
-    task =>
-      task.status === TASK_STATUS_ENUM.CHECKING && !isTaskTerminal(task),
-  );
-
-export const getUrgentTasks = (tasks: Task[]) =>
-  tasks.filter(task => task.urgent && !isTaskTerminal(task));
-
-const isDeadlineToday = (task: Task) =>
-  Boolean(task.finalDate) && dayjs(task.finalDate).isSame(dayjs(), 'day');
-
-const matchesDashboardActionFilter = (task: Task, isCompany: boolean) =>
-  isCompany ? task.isCompanyAction === true : task.isCompanyAction === false;
-
-const sortDashboardTableTasks = (left: Task, right: Task) => {
-  const leftToday = isDeadlineToday(left);
-  const rightToday = isDeadlineToday(right);
-
-  if (leftToday !== rightToday) {
-    return leftToday ? -1 : 1;
-  }
-
-  if (leftToday && rightToday && left.finalDate && right.finalDate) {
-    return sortByFinalDateAsc(left, right);
-  }
-
-  return dayjs(right.updatedAt).valueOf() - dayjs(left.updatedAt).valueOf();
-};
-
-export const getNearestDeadlineTasks = (tasks: Task[], isCompany: boolean) =>
-  tasks
-    .filter(task => {
-      if (isTaskTerminal(task)) return false;
-
-      return (
-        isDeadlineToday(task) ||
-        matchesDashboardActionFilter(task, isCompany)
-      );
-    })
-    .sort(sortDashboardTableTasks);
-
-export const getRecentUpdatedTasks = (
-  tasks: Task[],
-  limit = MAX_DASHBOARD_LIST_ITEMS,
-) =>
-  [...tasks]
-    .filter(
-      task =>
-        task.status !== TASK_STATUS_ENUM.CANCELLED &&
-        task.status !== TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
-    )
-    .sort(
-      (left, right) =>
-        dayjs(right.updatedAt).valueOf() - dayjs(left.updatedAt).valueOf(),
-    )
-    .slice(0, limit);
 
 export const getTaskDisplayTitle = getTaskTitle;
 
@@ -351,3 +205,43 @@ export const getDashboardTaskOptions = (tasks: Task[]) => {
     }))
     .sort((left, right) => left.title.localeCompare(right.title, 'ru'));
 };
+
+export const getDashboardTaskPersonLabel = (task: Task, isCompany: boolean) => {
+  if (isCompany) {
+    if (!task.executor) return null;
+
+    return getUserName(task.executor as Partial<User>) || null;
+  }
+
+  return (
+    task.owner?.companyProfile?.companyName ??
+    getUserName(task.owner as Partial<User>) ??
+    null
+  );
+};
+
+export const getDashboardTaskPersonId = (task: Task, isCompany: boolean) =>
+  isCompany ? (task.executorId ?? null) : (task.ownerId ?? null);
+
+export const getDashboardTaskPersonOptions = (
+  tasks: Task[],
+  isCompany: boolean,
+) => {
+  const seen = new Set<string>();
+
+  return tasks
+    .flatMap(task => {
+      const id = getDashboardTaskPersonId(task, isCompany);
+      const label = getDashboardTaskPersonLabel(task, isCompany);
+
+      if (!id || !label || seen.has(id)) return [];
+
+      seen.add(id);
+
+      return [{ id, label }];
+    })
+    .sort((left, right) => left.label.localeCompare(right.label, 'ru'));
+};
+
+
+

@@ -1,4 +1,5 @@
 export * from './model/api'
+export * from './model/stats'
 export * from './model/utils'
 export {
   TASK_STATUS_ENUM,
@@ -11,10 +12,20 @@ export {
   type TaskMediaKind,
   type TaskMediaUploadKind,
   type TaskMedia,
+  type TaskApplication,
+  type TaskPublication,
   type Task,
   type TaskList,
   type TaskCommentList,
   type TaskListParams,
+  type TaskStats,
+  type TaskStatsParams,
+  type TaskCalendarDateField,
+  type TaskCalendarExecutor,
+  type TaskCalendarItem,
+  type TaskCalendarList,
+  type TaskCalendarOwner,
+  type TaskCalendarParams,
   type SearchTasksParams,
   type TaskCommentListParams,
   type TaskCommentFeedItem,

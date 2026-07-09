@@ -5,6 +5,10 @@ import {
   LanguageOutlined,
   PeopleOutlined,
   SecurityOutlined,
+  DashboardOutlined,
+  TaskOutlined,
+  ViewKanbanOutlined,
+  AutoAwesomeOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
@@ -49,6 +53,31 @@ export const SETTINGS_MENU_SECTIONS: SettingsMenuSection[] = [
         label: 'Платежи',
         path: ROUTES.SETTINGS_BILLING,
         icon: <LanguageOutlined fontSize="small" />,
+      },
+    ],
+  },
+  {
+    title: 'CRM',
+    items: [
+      {
+        label: 'Общие',
+        path: ROUTES.SETTINGS_CRM,
+        icon: <DashboardOutlined fontSize="small" />,
+      },
+      {
+        label: 'Задачи',
+        path: ROUTES.SETTINGS_CRM_TASKS,
+        icon: <TaskOutlined fontSize="small" />,
+      },
+      {
+        label: 'Воронка',
+        path: ROUTES.SETTINGS_CRM_PIPELINE,
+        icon: <ViewKanbanOutlined fontSize="small" />,
+      },
+      {
+        label: 'Автоматизация',
+        path: ROUTES.SETTINGS_CRM_AUTOMATION,
+        icon: <AutoAwesomeOutlined fontSize="small" />,
       },
     ],
   },

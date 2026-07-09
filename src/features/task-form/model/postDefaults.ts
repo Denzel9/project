@@ -1,17 +1,14 @@
-import type { Post, PostDeliverable } from '@/entities/post'
-import { getUsageRightsLabel } from '@/entities/post'
-import type { Task } from '@/entities/task'
+import { mapDeliverablesToForm } from './deliverablesMappers'
+import {
+  mapBriefToTaskForm,
+  mapBloggerRequirementsToTaskForm,
+  mapCooperationDetailsToTaskForm,
+  hasTaskFormTzContent,
+} from './taskFormFieldMappers'
 
-import {
-  hasDeliverableValues,
-  mapDeliverablesToForm,
-} from './deliverablesMappers'
 import type { TaskFormType } from './schema/schema'
-import {
-  composeTaskDescription,
-  mapContentStylesToForm,
-  parseTaskDescription,
-} from './taskTzFields'
+import type { Post, PostDeliverable } from '@/entities/post'
+import type { Task } from '@/entities/task'
 
 const VIDEO_FORMATS = new Set<PostDeliverable['format']>([
   'REELS',
@@ -22,9 +19,6 @@ const VIDEO_FORMATS = new Set<PostDeliverable['format']>([
 ])
 
 const isEmpty = (value?: string | null) => !value?.trim()
-
-const hasListValues = (items?: { value?: string }[]) =>
-  Boolean(items?.some(item => !isEmpty(item.value)))
 
 export const countMediaFromDeliverables = (
   deliverables?: PostDeliverable[],
@@ -54,45 +48,10 @@ export const mapPostToTaskDefaults = (post: Post): TaskFormType => {
   return {
     title: post.title?.trim() ?? '',
     description: post.brief?.taskDescription?.trim() ?? '',
-    dosAndDonts: post.brief?.dosAndDonts?.trim() ?? '',
-    cta: post.brief?.cta?.trim() ?? '',
-    brandGuidelinesUrl: post.brief?.brandGuidelinesUrl?.trim() ?? '',
+    ...mapBriefToTaskForm(post.brief),
     deliverables: mapDeliverablesToForm(post.deliverables),
-    hashtagItems: post.brief?.hashtags?.map(value => ({ value })) ?? [],
-    mentionItems: post.brief?.mentions?.map(value => ({ value })) ?? [],
-    referenceItems: post.brief?.references?.map(value => ({ value })) ?? [],
-    locationCountry: post.location?.country ?? '',
-    locationCity: post.location?.city ?? '',
-    locationAddress: post.location?.address ?? '',
-    locationShootingRequired: post.location?.shootingRequired ?? false,
-    cooperationExclusivity: post.cooperationDetails?.exclusivity ?? false,
-    cooperationExclusivityDays:
-      post.cooperationDetails?.exclusivityDays?.toString() ?? '',
-    cooperationUsageRights: post.cooperationDetails?.usageRights
-      ? getUsageRightsLabel(post.cooperationDetails.usageRights)
-      : '',
-    cooperationUsageDurationDays:
-      post.cooperationDetails?.usageDurationDays?.toString() ?? '',
-    cooperationRequiresMarking:
-      post.cooperationDetails?.requiresMarking ?? false,
-    cooperationRequiresContract:
-      post.cooperationDetails?.requiresContract ?? false,
-    cooperationNdaRequired: post.cooperationDetails?.ndaRequired ?? false,
-    bloggerMinFollowers:
-      post.bloggerRequirements?.minFollowers?.toString() ?? '',
-    bloggerMaxFollowers:
-      post.bloggerRequirements?.maxFollowers?.toString() ?? '',
-    bloggerMinEngagementRate:
-      post.bloggerRequirements?.minEngagementRate?.toString() ?? '',
-    bloggerVerifiedAccount:
-      post.bloggerRequirements?.verifiedAccount ?? false,
-    bloggerExperienceWithAds:
-      post.bloggerRequirements?.experienceWithAds ?? false,
-    bloggerLanguages:
-      post.bloggerRequirements?.languages?.map(value => ({ value })) ?? [],
-    bloggerContentStyles: mapContentStylesToForm(
-      post.bloggerRequirements?.contentStyle,
-    ),
+    ...mapCooperationDetailsToTaskForm(post.cooperationDetails),
+    ...mapBloggerRequirementsToTaskForm(post.bloggerRequirements),
     photoCount,
     videoCount,
     finalDate: post.deadline ?? null,
@@ -101,56 +60,25 @@ export const mapPostToTaskDefaults = (post: Post): TaskFormType => {
 
 export const mapTaskToTaskForm = (task: Task): TaskFormType => ({
   title: task.title ?? '',
+  description: task.description ?? '',
   photoCount: task.photoCount ?? '',
   videoCount: task.videoCount ?? '',
   finalDate: task.finalDate ?? null,
-  ...parseTaskDescription(task.description),
+  ...mapBriefToTaskForm(task.brief),
+  deliverables: mapDeliverablesToForm(task.deliverables ?? undefined),
+  ...mapCooperationDetailsToTaskForm(task.cooperationDetails),
+  ...mapBloggerRequirementsToTaskForm(task.bloggerRequirements),
 })
 
 export const hasUnsavedPostDefaults = (task: Task, post: Post): boolean => {
   const defaults = mapPostToTaskDefaults(post)
   const current = mapTaskToTaskForm(task)
 
-  const hasDefaultTz =
-    !isEmpty(defaults.description) ||
-    !isEmpty(defaults.dosAndDonts) ||
-    !isEmpty(defaults.cta) ||
-    !isEmpty(defaults.brandGuidelinesUrl) ||
-    hasDeliverableValues(defaults.deliverables) ||
-    hasListValues(defaults.hashtagItems) ||
-    hasListValues(defaults.mentionItems) ||
-    hasListValues(defaults.referenceItems) ||
-    !isEmpty(defaults.locationCountry) ||
-    !isEmpty(defaults.locationCity) ||
-    !isEmpty(defaults.locationAddress) ||
-    defaults.locationShootingRequired ||
-    defaults.cooperationExclusivity ||
-    !isEmpty(defaults.cooperationExclusivityDays) ||
-    !isEmpty(defaults.cooperationUsageRights) ||
-    !isEmpty(defaults.cooperationUsageDurationDays) ||
-    defaults.cooperationRequiresMarking ||
-    defaults.cooperationRequiresContract ||
-    defaults.cooperationNdaRequired ||
-    !isEmpty(defaults.bloggerMinFollowers) ||
-    !isEmpty(defaults.bloggerMaxFollowers) ||
-    !isEmpty(defaults.bloggerMinEngagementRate) ||
-    defaults.bloggerVerifiedAccount ||
-    defaults.bloggerExperienceWithAds ||
-    hasListValues(defaults.bloggerLanguages) ||
-    hasListValues(defaults.bloggerContentStyles)
-
-  const hasCurrentTz =
-    !isEmpty(current.description) ||
-    !isEmpty(composeTaskDescription(current))
-
   return (
     (isEmpty(task.title) && !isEmpty(defaults.title)) ||
-    (!hasCurrentTz && hasDefaultTz) ||
+    (!hasTaskFormTzContent(current) && hasTaskFormTzContent(defaults)) ||
     (isEmpty(task.photoCount) && !isEmpty(defaults.photoCount)) ||
     (isEmpty(task.videoCount) && !isEmpty(defaults.videoCount)) ||
     (!task.finalDate && Boolean(defaults.finalDate))
   )
 }
-export const buildTaskDescriptionFromPost = (post: Post): string =>
-  composeTaskDescription(mapPostToTaskDefaults(post))
-

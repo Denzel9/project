@@ -84,22 +84,15 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
             size="small"
             label={taskConfig?.label}
             color={accentColor}
+            sx={{ opacity: 0.75 }}
           />
 
-          {task.urgent && (
-            <Chip
-              size="small"
-              icon={<Whatshot />}
-              label="Срочно"
-              color="error"
-              variant="outlined"
-            />
-          )}
+          {task.urgent && <Whatshot color="error" />}
         </Stack>
 
         <Stack
-          direction="row"
           spacing={0.5}
+          direction="row"
           sx={{ alignItems: 'center' }}
         >
           <Typography
@@ -131,10 +124,10 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
         sx={{
           mb: 0.5,
           fontWeight: 600,
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
+          WebkitLineClamp: 2,
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
         }}
       >
         {task.post?.title ?? 'Без названия'}
@@ -146,10 +139,10 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
           color="text.secondary"
           sx={{
             mb: 1.5,
-            display: '-webkit-box',
-            WebkitLineClamp: 1,
-            WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
+            WebkitLineClamp: 1,
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
           }}
         >
           {task.title}
@@ -159,15 +152,15 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
       <Stack
         direction="row"
         sx={{
-          alignItems: 'end',
-          minWidth: 0,
           mt: 2,
+          minWidth: 0,
+          alignItems: 'end',
           justifyContent: 'space-between',
         }}
       >
         <Stack
-          direction="row"
           spacing={1}
+          direction="row"
           sx={{ alignItems: 'center' }}
         >
           <Avatar
@@ -183,8 +176,8 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
               {contact.label}
             </Typography>
             <Typography
-              variant="body2"
               noWrap
+              variant="body2"
               sx={{ lineHeight: 1.3 }}
             >
               {contact.name}
@@ -195,9 +188,10 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
         {task.finalDate && (
           <Chip
             size="small"
-            label={`Дедлайн: ${format(new Date(task.finalDate), 'dd.MM.yyyy')}`}
+            sx={{ opacity: 0.75 }}
             color={overdue ? 'error' : 'default'}
             variant={overdue ? 'filled' : 'outlined'}
+            label={`Дедлайн: ${format(new Date(task.finalDate), 'dd.MM.yyyy')}`}
           />
         )}
       </Stack>

@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 
+import { type TaskStatus } from '@/entities';
+
 import { ALL_TASK_STATUSES } from '../constants';
 import { getKanbanColumnsForFastButton } from '../utils';
 
 import type {
   TaskStatusFilter,
-  FastButtonValueType,
+  FastButtonFilter,
   TaskExtraFilter,
 } from '../utils';
-import type { TaskStatus } from '@/entities';
 
 export type TaskViewMode = 'grid' | 'kanban' | 'table';
 
@@ -55,7 +56,7 @@ type MyTaskFilterStore = {
     status: TaskStatusFilter;
     updatedDate: string | null;
     visibleKanbanColumns: TaskStatus[];
-    fastButtonValue: FastButtonValueType;
+    fastButtonValue: FastButtonFilter;
     extraFilter: TaskExtraFilter | null;
 
     resetKanbanColumns: () => void;
@@ -65,12 +66,14 @@ type MyTaskFilterStore = {
     setViewMode: (viewMode: TaskViewMode) => void;
     toggleKanbanColumn: (status: TaskStatus) => void;
     setUpdatedDate: (updatedDate: string | null) => void;
-    setFastButtonValue: (fastButtonValue: FastButtonValueType) => void;
+    setFastButtonValue: (fastButtonValue: FastButtonFilter) => void;
+    applyDefaultFastFilter: () => void;
     setVisibleKanbanColumns: (visibleKanbanColumns: TaskStatus[]) => void;
+    ensureKanbanColumnVisible: (status: TaskStatus) => void;
 };
 
 const initialViewMode = readStoredViewMode();
-const initialFastButtonValue: FastButtonValueType = 'pending-action';
+const initialFastButtonValue: FastButtonFilter = 'pending-action';
 
 export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
     postId: 'all',
@@ -90,13 +93,22 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     extraFilter: null,
 
-    setPostId: postId => set({ postId, extraFilter: null }),
+    setPostId: postId =>
+        set({
+            postId,
+            extraFilter: null,
+        }),
 
-    setStatus: status => set({ status, extraFilter: null }),
+    setStatus: status =>
+        set({
+            status,
+            extraFilter: null,
+        }),
 
     setExtraFilter: extraFilter =>
         set({
             extraFilter,
+            fastButtonValue: null,
             ...(extraFilter && { status: 'all' as const }),
         }),
 
@@ -116,14 +128,33 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
         set(state => ({
             fastButtonValue,
             extraFilter: null,
+            status: 'all' as const,
             ...(state.viewMode === 'kanban' && {
                 visibleKanbanColumns:
                     getKanbanColumnsForFastButton(fastButtonValue),
             }),
         })),
 
+    applyDefaultFastFilter: () =>
+        set(state => {
+            if (state.fastButtonValue === null) {
+                return { fastButtonValue: 'pending-action' as const };
+            }
+
+            return {};
+        }),
+
     setVisibleKanbanColumns: visibleKanbanColumns =>
         set({ visibleKanbanColumns }),
+
+    ensureKanbanColumnVisible: status =>
+        set(state =>
+            state.visibleKanbanColumns.includes(status)
+                ? state
+                : {
+                      visibleKanbanColumns: [...state.visibleKanbanColumns, status],
+                  },
+        ),
 
     toggleKanbanColumn: status => {
         set(state => {

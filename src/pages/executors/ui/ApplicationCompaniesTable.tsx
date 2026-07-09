@@ -36,8 +36,11 @@ export const ApplicationCompaniesTable = ({
   }
 
   return (
-    <TableContainer sx={partnersTableShellSx}>
-      <Table>
+    <TableContainer
+      className="partners-print-table"
+      sx={partnersTableShellSx}
+    >
+      <Table sx={{ '& .MuiTableCell-root': { p: 3 } }}>
         <TableHead>
           <TableRow>
             <TableCell>Компания</TableCell>
@@ -65,6 +68,7 @@ export const ApplicationCompaniesTable = ({
                   sx={{ alignItems: 'center', minWidth: 180 }}
                 >
                   <Avatar
+                    className="partners-no-print"
                     src={item.avatar || undefined}
                     sx={{ width: 36, height: 36 }}
                   >
@@ -85,6 +89,7 @@ export const ApplicationCompaniesTable = ({
                     </Typography>
 
                     <Chip
+                      className="partners-no-print"
                       size="small"
                       variant="outlined"
                       icon={<BusinessOutlined />}

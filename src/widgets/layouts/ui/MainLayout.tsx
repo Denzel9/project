@@ -33,14 +33,19 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
     <Box
       sx={{
         display: 'flex',
-        gap: { xs: 0, md: 2 },
+        gap: { xs: 0, md: 1 },
         bgcolor: 'rgb(244, 244, 244)',
       }}
     >
-      <SideBar />
-      <MobileNavDrawer />
+      <Box data-print-hide>
+        <SideBar />
+      </Box>
+      <Box data-print-hide>
+        <MobileNavDrawer />
+      </Box>
 
       <Box
+        className="main-layout-content"
         sx={{
           flex: 1,
           width: '100%',
@@ -50,12 +55,24 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           minWidth: 0,
           height: '100vh',
           overflow: 'hidden',
+          '@media print': {
+            height: 'auto',
+            overflow: 'visible',
+          },
         }}
       >
         <Box
           ref={scrollRef}
           data-main-scroll
-          sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            '@media print': {
+              overflow: 'visible',
+              height: 'auto',
+            },
+          }}
         >
           {children}
         </Box>

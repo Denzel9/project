@@ -33,7 +33,7 @@ type TaskFormProps = {
   imagesLength: number;
   canChangeStatus?: boolean;
   activities: TaskActivity[];
-  isExecutorApprove?: boolean;
+  isExecutorApprove?: boolean | null;
   setIsEdit: (isEdit: boolean) => void;
   handleSimpleSaveForm: (values: TaskFormType) => void;
   onSubmit: (values: TaskFormType, status?: TaskStatus) => void;
@@ -179,10 +179,10 @@ export const TaskForm = ({
             isLoading={isLoading}
             activities={activities}
             handleEdit={handleEdit}
-            handleCancel={handleCancelEdit}
             handleSave={handleSave}
             taskOwnerId={task.ownerId}
             executorId={task.executor?.id}
+            handleCancel={handleCancelEdit}
             handleSubmitForm={handleSubmitForm}
             isExecutorApprove={isExecutorApprove}
             handleGoToRevision={handleGoToRevision}

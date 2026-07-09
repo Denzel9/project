@@ -2,12 +2,14 @@ import { Delete, Search } from '@mui/icons-material';
 import { IconButton, MenuItem, Stack, TextField } from '@mui/material';
 import { useState } from 'react';
 
+import { USER_ROLE } from '@/entities';
 import {
   useDeleteFavoriteGroupMutation,
   useFavoriteGroupsQuery,
   type FavoriteGroup,
   type FavoriteType,
 } from '@/entities/favorite';
+import { useAuthStore } from '@/features';
 import { useScroll } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -31,19 +33,21 @@ const FavoriteFilter = ({
 }: FavoriteFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
+  const { role } = useAuthStore();
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
   const { data: groups, isLoading } = useFavoriteGroupsQuery(
-    favoriteType === 'POST',
+    favoriteType === 'POST'
   );
 
   const { mutateAsync: deleteGroup, isPending } =
     useDeleteFavoriteGroupMutation();
 
   const [groupToDelete, setGroupToDelete] = useState<FavoriteGroup | null>(
-    null,
+    null
   );
 
   const handleDeleteSuccess = (group: FavoriteGroup) => {
@@ -55,7 +59,7 @@ const FavoriteFilter = ({
       true,
       group.count > 0
         ? 'Подборка удалена. Посты остались в избранном.'
-        : 'Подборка удалена.',
+        : 'Подборка удалена.'
     );
   };
 
@@ -88,6 +92,8 @@ const FavoriteFilter = ({
     }
   };
 
+  const isCompany = role === USER_ROLE.COMPANY;
+
   return (
     <>
       <Stack
@@ -116,12 +122,18 @@ const FavoriteFilter = ({
             size="small"
             label="Категория"
             value={favoriteType}
-            sx={{ width: { xs: '100%', md: favoriteType === 'POST' ? '50%' : '100%' } }}
+            sx={{
+              width: {
+                xs: '100%',
+                md: favoriteType === 'POST' ? '50%' : '100%',
+              },
+            }}
             onChange={e => handleTypeChange(e.target.value as FavoriteType)}
           >
             <MenuItem value="POST">Посты</MenuItem>
-            <MenuItem value="CREATOR">Креаторы</MenuItem>
-            <MenuItem value="COMPANY">Компании</MenuItem>
+            <MenuItem value={isCompany ? 'CREATOR' : 'COMPANY'}>
+              {isCompany ? 'Креаторы' : 'Компании'}
+            </MenuItem>
           </TextField>
 
           {favoriteType === 'POST' && (

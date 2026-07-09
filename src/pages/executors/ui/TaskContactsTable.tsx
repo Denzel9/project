@@ -1,7 +1,5 @@
-import { BusinessOutlined, PersonOutlined } from '@mui/icons-material';
 import {
   Avatar,
-  Chip,
   Stack,
   Table,
   TableBody,
@@ -27,11 +25,6 @@ type TaskContactsTableProps = {
   emptyMessage: string;
 };
 
-const KIND_LABELS = {
-  CREATOR: 'Креатор',
-  COMPANY: 'Компания',
-} as const;
-
 export const TaskContactsTable = ({
   items,
   contactColumnLabel,
@@ -44,15 +37,16 @@ export const TaskContactsTable = ({
   }
 
   return (
-    <TableContainer sx={partnersTableShellSx}>
-      <Table>
+    <TableContainer
+      className="partners-print-table"
+      sx={partnersTableShellSx}
+    >
+      <Table sx={{ '& .MuiTableCell-root': { p: 3 } }}>
         <TableHead>
           <TableRow>
             <TableCell>{contactColumnLabel}</TableCell>
-            <TableCell>Тип</TableCell>
-            <TableCell>Задач</TableCell>
-            <TableCell>В работе</TableCell>
-            <TableCell>Активность</TableCell>
+            <TableCell>Взаимодействий</TableCell>
+            <TableCell>Последнее</TableCell>
           </TableRow>
         </TableHead>
 
@@ -74,6 +68,7 @@ export const TaskContactsTable = ({
                   sx={{ alignItems: 'center', minWidth: 180 }}
                 >
                   <Avatar
+                    className="partners-no-print"
                     src={item.avatar || undefined}
                     sx={{ width: 36, height: 36 }}
                   >
@@ -90,31 +85,7 @@ export const TaskContactsTable = ({
               </TableCell>
 
               <TableCell>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  icon={
-                    item.kind === 'COMPANY' ? (
-                      <BusinessOutlined />
-                    ) : (
-                      <PersonOutlined />
-                    )
-                  }
-                  label={KIND_LABELS[item.kind]}
-                />
-              </TableCell>
-
-              <TableCell>
-                <Typography variant="body2">{item.tasksTotal}</Typography>
-              </TableCell>
-
-              <TableCell>
-                <Chip
-                  size="small"
-                  color={item.tasksActive > 0 ? 'primary' : 'default'}
-                  variant={item.tasksActive > 0 ? 'filled' : 'outlined'}
-                  label={item.tasksActive}
-                />
+                <Typography variant="body2">{item.interactionsCount}</Typography>
               </TableCell>
 
               <TableCell>
@@ -123,7 +94,7 @@ export const TaskContactsTable = ({
                   color="text.secondary"
                   sx={{ whiteSpace: 'nowrap' }}
                 >
-                  {formatRelativeTime(item.lastActivityAt)}
+                  {formatRelativeTime(item.lastInteractionAt)}
                 </Typography>
               </TableCell>
             </TableRow>

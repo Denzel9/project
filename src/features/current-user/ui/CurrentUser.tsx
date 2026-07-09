@@ -120,6 +120,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
       value={currentUser}
       onChange={e => handleChangeUser(e.target.value)}
       sx={{
+        width: 300,
         borderRadius: '16px',
         backgroundColor: 'white',
       }}

@@ -11,19 +11,19 @@ export const SideBar = () => {
     <Box
       sx={{
         top: 0,
-        overflow: 'scroll',
+        flexShrink: 0,
         height: '100vh',
-        width: '100%',
-        bgcolor: 'white',
         position: 'sticky',
+        overflow: 'hidden',
+        bgcolor: 'white',
         border: '1px solid',
         scrollbarWidth: 'none',
         borderColor: 'divider',
         flexDirection: 'column',
         borderTopRightRadius: 32,
-        transition: 'all 0.3s ease',
         borderBottomRightRadius: 32,
-        maxWidth: isOpenSideBar ? 280 : 70,
+        width: isOpenSideBar ? 280 : 70,
+        transition: 'width 0.3s ease',
         display: { xs: 'none', md: 'flex' },
       }}
     >

@@ -12,6 +12,11 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import { ROUTES } from '@/shared/config/routes';
 
 import { CRMNavSections } from './CRMNavSections';
+import {
+  getSidebarItemButtonSx,
+  getSidebarItemIconSx,
+  getSidebarItemTextSx,
+} from './sidebarItemStyles';
 
 type CRMCollapseMenuProps = {
   pathname: string;
@@ -37,10 +42,14 @@ export const CRMCollapseMenu = ({
   }, [isCrmActive]);
 
   const handleToggle = () => {
+    if (!isSidebarExpanded) return;
+
     setIsOpen(prev => !prev);
   };
 
   const handleCollapsedClick = (event: MouseEvent<HTMLElement>) => {
+    if (isSidebarExpanded) return;
+
     setPopoverAnchor(event.currentTarget);
   };
 
@@ -66,74 +75,20 @@ export const CRMCollapseMenu = ({
     },
   } as const;
 
-  if (!isSidebarExpanded) {
-    return (
-      <Box>
-        <ListItemButton
-          onClick={handleCollapsedClick}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            px: '32px !important',
-            position: 'relative',
-            ...activeIndicatorSx,
-          }}
-        >
-          <ListItemIcon
-            sx={{
-              minWidth: 0,
-              color: isCrmActive ? 'primary.main' : 'info.main',
-              svg: { width: 28, height: 28 },
-            }}
-          >
-            <DashboardOutlined />
-          </ListItemIcon>
-        </ListItemButton>
-
-        <Popover
-          anchorEl={popoverAnchor}
-          open={Boolean(popoverAnchor)}
-          onClose={handlePopoverClose}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          slotProps={{
-            paper: {
-              sx: {
-                py: 1,
-                minWidth: 220,
-                borderRadius: '16px',
-              },
-            },
-          }}
-        >
-          <CRMNavSections
-            pathname={pathname}
-            variant="popover"
-            onItemClick={handleItemClick}
-          />
-        </Popover>
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <ListItemButton
-        onClick={handleToggle}
+        onClick={isSidebarExpanded ? handleToggle : handleCollapsedClick}
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          px: '32px !important',
+          ...getSidebarItemButtonSx(isSidebarExpanded),
           position: 'relative',
           ...activeIndicatorSx,
         }}
       >
         <ListItemIcon
           sx={{
-            minWidth: 40,
-            color: 'info.main',
-            svg: { width: 24, height: 24 },
+            ...getSidebarItemIconSx(isSidebarExpanded),
+            color: isCrmActive ? 'primary.main' : 'info.main',
           }}
         >
           <DashboardOutlined />
@@ -142,19 +97,34 @@ export const CRMCollapseMenu = ({
         <ListItemText
           primary="CRM"
           sx={{
+            ...getSidebarItemTextSx(isSidebarExpanded),
             color: isCrmActive ? 'primary.main' : 'info.main',
           }}
         />
 
-        {isOpen ? (
-          <ExpandLess sx={{ color: 'info.main' }} />
-        ) : (
-          <ExpandMore sx={{ color: 'info.main' }} />
-        )}
+        <Box
+          sx={{
+            display: 'flex',
+            flexShrink: 0,
+            overflow: 'hidden',
+            ml: isSidebarExpanded ? 'auto' : 0,
+            opacity: isSidebarExpanded ? 1 : 0,
+            flex: isSidebarExpanded ? '0 0 auto' : '0 0 0',
+            width: isSidebarExpanded ? 'auto' : 0,
+            transition: 'opacity 0.3s ease, width 0.3s ease',
+            pointerEvents: isSidebarExpanded ? 'auto' : 'none',
+          }}
+        >
+          {isOpen ? (
+            <ExpandLess sx={{ color: 'info.main' }} />
+          ) : (
+            <ExpandMore sx={{ color: 'info.main' }} />
+          )}
+        </Box>
       </ListItemButton>
 
       <Collapse
-        in={isOpen}
+        in={isSidebarExpanded && isOpen}
         timeout="auto"
         unmountOnExit
       >
@@ -164,6 +134,29 @@ export const CRMCollapseMenu = ({
           onItemClick={onNavigate}
         />
       </Collapse>
+
+      <Popover
+        anchorEl={popoverAnchor}
+        open={Boolean(popoverAnchor)}
+        onClose={handlePopoverClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              py: 1,
+              minWidth: 220,
+              borderRadius: '16px',
+            },
+          },
+        }}
+      >
+        <CRMNavSections
+          pathname={pathname}
+          variant="popover"
+          onItemClick={handleItemClick}
+        />
+      </Popover>
     </Box>
   );
 };

@@ -86,7 +86,7 @@ export const DashboardSection = ({
           spacing={1.5}
         >
           <Typography variant="h6">{title}</Typography>
-          {count && <Chip label={count} />}
+          {Boolean(count) && <Chip label={count} />}
         </Stack>
 
         {sectionAction && (
@@ -103,6 +103,19 @@ export const DashboardSection = ({
           </Box>
         )}
       </Stack>
+
+      {!isLoading && (
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {children}
+        </Box>
+      )}
 
       {isLoading && (
         <Stack spacing={1.5}>
@@ -126,8 +139,6 @@ export const DashboardSection = ({
           {emptyText}
         </Typography>
       )}
-
-      {!isLoading && !isEmpty && children}
     </Box>
   );
 };

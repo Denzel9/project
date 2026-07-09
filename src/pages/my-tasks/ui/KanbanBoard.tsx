@@ -1,5 +1,6 @@
 import { Box, Stack } from '@mui/material';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
@@ -10,6 +11,7 @@ import {
   taskKeys,
   useUpdateTaskMutation,
   type Task,
+  type TaskList,
   type TaskListParams,
   type TaskStatus,
 } from '@/entities';
@@ -20,17 +22,34 @@ import { KanbanColumn } from './KanbanColumn';
 
 type KanbanBoardProps = {
   tasks: Task[];
+  resetKey: string;
   visibleColumns: TaskStatus[];
-  filterParams: Omit<TaskListParams, 'page' | 'limit'>;
+  filterParams: Omit<TaskListParams, 'page'>;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onFetchNextPage?: () => void;
   onHideColumn: (status: TaskStatus) => void;
 };
 
-export const KanbanBoard = ({
-  tasks,
-  visibleColumns,
-  filterParams,
-  onHideColumn,
-}: KanbanBoardProps) => {
+export type KanbanBoardHandle = {
+  scrollToColumn: (status: TaskStatus) => void;
+};
+
+export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
+  function KanbanBoard(
+    {
+      tasks,
+      resetKey,
+      visibleColumns,
+      filterParams,
+      hasNextPage = false,
+      isFetchingNextPage = false,
+      onFetchNextPage,
+      onHideColumn,
+    },
+    ref,
+  ) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { id: currentUserId } = useAuthStore();
 
   const queryClient = useQueryClient();
@@ -40,8 +59,22 @@ export const KanbanBoard = ({
   const { mutate: updateTask } = useUpdateTaskMutation();
 
   const columns = KANBAN_COLUMNS.filter(column =>
-    visibleColumns.includes(column.status)
+    visibleColumns.includes(column.status),
   );
+
+  useImperativeHandle(ref, () => ({
+    scrollToColumn: (status: TaskStatus) => {
+      const columnElement = scrollContainerRef.current?.querySelector(
+        `[data-kanban-column="${status}"]`,
+      );
+
+      columnElement?.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'start',
+        block: 'nearest',
+      });
+    },
+  }));
 
   const canDragTask = (task: Task) =>
     canEditTaskStatus(task, currentUserId ?? null);
@@ -55,29 +88,36 @@ export const KanbanBoard = ({
     const isOwner = isTaskOwner(task, currentUserId ?? null);
     const isCompanyAction = getIsCompanyAction(task, isOwner, newStatus);
 
-    const allTasksQueryKey = taskKeys.allTasks(filterParams);
-    const previousData = queryClient.getQueryData<Task[]>(allTasksQueryKey);
+    const tasksQueryKey = taskKeys.infiniteList(filterParams);
+    const previousData =
+      queryClient.getQueryData<InfiniteData<TaskList>>(tasksQueryKey);
 
-    queryClient.setQueryData<Task[]>(allTasksQueryKey, old => {
-      if (!old) return old;
+    queryClient.setQueryData<InfiniteData<TaskList>>(tasksQueryKey, old => {
+      if (!old?.pages) return old;
 
-      return old.map(item =>
-        item.id === taskId
-          ? { ...item, status: newStatus, isCompanyAction }
-          : item
-      );
+      return {
+        ...old,
+        pages: old.pages.map(page => ({
+          ...page,
+          items: page.items.map(item =>
+            item.id === taskId
+              ? { ...item, status: newStatus, isCompanyAction }
+              : item,
+          ),
+        })),
+      };
     });
 
     updateTask(
       { id: taskId, body: { status: newStatus, isCompanyAction } },
       {
         onError: () => {
-          queryClient.setQueryData(allTasksQueryKey, previousData);
+          queryClient.setQueryData(tasksQueryKey, previousData);
         },
         onSuccess: () => {
           setSnackbarOpen?.(true, 'Статус успешно изменен');
         },
-      }
+      },
     );
   };
 
@@ -95,6 +135,7 @@ export const KanbanBoard = ({
     >
       <DndProvider backend={HTML5Backend}>
         <Stack
+          ref={scrollContainerRef}
           direction="row"
           spacing={2}
           sx={{
@@ -108,19 +149,29 @@ export const KanbanBoard = ({
           }}
         >
           {columns.map(column => (
-            <KanbanColumn
+            <Box
               key={column.status}
-              column={column}
-              onHideColumn={onHideColumn}
-              onTaskDrop={handleTaskDrop}
-              canDragTask={canDragTask}
-              tasks={tasks.filter(task => task.status === column.status)}
-            />
+              data-kanban-column={column.status}
+              sx={{ flexShrink: 0 }}
+            >
+              <KanbanColumn
+                column={column}
+                resetKey={resetKey}
+                hasNextPage={hasNextPage}
+                onHideColumn={onHideColumn}
+                onTaskDrop={handleTaskDrop}
+                canDragTask={canDragTask}
+                onFetchNextPage={onFetchNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                tasks={tasks.filter(task => task.status === column.status)}
+              />
+            </Box>
           ))}
         </Stack>
       </DndProvider>
     </Box>
   );
-};
+},
+);
 
 export default KanbanBoard;

@@ -18,7 +18,7 @@ export const toIncomingApplicationsParams = (
   page: pagination?.page ?? 1,
   limit: pagination?.limit ?? 20,
   ...(filters.status !== 'all' && { status: filters.status }),
-  ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
+  ...(filters.updatedDate && { createdDate: filters.updatedDate }),
   ...(filters.q?.trim() && { q: filters.q.trim() }),
   ...(filters.postId && filters.postId !== 'all' && { postId: filters.postId }),
   ...(filters.type && filters.type !== 'all' && { type: filters.type }),

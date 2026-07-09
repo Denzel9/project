@@ -1,15 +1,21 @@
 import { Whatshot } from '@mui/icons-material';
 import { Avatar, Box, Chip, Stack, Typography } from '@mui/material';
-import { format, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useRef } from 'react';
 import { useDrag } from 'react-dnd';
 import { useNavigate } from 'react-router';
 
-import { getUserName, type User, type Task, type TaskStatus } from '@/entities';
-import { getTaskConfig } from '@/features';
-import { ROUTES, MarkdownContent } from '@/shared';
-import { MediaPreview } from '@/widgets';
+import {
+  getUserName,
+  isTaskOverdue,
+  USER_ROLE,
+  type Task,
+  type TaskStatus,
+  type User,
+} from '@/entities';
+import { getTaskConfig, useAuthStore } from '@/features';
+import { ROUTES } from '@/shared';
 
 import { TaskActionsMenu } from './TaskActionsMenu';
 
@@ -25,18 +31,36 @@ type KanbanTaskCardProps = {
   canDrag: boolean;
 };
 
+const getContact = (task: Task, isCompany: boolean) => {
+  if (isCompany) {
+    const name = [task.executor?.name, task.executor?.lastName]
+      .filter(Boolean)
+      .join(' ');
+
+    return {
+      name: name || 'Не назначен',
+      avatar: task.executor?.avatar ?? '',
+      label: 'Исполнитель',
+    };
+  }
+
+  return {
+    name: getUserName(task.owner as Partial<User>) || 'Компания',
+    avatar: task.owner?.avatar ?? '',
+    label: 'Заказчик',
+  };
+};
+
 export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
+  const { role } = useAuthStore();
+  const isCompany = role === USER_ROLE.COMPANY;
 
   const columnConfig = getTaskConfig(task.status);
   const accentColor = columnConfig?.color ?? 'primary';
-
-  const isOverdue =
-    Boolean(task.finalDate) &&
-    isPast(startOfDay(new Date(task.finalDate!))) &&
-    task.status !== 'COMPLETED' &&
-    task.status !== 'CANCELLED';
+  const contact = getContact(task, isCompany);
+  const overdue = isTaskOverdue(task);
 
   const [{ isDragging }, drag] = useDrag({
     type: KANBAN_TASK_DRAG_TYPE,
@@ -61,135 +85,154 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
       ref={ref}
       onClick={handleClick}
       sx={{
-        p: 2,
+        p: 1.75,
         bgcolor: 'white',
-        borderRadius: '16px',
-        cursor: canDrag ? 'grab' : 'pointer',
-        border: theme => `1px solid ${theme.palette.secondary.main}`,
-        borderLeft: theme => `4px solid ${theme.palette[accentColor].main}`,
-        opacity: isDragging ? 0.85 : 1,
-        transform: isDragging ? 'rotate(1deg)' : 'none',
+        borderRadius: '14px',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderLeftWidth: 3,
+        borderLeftColor: theme => theme.palette[accentColor].main,
+        cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+        opacity: isDragging ? 0.92 : 1,
+        boxShadow: isDragging ? theme => theme.shadows[6] : 'none',
         transition:
           'box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease',
-        boxShadow: isDragging ? '0 12px 32px rgba(0, 0, 0, 0.15)' : 'none',
-        ':hover': {
-          transform: isDragging ? 'rotate(1deg)' : 'translateY(-2px)',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+        '&:hover': {
+          boxShadow: theme =>
+            isDragging ? theme.shadows[6] : '0 4px 16px rgba(0, 0, 0, 0.06)',
+          transform: isDragging ? 'none' : 'translateY(-1px)',
         },
       }}
     >
       <Stack
         direction="row"
-        spacing={1}
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}
+        spacing={0.25}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
       >
-        {task.urgent ? (
-          <Chip
-            size="small"
-            icon={<Whatshot />}
-            label="Срочно"
-            color="error"
-            variant="outlined"
-          />
-        ) : (
-          <Box />
-        )}
-
         <Stack
           direction="row"
-          spacing={0.5}
+          spacing={1}
           sx={{ alignItems: 'center' }}
         >
           <Typography
-            variant="caption"
-            color="text.secondary"
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              lineHeight: 1.35,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              mb: task.title ? 0.25 : 0,
+            }}
           >
-            {formatDistanceToNow(new Date(task.updatedAt), {
-              addSuffix: true,
-              locale: ru,
-            })}
+            {task.post?.title ?? 'Без названия'}
           </Typography>
-
-          <Box
-            component="span"
-            onClick={event => event.stopPropagation()}
-            onMouseDown={event => event.stopPropagation()}
-          >
-            <TaskActionsMenu
-              task={task}
-              size="small"
-            />
-          </Box>
+          {task.urgent && (
+            <Whatshot sx={{ fontSize: 18, color: 'error.main' }} />
+          )}
         </Stack>
-      </Stack>
 
-      <Typography
-        variant="subtitle1"
-        sx={{
-          fontWeight: 600,
-          mb: 1,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}
-      >
-        {task.post?.title ?? 'Без названия'}
-      </Typography>
+        <Box
+          component="span"
+          onClick={event => event.stopPropagation()}
+          onMouseDown={event => event.stopPropagation()}
+        >
+          <TaskActionsMenu
+            task={task}
+            size="small"
+          />
+        </Box>
+      </Stack>
 
       <Stack
         direction="row"
-        spacing={1}
-        sx={{ alignItems: 'center', minWidth: 0, mb: 2 }}
+        spacing={0.25}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
       >
-        <Avatar
-          src={task.owner?.avatar ?? ''}
-          sx={{ width: 28, height: 28 }}
-        />
+        {task.title && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {task.title}
+          </Typography>
+        )}
+
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
+          sx={{ whiteSpace: 'nowrap', fontSize: '0.7rem' }}
         >
-          {getUserName(task.owner as Partial<User>)}
+          {formatDistanceToNow(new Date(task.updatedAt), {
+            addSuffix: true,
+            locale: ru,
+          })}
         </Typography>
       </Stack>
-
-      {task.description && (
-        <MarkdownContent
-          content={task.description}
-          sx={{
-            mb: 1.5,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-          }}
-        />
-      )}
-
-      {Boolean(task.media?.length) && (
-        <Box sx={{ mb: 1.5 }}>
-          <MediaPreview media={task.media.slice(0, 5)} />
-        </Box>
-      )}
 
       <Stack
         direction="row"
         spacing={1}
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mt: 1 }}
+        sx={{
+          mt: 1.5,
+          minWidth: 0,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{ alignItems: 'center', minWidth: 0 }}
+        >
+          <Avatar
+            src={contact.avatar || undefined}
+            sx={{ width: 26, height: 26, flexShrink: 0 }}
+          />
+
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: 'block',
+                lineHeight: 1.2,
+                fontSize: '0.65rem',
+              }}
+            >
+              {contact.label}
+            </Typography>
+
+            <Typography
+              variant="caption"
+              noWrap
+              sx={{
+                display: 'block',
+                lineHeight: 1.2,
+                fontWeight: 500,
+              }}
+            >
+              {contact.name}
+            </Typography>
+          </Box>
+        </Stack>
+
         {task.finalDate && (
           <Chip
             size="small"
-            label={format(new Date(task.finalDate), 'dd.MM.yyyy')}
-            color={isOverdue ? 'error' : 'default'}
-            variant={isOverdue ? 'filled' : 'outlined'}
-            sx={{ flexShrink: 0, height: 24, fontSize: '0.7rem' }}
+            label={format(new Date(task.finalDate), 'dd.MM.yy')}
+            color={overdue ? 'error' : 'default'}
+            variant={overdue ? 'filled' : 'outlined'}
+            sx={{
+              opacity: 0.75,
+            }}
           />
         )}
       </Stack>

@@ -34,6 +34,18 @@ const SettingsAccountPage = lazy(
   () => import('./settings/ui/account/SettingsAccountPage')
 );
 const SecurityPage = lazy(() => import('./settings/ui/security/SecurityPage'));
+const SettingsCrmGeneralPage = lazy(
+  () => import('./settings/ui/crm/SettingsCrmGeneralPage')
+);
+const SettingsCrmTasksPage = lazy(
+  () => import('./settings/ui/crm/SettingsCrmTasksPage')
+);
+const SettingsCrmPipelinePage = lazy(
+  () => import('./settings/ui/crm/SettingsCrmPipelinePage')
+);
+const SettingsCrmAutomationPage = lazy(
+  () => import('./settings/ui/crm/SettingsCrmAutomationPage')
+);
 const MyTasksPage = lazy(() => import('./my-tasks'));
 const TaskPage = lazy(() => import('./task'));
 const MyPostPage = lazy(() => import('./my-posts'));
@@ -136,6 +148,26 @@ export const Router = () => {
               <Route
                 path="billing"
                 element={<SettingsBillingPage />}
+              />
+
+              <Route
+                path="crm"
+                element={<SettingsCrmGeneralPage />}
+              />
+
+              <Route
+                path="crm/tasks"
+                element={<SettingsCrmTasksPage />}
+              />
+
+              <Route
+                path="crm/pipeline"
+                element={<SettingsCrmPipelinePage />}
+              />
+
+              <Route
+                path="crm/automation"
+                element={<SettingsCrmAutomationPage />}
               />
             </Route>
           </>

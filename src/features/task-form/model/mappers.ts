@@ -1,9 +1,14 @@
+import { mapPostToTaskDefaults, mapTaskToTaskForm } from './postDefaults'
+import {
+  mapBriefFromTaskForm,
+  mapBloggerRequirementsFromTaskForm,
+  mapCooperationDetailsFromTaskForm,
+  mapDeliverablesFromTaskForm,
+} from './taskFormFieldMappers'
+
+import type { TaskFormType } from './schema/schema'
 import type { Post } from '@/entities/post'
 import type { Task, UpdateTaskDto } from '@/entities/task'
-
-import { mapPostToTaskDefaults, mapTaskToTaskForm } from './postDefaults'
-import { composeTaskDescription } from './taskTzFields'
-import type { TaskFormType } from './schema/schema'
 
 export const mapTaskToForm = (task: Task): TaskFormType =>
   mapTaskToTaskForm(task)
@@ -16,9 +21,13 @@ export const mapFormToUpdateTask = (
   isCompanyAction?: boolean,
 ): UpdateTaskDto => ({
   title: form.title,
-  description: composeTaskDescription(form),
+  description: form.description?.trim() ?? '',
   photoCount: form.photoCount,
   videoCount: form.videoCount,
   finalDate: form.finalDate,
-  isCompanyAction: isCompanyAction,
+  bloggerRequirements: mapBloggerRequirementsFromTaskForm(form) ?? null,
+  cooperationDetails: mapCooperationDetailsFromTaskForm(form) ?? null,
+  brief: mapBriefFromTaskForm(form) ?? null,
+  deliverables: mapDeliverablesFromTaskForm(form) ?? null,
+  isCompanyAction,
 })

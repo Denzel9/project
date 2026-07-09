@@ -8,3 +8,4 @@ export * from './favorite';
 export * from './application';
 export * from './partner';
 export * from './workspace-member';
+export * from './notification';

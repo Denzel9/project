@@ -58,19 +58,44 @@ export const SideBarContent = ({
       }}
     >
       <List sx={{ gap: 1, display: 'flex', flexDirection: 'column', mb: 10 }}>
-        {isSidebarExpanded ? (
+        <Box
+          sx={{
+            position: 'relative',
+            pb: 10,
+            px: isSidebarExpanded ? 4 : 2,
+            minHeight: 40,
+            overflow: 'hidden',
+            transition: 'padding 0.3s ease',
+          }}
+        >
           <Typography
             variant="h4"
-            sx={{ pb: 10, px: 4 }}
+            sx={{
+              m: 0,
+              opacity: isSidebarExpanded ? 1 : 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              transition: 'opacity 0.3s ease',
+              pointerEvents: isSidebarExpanded ? 'auto' : 'none',
+            }}
           >
             NIKS<span style={{ color: BASE_COLOR }}>SENS</span>
           </Typography>
-        ) : (
+
           <Cyclone
-            sx={{ mb: 10, mx: 2, fontSize: 40 }}
             color="primary"
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              fontSize: 40,
+              opacity: isSidebarExpanded ? 0 : 1,
+              transform: 'translateX(-50%)',
+              transition: 'opacity 0.3s ease',
+              pointerEvents: isSidebarExpanded ? 'none' : 'auto',
+            }}
           />
-        )}
+        </Box>
 
         {TOP_MENU_ROUTES.map(route => {
           if (!getIsVisibleRoute(route, isAuth, role as USER_ROLE)) return null;
@@ -126,7 +151,7 @@ export const SideBarContent = ({
         })}
       </List>
 
-      {isSidebarExpanded ? (
+      <Box sx={{ position: 'relative', minHeight: 48 }}>
         <Box
           sx={{
             p: 2,
@@ -134,6 +159,10 @@ export const SideBarContent = ({
             borderRadius: '32px',
             mt: { xs: 4, md: 0 },
             bgcolor: 'secondary.light',
+            opacity: isSidebarExpanded ? 1 : 0,
+            overflow: 'hidden',
+            transition: 'opacity 0.3s ease',
+            pointerEvents: isSidebarExpanded ? 'auto' : 'none',
           }}
         >
           <Typography variant="body1">Prime-аккаунт</Typography>
@@ -157,19 +186,24 @@ export const SideBarContent = ({
             </Button>
           </Box>
         </Box>
-      ) : (
+
         <Box
           sx={{
+            inset: 0,
             display: 'flex',
+            position: 'absolute',
             alignItems: 'center',
             justifyContent: 'center',
+            opacity: isSidebarExpanded ? 0 : 1,
+            transition: 'opacity 0.3s ease',
+            pointerEvents: isSidebarExpanded ? 'none' : 'auto',
           }}
         >
           <IconButton>
             <WorkspacesOutlined />
           </IconButton>
         </Box>
-      )}
+      </Box>
     </Box>
   );
 };

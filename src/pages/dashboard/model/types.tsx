@@ -7,33 +7,10 @@ import {
   WhatshotOutlined,
 } from '@mui/icons-material';
 
-import { DASHBOARD_FAST_BUTTON_OPTIONS } from '@/features';
-
+import type { DashboardCardVariant } from '@/features';
 import type { SvgIconComponent } from '@mui/icons-material';
 
-export type DashboardFastCardVariant =
-  (typeof DASHBOARD_FAST_BUTTON_OPTIONS)[number];
-
-export type DashboardMetricCardVariant = 'overdue' | 'urgent' | 'checking';
-
-export type DashboardCardVariant =
-  | DashboardFastCardVariant
-  | DashboardMetricCardVariant;
-
-export const DASHBOARD_METRIC_CARD_OPTIONS: DashboardMetricCardVariant[] = [
-  'overdue',
-  'urgent',
-  'checking',
-];
-
-export const DASHBOARD_METRIC_CARD_LABELS: Record<
-  DashboardMetricCardVariant,
-  string
-> = {
-  overdue: 'Просроченные',
-  urgent: 'Срочные',
-  checking: 'На проверке',
-};
+export type { DashboardCardVariant };
 
 export type DashboardCardAccentColor = 'primary' | 'warning' | 'info' | 'error';
 

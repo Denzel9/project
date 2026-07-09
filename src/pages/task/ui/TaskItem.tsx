@@ -156,18 +156,11 @@ export const TaskItem = ({
   ) => {
     if (!task) return;
 
-    const body: UpdateTaskDto = isOwner
-      ? mapFormToUpdateTask(
-          formValues,
-          getIsCompanyAction(task, isOwner, newStatus)
-        )
-      : {
-          isCompanyAction: getIsCompanyAction(task, isOwner, newStatus),
-        };
-
-    if (newStatus) {
-      body.status = newStatus;
-    }
+    const body: UpdateTaskDto = {
+      ...(isOwner ? mapFormToUpdateTask(formValues) : {}),
+      isCompanyAction: getIsCompanyAction(task, isOwner, newStatus),
+      ...(newStatus ? { status: newStatus } : {}),
+    };
 
     await updateTask({ id: task.id, body });
 
@@ -467,7 +460,6 @@ export const TaskItem = ({
           <TaskComments
             taskId={task.id}
             contact={contact?.data}
-            comments={task.comments ?? []}
             isExecutorApprove={task.isExecutorApprove}
           />
         </Stack>

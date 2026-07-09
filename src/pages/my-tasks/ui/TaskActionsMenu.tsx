@@ -5,18 +5,16 @@ import { useNavigate } from 'react-router';
 
 import {
   canEditTaskFields,
+  TASK_STATUS_ENUM,
   useCreateTaskMutation,
   useDeleteTaskMutation,
   type Task,
 } from '@/entities';
 import { useAuthStore } from '@/features';
-import { ROUTES } from '@/shared';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
 
-export const getTaskPath = (task: Task) =>
-  `${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`;
-
+import { getTaskPath } from '../model/utils';
 type TaskActionsMenuProps = {
   task: Task;
   ownerOnly?: boolean;
@@ -48,6 +46,9 @@ export const TaskActionsMenu = ({
 
   const canAssign = task.executorId == null && (ownerOnly || isOwner);
   const showOwnerActions = ownerOnly || isOwner;
+  const canDelete =
+    task.status === TASK_STATUS_ENUM.PREPARING ||
+    task.status === TASK_STATUS_ENUM.PENDING_APPROVAL;
 
   const closeMenu = () => {
     setMenuAnchor(null);
@@ -69,16 +70,25 @@ export const TaskActionsMenu = ({
     setMenuAnchor(event.currentTarget);
   };
 
-  const handleEdit = () => {
-    closeMenu();
-    navigate(getTaskPath(task));
-  };
-
   const handleCopy = async () => {
     closeMenu();
 
     try {
-      const copiedTask = await createTask({ postId: task.postId });
+      const copiedTask = await createTask({
+        postId: task.post?.id ?? '',
+        executorId: task.executorId ? task.executorId : undefined,
+        description: task.description,
+        finalDate: task.finalDate,
+        photoCount: task.photoCount,
+        videoCount: task.videoCount,
+        deliverables: task.deliverables,
+        cooperationDetails: task.cooperationDetails,
+        bloggerRequirements: task.bloggerRequirements,
+        brief: task.brief,
+        media: task.media,
+        urgent: task.urgent,
+        title: task.title,
+      });
       setSnackbarOpen(true, 'Задача успешно скопирована');
       navigate(getTaskPath(copiedTask));
     } catch {
@@ -127,10 +137,18 @@ export const TaskActionsMenu = ({
           },
         }}
       >
-        <MenuItem onClick={runMenuAction(handleEdit)}>Редактировать</MenuItem>
+        {canAssign && (
+          <MenuItem
+            sx={{ minWidth: 160 }}
+            onClick={runMenuAction(handleAssign)}
+          >
+            Назначить
+          </MenuItem>
+        )}
 
         {showOwnerActions && (
           <MenuItem
+            sx={{ minWidth: 160 }}
             disabled={isCopying}
             onClick={runMenuAction(() => void handleCopy())}
           >
@@ -138,8 +156,9 @@ export const TaskActionsMenu = ({
           </MenuItem>
         )}
 
-        {showOwnerActions && (
+        {showOwnerActions && canDelete && (
           <MenuItem
+            sx={{ minWidth: 160 }}
             onClick={runMenuAction(() => {
               closeMenu();
               setIsDeleteDialogOpen(true);
@@ -147,10 +166,6 @@ export const TaskActionsMenu = ({
           >
             <Typography color="error">Удалить</Typography>
           </MenuItem>
-        )}
-
-        {canAssign && (
-          <MenuItem onClick={runMenuAction(handleAssign)}>Назначить</MenuItem>
         )}
       </Menu>
 

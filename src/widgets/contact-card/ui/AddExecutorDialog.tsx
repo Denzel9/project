@@ -25,7 +25,7 @@ export const AddExecutorDialog = ({
   const [executorId, setExecutorId] = useState<string | null>(null);
   const { mutateAsync: updateTask } = useUpdateTaskMutation();
 
-  const { data: conversations } = useConversationsQuery();
+  const { data: conversations } = useConversationsQuery({ enabled: isOpen });
   const { setSnackbarOpen } = useSnackbarStore();
 
   const conversationOptions = useMemo(() => {

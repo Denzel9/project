@@ -2,8 +2,6 @@ import * as yup from 'yup'
 
 import { PlacementFormatEnum, PlatformEnum } from '@/entities/post'
 
-import { composeTaskDescription } from '../taskTzFields'
-
 const sectionField = () => yup.string().default('')
 
 const listItemSchema = yup.object({
@@ -30,10 +28,6 @@ export const schema = yup.object().shape({
   hashtagItems: yup.array().of(listItemSchema).default([]),
   mentionItems: yup.array().of(listItemSchema).default([]),
   referenceItems: yup.array().of(listItemSchema).default([]),
-  locationCountry: sectionField(),
-  locationCity: sectionField(),
-  locationAddress: sectionField(),
-  locationShootingRequired: yup.boolean().default(false),
   cooperationExclusivity: yup.boolean().default(false),
   cooperationExclusivityDays: sectionField(),
   cooperationUsageRights: sectionField(),
@@ -51,11 +45,7 @@ export const schema = yup.object().shape({
   photoCount: sectionField(),
   videoCount: sectionField(),
   finalDate: yup.string().nullable().default(null),
-}).test(
-  'tz-length',
-  'Общий объём ТЗ не должен превышать 15000 символов',
-  values => composeTaskDescription(values).length <= 15000,
-)
+})
 
 export const defaultValues = schema.getDefault()
 export type TaskFormType = yup.InferType<typeof schema>

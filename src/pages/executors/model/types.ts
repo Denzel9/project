@@ -5,9 +5,8 @@ export type TaskContactRow = {
   name: string;
   avatar?: string;
   kind: ContactKind;
-  tasksTotal: number;
-  tasksActive: number;
-  lastActivityAt?: string;
+  interactionsCount: number;
+  lastInteractionAt?: string;
 };
 
 export type ApplicationCompanyRow = {

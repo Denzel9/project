@@ -6,3 +6,93 @@ body {
 * {
   box-sizing: border-box;
 }
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .print-no-print,
+  .partners-no-print {
+    display: none !important;
+  }
+
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  .print-root {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  .print-root > * {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  .page-layout,
+  .page-layout > * {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+
+  .main-layout-content,
+  [data-main-scroll] {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .print-only {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .print-root,
+  .partners-print-root {
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  .print-table,
+  .partners-print-table {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    flex: none !important;
+    min-height: auto !important;
+  }
+
+  .print-table .MuiTableContainer-root,
+  .partners-print-table .MuiTableContainer-root {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .print-table .MuiTableRow-root,
+  .partners-print-table .MuiTableRow-root {
+    cursor: default !important;
+    page-break-inside: avoid;
+  }
+
+  .print-table .MuiTableRow-root:hover,
+  .partners-print-table .MuiTableRow-root:hover {
+    background-color: transparent !important;
+  }
+}

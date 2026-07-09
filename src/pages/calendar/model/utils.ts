@@ -1,24 +1,30 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 
-import { isTaskOverdue, type Task } from '@/entities';
-
+import type { CalendarEventTypeFilter, CalendarFiltersState, CalendarPostMeta } from './types';
+import type { TaskCalendarItem } from '@/entities';
 import type { SxProps, Theme } from '@mui/material';
+
+dayjs.extend(utc);
 
 export type CalendarEventType = 'created' | 'deadline';
 
 export type DateCategory = 'past' | 'today' | 'future';
 
 export type CalendarEvent = {
-  task: Task;
+  task: TaskCalendarItem;
   type: CalendarEventType;
   dateKey: string;
 };
 
-export const toDateKey = (iso: string) => dayjs(iso).format('YYYY-MM-DD');
+export const toDateKey = (iso: string) => dayjs.utc(iso).format('YYYY-MM-DD');
+
+export const toCalendarDateKey = (date: dayjs.Dayjs) =>
+  date.format('YYYY-MM-DD');
 
 export const getDateCategory = (dateKey: string): DateCategory => {
-  const date = dayjs(dateKey).startOf('day');
-  const today = dayjs().startOf('day');
+  const date = dayjs.utc(dateKey).startOf('day');
+  const today = dayjs.utc().startOf('day');
 
   if (date.isBefore(today)) return 'past';
   if (date.isAfter(today)) return 'future';
@@ -29,23 +35,78 @@ export const getDateCategory = (dateKey: string): DateCategory => {
 export const getEventLabel = (type: CalendarEventType) =>
   type === 'deadline' ? 'Дедлайн' : 'Создана';
 
-export { isTaskOverdue } from '@/entities';
+export const isCalendarTaskOverdue = (task: TaskCalendarItem) =>
+  Boolean(task.finalDate) &&
+  dayjs.utc(task.finalDate).isBefore(dayjs.utc(), 'day');
 
-export const buildCalendarEvents = (tasks: Task[]): CalendarEvent[] => {
+export const buildCalendarPostMetaMap = (
+  tasks: TaskCalendarItem[],
+): Map<string, CalendarPostMeta> => {
+  const map = new Map<string, CalendarPostMeta>();
+
+  tasks.forEach(task => {
+    map.set(task.id, {
+      platforms: task.platforms ?? [],
+      placementFormats: task.placementFormats ?? [],
+    });
+  });
+
+  return map;
+};
+
+export const filterCalendarTasksByPostMeta = (
+  tasks: TaskCalendarItem[],
+  metaMap: Map<string, CalendarPostMeta>,
+  {
+    platform,
+    placementFormat,
+  }: Pick<CalendarFiltersState, 'platform' | 'placementFormat'>,
+) => {
+  if (platform === 'all' && placementFormat === 'all') {
+    return tasks;
+  }
+
+  return tasks.filter(task => {
+    const meta = metaMap.get(task.id);
+
+    if (!meta) return false;
+
+    if (platform !== 'all' && !meta.platforms.includes(platform)) {
+      return false;
+    }
+
+    if (
+      placementFormat !== 'all' &&
+      !meta.placementFormats.includes(placementFormat)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+};
+
+export const buildCalendarEvents = (
+  tasks: TaskCalendarItem[],
+  eventType: CalendarEventTypeFilter = 'all',
+): CalendarEvent[] => {
   const events: CalendarEvent[] = [];
 
   tasks.forEach(task => {
     const createdDateKey = toDateKey(task.createdAt);
-    events.push({
-      task,
-      type: 'created',
-      dateKey: createdDateKey,
-    });
 
-    if (task.finalDate) {
+    if (eventType === 'all' || eventType === 'created') {
+      events.push({
+        task,
+        type: 'created',
+        dateKey: createdDateKey,
+      });
+    }
+
+    if (task.finalDate && (eventType === 'all' || eventType === 'deadline')) {
       const deadlineDateKey = toDateKey(task.finalDate);
 
-      if (deadlineDateKey !== createdDateKey) {
+      if (deadlineDateKey !== createdDateKey || eventType === 'deadline') {
         events.push({
           task,
           type: 'deadline',
@@ -57,6 +118,15 @@ export const buildCalendarEvents = (tasks: Task[]): CalendarEvent[] => {
 
   return events;
 };
+
+export const filterEventsInMonthRange = (
+  events: CalendarEvent[],
+  dateFrom: string,
+  dateTo: string,
+) =>
+  events.filter(
+    event => event.dateKey >= dateFrom && event.dateKey <= dateTo,
+  );
 
 export const groupEventsByDate = (events: CalendarEvent[]) => {
   const map = new Map<string, CalendarEvent[]>();
@@ -79,8 +149,8 @@ export const sortCalendarEvents = (events: CalendarEvent[]) =>
       return left.task.urgent ? -1 : 1;
     }
 
-    const leftTitle = left.task.title || left.task.post?.title || '';
-    const rightTitle = right.task.title || right.task.post?.title || '';
+    const leftTitle = left.task.title ?? '';
+    const rightTitle = right.task.title ?? '';
 
     return leftTitle.localeCompare(rightTitle, 'ru');
   });
@@ -93,43 +163,21 @@ export const hasOverdueDeadlineOnDate = (
     event =>
       event.dateKey === dateKey &&
       event.type === 'deadline' &&
-      isTaskOverdue(event.task),
+      isCalendarTaskOverdue(event.task),
   );
 
 export const getCalendarDaySx = (
   dateKey: string,
-  events: CalendarEvent[],
   selected = false,
 ): SxProps<Theme> => {
-  const dayEvents = events.filter(event => event.dateKey === dateKey);
-  const hasEvents = dayEvents.length > 0;
   const category = getDateCategory(dateKey);
-  const hasOverdue = hasOverdueDeadlineOnDate(events, dateKey);
 
   return {
     position: 'relative',
     fontWeight: category === 'today' ? 700 : 400,
-    color: category === 'past' && !selected ? 'text.disabled' : undefined,
     border:
       category === 'today' && !selected
         ? theme => `1px solid ${theme.palette.primary.main}`
         : undefined,
-    '&::after': hasEvents
-      ? {
-          content: '""',
-          position: 'absolute',
-          bottom: 4,
-          width: hasOverdue ? 8 : 6,
-          height: hasOverdue ? 8 : 6,
-          borderRadius: '50%',
-          bgcolor: hasOverdue
-            ? 'error.main'
-            : category === 'today'
-              ? 'primary.main'
-              : category === 'future'
-                ? 'info.main'
-                : 'text.secondary',
-        }
-      : undefined,
   };
 };

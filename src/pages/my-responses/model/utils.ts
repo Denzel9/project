@@ -26,7 +26,7 @@ export const toMyApplicationsParams = (
   page: pagination?.page ?? 1,
   limit: pagination?.limit ?? 20,
   ...(filters.status !== 'all' && { status: filters.status }),
-  ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
+  ...(filters.updatedDate && { createdDate: filters.updatedDate }),
 });
 
 export const hasActiveMyResponseFilters = (filters: {

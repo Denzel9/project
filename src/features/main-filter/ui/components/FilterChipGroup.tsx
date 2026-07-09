@@ -1,7 +1,7 @@
 import { Box, Chip, Stack, Typography } from '@mui/material';
 
 type FilterChipGroupProps<T extends string> = {
-  label: string;
+  label?: string;
   value: T[];
   options: { value: T; label: string }[];
   onChange: (value: T[]) => void;
@@ -24,22 +24,24 @@ export const FilterChipGroup = <T extends string>({
 
   return (
     <Stack spacing={1}>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-      >
-        {label}
-      </Typography>
+      {label && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+        >
+          {label}
+        </Typography>
+      )}
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
         {options.map(option => (
           <Chip
-            key={option.value}
-            size="small"
-            label={option.label}
             clickable
+            size="small"
+            key={option.value}
+            label={option.label}
             color={value.includes(option.value) ? 'primary' : 'default'}
-            variant={value.includes(option.value) ? 'filled' : 'outlined'}
+            variant="filled"
             onClick={() => toggle(option.value)}
           />
         ))}

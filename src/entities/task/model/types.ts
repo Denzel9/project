@@ -1,4 +1,16 @@
 
+import type { ApplicationStatus } from '@/entities/application'
+import type {
+  BloggerRequirements,
+  CooperationDetails,
+  PlacementFormat,
+  Platform,
+  Post,
+  PostBrief,
+  PostDeliverable,
+  PostLocation,
+} from '@/entities/post'
+
 export type TaskStatus =
   | 'PREPARING'
   | 'PENDING_APPROVAL'
@@ -23,6 +35,7 @@ export enum TASK_STATUS_ENUM {
 export type TaskRole = 'owner' | 'executor'
 
 export type TaskCommentMedia = {
+  id?: string
   url: string
   key: string
   size: string
@@ -49,15 +62,33 @@ export type TaskMedia = {
   key: string
   size: string
   mimeType: string
-  kind?: TaskMediaKind
+  kind: TaskMediaKind
 }
 
-export type Post = {
+export type TaskApplication = {
   id: string
-  ownerId: string
-  title: string
-  type: string
-  isPrivate: boolean
+  postId: string
+  message: string
+  status: ApplicationStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export type TaskPublication = {
+  id: string
+  taskId: string
+  postId: string
+  title: string | null
+  description: string
+  externalUrl?: string | null
+  platform?: Platform | null
+  brief?: PostBrief | null
+  deliverables?: PostDeliverable[] | null
+  location?: PostLocation | null
+  status: 'PUBLISHED'
+  publishedAt: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type Owner = {
@@ -86,27 +117,34 @@ export type Executor = {
 
 export type Task = {
   id: string
-  title: string
-  applicationId: string
+  applicationId: string | null
+  application?: TaskApplication | null
   postId: string
+  post?: Post | null
   ownerId: string
-  executorId: string
+  owner?: Owner | null
+  executorId: string | null
+  executor?: Executor | null
   status: TaskStatus
-  media: TaskMedia[]
-  reportMedia?: TaskMedia[]
+  title: string | null
   description: string
   finalDate: string | null
   photoCount: string
   videoCount: string
   urgent: boolean
+  isExecutorApprove: boolean | null
+  isCompanyAction: boolean
+  location?: PostLocation | null
+  bloggerRequirements?: BloggerRequirements | null
+  cooperationDetails?: CooperationDetails | null
+  brief?: PostBrief | null
+  deliverables?: PostDeliverable[] | null
+  media: TaskMedia[]
+  reportMedia?: TaskMedia[]
+  activities?: TaskActivity[]
+  publication?: TaskPublication | null
   createdAt: string
   updatedAt: string
-  isExecutorApprove?: boolean
-  comments?: TaskComment[]
-  executor?: Executor
-  post?: Post
-  owner?: Owner
-  isCompanyAction?: boolean
 }
 
 export type TaskList = {
@@ -129,11 +167,89 @@ export type TaskListParams = {
   role?: TaskRole
   postId?: string
   status?: TaskStatus
-  updatedDate?: string
+  statuses?: string
+  active?: boolean
+  excludeCompleted?: boolean
+  isCompanyAction?: boolean
+  isExecutorApprove?: boolean | null
+  unassigned?: boolean
+  overdue?: boolean
+  createdDate?: string
+  dateFrom?: string
+  dateTo?: string
+  dateField?: TaskCalendarDateField
+  urgent?: boolean
+  ownerId?: string
+  executorId?: string
+  q?: string
+}
+
+export type TaskStats = {
+  awaitingAction: number
+  awaitingConfirmation: number
+  unassigned: number
+  overdue: number
+  urgent: number
+  underReview: number
+  cancelled: number
+}
+
+export type TaskStatsParams = {
+  role?: TaskRole
+  postId?: string
 }
 
 export type SearchTasksParams = {
   q: string
+  page?: number
+  limit?: number
+}
+
+export type TaskCalendarDateField = 'createdAt' | 'updatedAt' | 'finalDate'
+
+export type TaskCalendarOwner = {
+  id: string
+  avatar?: string
+  creatorProfile?: CreatorProfile
+  companyProfile?: CompanyProfile
+}
+
+export type TaskCalendarExecutor = {
+  id: string
+  avatar?: string
+  name?: string
+  lastName?: string
+}
+
+export type TaskCalendarItem = {
+  id: string
+  postId?: string
+  createdAt: string
+  updatedAt: string
+  urgent: boolean
+  finalDate: string | null
+  title: string | null
+  platforms?: Platform[]
+  placementFormats?: PlacementFormat[]
+  owner?: TaskCalendarOwner
+  executor?: TaskCalendarExecutor
+}
+
+export type TaskCalendarList = {
+  page: number
+  items: TaskCalendarItem[]
+  total: number
+  limit: number
+}
+
+export type TaskCalendarParams = {
+  dateFrom?: string
+  dateTo?: string
+  dateField?: TaskCalendarDateField
+  urgent?: boolean
+  ownerId?: string
+  executorId?: string
+  role?: TaskRole
   page?: number
   limit?: number
 }
@@ -208,6 +324,7 @@ export type TaskWithCommentsList = {
 }
 
 export type TaskCommentAttachment = {
+  id: string
   url: string
   key: string
   size: string
@@ -311,22 +428,41 @@ export const TASK_ACTIVITY_LABELS: Record<TaskActivityType, string> = {
 } as const
 
 export type UpdateTaskDto = {
-  title?: string
+  title?: string | null
   status?: TaskStatus
-  media?: string[]
   description?: string
   finalDate?: string | null
   photoCount?: string
   videoCount?: string
   urgent?: boolean
-  executorId?: string
+  executorId?: string | null
   isExecutorApprove?: boolean | null
   isCompanyAction?: boolean
+  location?: PostLocation | null
+  bloggerRequirements?: BloggerRequirements | null
+  cooperationDetails?: CooperationDetails | null
+  brief?: PostBrief | null
+  deliverables?: PostDeliverable[] | null
 }
 
 export type CreateTaskDto = {
   postId: string
   executorId?: string
+  title?: string | null
+  description?: string
+  status?: TaskStatus
+  finalDate?: string | null
+  photoCount?: string
+  videoCount?: string
+  urgent?: boolean
+  isExecutorApprove?: boolean | null
+  isCompanyAction?: boolean
+  location?: PostLocation | null
+  bloggerRequirements?: BloggerRequirements | null
+  cooperationDetails?: CooperationDetails | null
+  brief?: PostBrief | null
+  deliverables?: PostDeliverable[] | null
+  media?: TaskMedia[] | null
 }
 
 export type CreateTaskCommentDto = {

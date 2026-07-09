@@ -31,7 +31,6 @@ import { useMainFilterStore } from '../model/store';
 import {
   defaultPostFilterDraft,
   type PostFilterBloggerRequirements,
-  type PostFilterBrief,
   type PostFilterBudget,
   type PostFilterCooperationDetails,
   type PostFilterDeliverable,
@@ -60,7 +59,7 @@ const PLACEMENT_FORMAT_OPTIONS = Object.values(PlacementFormatEnum).map(
   value => ({
     value,
     label: getPlacementFormatLabel(value),
-  }),
+  })
 );
 
 const CONTENT_STYLE_OPTIONS = Object.values(ContentStyleEnum).map(value => ({
@@ -94,7 +93,7 @@ export const SideBarFilter = () => {
 
   const setField = <K extends keyof PostFilterDraft>(
     key: K,
-    value: PostFilterDraft[K],
+    value: PostFilterDraft[K]
   ) => {
     setDraft(prev => ({ ...prev, [key]: value }));
   };
@@ -114,7 +113,7 @@ export const SideBarFilter = () => {
   };
 
   const setBloggerRequirements = (
-    patch: Partial<PostFilterBloggerRequirements>,
+    patch: Partial<PostFilterBloggerRequirements>
   ) => {
     setDraft(prev => ({
       ...prev,
@@ -123,18 +122,11 @@ export const SideBarFilter = () => {
   };
 
   const setCooperationDetails = (
-    patch: Partial<PostFilterCooperationDetails>,
+    patch: Partial<PostFilterCooperationDetails>
   ) => {
     setDraft(prev => ({
       ...prev,
       cooperationDetails: { ...prev.cooperationDetails, ...patch },
-    }));
-  };
-
-  const setBrief = (patch: Partial<PostFilterBrief>) => {
-    setDraft(prev => ({
-      ...prev,
-      brief: { ...prev.brief, ...patch },
     }));
   };
 
@@ -189,8 +181,8 @@ export const SideBarFilter = () => {
           overflowY: 'auto',
         }}
       >
-        <Stack spacing={2}>
-          <FilterSection title="Основное">
+        <Stack spacing={4}>
+          <FilterSection>
             <Stack spacing={2}>
               <TextField
                 size="small"
@@ -201,7 +193,6 @@ export const SideBarFilter = () => {
               />
 
               <FilterChipGroup
-                label="Chips"
                 value={draft.chips}
                 options={CHIP_OPTIONS}
                 onChange={value => setField('chips', value)}
@@ -243,36 +234,34 @@ export const SideBarFilter = () => {
             <Stack spacing={2}>
               <FilterTagsInput
                 label="Категории"
-                placeholder="Введите и нажмите Enter"
                 value={draft.categories}
+                placeholder="Введите и нажмите Enter"
                 onChange={value => setField('categories', value)}
               />
               <FilterTagsInput
                 label="Теги"
-                placeholder="Введите и нажмите Enter"
                 value={draft.tags}
+                placeholder="Введите и нажмите Enter"
                 onChange={value => setField('tags', value)}
               />
               <FilterTagsInput
                 label="Ниша"
-                placeholder="beauty, food, tech..."
                 value={draft.niche}
+                placeholder="beauty, food, tech..."
                 onChange={value => setField('niche', value)}
               />
             </Stack>
           </FilterSection>
 
           <FilterSection title="Площадки и формат">
-            <Stack spacing={2}>
+            <Stack spacing={4}>
               <FilterChipGroup
-                label="Площадки"
                 value={draft.platforms}
                 options={PLATFORM_OPTIONS}
                 onChange={value => setField('platforms', value)}
               />
 
               <FilterChipGroup
-                label="Формат размещения"
                 value={draft.placementFormats}
                 options={PLACEMENT_FORMAT_OPTIONS}
                 onChange={value => setField('placementFormats', value)}
@@ -287,7 +276,7 @@ export const SideBarFilter = () => {
                 onChange={event =>
                   setField(
                     'workFormat',
-                    event.target.value as PostFilterDraft['workFormat'],
+                    event.target.value as PostFilterDraft['workFormat']
                   )
                 }
               >
@@ -337,7 +326,8 @@ export const SideBarFilter = () => {
                 value={draft.budget.currency}
                 onChange={event =>
                   setBudget({
-                    currency: event.target.value as PostFilterBudget['currency'],
+                    currency: event.target
+                      .value as PostFilterBudget['currency'],
                   })
                 }
               >
@@ -413,9 +403,7 @@ export const SideBarFilter = () => {
                 fullWidth
                 label="Адрес"
                 value={draft.location.address}
-                onChange={event =>
-                  setLocation({ address: event.target.value })
-                }
+                onChange={event => setLocation({ address: event.target.value })}
               />
 
               <TextField
@@ -707,24 +695,7 @@ export const SideBarFilter = () => {
             </Stack>
           </FilterSection>
 
-          <FilterSection title="Бриф">
-            <Stack spacing={2}>
-              <FilterTagsInput
-                label="Хештеги"
-                placeholder="#реклама"
-                value={draft.brief.hashtags}
-                onChange={value => setBrief({ hashtags: value })}
-              />
-              <FilterTagsInput
-                label="Упоминания"
-                placeholder="@brand"
-                value={draft.brief.mentions}
-                onChange={value => setBrief({ mentions: value })}
-              />
-            </Stack>
-          </FilterSection>
-
-          <FilterSection title="Deliverables">
+          <FilterSection title="Контент">
             <Stack spacing={2}>
               <TextField
                 size="small"

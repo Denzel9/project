@@ -1,4 +1,4 @@
-import { MoreVert, RocketLaunch, Whatshot } from '@mui/icons-material';
+import { MoreVert, Whatshot } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -7,7 +7,6 @@ import {
   MenuItem,
   Rating,
   Stack,
-  Tooltip,
   Typography,
   type Theme,
 } from '@mui/material';
@@ -17,7 +16,7 @@ import { Link, useNavigate } from 'react-router';
 import { BASE_COLOR } from '@/app/index';
 import { usePostApplicationsQuery } from '@/entities/application';
 import { getApplicationsCountLabel, POST_STATUS_ENUM } from '@/entities/post';
-import { getUserName, type User } from '@/entities/user';
+import { UserDisplayName, type User } from '@/entities/user';
 import { ROUTES, ShareButton } from '@/shared/index';
 import { Media } from '@/widgets';
 
@@ -241,13 +240,7 @@ const PostItem = ({
                 },
               }}
             >
-              <Typography variant="h6">
-                {getUserName(post?.owner as Partial<User>)}
-              </Typography>
-
-              <Tooltip title="Это - Prime-аккаунт">
-                <RocketLaunch color="primary" />
-              </Tooltip>
+              <UserDisplayName user={post?.owner as Partial<User>} />
             </Typography>
 
             <Rating

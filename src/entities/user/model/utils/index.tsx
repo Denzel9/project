@@ -40,7 +40,7 @@ export const validateContactValue = (
 };
 
 // TODO: Refactor user: Partial<User> | undefined
-export const getUserName = (user: Partial<User> | undefined) => {
+export const getUserName = (user: Partial<User> | undefined | null) => {
   if (!user) return '';
 
   if (Object.keys(user?.companyProfile ?? {}).length) {
@@ -48,6 +48,26 @@ export const getUserName = (user: Partial<User> | undefined) => {
   }
 
   return `${user?.creatorProfile?.name} ${user?.creatorProfile?.lastName}`;
+};
+
+export const executorToUserPartial = (executor?: {
+  id?: string;
+  name?: string;
+  lastName?: string;
+  isVerified?: boolean;
+  isEmailConfirmed?: boolean;
+} | null): Partial<User> | undefined => {
+  if (!executor?.id) return undefined;
+
+  return {
+    id: executor.id,
+    isVerified: executor.isVerified,
+    isEmailConfirmed: executor.isEmailConfirmed,
+    creatorProfile: {
+      name: executor.name ?? null,
+      lastName: executor.lastName ?? null,
+    } as User['creatorProfile'],
+  };
 };
 
 export const validatePhone = (value: string | undefined) => {

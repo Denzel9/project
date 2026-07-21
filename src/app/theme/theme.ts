@@ -56,6 +56,7 @@ export const theme = createTheme({
                 root: {
                     borderRadius: '16px',
                     padding: '10px 48px',
+                    textTransform: 'none',
                 },
             },
         },
@@ -64,6 +65,14 @@ export const theme = createTheme({
             styleOverrides: {
                 paper: {
                     borderRadius: '32px',
+                },
+            },
+        },
+
+        MuiTab: {
+            styleOverrides: {
+                root: {
+                    textTransform: 'none',
                 },
             },
         },

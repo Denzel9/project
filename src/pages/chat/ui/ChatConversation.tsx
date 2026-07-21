@@ -11,7 +11,7 @@ import type { ChatMessage, ChatPeer } from '@/entities/chat';
 type ChatConversationProps = {
   messages: ChatMessage[];
   currentUserId: string | null;
-  peer: ChatPeer | null;
+  peer?: ChatPeer | null;
   draft: string;
   pendingFiles: File[];
   isSending?: boolean;

@@ -20,6 +20,7 @@ type ActionProps = {
   isEdit: boolean;
   status: TaskStatus;
   isLoading: boolean;
+  isSaving?: boolean;
   executorId?: string;
   taskOwnerId: string;
   activities: TaskActivity[];
@@ -38,6 +39,7 @@ export const Action = ({
   status,
   isEdit,
   isLoading,
+  isSaving = false,
   activities,
   executorId,
   handleSave,
@@ -160,8 +162,6 @@ export const Action = ({
     );
   }
 
-  console.log({ isExecutorApprove });
-
   if (isExecutorApprove !== null && !isExecutorApprove) {
     return (
       <RejectInvite
@@ -222,6 +222,7 @@ export const Action = ({
           size="small"
           color="error"
           variant="outlined"
+          disabled={isSaving}
           onClick={handleCancel}
         >
           Отменить
@@ -235,8 +236,8 @@ export const Action = ({
               size="small"
               color="primary"
               variant="outlined"
-              loading={isLoading}
-              disabled={isLoading}
+              loading={isSaving}
+              disabled={isSaving}
               onClick={handleSave}
             >
               Сохранить

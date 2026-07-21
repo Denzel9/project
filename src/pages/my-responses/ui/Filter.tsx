@@ -1,5 +1,6 @@
 import { CalendarMonthOutlined, Search } from '@mui/icons-material';
 import {
+  Chip,
   IconButton,
   MenuItem,
   Popover,
@@ -15,10 +16,7 @@ import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
 
-import type {
-  ApplicationStatusFilter,
-  CompanyFilter,
-} from '../model/utils';
+import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils';
 
 type CompanyOption = {
   ownerId: string;
@@ -78,8 +76,8 @@ const MyResponsesFilter = ({
         }}
       >
         <Stack
-          direction="row"
           spacing={2}
+          direction="row"
           sx={{ width: { xs: '90%', md: '50%' } }}
         >
           <TextField
@@ -121,6 +119,12 @@ const MyResponsesFilter = ({
               </MenuItem>
             ))}
           </TextField>
+
+          <Chip
+            label="Ожидают ответа"
+            color="primary"
+            size="small"
+          />
         </Stack>
 
         <Stack

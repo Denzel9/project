@@ -17,21 +17,27 @@ export const AboutMe = ({
     ([key]) => person?.[key as keyof Person]
   );
 
-
-  if(!aboutMe && !isLeastOneParameter) {
-    return <Box sx={{
-      bgcolor: 'white',
-      p: { xs: 3, md: 4 },
-      borderRadius: '32px',
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <Typography sx={{ fontSize: {xs: '24px', md: '34px'}, opacity: 0.3 }} color="info">
-        Нет данных
-      </Typography>
-    </Box>;
+  if (!aboutMe && !isLeastOneParameter) {
+    return (
+      <Box
+        sx={{
+          bgcolor: 'white',
+          p: { xs: 3, md: 4 },
+          borderRadius: '32px',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Typography
+          sx={{ fontSize: { xs: '24px', md: '34px' }, opacity: 0.3 }}
+          color="info"
+        >
+          Нет данных
+        </Typography>
+      </Box>
+    );
   }
 
   return (
@@ -43,6 +49,7 @@ export const AboutMe = ({
       }}
     >
       <UserCardItem
+        type="text"
         isLoading={false}
         value={aboutMe || ''}
       />

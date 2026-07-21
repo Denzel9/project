@@ -13,12 +13,14 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router';
 
+import { UserDisplayName } from '@/entities/user';
 import { ROUTES } from '@/shared';
 
 import { formatRelativeTime } from '../model/utils';
 
-import type { ApplicationCompanyRow } from '../model/types';
 import { partnersTableShellSx } from './PartnersTableSkeleton';
+
+import type { ApplicationCompanyRow } from '../model/types';
 
 type ApplicationCompaniesTableProps = {
   items: ApplicationCompanyRow[];
@@ -80,13 +82,7 @@ export const ApplicationCompaniesTable = ({
                     spacing={1}
                     sx={{ alignItems: 'center', minWidth: 0 }}
                   >
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 600 }}
-                      noWrap
-                    >
-                      {item.name}
-                    </Typography>
+                    <UserDisplayName user={item} />
 
                     <Chip
                       className="partners-no-print"
@@ -100,7 +96,9 @@ export const ApplicationCompaniesTable = ({
               </TableCell>
 
               <TableCell>
-                <Typography variant="body2">{item.applicationsCount}</Typography>
+                <Typography variant="body2">
+                  {item.applicationsCount}
+                </Typography>
               </TableCell>
 
               <TableCell>

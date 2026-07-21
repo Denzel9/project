@@ -51,7 +51,7 @@ export const DashboardActivityPanel = () => {
 
   const feedItems = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data?.pages],
+    [data?.pages]
   );
 
   const taskMap = useMemo(() => {
@@ -75,12 +75,12 @@ export const DashboardActivityPanel = () => {
 
   const taskOptions = useMemo(
     () => getDashboardTaskOptions(Array.from(taskMap.values())),
-    [taskMap],
+    [taskMap]
   );
 
   const items = useMemo(
     () => feedItems.map(item => mapActivityFeedItem(item, taskMap)),
-    [feedItems, taskMap],
+    [feedItems, taskMap]
   );
 
   const total = data?.pages[0]?.total ?? 0;
@@ -108,7 +108,10 @@ export const DashboardActivityPanel = () => {
   }, [activityType, taskId]);
 
   useEffect(() => {
-    setVisibleCount(DASHBOARD_ACTIVITY_PAGE_SIZE);
+    setTimeout(() => {
+      setIsOpenFilter(false);
+      setVisibleCount(DASHBOARD_ACTIVITY_PAGE_SIZE);
+    }, 0);
   }, [activityType, taskId]);
 
   const handleResetFilters = () => {
@@ -134,19 +137,19 @@ export const DashboardActivityPanel = () => {
         display: 'flex',
         bgcolor: 'white',
         overflow: 'hidden',
-        p: { xs: 2, md: 2.5 },
-        borderRadius: '32px',
         border: '1px solid',
+        borderRadius: '32px',
+        p: { xs: 2, md: 2.5 },
         borderColor: 'divider',
         flexDirection: 'column',
       }}
     >
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
+        direction="row"
         spacing={1}
         sx={{
           mb: 1.5,
-          alignItems: { xs: 'flex-start', sm: 'center' },
+          alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
@@ -192,13 +195,15 @@ export const DashboardActivityPanel = () => {
                   size="small"
                   variant="outlined"
                   label={countLabel}
+                  sx={{ display: { xs: 'none', md: 'block' } }}
                 />
               )}
             </Stack>
 
             <Typography
               variant="caption"
-              sx={{ color: 'info.main', lineHeight: 1.3 }}
+              color="info"
+              sx={{ lineHeight: 1.7, display: { xs: 'none', md: 'block' } }}
             >
               Последние события по задачам
             </Typography>
@@ -206,13 +211,12 @@ export const DashboardActivityPanel = () => {
         </Stack>
 
         <IconButton
-          size="small"
           onClick={() => setIsOpenFilter(prev => !prev)}
           sx={{
             color: hasActiveFilters ? 'primary.main' : 'text.secondary',
           }}
         >
-          <FilterList fontSize="small" />
+          <FilterList />
         </IconButton>
       </Stack>
 

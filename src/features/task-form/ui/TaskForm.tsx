@@ -1,5 +1,11 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
@@ -35,8 +41,8 @@ type TaskFormProps = {
   activities: TaskActivity[];
   isExecutorApprove?: boolean | null;
   setIsEdit: (isEdit: boolean) => void;
-  handleSimpleSaveForm: (values: TaskFormType) => void;
-  onSubmit: (values: TaskFormType, status?: TaskStatus) => void;
+  handleSimpleSaveForm: (values: TaskFormType) => Promise<boolean>;
+  onSubmit: (values: TaskFormType, status?: TaskStatus) => Promise<boolean>;
 };
 
 export const TaskForm = ({
@@ -56,6 +62,8 @@ export const TaskForm = ({
   const { id } = useAuthStore();
 
   const [isOpenConfirmDialog, setIsOpenConfirmDialog] = useState(false);
+  const [isSavingForm, setIsSavingForm] = useState(false);
+  const [isCompletingTask, setIsCompletingTask] = useState(false);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -104,11 +112,27 @@ export const TaskForm = ({
     setIsEdit(true);
   };
 
-  const handleSave = () => {
-    handleSimpleSaveForm(getValues());
+  const handleCancelEdit = useCallback(() => {
+    reset(editBaselineRef.current ?? mapTaskToForm(task));
     editBaselineRef.current = null;
     setIsEdit(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [reset, setIsEdit, task]);
+
+  const handleSave = async () => {
+    setIsSavingForm(true);
+
+    try {
+      const isSaved = await handleSimpleSaveForm(getValues());
+
+      if (!isSaved) return;
+
+      setSnackbarOpen?.(true, 'Данные успешно сохранены');
+      editBaselineRef.current = null;
+      setIsEdit(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsSavingForm(false);
+    }
   };
 
   const handleEdit = (editing: boolean) => {
@@ -120,22 +144,25 @@ export const TaskForm = ({
     setIsEdit(editing);
   };
 
-  const handleCancelEdit = () => {
-    reset(editBaselineRef.current ?? mapTaskToForm(task));
-    editBaselineRef.current = null;
-    setIsEdit(false);
+  const handleGoToRevision = async () => {
+    await onSubmit(getValues(), TASK_STATUS_ENUM.REVISION);
   };
 
-  const handleGoToRevision = () => {
-    onSubmit(getValues(), TASK_STATUS_ENUM.REVISION);
+  const handleCompleteTask = async () => {
+    setIsCompletingTask(true);
+
+    try {
+      const isSaved = await onSubmit(getValues(), TASK_STATUS_ENUM.COMPLETED);
+
+      if (!isSaved) return;
+
+      setIsOpenConfirmDialog(false);
+    } finally {
+      setIsCompletingTask(false);
+    }
   };
 
-  const handleCompleteTask = () => {
-    onSubmit(getValues(), TASK_STATUS_ENUM.COMPLETED);
-    setIsOpenConfirmDialog(false);
-  };
-
-  const handleSubmitForm = (newStatus?: TaskStatus) => {
+  const handleSubmitForm = async (newStatus?: TaskStatus) => {
     if (!imagesLength && status === TASK_STATUS_ENUM.IN_PROGRESS) {
       setSnackbarOpen?.(
         true,
@@ -149,18 +176,28 @@ export const TaskForm = ({
       return;
     }
 
-    onSubmit(getValues(), newStatus);
+    await onSubmit(getValues(), newStatus);
+  };
+
+  const onFormValid = useCallback(
+    async (values: TaskFormType) => {
+      if (status === TASK_STATUS_ENUM.CHECKING) {
+        setIsOpenConfirmDialog(true);
+        return;
+      }
+
+      await onSubmit(values);
+    },
+    [onSubmit, status]
+  );
+
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    void handleSubmit(onFormValid)(event);
   };
 
   return (
     <FormProvider {...methods}>
-      <form
-        onSubmit={handleSubmit(values =>
-          status === TASK_STATUS_ENUM.CHECKING
-            ? setIsOpenConfirmDialog(true)
-            : onSubmit(values)
-        )}
-      >
+      <form onSubmit={handleFormSubmit}>
         <TaskFormFields
           post={post}
           isMe={isOwner}
@@ -177,6 +214,7 @@ export const TaskForm = ({
             status={status}
             isEdit={isEdit}
             isLoading={isLoading}
+            isSaving={isSavingForm}
             activities={activities}
             handleEdit={handleEdit}
             handleSave={handleSave}
@@ -193,6 +231,7 @@ export const TaskForm = ({
         <ConfirmDialog
           title="Завершить задачу"
           isOpen={isOpenConfirmDialog}
+          isPending={isCompletingTask}
           onSuccess={handleCompleteTask}
           onClose={() => setIsOpenConfirmDialog(false)}
           description="Вы уверены, что хотите завершить задачу?"

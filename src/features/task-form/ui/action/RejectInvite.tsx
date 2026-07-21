@@ -1,6 +1,8 @@
 import { Button, Stack, Typography } from '@mui/material';
+import axios from 'axios';
 
 import { type UpdateTaskDto, type Task, TASK_STATUS_ENUM } from '@/entities';
+import { useSnackbarStore } from '@/widgets';
 
 type RejectInviteProps = {
   isMe: boolean;
@@ -19,11 +21,19 @@ export const RejectInvite = ({
   taskId,
   updateTask,
 }: RejectInviteProps) => {
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const handleAccept = async () => {
-    await updateTask({
-      id: taskId,
-      body: { isExecutorApprove: null, status: TASK_STATUS_ENUM.PREPARING },
-    });
+    try {
+      await updateTask({
+        id: taskId,
+        body: { isExecutorApprove: null, status: TASK_STATUS_ENUM.PREPARING },
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSnackbarOpen?.(true, String(error.response?.data?.message));
+      }
+    }
   };
 
   return (

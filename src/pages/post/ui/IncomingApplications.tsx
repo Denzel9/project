@@ -15,11 +15,11 @@ import { Link, useNavigate } from 'react-router';
 
 import {
   APPLICATION_STATUS_LABELS,
-  getApplicantName,
   useUpdateApplicationStatusMutation,
   type ApplicationList,
 } from '@/entities/application';
 import { POST_STATUS_ENUM } from '@/entities/post';
+import { applicantToUserPartial, UserDisplayName } from '@/entities/user';
 import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 
@@ -125,9 +125,9 @@ export const IncomingApplications = ({
                       gap: 2,
                     }}
                   >
-                    <Typography variant="subtitle1">
-                      {getApplicantName(application.applicant)}
-                    </Typography>
+                    <UserDisplayName
+                      user={applicantToUserPartial(application.applicant)}
+                    />
                   </Stack>
 
                   <Typography

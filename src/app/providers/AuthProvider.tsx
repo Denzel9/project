@@ -2,7 +2,9 @@ import { Box, CircularProgress } from '@mui/material';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
+import { prefetchUserConfig } from '@/entities/user-config';
 import { useAuthStore, useRefreshTokenMutation } from '@/features/auth';
+import { queryClient } from '@/shared/api';
 import { ROUTES } from '@/shared/config/routes';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -40,6 +42,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             res.data.user.role,
             res.data.user.membershipRole
           );
+
+          try {
+            await prefetchUserConfig(queryClient);
+          } catch {
+            // Конфиг не критичен для старта приложения
+          }
+
           return;
         }
 

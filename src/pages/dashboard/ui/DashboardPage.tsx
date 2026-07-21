@@ -32,7 +32,7 @@ export const DashboardPage = () => {
   const setStatus = useMyTaskFilterStore(state => state.setStatus);
   const viewMode = useMyTaskFilterStore(state => state.viewMode);
   const ensureKanbanColumnVisible = useMyTaskFilterStore(
-    state => state.ensureKanbanColumnVisible,
+    state => state.ensureKanbanColumnVisible
   );
   const isCompany = role === USER_ROLE.COMPANY;
 
@@ -113,14 +113,14 @@ export const DashboardPage = () => {
         {cardOptions.map(value => (
           <Grid
             key={value}
-            size={{ xs: 12, sm: 6, md: 4 }}
+            size={{ xs: 6, md: 4 }}
           >
             <DashboardCard
               variant={value}
-              count={getDashboardCardCount(value, stats)}
-              isLoading={isStatsLoading || isStatsError}
               label={getFastButtonLabel(value)}
               onClick={() => handleCardClick(value)}
+              count={getDashboardCardCount(value, stats)}
+              isLoading={isStatsLoading || isStatsError}
             />
           </Grid>
         ))}
@@ -132,7 +132,7 @@ export const DashboardPage = () => {
       >
         <Grid
           size={{ xs: 12, lg: 8 }}
-          sx={{ display: 'flex' }}
+          sx={{ display: 'flex', minWidth: 0 }}
         >
           <DashboardUpcomingTasksTable
             isCompany={isCompany}

@@ -5,6 +5,12 @@ import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
 import { USER_ROLE, type TaskCalendarItem } from '@/entities';
+import {
+  executorToUserPartial,
+  getUserName,
+  UserDisplayName,
+  type User,
+} from '@/entities/user';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
@@ -20,25 +26,21 @@ type CalendarTaskListItemProps = {
 
 const getContact = (task: TaskCalendarItem, isCompany: boolean) => {
   if (isCompany) {
-    const name = [task.executor?.name, task.executor?.lastName]
-      .filter(Boolean)
-      .join(' ');
+    const user = executorToUserPartial(task.executor ?? undefined);
 
     return {
-      name: name || 'Исполнитель не назначен',
+      user,
+      name: getUserName(user) || 'Исполнитель не назначен',
       avatar: task.executor?.avatar ?? '',
       label: 'Исполнитель',
     };
   }
 
-  const name =
-    task.owner?.companyProfile?.companyName ??
-    [task.owner?.creatorProfile?.name, task.owner?.creatorProfile?.lastName]
-      .filter(Boolean)
-      .join(' ');
+  const user = task.owner as Partial<User>;
 
   return {
-    name: name || 'Заказчик',
+    user,
+    name: getUserName(user) || 'Заказчик',
     avatar: task.owner?.avatar ?? '',
     label: 'Заказчик',
   };
@@ -178,17 +180,7 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
           >
             {contact.label}
           </Typography>
-          <Typography
-            variant="caption"
-            noWrap
-            sx={{
-              display: 'block',
-              lineHeight: 1.2,
-              fontWeight: 500,
-            }}
-          >
-            {contact.name}
-          </Typography>
+          <UserDisplayName user={contact.user} />
         </Box>
       </Stack>
     </Box>

@@ -218,29 +218,23 @@ export const ExecutorsPage = () => {
           direction="row"
           spacing={2}
           sx={{
-            p: 4,
             mb: 2,
-            gap: 1,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '32px',
-            bgcolor: 'white',
-            flexWrap: 'wrap',
+            px: 2,
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
           <PartnersTabs
-            tabs={pageConfig.tabs}
             value={activeTab}
+            tabs={pageConfig.tabs}
             onChange={setActiveTab}
           />
 
           <PartnersReportToolbar
-            disabled={reportDisabled}
-            isExporting={isExporting}
             onPrint={handlePrint}
             onExport={handleExport}
+            disabled={reportDisabled}
+            isExporting={isExporting}
           />
         </Stack>
 

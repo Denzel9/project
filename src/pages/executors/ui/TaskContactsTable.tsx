@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router';
 
+import { UserDisplayName } from '@/entities/user';
 import { ROUTES } from '@/shared';
 
 import { formatRelativeTime } from '../model/utils';
@@ -75,17 +76,17 @@ export const TaskContactsTable = ({
                     {item.name.charAt(0)}
                   </Avatar>
 
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600 }}
-                  >
-                    {item.name}
-                  </Typography>
+                  <UserDisplayName
+                    user={{ id: item.id }}
+                    name={item.name}
+                  />
                 </Stack>
               </TableCell>
 
               <TableCell>
-                <Typography variant="body2">{item.interactionsCount}</Typography>
+                <Typography variant="body2">
+                  {item.interactionsCount}
+                </Typography>
               </TableCell>
 
               <TableCell>

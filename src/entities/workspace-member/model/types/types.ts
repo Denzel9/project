@@ -1,9 +1,11 @@
 export type WorkspaceMember = {
   id: string;
   email?: string;
-  avatar?: string
+  avatar?: string;
   displayName?: string;
   isActive?: boolean;
+  isVerified?: boolean;
+  isEmailConfirmed?: boolean;
   membershipId?: string;
   membershipRole?: MemberRole;
   role?: MemberRole;

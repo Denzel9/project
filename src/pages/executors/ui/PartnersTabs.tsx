@@ -10,18 +10,19 @@ type PartnersTabsProps = {
 
 export const PartnersTabs = ({ tabs, value, onChange }: PartnersTabsProps) => (
   <Tabs
-    className="partners-no-print"
     value={value}
-    onChange={(_, nextValue: PartnersTabId) => onChange(nextValue)}
+    sx={{ mb: 2 }}
     variant="scrollable"
     scrollButtons="auto"
-    sx={{ mb: 2 }}
+    className="partners-no-print"
+    onChange={(_, nextValue: PartnersTabId) => onChange(nextValue)}
   >
     {tabs.map(tab => (
       <Tab
         key={tab.id}
         value={tab.id}
         label={tab.label}
+        sx={{ textTransform: 'none' }}
       />
     ))}
   </Tabs>

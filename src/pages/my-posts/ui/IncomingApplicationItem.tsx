@@ -16,11 +16,11 @@ import { Link, useNavigate } from 'react-router';
 
 import {
   APPLICATION_STATUS_LABELS,
-  getApplicantName,
   useUpdateApplicationStatusMutation,
   type Application,
 } from '@/entities/application';
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
+import { applicantToUserPartial, UserDisplayName } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
@@ -35,14 +35,6 @@ const getStatusColor = (status: Application['status']) => {
   if (status === APPLICATION_STATUS_ENUM.WITHDRAWN) return 'default';
   if (status === APPLICATION_STATUS_ENUM.VIEWED) return 'info';
   return 'primary';
-};
-
-const getStatusAccentColor = (status: Application['status']) => {
-  if (status === APPLICATION_STATUS_ENUM.ACCEPTED) return 'success.main';
-  if (status === APPLICATION_STATUS_ENUM.REJECTED) return 'error.main';
-  if (status === APPLICATION_STATUS_ENUM.WITHDRAWN) return 'grey.400';
-  if (status === APPLICATION_STATUS_ENUM.VIEWED) return 'info.main';
-  return 'primary.main';
 };
 
 const isGalleryMedia = (mimeType: string) =>
@@ -88,8 +80,6 @@ export const IncomingApplicationItem = ({
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
-          borderLeftWidth: 4,
-          borderLeftColor: getStatusAccentColor(application.status),
           transition: 'box-shadow 0.2s ease, transform 0.2s ease',
           ':hover': {
             boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -115,8 +105,8 @@ export const IncomingApplicationItem = ({
 
             <Box
               sx={{
-                top: 10,
-                left: 10,
+                top: 16,
+                right: 16,
                 position: 'absolute',
               }}
             >
@@ -124,6 +114,7 @@ export const IncomingApplicationItem = ({
                 size="small"
                 label={APPLICATION_STATUS_LABELS[application.status]}
                 color={getStatusColor(application.status)}
+                sx={{ opacity: 0.8 }}
               />
             </Box>
           </Box>
@@ -168,13 +159,9 @@ export const IncomingApplicationItem = ({
                   sx={{ width: 44, height: 44, flexShrink: 0 }}
                 />
 
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, lineHeight: 1.3 }}
-                  noWrap
-                >
-                  {getApplicantName(application.applicant)}
-                </Typography>
+                <UserDisplayName
+                  user={applicantToUserPartial(application.applicant)}
+                />
                 {/* TODO add something like company name */}
               </Stack>
 
@@ -183,7 +170,7 @@ export const IncomingApplicationItem = ({
                   size="small"
                   label={APPLICATION_STATUS_LABELS[application.status]}
                   color={getStatusColor(application.status)}
-                  sx={{ flexShrink: 0 }}
+                  sx={{ opacity: 0.8 }}
                 />
               )}
             </Stack>
@@ -367,6 +354,7 @@ export const IncomingApplicationItem = ({
       <ConfirmDialog
         title="Отклонить отклик"
         isOpen={isOpenRejectDialog}
+        isPending={isPending}
         onClose={() => setIsOpenRejectDialog(false)}
         onSuccess={() => {
           void updateStatus({

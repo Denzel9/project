@@ -66,13 +66,15 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
 
       <Box
         sx={{
-          mt: 4,
+          my: 4,
           width: '100%',
           height: '250px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: '32px',
+          border: '1px solid',
+          borderColor: 'divider',
           position: 'relative',
           bgcolor: 'secondary.light',
           backgroundSize: 'cover',

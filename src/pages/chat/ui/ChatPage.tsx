@@ -5,7 +5,6 @@ import {
   Stack,
   Typography,
   useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -22,34 +21,33 @@ import { ChatSearchPanel } from './ChatSearchPanel';
 import { Contacts } from './Contacts';
 
 export const ChatPage = () => {
-  const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileShowChat, setMobileShowChat] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
 
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+
   const {
-    conversations,
-    selectedConversation,
-    selectedConversationId,
-    selectConversation,
-    messages,
-    currentUserId,
+    error,
     draft,
     setDraft,
-    pendingFiles,
-    addPendingFiles,
-    removePendingFile,
-    sendMessage,
-    isSendingMedia,
+    messages,
     isLoading,
-    isOpeningConversation,
+    sendMessage,
+    pendingFiles,
+    currentUserId,
+    conversations,
+    isSendingMedia,
+    addPendingFiles,
     recipientIdParam,
-    error,
+    removePendingFile,
+    selectConversation,
+    selectedConversation,
+    isOpeningConversation,
+    selectedConversationId,
   } = useMessenger();
 
-  const peer = selectedConversation?.peer ?? null;
   const headerTime = selectedConversation?.lastMessage
     ? format(new Date(selectedConversation.lastMessage.createdAt), 'HH:mm')
     : selectedConversation
@@ -76,20 +74,29 @@ export const ChatPage = () => {
     setMobileShowChat(false);
   };
 
+  const handleOpenProfile = () => {
+    navigate(`${ROUTES.PROFILE}?userId=${selectedConversation?.peer?.id}`);
+  };
+
   const showContacts = !isMobile || !mobileShowChat;
   const showChatPanel = !isMobile || mobileShowChat;
 
   const isInitialLoading = isLoading && conversations.length === 0;
+  const isEmpty =
+    !isLoading &&
+    !recipientIdParam &&
+    !isOpeningConversation &&
+    !conversations.length;
 
   if (isInitialLoading) {
     return (
       <PageLayout isScreenHeight>
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
             height: '50vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <CircularProgress />
@@ -98,12 +105,7 @@ export const ChatPage = () => {
     );
   }
 
-  if (
-    !isLoading &&
-    !conversations.length &&
-    !recipientIdParam &&
-    !isOpeningConversation
-  ) {
+  if (isEmpty) {
     return (
       <PageLayout isScreenHeight>
         <Box
@@ -120,25 +122,25 @@ export const ChatPage = () => {
           }}
         >
           <Stack
-            direction="column"
             spacing={2}
+            direction="column"
           >
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{
-                textAlign: 'center',
-                fontWeight: 500,
-                fontSize: { xs: '28px', md: '44px' },
                 opacity: 0.3,
+                fontWeight: 500,
+                textAlign: 'center',
+                fontSize: { xs: '28px', md: '44px' },
               }}
             >
               Нет диалогов
             </Typography>
 
             <Button
-              variant="contained"
               color="primary"
+              variant="contained"
               onClick={() => navigate(ROUTES.INDEX)}
             >
               На главную
@@ -164,8 +166,8 @@ export const ChatPage = () => {
           <Contacts
             conversations={conversations}
             selectedId={selectedConversationId}
-            isLoading={isLoading && conversations.length === 0}
             onSelect={handleSelectConversation}
+            isLoading={isLoading && conversations.length === 0}
           />
         )}
 
@@ -183,28 +185,26 @@ export const ChatPage = () => {
             <ChatHeader
               isMobile={isMobile}
               headerTime={headerTime}
-              peer={peer ?? undefined}
+              peer={selectedConversation?.peer}
+              onOpenProfile={handleOpenProfile}
               onBackToContacts={handleBackToContacts}
               onOpenSearch={() => setIsSearchOpen(true)}
               onOpenAttachments={() => setIsAttachmentsOpen(true)}
-              onOpenProfile={() =>
-                navigate(`${ROUTES.PROFILE}?userId=${peer?.id}`)
-              }
             />
 
             <ChatConversation
-              messages={messages}
-              currentUserId={currentUserId}
-              peer={peer}
               draft={draft}
-              pendingFiles={pendingFiles}
-              isSending={isSendingMedia}
+              error={error}
+              messages={messages}
+              onSend={sendMessage}
               onDraftChange={setDraft}
+              isSending={isSendingMedia}
+              pendingFiles={pendingFiles}
+              currentUserId={currentUserId}
               onAttachFiles={addPendingFiles}
               onRemoveFile={removePendingFile}
-              onSend={() => void sendMessage()}
+              peer={selectedConversation?.peer}
               isLoading={isLoading && Boolean(selectedConversationId)}
-              error={error}
             />
           </Stack>
         )}
@@ -214,15 +214,15 @@ export const ChatPage = () => {
         <>
           <ChatSearchPanel
             open={isSearchOpen}
+            currentUserId={currentUserId}
             onClose={() => setIsSearchOpen(false)}
             conversationId={selectedConversationId}
-            currentUserId={currentUserId}
           />
 
           <ChatAttachmentsPanel
             open={isAttachmentsOpen}
-            onClose={() => setIsAttachmentsOpen(false)}
             conversationId={selectedConversationId}
+            onClose={() => setIsAttachmentsOpen(false)}
           />
         </>
       )}

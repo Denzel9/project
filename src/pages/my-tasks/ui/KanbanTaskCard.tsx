@@ -7,7 +7,9 @@ import { useDrag } from 'react-dnd';
 import { useNavigate } from 'react-router';
 
 import {
+  executorToUserPartial,
   getUserName,
+  UserDisplayName,
   isTaskOverdue,
   USER_ROLE,
   type Task,
@@ -33,19 +35,21 @@ type KanbanTaskCardProps = {
 
 const getContact = (task: Task, isCompany: boolean) => {
   if (isCompany) {
-    const name = [task.executor?.name, task.executor?.lastName]
-      .filter(Boolean)
-      .join(' ');
+    const user = executorToUserPartial(task.executor ?? undefined);
 
     return {
-      name: name || 'Не назначен',
+      user,
+      name: getUserName(user) || 'Не назначен',
       avatar: task.executor?.avatar ?? '',
       label: 'Исполнитель',
     };
   }
 
+  const user = task.owner as Partial<User>;
+
   return {
-    name: getUserName(task.owner as Partial<User>) || 'Компания',
+    user,
+    name: getUserName(user) || 'Компания',
     avatar: task.owner?.avatar ?? '',
     label: 'Заказчик',
   };
@@ -210,17 +214,7 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
               {contact.label}
             </Typography>
 
-            <Typography
-              variant="caption"
-              noWrap
-              sx={{
-                display: 'block',
-                lineHeight: 1.2,
-                fontWeight: 500,
-              }}
-            >
-              {contact.name}
-            </Typography>
+            <UserDisplayName user={contact.user} />
           </Box>
         </Stack>
 

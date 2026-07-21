@@ -14,6 +14,9 @@ import {
   TASK_STATUS_ENUM,
   TASK_STATUS_LABELS,
   getTaskStatusColor,
+  executorToUserPartial,
+  getUserName,
+  UserDisplayName,
   type Task,
 } from '@/entities';
 
@@ -30,11 +33,9 @@ type TaskSwitcherProps = {
 const getExecutorKey = (task: Task) => task.executorId || 'unassigned';
 
 const getExecutorName = (task: Task) => {
-  if (task.executor?.name) {
-    return `${task.executor.name} ${task.executor.lastName ?? ''}`.trim();
-  }
+  const user = executorToUserPartial(task.executor);
 
-  return 'Не назначен';
+  return getUserName(user) || 'Не назначен';
 };
 
 const getExecutorInitials = (task: Task) => {
@@ -47,9 +48,6 @@ const getExecutorInitials = (task: Task) => {
     .map(part => part[0]?.toUpperCase() ?? '')
     .join('');
 };
-
-const isExecutorPending = (task: Task) =>
-  Boolean(task.executorId) && task.isExecutorApprove !== true;
 
 export const TaskSwitcher = ({
   groupedTasks,
@@ -147,15 +145,9 @@ export const TaskSwitcher = ({
                     spacing={0.75}
                     sx={{ alignItems: 'center' }}
                   >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: isSelected ? 600 : 500,
-                        opacity: isExecutorPending(representative) ? 0.7 : 1,
-                      }}
-                    >
-                      {getExecutorName(representative)}
-                    </Typography>
+                    <UserDisplayName
+                      user={executorToUserPartial(representative.executor)}
+                    />
                     <Box
                       sx={{
                         minWidth: 20,

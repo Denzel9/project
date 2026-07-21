@@ -6,7 +6,6 @@ import {
   OpenInNew,
   Person,
   PersonAddOutlined,
-  RocketLaunch,
   Schedule,
 } from '@mui/icons-material';
 import {
@@ -18,7 +17,6 @@ import {
   Menu,
   MenuItem,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -30,6 +28,7 @@ import {
   getPhone,
   ContactType,
   getUserName,
+  UserDisplayName,
   getContactLink,
   getContactIcon,
   TASK_STATUS_ENUM,
@@ -54,6 +53,8 @@ const cardSx = {
   bgcolor: 'white',
   borderRadius: '32px',
   p: { xs: 2.5, md: 3 },
+  border: '1px solid',
+  borderColor: 'divider',
 } as const;
 
 export const ContactCard = ({
@@ -123,12 +124,7 @@ export const ContactCard = ({
                   '&:hover': { color: 'primary.main' },
                 }}
               >
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {getUserName(contact)}
-                </Typography>
+                <UserDisplayName user={contact} />
                 <OpenInNew sx={{ fontSize: 16, opacity: 0.6 }} />
               </Stack>
             </Link>
@@ -300,28 +296,12 @@ export const ContactCard = ({
           {getUserName(contact)?.charAt(0) ?? '?'}
         </Avatar>
 
-        <Stack
-          direction="row"
-          spacing={0.75}
-          sx={{ alignItems: 'center', justifyContent: 'center' }}
+        <Box
+          onClick={() => navigate(`${ROUTES.PROFILE}?userId=${contact.id}`)}
+          sx={{ cursor: 'pointer' }}
         >
-          <Typography
-            variant="h6"
-            onClick={() => navigate(`${ROUTES.PROFILE}?userId=${contact.id}`)}
-            sx={{
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'color 0.2s ease',
-              '&:hover': { color: 'primary.main' },
-            }}
-          >
-            {getUserName(contact)}
-          </Typography>
-
-          <Tooltip title="Prime-аккаунт">
-            <RocketLaunch sx={{ fontSize: 20, color: 'primary.main' }} />
-          </Tooltip>
-        </Stack>
+          <UserDisplayName user={contact} />
+        </Box>
       </Stack>
 
       <Stack spacing={1}>

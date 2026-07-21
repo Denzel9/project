@@ -1,31 +1,26 @@
-import {
-  AssignmentOutlined,
-  FilterList,
-  MoreVert,
-  Whatshot,
-} from '@mui/icons-material';
+import { AssignmentOutlined, FilterList, Whatshot } from '@mui/icons-material';
 import {
   Box,
   Button,
   Chip,
   IconButton,
-  Menu,
   MenuItem,
   Skeleton,
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
 
 import { TASK_STATUS_LABELS, useTasksQuery, type TaskStatus } from '@/entities';
 import { toDashboardTasksQueryParams } from '@/features';
 import { TaskTable } from '@/pages/my-tasks/ui/TaskTable';
-import { ROUTES } from '@/shared';
-import { useSnackbarStore } from '@/widgets';
 
-import { DASHBOARD_TABLE_PAGE_SIZE } from '../model/constants';
+import {
+  DASHBOARD_TABLE_PAGE_SIZE,
+  MOBILE_DASHBOARD_TABLE_PAGE_SIZE,
+} from '../model/constants';
 import {
   getDashboardTaskOptions,
   getDashboardTaskPersonOptions,
@@ -40,29 +35,24 @@ export const DashboardUpcomingTasksTable = ({
   isCompany,
   onErrorChange,
 }: DashboardUpcomingTasksTableProps) => {
-  const navigate = useNavigate();
-  const { setSnackbarOpen } = useSnackbarStore();
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const [isOpenFilter, setIsOpenFilter] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [taskIdFilter, setTaskIdFilter] = useState('all');
   const [personFilter, setPersonFilter] = useState('all');
   const [urgentOnly, setUrgentOnly] = useState(false);
 
-  const isMenuOpen = Boolean(menuAnchor);
-
   const filterKey = useMemo(
     () =>
       [statusFilter, taskIdFilter, personFilter, urgentOnly, isCompany].join(
-        '|',
+        '|'
       ),
-    [statusFilter, taskIdFilter, personFilter, urgentOnly, isCompany],
+    [statusFilter, taskIdFilter, personFilter, urgentOnly, isCompany]
   );
 
   const [pageState, setPageState] = useState({ filterKey, page: 0 });
-  const page =
-    pageState.filterKey === filterKey ? pageState.page : 0;
+  const page = pageState.filterKey === filterKey ? pageState.page : 0;
 
   const queryParams = useMemo(
     () =>
@@ -73,9 +63,14 @@ export const DashboardUpcomingTasksTable = ({
           ...(personFilter !== 'all' && { personId: personFilter }),
           urgentOnly,
         },
-        { page: page + 1, limit: DASHBOARD_TABLE_PAGE_SIZE },
+        {
+          page: page + 1,
+          limit: isMobile
+            ? MOBILE_DASHBOARD_TABLE_PAGE_SIZE
+            : DASHBOARD_TABLE_PAGE_SIZE,
+        }
       ),
-    [isCompany, statusFilter, personFilter, urgentOnly, page],
+    [isCompany, statusFilter, personFilter, urgentOnly, page, isMobile]
   );
 
   const { data, isLoading, isError } = useTasksQuery(queryParams);
@@ -92,14 +87,14 @@ export const DashboardUpcomingTasksTable = ({
       taskIdFilter === 'all'
         ? tasks
         : tasks.filter(task => task.id === taskIdFilter),
-    [tasks, taskIdFilter],
+    [tasks, taskIdFilter]
   );
 
   const taskOptions = useMemo(() => getDashboardTaskOptions(tasks), [tasks]);
 
   const personOptions = useMemo(
     () => getDashboardTaskPersonOptions(tasks, isCompany),
-    [tasks, isCompany],
+    [tasks, isCompany]
   );
 
   const statusOptions = Object.entries(TASK_STATUS_LABELS);
@@ -122,19 +117,6 @@ export const DashboardUpcomingTasksTable = ({
       ? 'Нет задач по выбранным фильтрам'
       : 'Нет задач с дедлайном на сегодня и ожидающих вашего действия';
 
-  const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
-    setMenuAnchor(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-  };
-
-  const handleStubAction = (message: string) => {
-    handleMenuClose();
-    setSnackbarOpen(true, message);
-  };
-
   const countLabel = String(total);
 
   const handlePageChange = (_: unknown, nextPage: number) => {
@@ -145,6 +127,7 @@ export const DashboardUpcomingTasksTable = ({
     <Box
       sx={{
         width: '100%',
+        minWidth: 0,
         height: { xs: 'auto', lg: 600 },
         minHeight: { xs: 420, lg: 600 },
         display: 'flex',
@@ -158,12 +141,12 @@ export const DashboardUpcomingTasksTable = ({
       }}
     >
       <Stack
-        direction={{ xs: 'column', sm: 'row' }}
+        direction="row"
         spacing={1}
         sx={{
           mb: 1.5,
-          alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
         }}
       >
         <Stack
@@ -200,7 +183,7 @@ export const DashboardUpcomingTasksTable = ({
                 variant="h6"
                 sx={{ lineHeight: 1.2 }}
               >
-                Требуют внимания
+                Текущие задачи
               </Typography>
 
               {!isLoading && !isError && total > 0 && (
@@ -208,6 +191,7 @@ export const DashboardUpcomingTasksTable = ({
                   size="small"
                   variant="outlined"
                   label={countLabel}
+                  sx={{ display: { xs: 'none', md: 'block' } }}
                 />
               )}
             </Stack>
@@ -215,58 +199,47 @@ export const DashboardUpcomingTasksTable = ({
             <Typography
               variant="caption"
               color="info"
-              sx={{ lineHeight: 1.7, display: 'block' }}
+              sx={{ lineHeight: 1.7, display: { xs: 'none', md: 'block' } }}
             >
               Дедлайн сегодня и задачи, ожидающие вашего действия
             </Typography>
           </Stack>
         </Stack>
 
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ alignItems: 'center', flexShrink: 0 }}
+        <IconButton
+          aria-label="Фильтры"
+          aria-pressed={isOpenFilter}
+          onClick={() => setIsOpenFilter(current => !current)}
+          color={hasActiveFilters ? 'primary' : 'default'}
         >
-          <IconButton
-            aria-label="Фильтры"
-            aria-pressed={isOpenFilter}
-            onClick={() => setIsOpenFilter(current => !current)}
-            color={hasActiveFilters ? 'primary' : 'default'}
-          >
-            <FilterList />
-          </IconButton>
-
-          <IconButton
-            onClick={handleMenuOpen}
-            aria-label="Действия"
-          >
-            <MoreVert />
-          </IconButton>
-        </Stack>
+          <FilterList />
+        </IconButton>
       </Stack>
 
       {isOpenFilter && (
-        <Stack
-          direction="row"
-          spacing={1}
+        <Box
           sx={{
             mb: 1.5,
             p: 1.25,
             width: '100%',
+            minHeight: 56,
             flexShrink: 0,
-            borderRadius: '16px',
             bgcolor: 'grey.50',
             border: '1px solid',
+            borderRadius: '16px',
+            alignItems: 'center',
             borderColor: 'divider',
             justifyContent: 'space-between',
-            alignItems: 'center',
-            minHeight: 56,
           }}
         >
           <Stack
-            direction="row"
             spacing={1}
-            sx={{ width: { xs: '100%', md: '75%' }, flexWrap: 'wrap', gap: 1 }}
+            direction={{ xs: 'column', sm: 'row' }}
+            sx={{
+              gap: 1,
+              width: { xs: '100%', md: '75%' },
+              alignItems: 'start',
+            }}
           >
             <TextField
               select
@@ -332,27 +305,25 @@ export const DashboardUpcomingTasksTable = ({
               ))}
             </TextField>
 
-            <IconButton
-              onClick={() => setUrgentOnly(current => !current)}
-              sx={{ flexShrink: 0, alignSelf: 'center' }}
-            >
-              <Whatshot color={urgentOnly ? 'error' : 'action'} />
-            </IconButton>
-          </Stack>
+            <Stack direction="row">
+              <IconButton onClick={() => setUrgentOnly(current => !current)}>
+                <Whatshot color={urgentOnly ? 'error' : 'action'} />
+              </IconButton>
 
-          {hasActiveFilters && (
-            <Button
-              size="small"
-              onClick={handleResetFilters}
-              sx={{
-                flexShrink: 0,
-                alignSelf: { xs: 'flex-start', md: 'center' },
-              }}
-            >
-              Сбросить
-            </Button>
-          )}
-        </Stack>
+              {hasActiveFilters && (
+                <Button
+                  size="small"
+                  onClick={handleResetFilters}
+                  sx={{
+                    alignSelf: { xs: 'flex-start', md: 'center' },
+                  }}
+                >
+                  Сбросить
+                </Button>
+              )}
+            </Stack>
+          </Stack>
+        </Box>
       )}
 
       {isLoading ? (
@@ -370,35 +341,43 @@ export const DashboardUpcomingTasksTable = ({
         <Box
           sx={{
             flex: 1,
+            minWidth: 0,
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
+            '& .MuiTable-root': {
+              minWidth: 720,
+            },
           }}
         >
           <TaskTable
             embedded
             page={page}
             total={total}
-            isCompany={isCompany}
-            tasks={visibleTasks}
             serverPagination
+            tasks={visibleTasks}
+            isCompany={isCompany}
             onPageChange={handlePageChange}
-            rowsPerPage={DASHBOARD_TABLE_PAGE_SIZE}
+            rowsPerPage={
+              isMobile
+                ? MOBILE_DASHBOARD_TABLE_PAGE_SIZE
+                : DASHBOARD_TABLE_PAGE_SIZE
+            }
           />
         </Box>
       ) : (
         <Box
           sx={{
+            py: 4,
+            px: 2,
             flex: 1,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            px: 2,
-            py: 4,
-            borderRadius: '16px',
             bgcolor: 'grey.50',
+            alignItems: 'center',
+            borderRadius: '16px',
             border: '1px dashed',
             borderColor: 'divider',
+            justifyContent: 'center',
           }}
         >
           <Typography
@@ -410,51 +389,6 @@ export const DashboardUpcomingTasksTable = ({
           </Typography>
         </Box>
       )}
-
-      <Menu
-        open={isMenuOpen}
-        anchorEl={menuAnchor}
-        onClose={handleMenuClose}
-      >
-        <MenuItem
-          component={RouterLink}
-          to={ROUTES.MY_TASKS}
-          onClick={handleMenuClose}
-        >
-          Все задачи
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            handleMenuClose();
-            navigate(ROUTES.CALENDAR);
-          }}
-        >
-          Календарь
-        </MenuItem>
-
-        <MenuItem
-          onClick={() =>
-            handleStubAction('Экспорт списка скоро будет доступен')
-          }
-        >
-          Экспорт списка
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => handleStubAction('Печать скоро будет доступна')}
-        >
-          Печать
-        </MenuItem>
-
-        <MenuItem
-          onClick={() =>
-            handleStubAction('Настройка уведомлений скоро будет доступна')
-          }
-        >
-          Уведомления по дедлайнам
-        </MenuItem>
-      </Menu>
     </Box>
   );
 };

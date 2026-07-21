@@ -15,9 +15,8 @@ import {
   type Application,
 } from '@/entities/application';
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
-import { getUserName, type User } from '@/entities/user';
+import { getUserName, UserDisplayName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
-import { FavoriteButton } from '@/widgets';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
 
@@ -101,7 +100,6 @@ export const MyResponseItem = ({
   onWithdraw,
   application,
   taskId,
-  isFavorite = false,
   withdrawingId = null,
 }: MyResponseItemProps) => {
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -110,7 +108,8 @@ export const MyResponseItem = ({
   const post = application.post;
   const postMedia = post?.media ?? [];
   const previewMedia = postMedia.find(item => isGalleryMedia(item.mimeType));
-  const companyName = getUserName(post?.owner as Partial<User>);
+  const companyUser = post?.owner as Partial<User> | undefined;
+  const companyName = getUserName(companyUser);
   const isUpdated = application.createdAt !== application.updatedAt;
   const statusHint = getStatusHint(application.status);
 
@@ -185,57 +184,81 @@ export const MyResponseItem = ({
                 gap: 1,
               }}
             >
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Link
-                to={`${ROUTES.POST}/${post?.id}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 600,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    transition: 'color 0.2s ease',
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  {post?.title ?? 'Объявление'}
-                </Typography>
-              </Link>
-
-              {companyName && (
+              <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Link
-                  to={`${ROUTES.PROFILE}?userId=${post?.ownerId}`}
+                  to={`${ROUTES.POST}/${post?.id}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}
                 >
                   <Typography
-                    variant="body2"
-                    color="text.secondary"
+                    variant="subtitle1"
                     sx={{
-                      mt: 0.25,
+                      fontWeight: 600,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      transition: 'color 0.2s ease',
                       '&:hover': { color: 'primary.main' },
                     }}
                   >
-                    {companyName}
+                    {post?.title ?? 'Объявление'}
                   </Typography>
                 </Link>
+
+                {companyName && (
+                  <Link
+                    to={`${ROUTES.PROFILE}?userId=${post?.ownerId}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <UserDisplayName user={companyUser} />
+                  </Link>
+                )}
+              </Box>
+
+              {!previewMedia && (
+                <Chip
+                  size="small"
+                  label={APPLICATION_STATUS_LABELS[application.status]}
+                  color={getStatusColor(application.status)}
+                  sx={{ flexShrink: 0 }}
+                />
               )}
-            </Box>
+            </Stack>
 
-            {!previewMedia && (
-              <Chip
-                size="small"
-                label={APPLICATION_STATUS_LABELS[application.status]}
-                color={getStatusColor(application.status)}
-                sx={{ flexShrink: 0 }}
-              />
+            {application.message && (
+              <Box
+                sx={{
+                  px: 1.5,
+                  py: 1.25,
+                  borderRadius: '14px',
+                  bgcolor: 'grey.50',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mb: 0.5 }}
+                >
+                  Ваш отклик
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {application.message}
+                </Typography>
+              </Box>
             )}
-          </Stack>
 
-          {application.message && (
             <Box
               sx={{
                 px: 1.5,
@@ -246,70 +269,40 @@ export const MyResponseItem = ({
                 borderColor: 'divider',
               }}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', mb: 0.5 }}
-              >
-                Ваш отклик
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  whiteSpace: 'pre-wrap',
-                  lineHeight: 1.5,
-                }}
-              >
-                {application.message}
-              </Typography>
-            </Box>
-          )}
+              <Stack spacing={1.25}>
+                <MetaRow
+                  icon={<ScheduleOutlined sx={{ fontSize: 18 }} />}
+                  label="Отправлен"
+                  value={format(
+                    new Date(application.createdAt),
+                    'dd MMM yyyy, HH:mm',
+                    { locale: ru }
+                  )}
+                />
 
-          <Box
-            sx={{
-              px: 1.5,
-              py: 1.25,
-              borderRadius: '14px',
-              bgcolor: 'grey.50',
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Stack spacing={1.25}>
-              <MetaRow
-                icon={<ScheduleOutlined sx={{ fontSize: 18 }} />}
-                label="Отправлен"
-                value={format(
-                  new Date(application.createdAt),
-                  'dd MMM yyyy, HH:mm',
-                  { locale: ru }
+                {isUpdated && (
+                  <MetaRow
+                    icon={<UpdateOutlined sx={{ fontSize: 18 }} />}
+                    label="Обновлён"
+                    value={formatDistanceToNow(
+                      new Date(application.updatedAt),
+                      {
+                        addSuffix: true,
+                        locale: ru,
+                      }
+                    )}
+                  />
                 )}
-              />
 
-              {isUpdated && (
-                <MetaRow
-                  icon={<UpdateOutlined sx={{ fontSize: 18 }} />}
-                  label="Обновлён"
-                  value={formatDistanceToNow(new Date(application.updatedAt), {
-                    addSuffix: true,
-                    locale: ru,
-                  })}
-                />
-              )}
-
-              {statusHint && (
-                <MetaRow
-                  icon={<InfoOutlined sx={{ fontSize: 18 }} />}
-                  label="Статус"
-                  value={statusHint}
-                />
-              )}
-            </Stack>
-          </Box>
+                {statusHint && (
+                  <MetaRow
+                    icon={<InfoOutlined sx={{ fontSize: 18 }} />}
+                    label="Статус"
+                    value={statusHint}
+                  />
+                )}
+              </Stack>
+            </Box>
           </Stack>
 
           <Box sx={{ flexShrink: 0, pt: 1.5 }}>
@@ -325,53 +318,48 @@ export const MyResponseItem = ({
                 gap: 1,
               }}
             >
-            <Stack
-              direction="row"
-              spacing={0.75}
-              sx={{ flexWrap: 'wrap', gap: 0.75 }}
-            >
-              {application.status === APPLICATION_STATUS_ENUM.NEW && (
-                <Button
-                  size="small"
-                  color="error"
-                  variant="outlined"
-                  disabled={isWithdrawing}
-                  onClick={() => setIsWithdrawOpen(true)}
-                >
-                  Отозвать
-                </Button>
-              )}
+              <Stack
+                direction="row"
+                spacing={0.75}
+                sx={{ flexWrap: 'wrap', gap: 0.75 }}
+              >
+                {application.status === APPLICATION_STATUS_ENUM.NEW && (
+                  <Button
+                    size="small"
+                    color="error"
+                    variant="outlined"
+                    disabled={isWithdrawing}
+                    onClick={() => setIsWithdrawOpen(true)}
+                  >
+                    Отозвать
+                  </Button>
+                )}
 
-              {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
-                <>
-                  {taskId && (
+                {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
+                  <>
+                    {taskId && (
+                      <Button
+                        size="small"
+                        component={Link}
+                        variant="contained"
+                        to={`${ROUTES.TASK}/${post?.id}?inviteId=${taskId}`}
+                      >
+                        К задаче
+                      </Button>
+                    )}
+
                     <Button
                       size="small"
                       component={Link}
-                      variant="contained"
-                      to={`${ROUTES.TASK}/${post?.id}?inviteId=${taskId}`}
+                      variant="outlined"
+                      startIcon={<ChatBubbleOutlined sx={{ fontSize: 16 }} />}
+                      to={`${ROUTES.CHAT}?recipientId=${post?.ownerId}`}
                     >
-                      К задаче
+                      В чат
                     </Button>
-                  )}
-
-                  <Button
-                    size="small"
-                    component={Link}
-                    variant="outlined"
-                    startIcon={<ChatBubbleOutlined sx={{ fontSize: 16 }} />}
-                    to={`${ROUTES.CHAT}?recipientId=${post?.ownerId}`}
-                  >
-                    В чат
-                  </Button>
-                </>
-              )}
-            </Stack>
-
-            <FavoriteButton
-              isFavorite={isFavorite}
-              postId={post?.id ?? ''}
-            />
+                  </>
+                )}
+              </Stack>
             </Stack>
           </Box>
         </Stack>

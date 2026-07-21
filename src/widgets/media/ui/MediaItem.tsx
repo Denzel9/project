@@ -8,10 +8,7 @@ import {
   type ImgHTMLAttributes,
 } from 'react';
 
-import {
-  getFileNameFromKey,
-  getMediaKind,
-} from '../lib/getMediaKind';
+import { getFileNameFromKey, getMediaKind } from '../lib/getMediaKind';
 
 type MediaItemProps = {
   src: string;
@@ -68,7 +65,9 @@ export const MediaItem = ({
   };
 
   useEffect(() => {
-    setStatus('loading');
+    setTimeout(() => {
+      setStatus('loading');
+    }, 0);
   }, [src, mimeType]);
 
   useEffect(() => {
@@ -108,8 +107,8 @@ export const MediaItem = ({
 
     return (
       <Box
-        component="a"
         href={src}
+        component="a"
         target="_blank"
         rel="noopener noreferrer"
         onClick={event => event.stopPropagation()}
@@ -132,13 +131,7 @@ export const MediaItem = ({
       >
         <Description color="action" />
 
-        <Typography
-          variant="body2"
-          noWrap
-          sx={{ flex: 1, minWidth: 0 }}
-        >
-          {displayName}
-        </Typography>
+        <Typography variant="body2">{displayName}</Typography>
       </Box>
     );
   }

@@ -57,9 +57,7 @@ export const setDashboardCommentsReadAfter = (value: string) => {
 };
 
 export const getDashboardTaskPath = (task: Task) => {
-  const routeId = task.post?.id ?? task.postId ?? task.id;
-
-  return `${ROUTES.TASK}/${routeId}?taskId=${task.id}`;
+  return `${ROUTES.TASK}/${task.id}?taskId=${task.id}`;
 };
 
 export const getDashboardCommentPath = (item: DashboardCommentItem) =>

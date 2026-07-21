@@ -7,12 +7,14 @@ import type { InviteUserRequest, WorkspaceMember } from '../types/types';
 const POSTS_KEY = ['posts'] as const;
 const APPLICATIONS_KEY = ['applications'] as const;
 const WORKSPACE_MEMBERS_KEY = ['workspace-members'] as const;
+const USER_CONFIG_KEY = ['user-config'] as const;
 
 const invalidateProfileScopedQueries = () => {
   void queryClient.invalidateQueries({ queryKey: POSTS_KEY });
   void queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
   void queryClient.invalidateQueries({ queryKey: ['tasks'] });
   void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
+  void queryClient.invalidateQueries({ queryKey: USER_CONFIG_KEY });
 };
 
 export const useGetProfilesQuery = () =>

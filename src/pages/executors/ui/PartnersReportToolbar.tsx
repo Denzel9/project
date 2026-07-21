@@ -1,5 +1,5 @@
 import { DownloadOutlined, PrintOutlined } from '@mui/icons-material';
-import { Button, CircularProgress, Stack } from '@mui/material';
+import { Button, CircularProgress, IconButton, Stack } from '@mui/material';
 
 type PartnersReportToolbarProps = {
   disabled?: boolean;
@@ -15,20 +15,29 @@ export const PartnersReportToolbar = ({
   onExport,
 }: PartnersReportToolbarProps) => (
   <Stack
-    direction="row"
     spacing={1}
+    direction="row"
     className="partners-no-print"
-    sx={{ flexShrink: 0 }}
   >
     <Button
       size="small"
-      variant="outlined"
-      startIcon={<PrintOutlined />}
-      disabled={disabled}
       onClick={onPrint}
+      variant="outlined"
+      disabled={disabled}
+      startIcon={<PrintOutlined />}
+      sx={{ display: { xs: 'none', md: 'flex', textTransform: 'none' } }}
     >
       Печать
     </Button>
+
+    <IconButton
+      size="small"
+      onClick={onPrint}
+      disabled={disabled}
+      sx={{ display: { xs: 'block', md: 'none' } }}
+    >
+      <PrintOutlined />
+    </IconButton>
 
     <Button
       size="small"
@@ -43,10 +52,20 @@ export const PartnersReportToolbar = ({
           <DownloadOutlined />
         )
       }
-      disabled={disabled || isExporting}
       onClick={onExport}
+      disabled={disabled || isExporting}
+      sx={{ display: { xs: 'none', md: 'flex', textTransform: 'none' } }}
     >
       Экспорт CSV
     </Button>
+
+    <IconButton
+      size="small"
+      onClick={onExport}
+      disabled={disabled || isExporting}
+      sx={{ display: { xs: 'block', md: 'none' } }}
+    >
+      <DownloadOutlined />
+    </IconButton>
   </Stack>
 );

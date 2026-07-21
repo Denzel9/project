@@ -1,7 +1,12 @@
-import { ChatBubbleOutlined, Close } from '@mui/icons-material';
+import {
+  ChatBubbleOutlined,
+  Close,
+  FilterList,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Collapse,
   IconButton,
@@ -17,7 +22,10 @@ import { useTasksWithCommentsInfiniteQuery, type Task } from '@/entities';
 import { TaskCommentComposer } from '@/pages/task/ui/TaskCommentComposer';
 import { useSnackbarStore } from '@/widgets';
 
-import { DASHBOARD_COMMENTS_ITEMS_LIMIT, DASHBOARD_COMMENT_CARD_COLLAPSE_MS } from '../model/constants';
+import {
+  DASHBOARD_COMMENTS_ITEMS_LIMIT,
+  DASHBOARD_COMMENT_CARD_COLLAPSE_MS,
+} from '../model/constants';
 import {
   canCommentOnTask,
   getDashboardCommentsReadAfter,
@@ -50,6 +58,7 @@ export const DashboardCommentsPanel = () => {
   const [taskId, setTaskId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
+  const [isOpenFilter, setIsOpenFilter] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [readAfter, setReadAfter] = useState(getDashboardCommentsReadAfter);
 
@@ -112,12 +121,12 @@ export const DashboardCommentsPanel = () => {
 
   const selectedTaskTitle = useMemo(
     () => taskOptions.find(task => task.id === taskId)?.title,
-    [taskId, taskOptions]
+    [taskId, taskOptions],
   );
 
   const selectedTask = useMemo(
     () => (taskId !== 'all' ? taskMap.get(taskId) : undefined),
-    [taskId, taskMap]
+    [taskId, taskMap],
   );
 
   const showSelectedTaskComposer =
@@ -145,9 +154,16 @@ export const DashboardCommentsPanel = () => {
 
   useEffect(() => {
     setTimeout(() => {
+      setIsOpenFilter(false);
       setExpandedTaskId(null);
     }, 0);
   }, [taskId]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setExpandedTaskId(null);
+    }, 0);
+  }, [appliedQuery]);
 
   const markTaskAsRead = () => {
     const now = new Date().toISOString();
@@ -188,7 +204,7 @@ export const DashboardCommentsPanel = () => {
         display: 'flex',
         bgcolor: 'white',
         overflow: isExpandedView ? 'hidden' : 'auto',
-        p: { xs: 2, md: 3 },
+        p: { xs: 2, md: 2.5 },
         borderRadius: '32px',
         border: '1px solid',
         borderColor: 'divider',
@@ -206,72 +222,166 @@ export const DashboardCommentsPanel = () => {
     >
       <Stack
         direction="row"
-        spacing={1.5}
+        spacing={1}
         sx={{
-          mb: 2,
+          mb: 1.5,
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 600 }}
-        >
-          Комментарии
-        </Typography>
-
         <Stack
+          direction="row"
           spacing={1.5}
-          direction={{ xs: 'column', lg: 'row' }}
-          sx={{ alignItems: { lg: 'center' } }}
+          sx={{ alignItems: 'center', minWidth: 0 }}
         >
-          <TextField
-            select
-            size="small"
-            label="Задача"
-            value={taskId}
-            onChange={event => setTaskId(event.target.value)}
-            sx={{ minWidth: { xs: '100%', lg: 220 }, flex: { lg: 1 } }}
-          >
-            <MenuItem value="all">Все задачи</MenuItem>
-            {taskOptions.map(task => (
-              <MenuItem
-                key={task.id}
-                value={task.id}
-              >
-                {task.title}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            size="small"
-            label="Поиск по тексту"
-            value={searchQuery}
-            onChange={event => setSearchQuery(event.target.value)}
-            sx={{ minWidth: { xs: '100%', lg: 240 }, flex: { lg: 1.2 } }}
-            slotProps={{
-              input: {
-                endAdornment: searchQuery ? (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      edge="end"
-                      aria-label="Очистить поиск"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setAppliedQuery('');
-                      }}
-                    >
-                      <Close fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              },
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              display: 'flex',
+              borderRadius: '12px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'secondary.light',
+              color: 'primary.main',
             }}
-          />
+          >
+            <ChatBubbleOutlined fontSize="small" />
+          </Box>
+
+          <Stack
+            spacing={0}
+            sx={{ minWidth: 0 }}
+          >
+            <Typography
+              variant="h6"
+              sx={{ lineHeight: 1.2 }}
+            >
+              Комментарии
+            </Typography>
+
+            <Typography
+              variant="caption"
+              color="info"
+              sx={{ lineHeight: 1.7, display: { xs: 'none', md: 'block' } }}
+            >
+              Последние комментарии по задачам
+            </Typography>
+          </Stack>
         </Stack>
+
+        <IconButton
+          onClick={() => setIsOpenFilter(prev => !prev)}
+          sx={{
+            color: hasActiveFilters ? 'primary.main' : 'text.secondary',
+          }}
+        >
+          <FilterList />
+        </IconButton>
       </Stack>
+
+      {isOpenFilter && (
+        <Box
+          sx={{
+            mb: 1.5,
+            p: 1.25,
+            flexShrink: 0,
+            borderRadius: '16px',
+            bgcolor: 'grey.50',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { sm: 'center' } }}
+          >
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Задача"
+              value={taskId}
+              onChange={event => setTaskId(event.target.value)}
+              sx={{ minWidth: 0 }}
+            >
+              <MenuItem value="all">Все задачи</MenuItem>
+              {taskOptions.map(task => (
+                <MenuItem
+                  key={task.id}
+                  value={task.id}
+                >
+                  {task.title}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              fullWidth
+              size="small"
+              label="Поиск по тексту"
+              value={searchQuery}
+              onChange={event => setSearchQuery(event.target.value)}
+              sx={{ minWidth: 0 }}
+              slotProps={{
+                input: {
+                  endAdornment: searchQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        edge="end"
+                        aria-label="Очистить поиск"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setAppliedQuery('');
+                        }}
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                },
+              }}
+            />
+          </Stack>
+
+          {hasActiveFilters && (
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ mt: 1.25, flexWrap: 'wrap', gap: 0.75 }}
+            >
+              {taskId !== 'all' && selectedTaskTitle && (
+                <Chip
+                  size="small"
+                  label={selectedTaskTitle}
+                  onDelete={() => setTaskId('all')}
+                />
+              )}
+
+              {appliedQuery && (
+                <Chip
+                  size="small"
+                  label={`Поиск: ${appliedQuery}`}
+                  onDelete={() => {
+                    setSearchQuery('');
+                    setAppliedQuery('');
+                  }}
+                />
+              )}
+
+              <Chip
+                size="small"
+                variant="outlined"
+                label="Сбросить"
+                onClick={handleResetFilters}
+              />
+            </Stack>
+          )}
+        </Box>
+      )}
 
       {showSelectedTaskComposer && selectedTask && (
         <Box

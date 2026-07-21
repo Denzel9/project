@@ -3,9 +3,9 @@ import { format } from 'date-fns';
 
 import {
   APPLICATION_STATUS_LABELS,
-  getApplicantName,
   type Application,
 } from '@/entities/application';
+import { applicantToUserPartial, UserDisplayName } from '@/entities/user';
 
 type ApplicationSearchResultItemProps = {
   application: Application;
@@ -24,7 +24,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
   }
 
   const parts = text.split(
-    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'),
+    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi')
   );
 
   return parts.map((part, index) =>
@@ -43,7 +43,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
       </Box>
     ) : (
       part
-    ),
+    )
   );
 };
 
@@ -89,7 +89,7 @@ export const ApplicationSearchResultItem = ({
       >
         {renderHighlightedText(
           application.post?.title ?? 'Пост',
-          highlightQuery,
+          highlightQuery
         )}
       </Typography>
 
@@ -101,12 +101,7 @@ export const ApplicationSearchResultItem = ({
       </Typography>
     </Stack>
 
-    <Typography
-      variant="body2"
-      color="text.secondary"
-    >
-      {getApplicantName(application.applicant)}
-    </Typography>
+    <UserDisplayName user={applicantToUserPartial(application.applicant)} />
 
     <Chip
       size="small"

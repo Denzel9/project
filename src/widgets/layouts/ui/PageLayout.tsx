@@ -51,9 +51,9 @@ export const PageLayout = ({
         spacing={{ xs: 1, md: 2 }}
         {...(printHide ? { 'data-print-hide': true } : {})}
         sx={{
-          p: { xs: 2, md: 4 },
           bgcolor: 'white',
           border: '1px solid',
+          p: { xs: 2, md: 4 },
           alignItems: 'center',
           borderColor: 'divider',
           justifyContent: 'space-between',
@@ -66,8 +66,8 @@ export const PageLayout = ({
         <SideBarButton />
 
         <Stack
+          spacing={1}
           direction="row"
-          spacing={2}
           sx={{ alignItems: 'center' }}
         >
           <IconButton
@@ -82,7 +82,9 @@ export const PageLayout = ({
             onClose={() => setIsHelpOpen(false)}
           />
 
-          <NotificationsMenu />
+          <Box sx={{ mr: '8px !important' }}>
+            <NotificationsMenu />
+          </Box>
 
           <CurrentUser isButton={isMobile} />
         </Stack>

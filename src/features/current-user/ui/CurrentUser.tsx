@@ -4,7 +4,9 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useGetProfilesQuery, useSwitchProfileMutation } from '@/entities';
+import { prefetchUserConfig } from '@/entities/user-config';
 import { useAuthStore } from '@/features';
+import { queryClient } from '@/shared/api';
 import { ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -47,6 +49,12 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
       res.data.user?.role as string,
       res.data.user?.membershipRole as string
     );
+
+    try {
+      await prefetchUserConfig(queryClient);
+    } catch {
+      // конфиг подтянется при следующем обращении
+    }
   };
 
   const handleChangeUser = async (value: string) => {
@@ -76,10 +84,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   if (isButton) {
     return (
       <>
-        <IconButton
-          color="primary"
-          onClick={handleClick}
-        >
+        <IconButton onClick={handleClick}>
           <ManageAccounts />
         </IconButton>
 

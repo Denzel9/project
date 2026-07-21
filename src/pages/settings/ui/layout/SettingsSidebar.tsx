@@ -12,7 +12,9 @@ export const SettingsSidebar = () => {
         p: 4,
         minWidth: 350,
         bgcolor: 'white',
+        border: '1px solid',
         borderRadius: '32px',
+        borderColor: 'divider',
       }}
     >
       <SettingsNavSections pathname={pathname} />

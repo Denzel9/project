@@ -150,11 +150,25 @@ export const TaskItem = ({
     }, 0);
   }, [task]);
 
+  const handleUpdateTask = async (body: UpdateTaskDto) => {
+    try {
+      await updateTask({ id: task.id, body });
+      return true;
+    } catch {
+      setSnackbarOpen?.(
+        true,
+        'Сохранение данных не удалось. Попробуйте позже',
+        'error'
+      );
+      return false;
+    }
+  };
+
   const handleSave = async (
     formValues: TaskFormType,
     newStatus?: TaskStatus
-  ) => {
-    if (!task) return;
+  ): Promise<boolean> => {
+    if (!task) return false;
 
     const body: UpdateTaskDto = {
       ...(isOwner ? mapFormToUpdateTask(formValues) : {}),
@@ -162,7 +176,9 @@ export const TaskItem = ({
       ...(newStatus ? { status: newStatus } : {}),
     };
 
-    await updateTask({ id: task.id, body });
+    const isSaved = await handleUpdateTask(body);
+
+    if (!isSaved) return false;
 
     if (files.length > 0) {
       await handleSaveMedia();
@@ -179,22 +195,25 @@ export const TaskItem = ({
     requestAnimationFrame(() => {
       scrollMainToTop();
     });
+
+    return true;
   };
 
-  const handleSimpleSaveForm = async (formValues: TaskFormType) => {
-    if (!task) return;
+  const handleSimpleSaveForm = async (
+    formValues: TaskFormType
+  ): Promise<boolean> => {
+    if (!task) return false;
 
     const body: UpdateTaskDto = mapFormToUpdateTask(formValues);
 
-    await updateTask({ id: task.id, body });
+    return handleUpdateTask(body);
   };
 
   const handleCancelTask = async () => {
     if (!task) return;
 
-    await updateTask({
-      id: task.id,
-      body: { status: TASK_STATUS_ENUM.CANCELLED },
+    await handleUpdateTask({
+      status: TASK_STATUS_ENUM.CANCELLED,
     });
 
     setAnchorEl(null);
@@ -311,6 +330,8 @@ export const TaskItem = ({
                   bgcolor: 'white',
                   p: { xs: 2.5, md: 3 },
                   borderRadius: '32px',
+                  border: '1px solid',
+                  borderColor: 'divider',
                 }}
               >
                 <Stack
@@ -329,7 +350,16 @@ export const TaskItem = ({
                   </Typography>
 
                   {!isCancelled && isOwner && (
-                    <>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                    >
+                      <Button
+                        color="primary"
+                        sx={{ px: 2 }}
+                      >
+                        Отправить исполнителю
+                      </Button>
                       <IconButton
                         onClick={event =>
                           setAnchorEl(anchorEl ? null : event.currentTarget)
@@ -354,7 +384,7 @@ export const TaskItem = ({
                           </MenuItem>
                         )}
                       </Menu>
-                    </>
+                    </Stack>
                   )}
                 </Stack>
 
@@ -468,6 +498,7 @@ export const TaskItem = ({
       <ConfirmDialog
         title="Отменить задачу"
         isOpen={isOpenCancelDialog}
+        isPending={isUpdating}
         onSuccess={handleCancelTask}
         onClose={() => setIsOpenCancelDialog(false)}
         description="Вы уверены, что хотите отменить задачу? Все данные будут удалены."

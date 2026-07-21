@@ -1,5 +1,5 @@
 import { Favorite, FavoriteBorderOutlined } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 import {
@@ -42,17 +42,19 @@ export const UserFavoriteButton = ({
         { userId },
         {
           onSuccess: () => setIsFavorite(true),
-        },
+        }
       );
     }
   };
 
   return (
-    <IconButton
-      disabled={isFavoritePending}
-      onClick={handleToggleFavorite}
-    >
-      {isFavorite ? <Favorite color="primary" /> : <FavoriteBorderOutlined />}
-    </IconButton>
+    <Box>
+      <IconButton
+        disabled={isFavoritePending}
+        onClick={handleToggleFavorite}
+      >
+        {isFavorite ? <Favorite color="primary" /> : <FavoriteBorderOutlined />}
+      </IconButton>
+    </Box>
   );
 };

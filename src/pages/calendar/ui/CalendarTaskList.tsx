@@ -73,11 +73,11 @@ export const CalendarTaskList = ({
       <Stack
         direction="row"
         spacing={1.5}
-        sx={{ mb: 2, alignItems: 'center', flexShrink: 0 }}
+        sx={{ mb: { xs: 0, md: 2 }, alignItems: 'center', flexShrink: 0 }}
       >
         <Typography
           variant="h6"
-          sx={{ fontWeight: 600 }}
+          sx={{ fontWeight: 600, display: { xs: 'none', md: 'block' } }}
         >
           {formattedDate}
         </Typography>
@@ -86,6 +86,7 @@ export const CalendarTaskList = ({
           <Chip
             size="small"
             label={dayEvents.length}
+            sx={{ display: { xs: 'none', md: 'block' } }}
           />
         )}
       </Stack>

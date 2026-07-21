@@ -559,6 +559,46 @@ paths:
         '204':
           description: Выход выполнен
       tags: *a3
+  /config:
+    get:
+      operationId: UserConfigController_get
+      summary: Конфиг активного профиля
+      description:
+        'Настройки активного User: whitelist типов in-app
+        (`inAppNotificationTypes`) и email (`emailNotificationTypes`)
+        уведомлений. Пустой массив — канал полностью выключен.'
+      parameters: []
+      responses:
+        '200':
+          description: Конфиг пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserConfigResponseDto'
+      tags: &a5
+        - user-config
+    patch:
+      operationId: UserConfigController_update
+      summary: Обновить конфиг активного профиля
+      description:
+        'Частичное обновление whitelist-ов. Передайте хотя бы одно поле —
+        итоговый массив для канала; `[]` — выключить канал полностью.
+        Можно обновить только изменённый канал или оба сразу.'
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserConfigDto'
+      responses:
+        '200':
+          description: Обновлённый конфиг
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserConfigResponseDto'
+      tags: *a5
   /notifications:
     get:
       operationId: NotificationsController_list
@@ -2862,6 +2902,10 @@ paths:
       responses:
         '200':
           description: Список публикаций с пагинацией
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicationListResponseDto'
       tags: &a16
         - publications
       security: &a17
@@ -3926,6 +3970,9 @@ tags:
   - name: notifications
     description:
       'In-app уведомления: inbox, read/unread, WebSocket /notifications'
+  - name: user-config
+    description:
+      'Конфиг активного профиля: whitelist in-app NotificationType'
   - name: publications
     description:
       'Публикации по завершённым задачам: автосоздание, снимок reportMedia,
@@ -4224,6 +4271,10 @@ components:
           format: uuid
         isActive:
           type: boolean
+        isVerified:
+          type: boolean
+        isEmailConfirmed:
+          type: boolean
       required:
         - userId
         - role
@@ -4232,6 +4283,8 @@ components:
         - membershipRole
         - membershipId
         - isActive
+        - isVerified
+        - isEmailConfirmed
     SwitchProfileDto:
       type: object
       properties:
@@ -4321,6 +4374,68 @@ components:
           type: number
       required:
         - count
+    NotificationTypeEnum:
+      type: string
+      enum:
+        - APPLICATION_NEW
+        - APPLICATION_STATUS_CHANGED
+        - APPLICATION_WITHDRAWN
+        - TASK_CREATED
+        - TASK_STATUS_CHANGED
+        - TASK_EXECUTOR_ASSIGNED
+        - TASK_COMMENT_CREATED
+        - TASK_MEDIA_ADDED
+        - CHAT_MESSAGE
+        - TEAM_INVITE
+        - MEMBERSHIP_REVOKED
+        - PUBLICATION_CREATED
+    UserConfigResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        inAppNotificationTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationTypeEnum'
+        emailNotificationTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationTypeEnum'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - inAppNotificationTypes
+        - emailNotificationTypes
+        - createdAt
+        - updatedAt
+    UpdateUserConfigDto:
+      type: object
+      properties:
+        inAppNotificationTypes:
+          type: array
+          description:
+            'Полный whitelist типов in-app уведомлений. `[]` — всё выключено.'
+          items:
+            $ref: '#/components/schemas/NotificationTypeEnum'
+        emailNotificationTypes:
+          type: array
+          description:
+            'Полный whitelist типов email-уведомлений. `[]` — всё выключено.
+            Для CHAT_MESSAGE письма уходят только offline и не чаще раза в 10 мин.'
+          items:
+            $ref: '#/components/schemas/NotificationTypeEnum'
+      minProperties: 1
     NotificationActorDto:
       type: object
       properties:
@@ -5736,6 +5851,27 @@ components:
         - key
         - size
         - mimeType
+    PublicationListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicationResponseDto'
+        total:
+          type: number
+          example: 15
+        page:
+          type: number
+          example: 1
+        limit:
+          type: number
+          example: 20
+      required:
+        - items
+        - total
+        - page
+        - limit
     PublicationResponseDto:
       type: object
       properties:

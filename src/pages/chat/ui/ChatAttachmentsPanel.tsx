@@ -121,9 +121,7 @@ export const ChatAttachmentsPanel = ({
       onClose={onClose}
       sx={{
         '& .MuiDrawer-paper': {
-          display: 'flex',
           p: { xs: 2, md: 4 },
-          flexDirection: 'column',
           width: isMobile ? '100%' : 420,
           borderTopLeftRadius: { xs: 0, md: 32 },
           borderBottomLeftRadius: { xs: 0, md: 32 },
@@ -196,10 +194,11 @@ export const ChatAttachmentsPanel = ({
 
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr 1fr', sm: '1fr 1fr 1fr' },
             gap: 1,
             rowGap: 4,
+            display: 'grid',
+            overflowY: 'auto',
+            gridTemplateColumns: '1fr 1fr',
           }}
         >
           {items.map(item => {
@@ -243,32 +242,31 @@ export const ChatAttachmentsPanel = ({
                   />
                 ) : (
                   <Stack
-                    direction="row"
+                    direction="column"
                     spacing={1}
                     sx={{
                       p: 1.5,
+                      minHeight: 150,
+                      height: '100%',
                       borderRadius: '12px',
-                      alignItems: 'center',
                       bgcolor: 'secondary.light',
                     }}
                   >
                     <Description color="action" />
+
+                    <Typography variant="caption">
+                      {getFileNameFromKey(item.key)}
+                    </Typography>
+
                     <Typography
                       variant="caption"
-                      noWrap
-                      sx={{ flex: 1 }}
+                      color="text.secondary"
+                      sx={{ position: 'absolute', bottom: 16, right: 16 }}
                     >
-                      {getFileNameFromKey(item.key)}
+                      {format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm')}
                     </Typography>
                   </Stack>
                 )}
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mt: 0.5 }}
-                >
-                  {format(new Date(item.createdAt), 'dd.MM.yyyy HH:mm')}
-                </Typography>
               </Box>
             );
           })}

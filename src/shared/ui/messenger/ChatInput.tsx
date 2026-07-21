@@ -1,12 +1,17 @@
-import { AttachFile, Close, Mood, Send } from '@mui/icons-material';
+import {
+  Send,
+  Mood,
+  AttachFile,
+  DeleteOutlined,
+  DescriptionOutlined,
+} from '@mui/icons-material';
 import {
   Box,
-  Chip,
+  CircularProgress,
   IconButton,
   InputAdornment,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import {
   useRef,
@@ -103,8 +108,8 @@ export const ChatInput = ({
     <Stack spacing={1}>
       {pendingFiles.length > 0 && (
         <Stack
+          spacing={2}
           direction="row"
-          spacing={1}
           sx={{ flexWrap: 'wrap' }}
         >
           {pendingFiles.map((file, index) => {
@@ -112,28 +117,41 @@ export const ChatInput = ({
             const previewUrl = isImage ? URL.createObjectURL(file) : null;
 
             return (
-              <Chip
+              <Stack
+                spacing={1}
+                direction="row"
                 key={`${file.name}-${index}`}
-                label={file.name}
-                onDelete={() => onRemoveFile(index)}
-                deleteIcon={<Close />}
-                avatar={
-                  previewUrl ? (
-                    <Box
-                      component="img"
-                      src={previewUrl}
-                      alt={file.name}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '4px',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : undefined
-                }
-                sx={{ maxWidth: 220 }}
-              />
+                sx={{ py: 2, position: 'relative' }}
+              >
+                {previewUrl ? (
+                  <Box
+                    component="img"
+                    src={previewUrl ?? ''}
+                    alt={file.name}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      objectFit: 'cover',
+                      borderRadius: '4px',
+                    }}
+                  />
+                ) : (
+                  // TODO: add file icon by file type
+                  <DescriptionOutlined
+                    sx={{ fontSize: 40 }}
+                    color="disabled"
+                  />
+                )}
+
+                <IconButton
+                  size="small"
+                  color="inherit"
+                  onClick={() => onRemoveFile(index)}
+                  sx={{ position: 'absolute', right: -10, top: 0 }}
+                >
+                  <DeleteOutlined color="error" />
+                </IconButton>
+              </Stack>
             );
           })}
         </Stack>
@@ -141,9 +159,9 @@ export const ChatInput = ({
 
       <TextField
         fullWidth
-        size="small"
         multiline
         maxRows={4}
+        size="medium"
         inputRef={textInputRef}
         disabled={isInputDisabled}
         value={value}
@@ -194,6 +212,13 @@ export const ChatInput = ({
                     <Send />
                   </IconButton>
                 )}
+
+                {isSending && (
+                  <CircularProgress
+                    size={24}
+                    sx={{ mr: 1 }}
+                  />
+                )}
               </InputAdornment>
             ),
           },
@@ -206,15 +231,6 @@ export const ChatInput = ({
         onClose={() => setEmojiAnchor(null)}
         onEmojiSelect={insertEmoji}
       />
-
-      {isSending && (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-        >
-          Отправка…
-        </Typography>
-      )}
     </Stack>
   );
 };

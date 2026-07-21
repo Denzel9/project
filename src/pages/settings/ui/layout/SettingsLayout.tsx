@@ -33,10 +33,12 @@ export const SettingsLayout = () => {
             flex: 1,
             minWidth: 0,
             height: '100%',
-            borderRadius: 4,
             bgcolor: 'white',
             overflowY: 'auto',
             p: { xs: 3, md: 4 },
+            border: '1px solid',
+            borderRadius: '32px',
+            borderColor: 'divider',
           }}
         >
           <Outlet />

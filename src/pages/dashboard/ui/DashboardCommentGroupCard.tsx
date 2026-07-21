@@ -40,7 +40,6 @@ import { DASHBOARD_COMMENT_CARD_COLLAPSE_MS } from '../model/constants';
 import { useDashboardTaskCommentsThread } from '../model/useDashboardTaskCommentsThread';
 import {
   getCommentPreview,
-  getCommentsLabel,
   getDashboardTaskPath,
   getTaskDisplayTitle,
   type DashboardTaskCommentsItem,
@@ -130,7 +129,7 @@ export const DashboardCommentGroupCard = ({
       setGalleryInitialSlide(initialSlide);
       setGalleryOpen(true);
     },
-    [],
+    []
   );
 
   const openGalleryFromItems = useCallback(
@@ -141,7 +140,7 @@ export const DashboardCommentGroupCard = ({
       setGalleryInitialSlide(initialSlide);
       setGalleryOpen(true);
     },
-    [],
+    []
   );
 
   const handleLoadOlder = useCallback(() => {
@@ -225,7 +224,7 @@ export const DashboardCommentGroupCard = ({
           : '0 1px 2px rgba(15, 23, 42, 0.04)',
         transition: theme.transitions.create(
           ['box-shadow', 'border-color', 'flex'],
-          { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS },
+          { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS }
         ),
         ...(fillHeight && {
           flex: 1,
@@ -350,13 +349,6 @@ export const DashboardCommentGroupCard = ({
           </Fade>
         )}
 
-        <Chip
-          size="small"
-          color="primary"
-          variant="outlined"
-          label={`${item.commentsCount} ${getCommentsLabel(item.commentsCount)}`}
-        />
-
         <IconButton
           size="small"
           aria-expanded={expanded}
@@ -378,8 +370,8 @@ export const DashboardCommentGroupCard = ({
 
       <Collapse
         in={expanded}
-        timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
         unmountOnExit
+        timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
         sx={fillHeight ? flexCollapseSx : undefined}
       >
         <Divider />

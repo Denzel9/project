@@ -10,6 +10,7 @@ import type {
   PostDeliverable,
   PostLocation,
 } from '@/entities/post'
+import type { CompanyProfile, CreatorProfile } from '@/entities/user'
 
 export type TaskStatus =
   | 'PREPARING'
@@ -94,17 +95,10 @@ export type TaskPublication = {
 export type Owner = {
   id: string
   avatar: string
+  isVerified?: boolean
+  isEmailConfirmed?: boolean
   creatorProfile: CreatorProfile
   companyProfile: CompanyProfile
-}
-
-export type CreatorProfile = {
-  name: string
-  lastName: string
-}
-
-export type CompanyProfile = {
-  companyName: string
 }
 
 export type Executor = {
@@ -113,6 +107,8 @@ export type Executor = {
   lastName: string
   name: string
   role: string
+  isVerified?: boolean
+  isEmailConfirmed?: boolean
 }
 
 export type Task = {

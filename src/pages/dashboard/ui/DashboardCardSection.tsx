@@ -1,4 +1,5 @@
 import { Box, Grid, Typography } from '@mui/material';
+
 import type { ReactNode } from 'react';
 
 type DashboardCardSectionProps = {

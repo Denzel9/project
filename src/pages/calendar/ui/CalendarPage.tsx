@@ -26,7 +26,7 @@ export const CalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [visibleMonth, setVisibleMonth] = useState<Dayjs>(() => dayjs());
   const [filters, setFilters] = useState<CalendarFiltersState>(
-    DEFAULT_CALENDAR_FILTERS,
+    DEFAULT_CALENDAR_FILTERS
   );
 
   const { companyOptions, isCompany, isLoadingCompanies } =
@@ -51,12 +51,12 @@ export const CalendarPage = () => {
 
   const postMetaMap = useMemo(
     () => buildCalendarPostMetaMap(rawTasks),
-    [rawTasks],
+    [rawTasks]
   );
 
   const tasks = useMemo(
     () => filterCalendarTasksByPostMeta(rawTasks, postMetaMap, filters),
-    [rawTasks, postMetaMap, filters],
+    [rawTasks, postMetaMap, filters]
   );
 
   const events = useMemo(() => {
@@ -65,7 +65,7 @@ export const CalendarPage = () => {
     return filterEventsInMonthRange(
       calendarEvents,
       monthRange.dateFrom,
-      monthRange.dateTo,
+      monthRange.dateTo
     );
   }, [tasks, filters.eventType, monthRange.dateFrom, monthRange.dateTo]);
 
@@ -79,7 +79,7 @@ export const CalendarPage = () => {
           />
         );
       },
-    [events],
+    [events]
   );
 
   const handleFiltersChange = (patch: Partial<CalendarFiltersState>) => {
@@ -93,6 +93,9 @@ export const CalendarPage = () => {
   return (
     <PageLayout withFooter={false}>
       <CalendarFilters
+        selectedDate={selectedDate}
+        events={events}
+        isLoading={isLoading}
         value={filters}
         onChange={handleFiltersChange}
         onReset={handleFiltersReset}

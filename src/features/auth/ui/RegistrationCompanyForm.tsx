@@ -7,6 +7,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { RHFInput } from '@/shared/ui/rhf';
+import { prefetchUserConfig } from '@/entities/user-config';
+import { queryClient } from '@/shared/api';
 
 import {
   defaultRegistrationCompanyValues,
@@ -51,6 +53,13 @@ const RegistrationCompanyForm = ({
           data.data.user.role,
           data.data.user.membershipRole
         );
+
+        try {
+          await prefetchUserConfig(queryClient);
+        } catch {
+          // конфиг не критичен для регистрации
+        }
+
         if (onSuccess) {
           onSuccess();
         } else {

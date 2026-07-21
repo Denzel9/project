@@ -9,31 +9,33 @@ export const SettingsGeneralPage = () => {
         variant="h6"
         sx={{ fontWeight: 600 }}
       >
-        General
+        Общие
       </Typography>
 
       <SettingsRow
-        title="Название компании"
-        description="Название компании"
+        title="Почта"
+        description="Подтвердить почту, чтобы получить полный доступ к сервису"
         action={
           <Button
+            size="small"
             variant="outlined"
             color="primary"
           >
-            Название компании
+            Подтвердить
           </Button>
         }
       />
 
       <SettingsRow
-        title="Название компании"
-        description="Название компании"
+        title="Верификация"
+        description="Верифицировать аккаунт"
         action={
           <Button
+            size="small"
             variant="outlined"
             color="primary"
           >
-            Название компании
+            Верифицировать
           </Button>
         }
       />

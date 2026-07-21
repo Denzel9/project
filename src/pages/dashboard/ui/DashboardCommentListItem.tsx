@@ -14,8 +14,8 @@ import {
 } from '../model/utils';
 
 type DashboardCommentListItemProps = {
-  item: DashboardCommentItem;
   highlight?: string;
+  item: DashboardCommentItem;
   currentUserId: string | null;
 };
 
@@ -43,9 +43,9 @@ const CommentPreview = ({
   <Typography
     variant="body2"
     sx={{
-      wordBreak: 'break-word',
       lineHeight: 1.55,
       whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
     }}
   >
     {highlight ? (
@@ -68,7 +68,7 @@ const CommentPreview = ({
               </Box>
             ) : (
               part
-            ),
+            )
           )}
       </>
     ) : (
@@ -135,16 +135,16 @@ export const DashboardCommentListItem = ({
         sx={{
           px: 1.5,
           py: 1.25,
-          maxWidth: { xs: '88%', sm: '75%' },
           display: 'block',
-          color: isOwn ? 'primary.contrastText' : 'text.primary',
-          textDecoration: 'none',
-          borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-          bgcolor: isOwn ? 'primary.main' : 'background.paper',
-          boxShadow: isOwn ? 1 : 0,
-          border: isOwn ? 'none' : '1px solid',
           borderColor: 'divider',
+          textDecoration: 'none',
+          boxShadow: isOwn ? 1 : 0,
           transition: 'opacity 0.2s',
+          maxWidth: { xs: '88%', sm: '75%' },
+          border: isOwn ? 'none' : '1px solid',
+          bgcolor: isOwn ? 'primary.main' : 'background.paper',
+          color: isOwn ? 'primary.contrastText' : 'text.primary',
+          borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
           '&:hover': {
             opacity: 0.92,
           },
@@ -154,10 +154,10 @@ export const DashboardCommentListItem = ({
           direction="row"
           spacing={0.75}
           sx={{
-            mb: hasMedia || preview ? 0.5 : 0,
+            gap: 0.5,
             flexWrap: 'wrap',
             alignItems: 'center',
-            gap: 0.5,
+            mb: hasMedia || preview ? 0.5 : 0,
           }}
         >
           {hasMedia && (

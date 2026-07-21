@@ -43,16 +43,11 @@ export const NotificationsMenu = () => {
     enabled: isAuth,
   });
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useNotificationsInfiniteQuery(
-    { limit: NOTIFICATIONS_MENU_LIMIT },
-    { enabled: isAuth && open },
-  );
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useNotificationsInfiniteQuery(
+      { limit: NOTIFICATIONS_MENU_LIMIT },
+      { enabled: isAuth && open }
+    );
 
   const { mutate: markRead } = useMarkNotificationReadMutation();
   const { mutate: markAllRead, isPending: isMarkingAllRead } =
@@ -60,7 +55,7 @@ export const NotificationsMenu = () => {
 
   const notifications = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data?.pages],
+    [data?.pages]
   );
 
   const unreadCount = unreadCountData?.count ?? 0;
@@ -146,6 +141,7 @@ export const NotificationsMenu = () => {
               size="small"
               disabled={isMarkingAllRead}
               onClick={handleMarkAllRead}
+              sx={{ px: 2 }}
             >
               Прочитать все
             </Button>

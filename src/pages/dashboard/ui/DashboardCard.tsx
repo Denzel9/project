@@ -16,8 +16,8 @@ export const DashboardCard = ({
 
   return (
     <Box
-      component="button"
       type="button"
+      component="button"
       onClick={onClick}
       sx={{
         gap: 1.5,
@@ -41,26 +41,8 @@ export const DashboardCard = ({
         },
       }}
     >
-      <Box
-        className="dashboard-card-icon"
-        sx={{
-          width: 40,
-          height: 40,
-          display: 'flex',
-          flexShrink: 0,
-          borderRadius: '12px',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: `info.main`,
-          bgcolor: `secondary.main`,
-          transition: 'transform 0.25s ease',
-        }}
-      >
-        <Icon sx={{ fontSize: 22, color: `${accentColor}.main` }} />
-      </Box>
-
       <Stack
-        spacing={0.25}
+        spacing={1}
         sx={{ flex: 1, minWidth: 0, pl: 0.5 }}
       >
         <Typography
@@ -87,28 +69,53 @@ export const DashboardCard = ({
           />
         ) : (
           <Stack
+            spacing={2}
             direction="row"
-            spacing={0.75}
             sx={{ alignItems: 'baseline' }}
           >
-            <Typography
-              variant="h5"
+            <Box
+              className="dashboard-card-icon"
               sx={{
-                fontWeight: 700,
-                lineHeight: 1,
-                letterSpacing: '-0.02em',
-                color: isEmpty ? 'text.disabled' : 'text.primary',
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                // display: { xs: 'none', md: 'flex' },
+                display: 'flex',
+                color: `info.main`,
+                borderRadius: '12px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: `secondary.main`,
+                transition: 'transform 0.25s ease',
               }}
             >
-              {count}
-            </Typography>
+              <Icon sx={{ fontSize: 22, color: `${accentColor}.main` }} />
+            </Box>
 
-            <Typography
-              variant="caption"
-              color={isEmpty ? 'disabled' : 'info'}
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ alignItems: 'baseline' }}
             >
-              {getTasksLabel(count)}
-            </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  letterSpacing: '-0.02em',
+                  color: isEmpty ? 'text.disabled' : 'text.primary',
+                }}
+              >
+                {count}
+              </Typography>
+
+              <Typography
+                variant="caption"
+                color={isEmpty ? 'disabled' : 'info'}
+              >
+                {getTasksLabel(count)}
+              </Typography>
+            </Stack>
           </Stack>
         )}
       </Stack>
@@ -117,6 +124,7 @@ export const DashboardCard = ({
         sx={{
           fontSize: 18,
           color: 'text.secondary',
+          display: { xs: 'none', md: 'block' },
         }}
       />
     </Box>

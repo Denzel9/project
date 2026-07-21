@@ -9,28 +9,32 @@ import {
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 
-import type { ChatPeer } from '@/entities/chat';
+import { USER_ROLE, type ChatPeer } from '@/entities';
+import { useAuthStore } from '@/features';
+import { ROUTES } from '@/shared';
 
 type ChatHeaderProps = {
   peer?: ChatPeer;
-  headerTime?: string;
   isMobile: boolean;
-  onBackToContacts: () => void;
+  headerTime?: string;
   onOpenSearch: () => void;
-  onOpenAttachments: () => void;
   onOpenProfile: () => void;
+  onBackToContacts: () => void;
+  onOpenAttachments: () => void;
 };
 
 export const ChatHeader = ({
   peer,
   headerTime,
   isMobile,
-  onBackToContacts,
   onOpenSearch,
-  onOpenAttachments,
   onOpenProfile,
+  onBackToContacts,
+  onOpenAttachments,
 }: ChatHeaderProps) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const { role } = useAuthStore();
 
   const handleOpenMenu = (event: MouseEvent<HTMLButtonElement>) => {
     setMenuAnchor(event.currentTarget);
@@ -45,32 +49,27 @@ export const ChatHeader = ({
     onOpenAttachments();
   };
 
-  const handleOpenProfile = () => {
-    handleCloseMenu();
-    onOpenProfile();
-  };
-
   return (
     <Stack
-      direction="row"
       spacing={2}
+      direction="row"
       sx={{
-        p: { xs: 2, md: 4 },
-        border: '1px solid',
-        borderColor: 'divider',
         width: '100%',
         flexShrink: 0,
         bgcolor: 'white',
+        p: { xs: 2, md: 4 },
+        border: '1px solid',
         alignItems: 'center',
-        borderRadius: { xs: '16px', md: '32px' },
+        borderColor: 'divider',
         justifyContent: 'space-between',
+        borderRadius: { xs: '16px', md: '32px' },
       }}
     >
       <Stack
-        direction="row"
         spacing={2}
-        sx={{ alignItems: 'center', minWidth: 0, cursor: 'pointer' }}
+        direction="row"
         onClick={onOpenProfile}
+        sx={{ alignItems: 'center', minWidth: 0, cursor: 'pointer' }}
       >
         {isMobile && (
           <IconButton
@@ -86,8 +85,8 @@ export const ChatHeader = ({
 
         <Avatar
           alt={peer?.displayName}
-          src={peer?.avatar ?? undefined}
           sx={{ width: 50, height: 50 }}
+          src={peer?.avatar ?? undefined}
         />
         <Stack
           direction="column"
@@ -116,8 +115,8 @@ export const ChatHeader = ({
       </Stack>
 
       <Stack
-        direction="row"
         spacing={1}
+        direction="row"
         sx={{ alignItems: 'center', flexShrink: 0 }}
       >
         <IconButton onClick={onOpenSearch}>
@@ -133,13 +132,27 @@ export const ChatHeader = ({
           open={Boolean(menuAnchor)}
           onClose={handleCloseMenu}
         >
-          <MenuItem onClick={handleOpenProfile}>Перейти к профилю</MenuItem>
+          <MenuItem
+            component="a"
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`${ROUTES.PROFILE}?userId=${peer?.id}`}
+          >
+            Перейти к профилю
+          </MenuItem>
 
           <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
 
-          <MenuItem>Запросить фото-отчет</MenuItem>
+          {role === USER_ROLE.COMPANY && (
+            <>
+              <MenuItem>Запросить фото-отчет</MenuItem>
+              <MenuItem>Добавить ТЗ</MenuItem>
+            </>
+          )}
 
-          <MenuItem>Добавить ТЗ</MenuItem>
+          {role === USER_ROLE.CREATOR && (
+            <MenuItem>Добавить фото-отчет</MenuItem>
+          )}
         </Menu>
       </Stack>
     </Stack>

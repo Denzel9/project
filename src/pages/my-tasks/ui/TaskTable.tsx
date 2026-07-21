@@ -20,6 +20,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { TASK_STATUS_LABELS, isTaskOverdue, type Task } from '@/entities';
+import { UserDisplayName, type User } from '@/entities/user';
 import { getTaskConfig } from '@/features';
 import { scrollMainToTop } from '@/shared';
 
@@ -27,12 +28,7 @@ import {
   TASK_TABLE_PAGE_SIZE,
   TASK_TABLE_COLUMN_WIDTHS,
 } from '../model/constants';
-import {
-  getTaskCustomerName,
-  getTaskPath,
-  getTaskTitle,
-  sortTasks,
-} from '../model/utils';
+import { getTaskPath, getTaskTitle, sortTasks } from '../model/utils';
 
 import { TaskActionsMenu } from './TaskActionsMenu';
 
@@ -370,18 +366,7 @@ export const TaskTable = ({
                           sx={{ width: 28, height: 28 }}
                         />
                       )}
-                      <Typography
-                        variant={forPrint ? 'body2' : 'caption'}
-                        color={forPrint ? 'text.primary' : 'text.secondary'}
-                        sx={{
-                          minWidth: 0,
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {getTaskCustomerName(task) || '—'}
-                      </Typography>
+                      <UserDisplayName user={task.owner as User} />
                     </Stack>
                   </TableCell>
 

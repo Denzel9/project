@@ -204,8 +204,25 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
     })
   }
 
-  void queryClient.invalidateQueries({ queryKey: ['user', task.executorId] })
-  void queryClient.invalidateQueries({ queryKey: ['user', task.ownerId] })
+  const hasParticipantChanged =
+    cachedTask?.executorId !== task.executorId ||
+    cachedTask?.ownerId !== task.ownerId
+
+  if (hasParticipantChanged) {
+    const participantIds = new Set(
+      [
+        cachedTask?.executorId,
+        cachedTask?.ownerId,
+        task.executorId,
+        task.ownerId,
+      ].filter((id): id is string => Boolean(id)),
+    )
+
+    for (const userId of participantIds) {
+      void queryClient.invalidateQueries({ queryKey: ['user', userId] })
+    }
+  }
+
   void queryClient.invalidateQueries({ queryKey: taskKeys.pendingApproval() })
 }
 

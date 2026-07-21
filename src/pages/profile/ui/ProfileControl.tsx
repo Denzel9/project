@@ -1,4 +1,4 @@
-import { Add } from '@mui/icons-material';
+import { Add, MoreVert } from '@mui/icons-material';
 import {
   Stack,
   Tabs,
@@ -10,7 +10,9 @@ import {
   MenuItem,
   IconButton,
   Typography,
+  Menu,
 } from '@mui/material';
+import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFavoriteUserIds } from '@/entities/favorite';
@@ -18,8 +20,6 @@ import { ROUTES } from '@/shared';
 import { UserFavoriteButton } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
-
-import type { SyntheticEvent } from 'react';
 
 type ProfileControlProps = {
   id?: string;
@@ -38,6 +38,9 @@ export const ProfileControl = ({
   handleTabChange,
   setMediaTabValue,
 }: ProfileControlProps) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const isOpenMenu = Boolean(anchorEl);
+
   const navigate = useNavigate();
   const { favoriteUserIds } = useFavoriteUserIds();
 
@@ -88,6 +91,28 @@ export const ProfileControl = ({
                 userId={id}
                 isFavorite={favoriteUserIds.has(id)}
               />
+
+              <Box>
+                <IconButton onClick={event => setAnchorEl(event.currentTarget)}>
+                  <MoreVert />
+                </IconButton>
+              </Box>
+
+              <Menu
+                open={isOpenMenu}
+                anchorEl={anchorEl}
+                onClose={() => setAnchorEl(null)}
+              >
+                <MenuItem>
+                  {/* TODO: add report action */}
+                  <Typography>Пожаловаться</Typography>
+                </MenuItem>
+
+                {/* TODO: add share action */}
+                <MenuItem>
+                  <Typography>Поделиться</Typography>
+                </MenuItem>
+              </Menu>
             </Stack>
           ) : (
             <Button

@@ -3,11 +3,13 @@ import { create } from "zustand";
 type SnackbarStore = {
     message: string;
     snackbarOpen: boolean;
-    setSnackbarOpen: (snackbarOpen: boolean, message: string) => void;
+    severity: 'success' | 'error' | 'warning' | 'info';
+    setSnackbarOpen: (snackbarOpen: boolean, message: string, severity?: 'success' | 'error' | 'warning' | 'info') => void;
 };
 
 export const useSnackbarStore = create<SnackbarStore>((set) => ({
     message: '',
     snackbarOpen: false,
-    setSnackbarOpen: (snackbarOpen: boolean, message: string) => set({ snackbarOpen, message }),
+    severity: 'info',
+    setSnackbarOpen: (snackbarOpen: boolean, message: string, severity?: 'success' | 'error' | 'warning' | 'info') => set({ snackbarOpen, message, severity }),
 }));

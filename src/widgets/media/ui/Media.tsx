@@ -12,9 +12,10 @@ import type { Swiper } from 'swiper/types';
 
 type MediaProps = {
   items: MediaItemType[];
+  withThumbnails?: boolean;
 };
 
-export const Media = ({ items }: MediaProps) => {
+export const Media = ({ items, withThumbnails = true }: MediaProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState<Swiper | null>(null);
 
@@ -38,11 +39,13 @@ export const Media = ({ items }: MediaProps) => {
           height: '100%',
         }}
       >
-        <Trumbnail
-          items={items}
-          isMobile={isMobile}
-          setThumbsSwiper={setThumbsSwiper}
-        />
+        {withThumbnails && (
+          <Trumbnail
+            items={items}
+            isMobile={isMobile}
+            setThumbsSwiper={setThumbsSwiper}
+          />
+        )}
 
         <BigMedia
           items={items}

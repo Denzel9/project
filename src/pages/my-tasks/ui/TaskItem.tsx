@@ -5,7 +5,12 @@ import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
 import { isTaskOverdue, type Task } from '@/entities';
-import { getUserName, type User } from '@/entities';
+import {
+  executorToUserPartial,
+  getUserName,
+  UserDisplayName,
+  type User,
+} from '@/entities/user';
 import { getTaskConfig } from '@/features';
 import { ROUTES } from '@/shared';
 
@@ -18,19 +23,21 @@ type TaskItemProps = {
 
 const getContact = (task: Task, isCompany: boolean) => {
   if (isCompany) {
-    const name = [task.executor?.name, task.executor?.lastName]
-      .filter(Boolean)
-      .join(' ');
+    const user = executorToUserPartial(task.executor ?? undefined);
 
     return {
-      name: name || 'Исполнитель не назначен',
+      user,
+      name: getUserName(user) || 'Исполнитель не назначен',
       avatar: task.executor?.avatar ?? '',
       label: 'Исполнитель',
     };
   }
 
+  const user = task.owner as Partial<User>;
+
   return {
-    name: getUserName(task.owner as Partial<User>) || 'Компания',
+    user,
+    name: getUserName(user) || 'Компания',
     avatar: task.owner?.avatar ?? '',
     label: 'Заказчик',
   };
@@ -57,8 +64,6 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
         textDecoration: 'none',
         border: '1px solid',
         borderColor: 'divider',
-        borderLeftWidth: 4,
-        borderLeftColor: theme => theme.palette[accentColor].main,
         transition: 'box-shadow 0.2s ease, transform 0.2s ease',
         ':hover': {
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -152,7 +157,8 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
       <Stack
         direction="row"
         sx={{
-          mt: 2,
+          mt: 'auto',
+          pt: 2,
           minWidth: 0,
           alignItems: 'end',
           justifyContent: 'space-between',
@@ -175,13 +181,7 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
             >
               {contact.label}
             </Typography>
-            <Typography
-              noWrap
-              variant="body2"
-              sx={{ lineHeight: 1.3 }}
-            >
-              {contact.name}
-            </Typography>
+            <UserDisplayName user={contact.user} />
           </Box>
         </Stack>
 

@@ -2,7 +2,7 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 import { format } from 'date-fns';
 
 import { TASK_STATUS_LABELS, type Task } from '@/entities/task';
-import { getUserName, type User } from '@/entities/user';
+import { UserDisplayName, type User } from '@/entities/user';
 
 import { getTaskConfig } from '../model/constants';
 
@@ -100,13 +100,7 @@ export const TaskSearchResultItem = ({
           </Typography>
         </Stack>
 
-        <Typography
-          variant="subtitle2"
-          sx={{ fontWeight: 500 }}
-          color="primary"
-        >
-          {getUserName(task.owner as Partial<User>)}
-        </Typography>
+        <UserDisplayName user={task.owner as User} />
       </Stack>
 
       <Chip

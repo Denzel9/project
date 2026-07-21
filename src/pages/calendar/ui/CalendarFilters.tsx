@@ -1,21 +1,36 @@
-import { Close, Whatshot } from '@mui/icons-material';
-import { Button, IconButton, MenuItem, Stack, TextField } from '@mui/material';
-
+import { Close, FilterList } from '@mui/icons-material';
 import {
-  PlacementFormatEnum,
-  PlatformEnum,
-  getPlacementFormatLabel,
-  getPlatformLabel,
-} from '@/entities/post';
+  Box,
+  Button,
+  Chip,
+  Drawer,
+  IconButton,
+  Stack,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale/ru';
+import { useEffect, useState } from 'react';
 
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
+import { toCalendarDateKey, type CalendarEvent } from '../model/utils';
+
+import {
+  CalendarFilterFields,
+  hasActiveCalendarFilters,
+} from './CalendarFilterFields';
 
 import type {
   CalendarFiltersState,
   CalendarFilterOption,
 } from '../model/types';
+import type { Dayjs } from 'dayjs';
 
 type CalendarFiltersProps = {
+  selectedDate: Dayjs;
+  events: CalendarEvent[];
+  isLoading?: boolean;
   value: CalendarFiltersState;
   onChange: (patch: Partial<CalendarFiltersState>) => void;
   onReset: () => void;
@@ -24,19 +39,10 @@ type CalendarFiltersProps = {
   isLoadingCompanies?: boolean;
 };
 
-const SELECT_WIDTH = 240;
-
-const PLATFORM_OPTIONS = Object.values(PlatformEnum);
-const PLACEMENT_FORMAT_OPTIONS = Object.values(PlacementFormatEnum);
-
-const hasActiveFilters = (value: CalendarFiltersState) =>
-  value.eventType !== DEFAULT_CALENDAR_FILTERS.eventType ||
-  value.urgentOnly !== DEFAULT_CALENDAR_FILTERS.urgentOnly ||
-  value.companyId !== DEFAULT_CALENDAR_FILTERS.companyId ||
-  value.platform !== DEFAULT_CALENDAR_FILTERS.platform ||
-  value.placementFormat !== DEFAULT_CALENDAR_FILTERS.placementFormat;
-
 export const CalendarFilters = ({
+  selectedDate,
+  events,
+  isLoading = false,
   value,
   onChange,
   onReset,
@@ -44,128 +50,174 @@ export const CalendarFilters = ({
   isCompany,
   isLoadingCompanies = false,
 }: CalendarFiltersProps) => {
-  const companyLabel = isCompany ? 'Исполнитель' : 'Компания';
-  const showReset = hasActiveFilters(value);
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const isActive = hasActiveCalendarFilters(value);
+  const draftHasFilters = hasActiveCalendarFilters(draft);
+
+  const dayEventsCount = events.filter(
+    event => event.dateKey === toCalendarDateKey(selectedDate),
+  ).length;
+
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+
+    setTimeout(() => {
+      setDraft(value);
+    }, 0);
+  }, [isDrawerOpen, value]);
+
+  const handleDraftChange = (patch: Partial<CalendarFiltersState>) => {
+    setDraft(current => ({ ...current, ...patch }));
+  };
+
+  const handleApply = () => {
+    onChange(draft);
+    setIsDrawerOpen(false);
+  };
+
+  const handleReset = () => {
+    setDraft(DEFAULT_CALENDAR_FILTERS);
+    onReset();
+    setIsDrawerOpen(false);
+  };
+
+  const formattedDate = format(selectedDate.toDate(), 'd MMMM yyyy', {
+    locale: ru,
+  });
+
+  if (isMobile) {
+    return (
+      <>
+        <Stack
+          direction="row"
+          sx={{
+            mb: 2,
+            mt: 1,
+            px: 2,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center', minWidth: 0 }}
+          >
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 600 }}
+            >
+              {formattedDate}
+            </Typography>
+
+            {!isLoading && dayEventsCount > 0 && (
+              <Chip
+                size="small"
+                label={dayEventsCount}
+              />
+            )}
+          </Stack>
+
+          <IconButton
+            aria-label="Фильтры"
+            aria-pressed={isDrawerOpen}
+            onClick={() => setIsDrawerOpen(true)}
+            color={isActive ? 'primary' : 'default'}
+          >
+            <FilterList />
+          </IconButton>
+        </Stack>
+
+        <Drawer
+          anchor="right"
+          open={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          sx={{
+            '& .MuiDrawer-paper': {
+              p: 3,
+              maxWidth: 420,
+              display: 'flex',
+              flexDirection: 'column',
+              width: { xs: '100%', sm: '80%' },
+            },
+          }}
+        >
+          <Stack
+            direction="row"
+            sx={{
+              mb: 3,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography variant="h6">Фильтры</Typography>
+
+            <IconButton
+              aria-label="Закрыть"
+              onClick={() => setIsDrawerOpen(false)}
+            >
+              <Close />
+            </IconButton>
+          </Stack>
+
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pb: 2 }}>
+            <CalendarFilterFields
+              value={draft}
+              onChange={handleDraftChange}
+              companyOptions={companyOptions}
+              isCompany={isCompany}
+              isLoadingCompanies={isLoadingCompanies}
+              stacked
+              showInlineReset={false}
+            />
+          </Box>
+
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              pt: 2,
+              flexShrink: 0,
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            {draftHasFilters && (
+              <Button
+                variant="outlined"
+                onClick={handleReset}
+              >
+                Сбросить
+              </Button>
+            )}
+
+            <Button
+              variant="contained"
+              onClick={handleApply}
+            >
+              Применить
+            </Button>
+          </Stack>
+        </Drawer>
+      </>
+    );
+  }
 
   return (
-    <Stack
-      spacing={1}
-      sx={{ mb: 2, mt: 1, px: 2 }}
-    >
-      <Stack
-        direction="row"
-        spacing={2}
-        useFlexGap
-        sx={{ flexWrap: 'wrap', alignItems: 'center' }}
-      >
-        <TextField
-          select
-          size="small"
-          label="Тип событий"
-          value={value.eventType}
-          sx={{ width: SELECT_WIDTH }}
-          onChange={event =>
-            onChange({
-              eventType: event.target
-                .value as CalendarFiltersState['eventType'],
-            })
-          }
-        >
-          <MenuItem value="all">Все</MenuItem>
-          <MenuItem value="created">Создана</MenuItem>
-          <MenuItem value="deadline">Дедлайн</MenuItem>
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label={companyLabel}
-          value={value.companyId}
-          disabled={isLoadingCompanies}
-          sx={{ width: SELECT_WIDTH }}
-          onChange={event => onChange({ companyId: event.target.value })}
-        >
-          <MenuItem value="all">Все</MenuItem>
-          {companyOptions.map(option => (
-            <MenuItem
-              key={option.id}
-              value={option.id}
-            >
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Платформа"
-          value={value.platform}
-          disabled={!isCompany}
-          sx={{ width: SELECT_WIDTH }}
-          onChange={event =>
-            onChange({
-              platform: event.target.value as CalendarFiltersState['platform'],
-            })
-          }
-        >
-          <MenuItem value="all">Все</MenuItem>
-          {PLATFORM_OPTIONS.map(platform => (
-            <MenuItem
-              key={platform}
-              value={platform}
-            >
-              {getPlatformLabel(platform)}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Тип контента"
-          value={value.placementFormat}
-          disabled={!isCompany}
-          sx={{ width: SELECT_WIDTH }}
-          onChange={event =>
-            onChange({
-              placementFormat: event.target
-                .value as CalendarFiltersState['placementFormat'],
-            })
-          }
-        >
-          <MenuItem value="all">Все</MenuItem>
-          {PLACEMENT_FORMAT_OPTIONS.map(format => (
-            <MenuItem
-              key={format}
-              value={format}
-            >
-              {getPlacementFormatLabel(format)}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <IconButton
-          aria-label={
-            value.urgentOnly ? 'Показать все задачи' : 'Только срочные задачи'
-          }
-          aria-pressed={value.urgentOnly}
-          onClick={() => onChange({ urgentOnly: !value.urgentOnly })}
-        >
-          <Whatshot color={value.urgentOnly ? 'error' : 'action'} />
-        </IconButton>
-
-        {showReset && (
-          <Button
-            size="small"
-            startIcon={<Close />}
-            onClick={onReset}
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', px: 2 }}
-          >
-            Сбросить
-          </Button>
-        )}
-      </Stack>
-    </Stack>
+    <Box sx={{ mb: 2, mt: 1, px: 2 }}>
+      <CalendarFilterFields
+        value={value}
+        onChange={onChange}
+        onReset={onReset}
+        companyOptions={companyOptions}
+        isCompany={isCompany}
+        isLoadingCompanies={isLoadingCompanies}
+      />
+    </Box>
   );
 };

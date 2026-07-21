@@ -1,8 +1,9 @@
 import { Stack, Button, Typography } from '@mui/material';
+import axios from 'axios';
 import { useState } from 'react';
 
 import { TASK_STATUS_ENUM, type Task, type UpdateTaskDto } from '@/entities';
-import { ConfirmDialog } from '@/widgets';
+import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 type PendingInviteProps = {
   taskId: string;
@@ -18,11 +19,19 @@ type PendingInviteProps = {
 export const PendingInvite = ({ taskId, updateTask }: PendingInviteProps) => {
   const [isOpenAcceptDialog, setIsOpenAcceptDialog] = useState(false);
 
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const handleAccept = async () => {
-    await updateTask({
-      id: taskId,
-      body: { isExecutorApprove: true },
-    });
+    try {
+      await updateTask({
+        id: taskId,
+        body: { isExecutorApprove: true },
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSnackbarOpen?.(true, String(error.response?.data?.message));
+      }
+    }
   };
 
   const handleReject = async () => {

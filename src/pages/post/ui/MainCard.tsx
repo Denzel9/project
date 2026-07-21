@@ -1,4 +1,4 @@
-import { Whatshot, MoreVert, RocketLaunch } from '@mui/icons-material';
+import { Whatshot, MoreVert } from '@mui/icons-material';
 import {
   Box,
   Stack,
@@ -8,13 +8,12 @@ import {
   Rating,
   Menu,
   MenuItem,
-  Tooltip,
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
-  getUserName,
+  UserDisplayName,
   USER_ROLE,
   useFavoritePostIds,
   type Post,
@@ -148,7 +147,7 @@ export const MainCard = ({
                     onClick={() => {
                       closeMenu();
                       navigate(
-                        `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`,
+                        `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`
                       );
                     }}
                   >
@@ -210,13 +209,7 @@ export const MainCard = ({
               }}
               direction="row"
             >
-              <Typography sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
-                {getUserName(user)}
-              </Typography>
-
-              <Tooltip title="Это - Prime-аккаунт">
-                <RocketLaunch color="primary" />
-              </Tooltip>
+              <UserDisplayName user={user} />
             </Stack>
 
             <Rating

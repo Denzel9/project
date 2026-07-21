@@ -83,6 +83,9 @@ export const getNotificationLink = (
     case NOTIFICATION_TYPE.MEMBERSHIP_REVOKED:
       return ROUTES.SETTINGS_MEMBERS
 
+    case NOTIFICATION_TYPE.PUBLICATION_CREATED:
+      return ROUTES.PUBLICATIONS
+
     default:
       return null
   }
@@ -112,6 +115,8 @@ export const getNotificationTypeLabel = (type: NotificationType) => {
       return 'Приглашение в команду'
     case NOTIFICATION_TYPE.MEMBERSHIP_REVOKED:
       return 'Отзыв доступа'
+    case NOTIFICATION_TYPE.PUBLICATION_CREATED:
+      return 'Новая публикация'
     default:
       return 'Уведомление'
   }

@@ -1,13 +1,19 @@
-import { Skeleton, Stack, Typography } from '@mui/material';
+import { Link, Skeleton, Stack, Typography } from '@mui/material';
 import { type ReactNode } from 'react';
 
 type UserCardItemProps = {
   value: string;
   icon?: ReactNode;
   isLoading: boolean;
+  type: 'text' | 'email' | 'phone' | 'location';
 };
 
-export const UserCardItem = ({ icon, value, isLoading }: UserCardItemProps) => {
+export const UserCardItem = ({
+  icon,
+  value,
+  isLoading,
+  type = 'text',
+}: UserCardItemProps) => {
   if (isLoading) {
     return (
       <Skeleton
@@ -26,7 +32,24 @@ export const UserCardItem = ({ icon, value, isLoading }: UserCardItemProps) => {
     >
       {icon && icon}
 
-      <Typography>{value}</Typography>
+      <Typography
+        component={type === 'text' ? 'span' : Link}
+        href={
+          type === 'email'
+            ? `mailto:${value}`
+            : type === 'phone'
+              ? `tel:${value}`
+              : type === 'location'
+                ? `${value}`
+                : undefined
+        }
+        sx={{
+          color: 'inherit',
+          textDecoration: 'none',
+        }}
+      >
+        {value}
+      </Typography>
     </Stack>
   );
 };

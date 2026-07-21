@@ -17,9 +17,12 @@ export const SettingsRow = ({
 }: SettingsRowProps) => {
   return (
     <Stack
-      direction="row"
       spacing={2}
-      sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      direction={{ xs: 'column', md: 'row' }}
+      sx={{
+        alignItems: { xs: 'start', md: 'center' },
+        justifyContent: 'space-between',
+      }}
     >
       <Box sx={{ flex: 1 }}>
         <Typography

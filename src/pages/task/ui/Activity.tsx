@@ -42,7 +42,7 @@ export const Activity = ({
   setActivityType,
 }: ActivityProps) => {
   const [selectedActivity, setSelectedActivity] = useState<TaskActivity | null>(
-    null,
+    null
   );
 
   const emptyMessage = activityType
@@ -60,6 +60,8 @@ export const Activity = ({
         p: { xs: 2.5, md: 3 },
         borderRadius: '32px',
         flexDirection: 'column',
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Stack
@@ -102,9 +104,7 @@ export const Activity = ({
           spacing={1}
           sx={{ py: 4, alignItems: 'center', textAlign: 'center' }}
         >
-          <HistoryOutlined
-            sx={{ fontSize: 40, color: 'text.disabled' }}
-          />
+          <HistoryOutlined sx={{ fontSize: 40, color: 'text.disabled' }} />
           <Typography
             variant="body2"
             color="text.secondary"

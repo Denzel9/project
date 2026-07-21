@@ -7,6 +7,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { RHFCheckbox, RHFInput } from '@/shared/ui/rhf';
+import { prefetchUserConfig } from '@/entities/user-config';
+import { queryClient } from '@/shared/api';
 
 import {
   defaultLoginValues,
@@ -53,6 +55,13 @@ const LoginForm = ({
           data.data.user.role,
           data.data.user.membershipRole
         );
+
+        try {
+          await prefetchUserConfig(queryClient);
+        } catch {
+          // конфиг не критичен для входа
+        }
+
         if (onSuccess) {
           onSuccess();
         } else {

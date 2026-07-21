@@ -1,17 +1,29 @@
-import { Verified, Email, Phone, LocationOn, Edit } from '@mui/icons-material';
+import {
+  Edit,
+  FavoriteBorder,
+  AutoAwesomeMotionOutlined,
+  EmailOutlined,
+  PhoneOutlined,
+  LocationOnOutlined,
+  MoreVert,
+} from '@mui/icons-material';
 import {
   Box,
   Avatar,
   Stack,
-  Typography,
   Skeleton,
   Button,
   IconButton,
+  Typography,
+  Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFavoriteUserIds } from '@/entities/favorite';
-import { getUserName, type User } from '@/entities/user';
+import { UserDisplayName, type User } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
 import { ROUTES } from '@/shared';
 import { UserFavoriteButton } from '@/widgets';
@@ -25,6 +37,9 @@ export const UserCard = ({
   isLoading: boolean;
   user: User | undefined;
 }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
   const navigate = useNavigate();
 
   const { id: userId } = useAuthStore();
@@ -65,44 +80,92 @@ export const UserCard = ({
             sx={{ width: '200px', height: '200px' }}
           />
 
-          {user?.id === userId && (
+          {user?.id === userId ? (
             <IconButton
               sx={{ display: { xs: 'block', md: 'none' } }}
               onClick={() => navigate(ROUTES.SETTINGS_ACCOUNT)}
             >
               <Edit />
             </IconButton>
+          ) : (
+            <IconButton
+              onClick={e => setAnchorEl(e.currentTarget)}
+              sx={{ display: { xs: 'block', md: 'none' } }}
+            >
+              <MoreVert />
+            </IconButton>
           )}
+
+          <Menu
+            open={open}
+            anchorEl={anchorEl}
+            onClose={() => setAnchorEl(null)}
+          >
+            <MenuItem>
+              <Typography>Пожаловаться</Typography>
+            </MenuItem>
+
+            <MenuItem>
+              <Typography>Поделиться</Typography>
+            </MenuItem>
+          </Menu>
         </Stack>
       </Box>
 
+      <UserDisplayName
+        user={user}
+        sx={{ mt: 4 }}
+        isLoading={isLoading}
+      />
+
+      {/* // TODO: do this */}
       <Stack
+        spacing={2}
         direction="row"
-        spacing={1}
-        sx={{ alignItems: 'center', my: 4 }}
+        sx={{ mb: 4, color: 'text.secondary' }}
       >
-        {isLoading ? (
-          <Skeleton
-            variant="rounded"
-            width="100%"
-            height={24}
-          />
-        ) : (
-          <>
-            <Typography variant="h6">{getUserName(user)}</Typography>
-            <Verified />
-          </>
-        )}
+        <Tooltip title="Пользователи, которые добавили этого пользователя в избранное">
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center' }}
+          >
+            <Typography
+              variant="subtitle2"
+              color="text.secondary"
+            >
+              134
+            </Typography>
+            <FavoriteBorder />
+          </Stack>
+        </Tooltip>
+
+        <Tooltip title="Кол-во выполненных работ пользователем">
+          <Stack
+            spacing={1}
+            direction="row"
+            sx={{ alignItems: 'center' }}
+          >
+            <Typography
+              variant="subtitle2"
+              color="text.secondary"
+            >
+              548
+            </Typography>
+            <AutoAwesomeMotionOutlined />
+          </Stack>
+        </Tooltip>
       </Stack>
 
       {isLoading ? (
         <Skeleton
-          variant="rounded"
           width="100%"
           height={24}
+          variant="rounded"
         />
       ) : user?.bio ? (
         <UserCardItem
+          type="text"
           value={user?.bio}
           isLoading={isLoading}
         />
@@ -110,28 +173,31 @@ export const UserCard = ({
 
       <Stack
         spacing={2}
-        direction="column"
         sx={{ mt: 4 }}
+        direction="column"
       >
         <UserCardItem
-          value={user?.email || ''}
+          type="email"
+          icon={<EmailOutlined />}
           isLoading={isLoading}
-          icon={<Email />}
+          value={user?.email || ''}
         />
 
         {user?.phone && (
           <UserCardItem
-            value={user?.phone || ''}
+            type="phone"
+            icon={<PhoneOutlined />}
             isLoading={isLoading}
-            icon={<Phone />}
+            value={user?.phone || ''}
           />
         )}
 
         {user?.location && (
           <UserCardItem
-            value={user?.location || ''}
+            type="location"
+            icon={<LocationOnOutlined />}
             isLoading={isLoading}
-            icon={<LocationOn />}
+            value={user?.location || ''}
           />
         )}
       </Stack>

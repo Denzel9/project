@@ -1,5 +1,6 @@
 import { CalendarMonthOutlined, Search, Tune } from '@mui/icons-material';
 import {
+  Chip,
   Drawer,
   IconButton,
   MenuItem,
@@ -89,7 +90,7 @@ const MyPostFilter = () => {
         <Stack
           direction="row"
           spacing={2}
-          sx={{ width: '50%' }}
+          sx={{ width: '50%', alignItems: 'center' }}
         >
           <TextField
             select
@@ -135,7 +136,15 @@ const MyPostFilter = () => {
         <Stack
           direction="row"
           spacing={1}
+          sx={{ alignItems: 'center' }}
         >
+          {/* // TODO: add filter by status */}
+          <Chip
+            label="Ожидают ответа"
+            color="default"
+            sx={{ cursor: 'pointer' }}
+          />
+
           <IconButton
             color={updatedDate ? 'primary' : 'default'}
             onClick={event => setAnchorEl(event.currentTarget)}

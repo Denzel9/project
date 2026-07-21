@@ -1,6 +1,8 @@
 
 
 export type User = {
+  isVerified: boolean;
+  isEmailConfirmed: boolean;
   email: string | null;
   person: Person;
   aboutMe: string | null;

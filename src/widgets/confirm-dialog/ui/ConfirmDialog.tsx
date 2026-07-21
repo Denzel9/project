@@ -14,6 +14,7 @@ type ConfirmDialogProps = {
   title?: string;
   width?: number;
   isOpen: boolean;
+  isPending?: boolean;
   onClose?: () => void;
   withButtons?: boolean;
   onSuccess?: () => void;
@@ -26,6 +27,7 @@ export const ConfirmDialog = ({
   children,
   description,
   width = 600,
+  isPending = false,
   withButtons = true,
   onClose = undefined,
   onSuccess = undefined,
@@ -90,11 +92,21 @@ export const ConfirmDialog = ({
             direction="row"
             sx={{ mt: 4, justifyContent: 'flex-end' }}
           >
-            {onClose && <Button onClick={onClose}>Отменить</Button>}
+            {onClose && (
+              <Button
+                onClick={onClose}
+                color="error"
+                disabled={isPending}
+              >
+                Отменить
+              </Button>
+            )}
             {onSuccess && (
               <Button
                 onClick={onSuccess}
-                color="error"
+                color="success"
+                loading={isPending}
+                disabled={isPending}
               >
                 Подтвердить
               </Button>

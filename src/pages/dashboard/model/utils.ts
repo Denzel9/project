@@ -12,10 +12,6 @@ import { getUserName, type User } from '@/entities/user';
 import { hasCommentText } from '@/pages/task/model/lib/commentMedia';
 import { ROUTES } from '@/shared';
 
-import {
-  DASHBOARD_COMMENTS_READ_AFTER_KEY,
-} from './constants';
-
 import type { DashboardCardVariant } from './types';
 
 export const getDashboardCardCount = (
@@ -37,23 +33,7 @@ export type DashboardTaskCommentsItem = {
   task: Task;
   lastComment: TaskComment;
   commentsCount: number;
-  unreadCount?: number;
-};
-
-export const getDashboardCommentsReadAfter = (): string | undefined => {
-  try {
-    return localStorage.getItem(DASHBOARD_COMMENTS_READ_AFTER_KEY) ?? undefined;
-  } catch {
-    return undefined;
-  }
-};
-
-export const setDashboardCommentsReadAfter = (value: string) => {
-  try {
-    localStorage.setItem(DASHBOARD_COMMENTS_READ_AFTER_KEY, value);
-  } catch {
-    // ignore storage errors
-  }
+  unreadCount: number;
 };
 
 export const getDashboardTaskPath = (task: Task) => {
@@ -130,7 +110,7 @@ export const mapTaskWithCommentsItem = (
     task: mappedTask,
     lastComment: item.lastComment,
     commentsCount: item.commentsCount,
-    unreadCount: item.unreadCount,
+    unreadCount: item.unreadCount ?? 0,
   };
 };
 

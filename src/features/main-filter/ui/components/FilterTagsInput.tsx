@@ -1,4 +1,12 @@
-import { Box, Chip, Stack, TextField } from '@mui/material';
+import { Add } from '@mui/icons-material';
+import {
+  Box,
+  Chip,
+  IconButton,
+  InputAdornment,
+  Stack,
+  TextField,
+} from '@mui/material';
 import { useState, type KeyboardEvent } from 'react';
 
 type FilterTagsInputProps = {
@@ -48,6 +56,17 @@ export const FilterTagsInput = ({
         onKeyDown={handleKeyDown}
         onBlur={() => {
           if (input.trim()) addTag(input);
+        }}
+        slotProps={{
+          input: {
+            endAdornment: input.trim() ? (
+              <InputAdornment position="end">
+                <IconButton onClick={() => addTag(input)}>
+                  <Add />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+          },
         }}
       />
 

@@ -86,7 +86,7 @@ export const TaskPage = () => {
         <>
           <TaskSwitcher
             groupedTasks={groupedTasks}
-            currentTask={currentTask ?? undefined}
+            currentTask={currentTask}
             cancelledTasks={cancelledTasks}
             onSelectTask={handleChangeTask}
             onSelectExecutor={handleChangeExecutor}

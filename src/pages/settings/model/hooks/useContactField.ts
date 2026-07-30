@@ -15,15 +15,7 @@ export const useContactField = ({ setSnackbarOpen }: UseContactFieldProps) => {
     name: 'contacts',
   });
 
-  const handleAddContact = (type: ContactType) => {
-    const isContactExists = fields.some(field => field.type === type);
-
-    if (!isContactExists) {
-      append({ type, value: '', label: '' });
-    } else {
-      setSnackbarOpen?.(true, 'Контакт уже существует');
-    }
-  };
+  const handleAddContact = (type: ContactType) => append({ type, value: '', label: '' });
 
   const handleRemoveContact = (index: number) => {
     remove(index);

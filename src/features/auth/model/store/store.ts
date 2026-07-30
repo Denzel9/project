@@ -1,15 +1,32 @@
 import { create } from 'zustand'
 
-import { type AuthSliceState } from '../types/types'
+import { type AuthSessionUser, type AuthSliceState } from '../types/types'
 
-export const useAuthStore = create<AuthSliceState>((set) => ({
+const emptyAuth = {
+  id: null as string | null,
+  role: null as string | null,
+  membershipRole: null as string | null,
+  isPrime: false,
+  primeStatus: null as AuthSliceState['primeStatus'],
+  primeExpiresAt: null as string | null,
+  isEmailConfirmed: false,
   isAuth: false,
-  id: null,
-  role: null,
-  membershipRole: null,
+}
+
+export const useAuthStore = create<AuthSliceState>(set => ({
+  ...emptyAuth,
   isAuthModalOpen: false,
-  setAuth: (id: string, role: string, membershipRole: string) => set({ id, isAuth: true, role, membershipRole }),
-  removeAuth: () => set({ id: null, isAuth: false, }),
-  //возможно не используется
+  setAuth: (user: AuthSessionUser) =>
+    set({
+      id: user.id,
+      role: user.role,
+      membershipRole: user.membershipRole,
+      isPrime: Boolean(user.isPrime),
+      primeStatus: user.primeStatus ?? null,
+      primeExpiresAt: user.primeExpiresAt ?? null,
+      isEmailConfirmed: Boolean(user.isEmailConfirmed),
+      isAuth: true,
+    }),
+  removeAuth: () => set({ ...emptyAuth }),
   setAuthModalOpen: (isOpen: boolean) => set({ isAuthModalOpen: isOpen }),
 }))

@@ -6,9 +6,9 @@ import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
-import { RHFCheckbox, RHFInput } from '@/shared/ui/rhf';
 import { prefetchUserConfig } from '@/entities/user-config';
 import { queryClient } from '@/shared/api';
+import { RHFCheckbox, RHFInput } from '@/shared/ui/rhf';
 
 import {
   defaultLoginValues,
@@ -17,6 +17,8 @@ import {
   type LoginFormType,
 } from '../model';
 import { useLoginMutation } from '../model/api/api';
+
+import { AuthLegalNotice } from './AuthLegalNotice';
 
 type LoginFormProps = {
   onSuccess?: () => void;
@@ -50,11 +52,15 @@ const LoginForm = ({
       const data = await login(formData);
 
       if (data.data.user) {
-        setAuth(
-          data.data.user.id,
-          data.data.user.role,
-          data.data.user.membershipRole
-        );
+        setAuth({
+          id: data.data.user.id,
+          role: data.data.user.role,
+          membershipRole: data.data.user.membershipRole,
+          isPrime: Boolean(data.data.user.isPrime),
+          primeStatus: data.data.user.primeStatus ?? 'NONE',
+          primeExpiresAt: data.data.user.primeExpiresAt ?? null,
+          isEmailConfirmed: Boolean(data.data.user.isEmailConfirmed),
+        });
 
         try {
           await prefetchUserConfig(queryClient);
@@ -94,7 +100,6 @@ const LoginForm = ({
               label: 'Почта',
             }}
           />
-
           <RHFInput
             name="password"
             control={control}
@@ -110,7 +115,6 @@ const LoginForm = ({
               type: showPassword ? 'text' : 'password',
             }}
           />
-
           <Box
             sx={{
               mt: 2,
@@ -143,11 +147,13 @@ const LoginForm = ({
           <Button
             size="large"
             type="submit"
+            sx={{ mt: 2 }}
             variant="contained"
-            sx={{ mt: 4 }}
           >
             Войти
           </Button>
+
+          <AuthLegalNotice actionLabel="Войти" />
         </Box>
       </form>
     </FormProvider>

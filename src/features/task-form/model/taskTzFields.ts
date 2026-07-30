@@ -5,6 +5,8 @@ import {
   type UsageRights,
 } from '@/entities/post'
 
+import { hasDeliverableValues } from './deliverablesMappers'
+
 import type { TaskFormType } from './schema/schema'
 
 type ScalarFieldKey = {
@@ -83,3 +85,40 @@ export const mapUsageRightsToForm = (rights?: UsageRights) =>
 
 export const mapContentStylesToForm = (styles?: ContentStyle[]) =>
   styles?.map(style => ({ value: getContentStyleLabel(style) })) ?? []
+
+
+
+export const isEmptyValue = (value: unknown) => {
+  if (typeof value === 'boolean') return !value
+  if (typeof value === 'string') return !value.trim()
+  if (Array.isArray(value)) {
+    return !value.some(item => {
+      if (typeof item === 'object' && item && 'value' in item) {
+        return Boolean((item as { value?: string }).value?.trim())
+      }
+
+      return false
+    })
+  }
+
+  return true
+}
+
+export const groupHasValue = (group: TaskTzGroup, values: TaskFormType) => {
+  if (group.type === 'deliverables') {
+    return hasDeliverableValues(values.deliverables)
+  }
+
+  const scalarFilled = group.scalarFields?.some(
+    field => !isEmptyValue(values[field.key]),
+  )
+  const listFilled = group.listFields?.some(field => {
+    const items = values[field.key] as { value?: string }[] | undefined
+    return items?.some(item => item.value?.trim())
+  })
+
+  return Boolean(scalarFilled || listFilled)
+}
+
+export const formatBooleanValue = (value: boolean) => (value ? 'Да' : 'Нет')
+

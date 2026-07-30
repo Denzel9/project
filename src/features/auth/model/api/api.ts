@@ -49,3 +49,15 @@ export const useVerifyPasswordMutation = () =>
   useMutation({
     mutationFn: async (body: { password: string }) => await mainAxios.post<boolean>('auth/verify-password', body),
   })
+
+export const useSendConfirmEmailMutation = () =>
+  useMutation({
+    mutationFn: async () =>
+      await mainAxios.post<{ message: string }>('auth/confirm-email/send'),
+  })
+
+export const useConfirmEmailMutation = () =>
+  useMutation({
+    mutationFn: async (body: { token: string }) =>
+      await mainAxios.post<{ message: string }>('auth/confirm-email', body),
+  })

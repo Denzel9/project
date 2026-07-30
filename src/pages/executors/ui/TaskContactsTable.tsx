@@ -1,108 +1,355 @@
 import {
   Avatar,
+  Box,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
+  TableSortLabel,
   Typography,
 } from '@mui/material';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { UserDisplayName } from '@/entities/user';
 import { ROUTES } from '@/shared';
 
-import { formatRelativeTime } from '../model/utils';
+import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
+import { formatRelativeTime, sortTaskContactRows } from '../model/utils';
 
+import { PartnersRowActionsMenu } from './PartnersRowActionsMenu';
 import { partnersTableShellSx } from './PartnersTableSkeleton';
 
-import type { TaskContactRow } from '../model/types';
+import type {
+  PartnersSortOrder,
+  TaskContactRow,
+  TaskContactSortField,
+} from '../model/types';
 
 type TaskContactsTableProps = {
   items: TaskContactRow[];
   contactColumnLabel: string;
   emptyMessage: string;
+  interactionsColumnLabel?: string;
+  total?: number;
+  page?: number;
+  rowsPerPage?: number;
+  onPageChange?: (event: unknown, nextPage: number) => void;
+  onInteractionsClick?: (item: TaskContactRow) => void;
+  onPublicationsClick?: (item: TaskContactRow) => void;
 };
 
 export const TaskContactsTable = ({
   items,
   contactColumnLabel,
   emptyMessage,
+  interactionsColumnLabel = 'Взаимодействий',
+  total,
+  page: controlledPage,
+  rowsPerPage = PARTNERS_TABLE_PAGE_SIZE,
+  onPageChange,
+  onInteractionsClick,
+  onPublicationsClick,
 }: TaskContactsTableProps) => {
   const navigate = useNavigate();
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [sortField, setSortField] =
+    useState<TaskContactSortField>('interactionsCount');
+  const [sortOrder, setSortOrder] = useState<PartnersSortOrder>('desc');
 
-  if (!items.length) {
+  const isServerPagination =
+    controlledPage !== undefined && onPageChange !== undefined;
+
+  const sortedItems = useMemo(
+    () => sortTaskContactRows(items, sortField, sortOrder),
+    [items, sortField, sortOrder],
+  );
+
+  const paginationCount = useMemo(() => {
+    if (!isServerPagination) {
+      return sortedItems.length;
+    }
+
+    const base = Math.max(total ?? 0, items.length);
+    const pageIndex = controlledPage ?? 0;
+
+    if (items.length >= rowsPerPage && base <= (pageIndex + 1) * rowsPerPage) {
+      return (pageIndex + 1) * rowsPerPage + 1;
+    }
+
+    return base;
+  }, [
+    isServerPagination,
+    sortedItems.length,
+    total,
+    items.length,
+    controlledPage,
+    rowsPerPage,
+  ]);
+
+  const pageCount = Math.max(1, Math.ceil(paginationCount / rowsPerPage));
+  const currentPage = Math.min(controlledPage ?? 0, pageCount - 1);
+
+  const visibleItems = useMemo(() => {
+    if (isServerPagination) {
+      return sortedItems;
+    }
+
+    const start = currentPage * rowsPerPage;
+
+    return sortedItems.slice(start, start + rowsPerPage);
+  }, [sortedItems, isServerPagination, currentPage, rowsPerPage]);
+
+  const showPagination = isServerPagination
+    ? paginationCount > rowsPerPage || items.length >= rowsPerPage
+    : paginationCount > rowsPerPage;
+
+  const handleSort = (field: TaskContactSortField) => {
+    if (sortField === field) {
+      setSortOrder(current => (current === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortField(field);
+    setSortOrder(field === 'name' ? 'asc' : 'desc');
+  };
+
+  const getSortDirection = (field: TaskContactSortField) =>
+    sortField === field ? sortOrder : false;
+
+  const handlePageChange = (event: unknown, nextPage: number) => {
+    onPageChange?.(event, nextPage);
+    tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (!items.length && !isServerPagination) {
+    return <PartnersEmpty message={emptyMessage} />;
+  }
+
+  if (!items.length && isServerPagination && paginationCount === 0) {
     return <PartnersEmpty message={emptyMessage} />;
   }
 
   return (
-    <TableContainer
+    <Box
       className="partners-print-table"
       sx={partnersTableShellSx}
     >
-      <Table sx={{ '& .MuiTableCell-root': { p: 3 } }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>{contactColumnLabel}</TableCell>
-            <TableCell>Взаимодействий</TableCell>
-            <TableCell>Последнее</TableCell>
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          {items.map(item => (
-            <TableRow
-              key={item.id}
-              hover
-              onClick={() => navigate(`${ROUTES.PROFILE}?userId=${item.id}`)}
-              sx={{
-                cursor: 'pointer',
-                '&:hover': { bgcolor: 'secondary.light' },
-              }}
-            >
-              <TableCell>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ alignItems: 'center', minWidth: 180 }}
+      <TableContainer
+        ref={tableContainerRef}
+        sx={{
+          width: '100%',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          scrollbarWidth: 'thin',
+        }}
+      >
+        <Table sx={{ '& .MuiTableCell-root': { p: 3 } }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sortDirection={getSortDirection('name')}>
+                <TableSortLabel
+                  active={sortField === 'name'}
+                  direction={sortField === 'name' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('name')}
                 >
-                  <Avatar
-                    className="partners-no-print"
-                    src={item.avatar || undefined}
-                    sx={{ width: 36, height: 36 }}
-                  >
-                    {item.name.charAt(0)}
-                  </Avatar>
-
-                  <UserDisplayName
-                    user={{ id: item.id }}
-                    name={item.name}
-                  />
-                </Stack>
+                  {contactColumnLabel}
+                </TableSortLabel>
               </TableCell>
 
-              <TableCell>
-                <Typography variant="body2">
-                  {item.interactionsCount}
-                </Typography>
-              </TableCell>
-
-              <TableCell>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ whiteSpace: 'nowrap' }}
+              <TableCell sortDirection={getSortDirection('interactionsCount')}>
+                <TableSortLabel
+                  active={sortField === 'interactionsCount'}
+                  direction={
+                    sortField === 'interactionsCount' ? sortOrder : 'asc'
+                  }
+                  onClick={() => handleSort('interactionsCount')}
                 >
-                  {formatRelativeTime(item.lastInteractionAt)}
-                </Typography>
+                  {interactionsColumnLabel}
+                </TableSortLabel>
               </TableCell>
+
+              <TableCell sortDirection={getSortDirection('publicationsCount')}>
+                <TableSortLabel
+                  active={sortField === 'publicationsCount'}
+                  direction={
+                    sortField === 'publicationsCount' ? sortOrder : 'asc'
+                  }
+                  onClick={() => handleSort('publicationsCount')}
+                >
+                  Публикации
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell sortDirection={getSortDirection('lastInteractionAt')}>
+                <TableSortLabel
+                  active={sortField === 'lastInteractionAt'}
+                  direction={
+                    sortField === 'lastInteractionAt' ? sortOrder : 'asc'
+                  }
+                  onClick={() => handleSort('lastInteractionAt')}
+                >
+                  Последнее
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell
+                className="partners-no-print"
+                align="right"
+                sx={{ width: 56 }}
+              />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+
+          <TableBody>
+            {visibleItems.map(item => (
+              <TableRow
+                key={item.id}
+                hover
+                onClick={() =>
+                  navigate(`${ROUTES.PROFILE}?userId=${item.id}`)
+                }
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'secondary.light' },
+                }}
+              >
+                <TableCell>
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    sx={{ alignItems: 'center', minWidth: 180 }}
+                  >
+                    <Avatar
+                      className="partners-no-print"
+                      src={item.avatar || undefined}
+                      sx={{ width: 36, height: 36 }}
+                    >
+                      {item.name.charAt(0)}
+                    </Avatar>
+
+                    <UserDisplayName
+                      user={{ id: item.id }}
+                      name={item.name}
+                      variant="body2"
+                    />
+                  </Stack>
+                </TableCell>
+
+                <TableCell
+                  onClick={
+                    onInteractionsClick
+                      ? event => {
+                          event.stopPropagation();
+                          onInteractionsClick(item);
+                        }
+                      : undefined
+                  }
+                  sx={
+                    onInteractionsClick
+                      ? {
+                          cursor: 'pointer',
+                          color: 'primary.main',
+                          fontWeight: 600,
+                          '&:hover': { textDecoration: 'underline' },
+                        }
+                      : undefined
+                  }
+                >
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    sx={
+                      onInteractionsClick
+                        ? { color: 'inherit', fontWeight: 'inherit' }
+                        : undefined
+                    }
+                  >
+                    {item.interactionsCount}
+                  </Typography>
+                </TableCell>
+
+                <TableCell
+                  onClick={
+                    onPublicationsClick
+                      ? event => {
+                          event.stopPropagation();
+                          onPublicationsClick(item);
+                        }
+                      : undefined
+                  }
+                  sx={
+                    onPublicationsClick
+                      ? {
+                          cursor: 'pointer',
+                          color: 'primary.main',
+                          fontWeight: 600,
+                          '&:hover': { textDecoration: 'underline' },
+                        }
+                      : undefined
+                  }
+                >
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    sx={
+                      onPublicationsClick
+                        ? { color: 'inherit', fontWeight: 'inherit' }
+                        : undefined
+                    }
+                  >
+                    {item.publicationsCount}
+                  </Typography>
+                </TableCell>
+
+                <TableCell>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    {formatRelativeTime(item.lastInteractionAt)}
+                  </Typography>
+                </TableCell>
+
+                <TableCell
+                  className="partners-no-print"
+                  align="right"
+                  onClick={event => event.stopPropagation()}
+                >
+                  <PartnersRowActionsMenu userId={item.id} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {showPagination && (
+        <TablePagination
+          component="div"
+          className="partners-no-print"
+          page={currentPage}
+          count={paginationCount}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handlePageChange}
+          rowsPerPageOptions={[rowsPerPage]}
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}–${to} из ${count}`
+          }
+          sx={{
+            flexShrink: 0,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        />
+      )}
+    </Box>
   );
 };
 

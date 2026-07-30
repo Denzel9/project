@@ -36,18 +36,19 @@ export const hasActivePostFilters = (draft: PostFilterDraft): boolean =>
   JSON.stringify(draft) !== JSON.stringify(defaultPostFilterDraft);
 
 export const postFilterDraftToListParams = (
-  draft: PostFilterDraft,
+  draft: PostFilterDraft
 ): Omit<PostListParams, 'page' | 'limit'> => {
   const title = trimOptional(draft.title);
   const urgent = parseTriState(draft.urgent);
   const createdDate = draft.createdAt || undefined;
   const deadlineDate = draft.deadline || undefined;
-  const { budget, location, bloggerRequirements, cooperationDetails, brief, deliverables } =
-    draft;
+  const { budget, location, bloggerRequirements, cooperationDetails } = draft;
 
   const shootingRequired = parseTriState(location.shootingRequired);
   const verifiedAccount = parseTriState(bloggerRequirements.verifiedAccount);
-  const experienceWithAds = parseTriState(bloggerRequirements.experienceWithAds);
+  const experienceWithAds = parseTriState(
+    bloggerRequirements.experienceWithAds
+  );
   const exclusivity = parseTriState(cooperationDetails.exclusivity);
   const requiresMarking = parseTriState(cooperationDetails.requiresMarking);
   const requiresContract = parseTriState(cooperationDetails.requiresContract);
@@ -56,21 +57,20 @@ export const postFilterDraftToListParams = (
   const minFollowers = parseOptionalNumber(bloggerRequirements.minFollowers);
   const maxFollowers = parseOptionalNumber(bloggerRequirements.maxFollowers);
   const minEngagementRate = parseOptionalNumber(
-    bloggerRequirements.minEngagementRate,
+    bloggerRequirements.minEngagementRate
   );
-  const exclusivityDays = parseOptionalNumber(cooperationDetails.exclusivityDays);
+  const exclusivityDays = parseOptionalNumber(
+    cooperationDetails.exclusivityDays
+  );
   const usageDurationDays = parseOptionalNumber(
-    cooperationDetails.usageDurationDays,
+    cooperationDetails.usageDurationDays
   );
 
   const locationCountry = trimOptional(location.country);
   const locationCity = trimOptional(location.city);
-  const briefHashtag = brief.hashtags[0];
-  const briefMention = brief.mentions[0];
 
   return {
     ...(title && { title }),
-    ...(draft.chips.length > 0 && { chips: draft.chips }),
     ...(urgent !== undefined && { urgent }),
     ...(createdDate && { createdDate }),
     ...(draft.categories.length > 0 && { categories: draft.categories }),
@@ -104,19 +104,13 @@ export const postFilterDraftToListParams = (
     ...(requiresMarking !== undefined && { requiresMarking }),
     ...(requiresContract !== undefined && { requiresContract }),
     ...(ndaRequired !== undefined && { ndaRequired }),
-    ...(briefHashtag && { briefHashtag }),
-    ...(briefMention && { briefMention }),
     ...(draft.tags.length > 0 && { tags: draft.tags }),
-    ...(deliverables.platform && {
-      deliverablePlatform: deliverables.platform,
-    }),
-    ...(deliverables.format && { deliverableFormat: deliverables.format }),
   };
 };
 
 export const fastFiltersToListParams = (
   filters: FILTERS_VALUES[],
-  postFilters: PostFilterDraft = defaultPostFilterDraft,
+  postFilters: PostFilterDraft = defaultPostFilterDraft
 ): Partial<PostListParams> => {
   const params: Partial<PostListParams> = {};
 
@@ -126,6 +120,10 @@ export const fastFiltersToListParams = (
 
   if (filters.includes(FILTERS_VALUES.REMOTE) && !postFilters.workFormat) {
     params.workFormat = 'REMOTE';
+  }
+
+  if (filters.includes(FILTERS_VALUES.WITH_PHOTO)) {
+    params.hasPhoto = true;
   }
 
   return params;

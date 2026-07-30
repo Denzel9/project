@@ -7,6 +7,7 @@ import { ROUTES } from '../shared/config/routes';
 
 const HomePage = lazy(() => import('./home'));
 const AuthPage = lazy(() => import('./auth'));
+const ConfirmEmailPage = lazy(() => import('./auth/ui/ConfirmEmailPage'));
 const ProfilePage = lazy(() => import('./profile'));
 const FavoritePage = lazy(() => import('./favorite'));
 const ChatPage = lazy(() => import('./chat'));
@@ -34,17 +35,8 @@ const SettingsAccountPage = lazy(
   () => import('./settings/ui/account/SettingsAccountPage')
 );
 const SecurityPage = lazy(() => import('./settings/ui/security/SecurityPage'));
-const SettingsCrmGeneralPage = lazy(
-  () => import('./settings/ui/crm/SettingsCrmGeneralPage')
-);
-const SettingsCrmTasksPage = lazy(
-  () => import('./settings/ui/crm/SettingsCrmTasksPage')
-);
-const SettingsCrmPipelinePage = lazy(
-  () => import('./settings/ui/crm/SettingsCrmPipelinePage')
-);
-const SettingsCrmAutomationPage = lazy(
-  () => import('./settings/ui/crm/SettingsCrmAutomationPage')
+const SettingsCrmDashboardPage = lazy(
+  () => import('./settings/ui/crm/SettingsCrmDashboardPage')
 );
 const MyTasksPage = lazy(() => import('./my-tasks'));
 const TaskPage = lazy(() => import('./task'));
@@ -53,6 +45,12 @@ const DashboardPage = lazy(() => import('./dashboard'));
 const CalendarPage = lazy(() => import('./calendar'));
 const ExecutorsPage = lazy(() => import('./executors'));
 const PublicationsPage = lazy(() => import('./publications'));
+const UserAgreementPage = lazy(() =>
+  import('./legal').then(module => ({ default: module.UserAgreementPage }))
+);
+const PrivacyPolicyPage = lazy(() =>
+  import('./legal').then(module => ({ default: module.PrivacyPolicyPage }))
+);
 
 export const Router = () => {
   return (
@@ -152,22 +150,11 @@ export const Router = () => {
 
               <Route
                 path="crm"
-                element={<SettingsCrmGeneralPage />}
-              />
-
-              <Route
-                path="crm/tasks"
-                element={<SettingsCrmTasksPage />}
-              />
-
-              <Route
-                path="crm/pipeline"
-                element={<SettingsCrmPipelinePage />}
-              />
-
-              <Route
-                path="crm/automation"
-                element={<SettingsCrmAutomationPage />}
+                element={
+                  <ProtectedRoute isPrimeAccount>
+                    <SettingsCrmDashboardPage />
+                  </ProtectedRoute>
+                }
               />
             </Route>
           </>
@@ -223,8 +210,23 @@ export const Router = () => {
       />
 
       <Route
+        path={ROUTES.AUTH_CONFIRM_EMAIL}
+        element={<ConfirmEmailPage />}
+      />
+
+      <Route
         path={`${ROUTES.INVITE}`}
         element={<InvitePage />}
+      />
+
+      <Route
+        path={ROUTES.USER_AGREEMENT}
+        element={<UserAgreementPage />}
+      />
+
+      <Route
+        path={ROUTES.PRIVACY_POLICY}
+        element={<PrivacyPolicyPage />}
       />
     </Routes>
   );

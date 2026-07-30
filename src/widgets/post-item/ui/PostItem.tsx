@@ -5,7 +5,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Rating,
   Stack,
   Typography,
   type Theme,
@@ -16,7 +15,7 @@ import { Link, useNavigate } from 'react-router';
 import { BASE_COLOR } from '@/app/index';
 import { usePostApplicationsQuery } from '@/entities/application';
 import { getApplicationsCountLabel, POST_STATUS_ENUM } from '@/entities/post';
-import { UserDisplayName, type User } from '@/entities/user';
+import { UserDisplayName, UserStatsRow, type User } from '@/entities/user';
 import { ROUTES, ShareButton } from '@/shared/index';
 import { Media } from '@/widgets';
 
@@ -240,13 +239,16 @@ const PostItem = ({
                 },
               }}
             >
-              <UserDisplayName user={post?.owner as Partial<User>} />
+              <UserDisplayName
+                user={post?.owner as Partial<User>}
+                variant="subtitle1"
+              />
             </Typography>
 
-            <Rating
-              readOnly
-              value={4.5}
-              precision={0.5}
+            <UserStatsRow
+              followers={post?.owner?.followers}
+              completedTasksCount={post?.owner?.completedTasksCount}
+              sx={{ mt: 0.5 }}
             />
 
             <Typography

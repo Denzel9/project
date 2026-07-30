@@ -1,4 +1,4 @@
-import { MoreVert } from '@mui/icons-material';
+import { ListAlt, MoreVert } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useState } from 'react';
 
 import {
   TASK_STATUS_ENUM,
@@ -20,9 +21,11 @@ import {
   type Task,
 } from '@/entities';
 
+import { TaskListDialog } from './TaskListDialog';
+
 type TaskSwitcherProps = {
   groupedTasks: Record<string, Task[]>;
-  currentTask?: Task;
+  currentTask?: Task | null;
   cancelledTasks: Task[];
   onSelectTask: (taskId: string) => void;
   onSelectExecutor: (executorKey: string) => void;
@@ -58,6 +61,8 @@ export const TaskSwitcher = ({
   onOpenCancelledMenu,
   onOpenMoreMenu,
 }: TaskSwitcherProps) => {
+  const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+
   const selectedExecutorKey = currentTask ? getExecutorKey(currentTask) : '';
   const executorTasks = selectedExecutorKey
     ? (groupedTasks[selectedExecutorKey] ?? [])
@@ -66,52 +71,28 @@ export const TaskSwitcher = ({
   return (
     <Box
       sx={{
-        px: { xs: 1.5, md: 2 },
         py: 1.5,
         mb: 2,
         bgcolor: 'white',
-        borderRadius: '24px',
+        border: '1px solid',
+        borderRadius: '32px',
+        borderColor: 'divider',
+        px: { xs: 1.5, md: 2 },
       }}
     >
       <Stack
-        direction="row"
         spacing={1.5}
+        direction="row"
         sx={{ alignItems: 'center' }}
       >
-        {Boolean(cancelledTasks.length) && (
-          <>
-            <Tooltip title="Отменённые задачи">
-              <Chip
-                clickable
-                color="error"
-                size="small"
-                variant={
-                  currentTask?.status === TASK_STATUS_ENUM.CANCELLED ||
-                  currentTask?.status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR
-                    ? 'filled'
-                    : 'outlined'
-                }
-                label={`Отменённые · ${cancelledTasks.length}`}
-                onClick={onOpenCancelledMenu}
-              />
-            </Tooltip>
-
-            <Divider
-              flexItem
-              orientation="vertical"
-              sx={{ alignSelf: 'stretch', my: 0.5 }}
-            />
-          </>
-        )}
-
-        <Box
+        <Stack
+          direction="row"
+          spacing={1}
           sx={{
             flex: 1,
             minWidth: 0,
-            display: 'flex',
-            gap: 1,
+            alignItems: 'center',
             overflowX: 'auto',
-            pb: 0.5,
             '&::-webkit-scrollbar': { height: 4 },
           }}
         >
@@ -146,6 +127,8 @@ export const TaskSwitcher = ({
                     sx={{ alignItems: 'center' }}
                   >
                     <UserDisplayName
+                      variant="body2"
+                      withBadges={false}
                       user={executorToUserPartial(representative.executor)}
                     />
                     <Box
@@ -176,7 +159,33 @@ export const TaskSwitcher = ({
               />
             );
           })}
-        </Box>
+        </Stack>
+
+        {Boolean(cancelledTasks.length) && (
+          <>
+            <Divider
+              flexItem
+              orientation="vertical"
+              sx={{ alignSelf: 'stretch', my: 0.5 }}
+            />
+
+            <Tooltip title="Отменённые задачи">
+              <Chip
+                clickable
+                color="error"
+                size="small"
+                variant={
+                  currentTask?.status === TASK_STATUS_ENUM.CANCELLED ||
+                  currentTask?.status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR
+                    ? 'filled'
+                    : 'outlined'
+                }
+                label={`Отменённые ${cancelledTasks.length}`}
+                onClick={onOpenCancelledMenu}
+              />
+            </Tooltip>
+          </>
+        )}
 
         <IconButton
           size="small"
@@ -186,68 +195,89 @@ export const TaskSwitcher = ({
         </IconButton>
       </Stack>
 
-      {executorTasks.length > 1 && (
+      {Boolean(executorTasks.length) && <Divider sx={{ my: 1.5 }} />}
+
+      {Boolean(executorTasks.length) && (
         <Stack
           direction="row"
           spacing={1}
-          sx={{
-            mt: 1.5,
-            pt: 1.5,
-            flexWrap: 'wrap',
-            gap: 1,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-          }}
+          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
         >
-          {executorTasks.map(task => {
-            const isActive = currentTask?.id === task.id;
+          {executorTasks.length > 1 && (
+            <Stack
+              direction="row"
+              sx={{
+                overflowX: 'auto',
+                gap: 1,
+                scrollbarWidth: 'none',
+              }}
+            >
+              {executorTasks.map(task => {
+                const isActive = currentTask?.id === task.id;
 
-            return (
-              <Chip
-                key={task.id}
-                clickable
-                size="small"
-                color={isActive ? 'primary' : 'default'}
-                variant={isActive ? 'filled' : 'outlined'}
-                onClick={() => onSelectTask(task.id)}
-                label={
-                  <Stack
-                    direction="row"
-                    spacing={0.75}
-                    sx={{ alignItems: 'center' }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        maxWidth: { xs: 140, sm: 220 },
-                        fontWeight: isActive ? 600 : 400,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {task.title || 'Без названия'}
-                    </Typography>
-                    <Chip
-                      size="small"
-                      color={getTaskStatusColor(task.status)}
-                      label={TASK_STATUS_LABELS[task.status]}
-                      sx={{
-                        height: 22,
-                        '& .MuiChip-label': {
-                          px: 0.75,
-                          fontSize: 11,
-                        },
-                      }}
-                    />
-                  </Stack>
-                }
-                sx={{ height: 32, maxWidth: '100%' }}
-              />
-            );
-          })}
+                return (
+                  <Chip
+                    key={task.id}
+                    clickable
+                    color={isActive ? 'primary' : 'default'}
+                    variant={isActive ? 'filled' : 'outlined'}
+                    onClick={() => onSelectTask(task.id)}
+                    label={
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        sx={{ alignItems: 'center' }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            maxWidth: { xs: 140, sm: 220 },
+                            fontWeight: isActive ? 600 : 400,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {task.title || 'Без названия'}
+                        </Typography>
+                        <Chip
+                          color={getTaskStatusColor(task.status)}
+                          label={TASK_STATUS_LABELS[task.status]}
+                          sx={{
+                            height: 22,
+                            '& .MuiChip-label': {
+                              px: 0.75,
+                              fontSize: 11,
+                            },
+                          }}
+                        />
+                      </Stack>
+                    }
+                    sx={{ height: 32, maxWidth: '100%' }}
+                  />
+                );
+              })}
+            </Stack>
+          )}
+
+          <Tooltip title="Список задач">
+            <IconButton
+              aria-label="Список задач"
+              onClick={() => setIsTaskListOpen(true)}
+            >
+              <ListAlt />
+            </IconButton>
+          </Tooltip>
         </Stack>
       )}
+
+      <TaskListDialog
+        open={isTaskListOpen}
+        onClose={() => setIsTaskListOpen(false)}
+        tasks={executorTasks}
+        currentTaskId={currentTask?.id}
+        onSelectTask={onSelectTask}
+      />
     </Box>
   );
 };

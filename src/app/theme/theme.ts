@@ -51,6 +51,20 @@ export const theme = createTheme({
             },
         },
 
+        MuiSwitch: {
+            styleOverrides: {
+                root: {
+                    '& .MuiSwitch-track': {
+                        backgroundColor: BASE_COLOR,
+                    },
+                    '& .MuiSwitch-thumb': {
+                        border: `1px solid ${BASE_COLOR}`,
+                    },
+
+                },
+            },
+        },
+
         MuiButton: {
             styleOverrides: {
                 root: {

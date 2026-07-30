@@ -16,6 +16,7 @@ import {
   type Photo,
 } from '@/entities';
 import { ROUTES, RHFInput } from '@/shared';
+import { useRequireEmailConfirmed, getEmailConfirmErrorMessage } from '@/features/auth';
 
 import { useActions } from '../hooks/useActions';
 import {
@@ -56,6 +57,7 @@ export const UserPostForm = ({
   const { mutateAsync: createPost } = useCreatePostMutation();
   const { mutateAsync: updatePost } = useUpdatePostMutation();
   const { mutateAsync: deleteMedia } = useDeleteMediaMutation();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   const methods = useForm<FormProductType>({
     defaultValues,
@@ -65,7 +67,13 @@ export const UserPostForm = ({
 
   const { handleSubmit, setValue, getValues, control } = methods;
 
-  const { handleGoToPreview } = useActions({ getValues, id: data?.id || '' });
+  const { handleGoToPreview, handleMenuAction, menuOptions } = useActions({
+    getValues,
+    id: data?.id || '',
+    isEdit,
+    isArchived: data?.isArchived ?? false,
+    isPrivate: data?.isPrivate ?? false,
+  });
 
   const handleDeletePhoto = async (key: string) => {
     const photo = images.find(image => image.key === key);
@@ -99,6 +107,8 @@ export const UserPostForm = ({
   };
 
   const onSubmit = async (formData: FormProductType) => {
+    if (!requireEmailConfirmed()) return;
+
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -119,7 +129,7 @@ export const UserPostForm = ({
       navigate(ROUTES.PROFILE);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'Не удалось сохранить пост'
+        getEmailConfirmErrorMessage(error, 'Не удалось сохранить пост')
       );
     } finally {
       setIsSubmitting(false);
@@ -155,7 +165,11 @@ export const UserPostForm = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <MainInfo isEdit={isEdit} />
+        <MainInfo
+          isEdit={isEdit}
+          menuOptions={menuOptions}
+          onMenuAction={handleMenuAction}
+        />
 
         <Gallery
           files={files}
@@ -174,7 +188,7 @@ export const UserPostForm = ({
             fullWidth: true,
             multiline: true,
             label: 'Описание',
-            sx: { mt: 4 },
+            sx: { mt: 4, width: { xs: '100%', md: '50%' } },
           }}
         />
 

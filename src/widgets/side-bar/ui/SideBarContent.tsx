@@ -1,4 +1,4 @@
-import { Cyclone, WorkspacesOutlined } from '@mui/icons-material';
+import { WorkspacesOutlined } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -10,10 +10,12 @@ import {
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router';
 
-import { BASE_COLOR } from '@/app/index';
+// import { BASE_COLOR } from '@/app/index';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
+import logoSmall from '../../../../public/Mark.png';
+import logo from '../../../../public/Primary.png';
 import { TOP_MENU_ROUTES, BOTTOM_MENU_ROUTES } from '../model/routes/routes';
 import { useSideBarStore } from '../model/store/store';
 import { getIsVisibleRoute } from '../model/utils';
@@ -35,7 +37,7 @@ export const SideBarContent = ({
 }: SideBarContentProps = {}) => {
   const { isOpenSideBar } = useSideBarStore();
 
-  const { isAuth, role } = useAuthStore();
+  const { isAuth, role, isPrime } = useAuthStore();
 
   const isSidebarExpanded = isExpanded ?? isOpenSideBar;
 
@@ -68,32 +70,11 @@ export const SideBarContent = ({
             transition: 'padding 0.3s ease',
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              m: 0,
-              opacity: isSidebarExpanded ? 1 : 0,
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              transition: 'opacity 0.3s ease',
-              pointerEvents: isSidebarExpanded ? 'auto' : 'none',
-            }}
-          >
-            NIKS<span style={{ color: BASE_COLOR }}>SENS</span>
-          </Typography>
-
-          <Cyclone
-            color="primary"
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: '50%',
-              fontSize: 40,
-              opacity: isSidebarExpanded ? 0 : 1,
-              transform: 'translateX(-50%)',
-              transition: 'opacity 0.3s ease',
-              pointerEvents: isSidebarExpanded ? 'none' : 'auto',
-            }}
+          <img
+            src={isSidebarExpanded ? logo : logoSmall}
+            alt="NIKSSENS"
+            width="100%"
+            height={isSidebarExpanded ? 50 : 36}
           />
         </Box>
 
@@ -112,7 +93,7 @@ export const SideBarContent = ({
           );
         })}
 
-        {isAuth && (
+        {isAuth && isPrime && (
           <>
             <Divider sx={{ mt: 2 }} />
 
@@ -152,40 +133,66 @@ export const SideBarContent = ({
       </List>
 
       <Box sx={{ position: 'relative', minHeight: 48 }}>
-        <Box
-          sx={{
-            p: 2,
-            mx: 2,
-            borderRadius: '32px',
-            mt: { xs: 4, md: 0 },
-            bgcolor: 'secondary.light',
-            opacity: isSidebarExpanded ? 1 : 0,
-            overflow: 'hidden',
-            transition: 'opacity 0.3s ease',
-            pointerEvents: isSidebarExpanded ? 'auto' : 'none',
-          }}
-        >
-          <Typography variant="body1">Prime-аккаунт</Typography>
-
-          <Typography
-            variant="body2"
-            sx={{ mt: 1 }}
-          >
-            Получите доступ к более мощным функциям и возможностям.
-          </Typography>
-
+        {!isPrime && (
           <Box
-            sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+            sx={{
+              p: 2,
+              mx: 2,
+              borderRadius: '32px',
+              mt: { xs: 4, md: 0 },
+              bgcolor: 'secondary.light',
+              opacity: isSidebarExpanded ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'opacity 0.3s ease',
+              pointerEvents: isSidebarExpanded ? 'auto' : 'none',
+            }}
           >
-            <Button
-              size="small"
-              color="primary"
-              sx={{ mt: 2 }}
+            <Typography variant="body1">Prime-аккаунт</Typography>
+
+            <Typography
+              variant="body2"
+              sx={{ mt: 1 }}
             >
-              Оформить
-            </Button>
+              Получите доступ к более мощным функциям и возможностям.
+            </Typography>
+
+            <Box
+              sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+            >
+              <Button
+                size="small"
+                color="primary"
+                sx={{ mt: 2 }}
+                onClick={() => {
+                  navigate(ROUTES.SETTINGS_BILLING);
+                  onNavigate?.();
+                }}
+              >
+                Оформить
+              </Button>
+            </Box>
           </Box>
-        </Box>
+        )}
+
+        {isPrime && isSidebarExpanded && (
+          <Box
+            sx={{
+              p: 2,
+              mx: 2,
+              borderRadius: '32px',
+              mt: { xs: 4, md: 0 },
+              bgcolor: 'secondary.light',
+            }}
+          >
+            <Typography variant="body1">Prime активен</Typography>
+            <Typography
+              variant="body2"
+              sx={{ mt: 1 }}
+            >
+              Доступны CRM и расширенные функции рабочего пространства.
+            </Typography>
+          </Box>
+        )}
 
         <Box
           sx={{
@@ -194,12 +201,17 @@ export const SideBarContent = ({
             position: 'absolute',
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: isSidebarExpanded ? 0 : 1,
+            opacity: isSidebarExpanded || isPrime ? 0 : 1,
             transition: 'opacity 0.3s ease',
-            pointerEvents: isSidebarExpanded ? 'none' : 'auto',
+            pointerEvents: isSidebarExpanded || isPrime ? 'none' : 'auto',
           }}
         >
-          <IconButton>
+          <IconButton
+            onClick={() => {
+              navigate(ROUTES.SETTINGS_BILLING);
+              onNavigate?.();
+            }}
+          >
             <WorkspacesOutlined />
           </IconButton>
         </Box>

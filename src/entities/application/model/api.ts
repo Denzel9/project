@@ -43,7 +43,10 @@ const getApplicationListNextPageParam = (lastPage: ApplicationList) =>
     ? lastPage.page + 1
     : undefined
 
-export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
+export const useMyApplicationsQuery = (
+  params?: ApplicationListParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: applicationKeys.mine(params),
     queryFn: async () => {
@@ -53,10 +56,12 @@ export const useMyApplicationsQuery = (params?: ApplicationListParams) =>
       )
       return data
     },
+    enabled: options?.enabled ?? true,
   })
 
 export const useMyApplicationsInfiniteQuery = (
   params?: Omit<ApplicationListParams, 'page'>,
+  options?: { enabled?: boolean },
 ) => {
   const limit = params?.limit ?? 20
 
@@ -71,6 +76,7 @@ export const useMyApplicationsInfiniteQuery = (
     },
     initialPageParam: 1,
     getNextPageParam: getApplicationListNextPageParam,
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -151,7 +157,10 @@ export const useSearchIncomingApplicationsQuery = (
   })
 }
 
-export const useIncomingApplicationsQuery = (params?: ApplicationListParams) =>
+export const useIncomingApplicationsQuery = (
+  params?: ApplicationListParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: applicationKeys.incoming(params),
     queryFn: async () => {
@@ -161,6 +170,29 @@ export const useIncomingApplicationsQuery = (params?: ApplicationListParams) =>
       )
       return data
     },
+    enabled: options?.enabled ?? true,
+  })
+
+export const fetchAllIncomingApplications = async (
+  params?: Omit<ApplicationListParams, 'page' | 'limit'>,
+) =>
+  fetchAllPages(async (page, limit) => {
+    const { data } = await mainAxios.get<ApplicationList>(
+      '/applications/incoming',
+      { params: { ...params, page, limit } },
+    )
+    return data
+  })
+
+export const fetchAllMyApplications = async (
+  params?: Omit<ApplicationListParams, 'page' | 'limit'>,
+) =>
+  fetchAllPages(async (page, limit) => {
+    const { data } = await mainAxios.get<ApplicationList>(
+      '/applications/mine',
+      { params: { ...params, page, limit } },
+    )
+    return data
   })
 
 export const usePostApplicationsQuery = (

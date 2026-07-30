@@ -16,9 +16,6 @@ export const FormSection = ({
   <Box
     sx={{
       mt: 4,
-      p: { xs: 2, md: 3 },
-      borderRadius: '24px',
-      bgcolor: 'secondary.light',
     }}
   >
     <Typography

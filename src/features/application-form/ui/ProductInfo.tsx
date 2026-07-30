@@ -34,7 +34,10 @@ export const ProductInfo = () => {
         title="Описание и сроки"
         description="Основная информация для карточки объявления"
       >
-        <Stack spacing={3}>
+        <Stack
+          spacing={3}
+          sx={{ width: { xs: '100%', md: '50%' } }}
+        >
           <RHFInput
             name="description"
             control={control}
@@ -85,6 +88,30 @@ export const ProductInfo = () => {
             ))}
           </RHFInput>
 
+          {budgetType !== BudgetTypeEnum.BARTER &&
+            budgetType !== BudgetTypeEnum.NEGOTIABLE && (
+              <RHFInput
+                name="paymentTerms"
+                control={control}
+                props={{
+                  select: true,
+                  fullWidth: true,
+                  label: 'Условия оплаты',
+                  sx: { maxWidth: 320 },
+                }}
+              >
+                <MenuItem value="">Не указано</MenuItem>
+                {PAYMENT_TERMS_OPTIONS.map(option => (
+                  <MenuItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </RHFInput>
+            )}
+
           {budgetType === BudgetTypeEnum.FIXED && (
             <RHFInput
               name="budgetAmount"
@@ -100,8 +127,9 @@ export const ProductInfo = () => {
 
           {budgetType === BudgetTypeEnum.RANGE && (
             <Stack
-              direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
+              sx={{ width: { xs: '100%', sm: '50%' } }}
+              direction={{ xs: 'column', sm: 'row' }}
             >
               <RHFInput
                 name="budgetMinAmount"
@@ -130,30 +158,6 @@ export const ProductInfo = () => {
               }}
             />
           )}
-
-          {budgetType !== BudgetTypeEnum.BARTER &&
-            budgetType !== BudgetTypeEnum.NEGOTIABLE && (
-              <RHFInput
-                name="paymentTerms"
-                control={control}
-                props={{
-                  select: true,
-                  fullWidth: true,
-                  label: 'Условия оплаты',
-                  sx: { maxWidth: 320 },
-                }}
-              >
-                <MenuItem value="">Не указано</MenuItem>
-                {PAYMENT_TERMS_OPTIONS.map(option => (
-                  <MenuItem
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </RHFInput>
-            )}
         </Stack>
       </FormSection>
     </Stack>

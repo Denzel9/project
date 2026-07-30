@@ -1,11 +1,18 @@
 import { io, type Socket } from 'socket.io-client'
 
-import type { ChatMessage, ChatMessageMedia } from '@/entities/chat'
+import type {
+  ChatMessage,
+  ChatMessageDeletedEvent,
+  ChatMessageEditedEvent,
+  ChatMessageMedia,
+  ChatMessagesReadEvent,
+} from '@/entities/chat'
 
 type SendMessagePayload = {
   conversationId: string
   content?: string
   media?: ChatMessageMedia[]
+  isRedirected?: boolean
 }
 
 type SocketErrorPayload = {
@@ -20,6 +27,15 @@ const getChatSocketUrl = () => {
 class ChatSocketService {
   private socket: Socket | null = null
   private onMessageCallback: ((message: ChatMessage) => void) | null = null
+  private onMessagesReadCallback:
+    | ((event: ChatMessagesReadEvent) => void)
+    | null = null
+  private onMessageDeletedCallback:
+    | ((event: ChatMessageDeletedEvent) => void)
+    | null = null
+  private onMessageEditedCallback:
+    | ((message: ChatMessageEditedEvent) => void)
+    | null = null
   private onErrorCallback: ((error: SocketErrorPayload) => void) | null = null
   private onConnectCallback: (() => void) | null = null
   private onDisconnectCallback: (() => void) | null = null
@@ -63,10 +79,25 @@ class ChatSocketService {
     if (!this.socket) return
 
     this.socket.off('message')
+    this.socket.off('messages_read')
+    this.socket.off('message_deleted')
+    this.socket.off('message_edited')
     this.socket.off('error')
 
     this.socket.on('message', (message: ChatMessage) => {
       this.onMessageCallback?.(message)
+    })
+
+    this.socket.on('messages_read', (event: ChatMessagesReadEvent) => {
+      this.onMessagesReadCallback?.(event)
+    })
+
+    this.socket.on('message_deleted', (event: ChatMessageDeletedEvent) => {
+      this.onMessageDeletedCallback?.(event)
+    })
+
+    this.socket.on('message_edited', (message: ChatMessageEditedEvent) => {
+      this.onMessageEditedCallback?.(message)
     })
 
     this.socket.on('error', (error: SocketErrorPayload) => {
@@ -87,6 +118,21 @@ class ChatSocketService {
     }
   }
 
+  markRead(conversationId: string): void {
+    this.connect()
+
+    const emit = () => {
+      this.socket?.emit('mark_read', { conversationId })
+    }
+
+    if (this.socket?.connected) {
+      emit()
+      return
+    }
+
+    this.socket?.once('connect', emit)
+  }
+
   sendMessage(payload: SendMessagePayload): void {
     const hasContent = Boolean(payload.content?.trim())
     const hasMedia = Boolean(payload.media?.length)
@@ -102,6 +148,7 @@ class ChatSocketService {
         conversationId: payload.conversationId,
         ...(hasContent ? { content: payload.content!.trim() } : {}),
         ...(hasMedia ? { media: payload.media } : {}),
+        ...(payload.isRedirected ? { isRedirected: true } : {}),
       })
     }
 
@@ -130,6 +177,18 @@ class ChatSocketService {
     this.onMessageCallback = callback
   }
 
+  onMessagesRead(callback: (event: ChatMessagesReadEvent) => void) {
+    this.onMessagesReadCallback = callback
+  }
+
+  onMessageDeleted(callback: (event: ChatMessageDeletedEvent) => void) {
+    this.onMessageDeletedCallback = callback
+  }
+
+  onMessageEdited(callback: (message: ChatMessageEditedEvent) => void) {
+    this.onMessageEditedCallback = callback
+  }
+
   onError(callback: (error: SocketErrorPayload) => void) {
     this.onErrorCallback = callback
   }
@@ -144,12 +203,18 @@ class ChatSocketService {
 
   removeListeners() {
     this.onMessageCallback = null
+    this.onMessagesReadCallback = null
+    this.onMessageDeletedCallback = null
+    this.onMessageEditedCallback = null
     this.onErrorCallback = null
     this.onConnectCallback = null
     this.onDisconnectCallback = null
 
     if (this.socket) {
       this.socket.off('message')
+      this.socket.off('messages_read')
+      this.socket.off('message_deleted')
+      this.socket.off('message_edited')
       this.socket.off('error')
       this.socket.off('connect')
       this.socket.off('disconnect')

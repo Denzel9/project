@@ -71,6 +71,8 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
     <Box
       component={Link}
       to={`${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
       sx={{
         p: 1.75,
         display: 'block',
@@ -107,17 +109,15 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
           spacing={0.75}
           sx={{ alignItems: 'center', flexWrap: 'wrap' }}
         >
-          <Chip
-            size="small"
-            icon={<EventIcon sx={{ fontSize: '16px !important' }} />}
-            label={getEventLabel(type)}
-            color={isDeadline ? 'primary' : 'default'}
-            variant={isDeadline ? 'filled' : 'outlined'}
-            sx={{ height: 24, '& .MuiChip-label': { px: 0.75 } }}
-          />
-
-          {task.urgent && (
-            <Whatshot sx={{ fontSize: 18, color: 'error.main' }} />
+          {!isOverdue && (
+            <Chip
+              size="small"
+              icon={<EventIcon sx={{ fontSize: '16px !important' }} />}
+              label={getEventLabel(type)}
+              color={isDeadline ? 'primary' : 'default'}
+              variant={isDeadline ? 'filled' : 'outlined'}
+              sx={{ height: 24, '& .MuiChip-label': { px: 0.75 } }}
+            />
           )}
 
           {isOverdue && (
@@ -127,6 +127,10 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
               color="error"
               sx={{ height: 24 }}
             />
+          )}
+
+          {task.urgent && (
+            <Whatshot sx={{ fontSize: 18, color: 'error.main' }} />
           )}
         </Stack>
 
@@ -142,7 +146,7 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
       </Stack>
 
       <Typography
-        variant="body2"
+        variant="body1"
         sx={{
           mb: 1.25,
           fontWeight: 600,
@@ -180,7 +184,10 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
           >
             {contact.label}
           </Typography>
-          <UserDisplayName user={contact.user} />
+          <UserDisplayName
+            user={contact.user}
+            variant="body2"
+          />
         </Box>
       </Stack>
     </Box>

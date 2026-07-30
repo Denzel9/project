@@ -26,20 +26,42 @@ export const FAST_BUTTON_OPTIONS: FastButtonValueType[] = [
   'cancelled',
 ];
 
-export const FAST_BUTTON_DASHBOARD_OPTIONS = FAST_BUTTON_OPTIONS.filter(
-  value => value !== 'cancelled',
-);
+/** Company dashboard catalog (6) */
+export const COMPANY_DASHBOARD_CARD_OPTIONS = [
+  'pending-action',
+  'pending-executor-assign',
+  'no-executor-assign',
+  'overdue',
+  'urgent',
+  'checking',
+] as const satisfies readonly FastButtonValueType[];
+
+/** Creator dashboard catalog (6) — вместо «Не назначены» → «Отменённые» */
+export const CREATOR_DASHBOARD_CARD_OPTIONS = [
+  'pending-action',
+  'pending-executor-assign',
+  'cancelled',
+  'overdue',
+  'urgent',
+  'checking',
+] as const satisfies readonly FastButtonValueType[];
+
+export type DashboardCardVariant =
+  | (typeof COMPANY_DASHBOARD_CARD_OPTIONS)[number]
+  | (typeof CREATOR_DASHBOARD_CARD_OPTIONS)[number];
+
+/** @deprecated use getDashboardCardOptions — kept for shared company-shaped lists */
+export const FAST_BUTTON_DASHBOARD_OPTIONS = [
+  ...COMPANY_DASHBOARD_CARD_OPTIONS,
+] as const;
 
 export const FAST_BUTTON_TASK_OPTIONS = FAST_BUTTON_OPTIONS.filter(
   value => value !== 'checking',
 );
 
-export type DashboardCardVariant =
-  (typeof FAST_BUTTON_DASHBOARD_OPTIONS)[number];
-
 export const FAST_BUTTON_LABELS: Record<FastButtonValueType, string> = {
   'pending-action': 'Ожидают действия',
-  'pending-executor-assign': 'Ожидают подтверждения',
+  'pending-executor-assign': 'Ожидают назначения',
   'no-executor-assign': 'Не назначены',
   overdue: 'Просроченные',
   urgent: 'Срочные',
@@ -60,9 +82,9 @@ export const getFastButtonOptions = (
 export const getDashboardCardOptions = (
   isCompany: boolean,
 ): DashboardCardVariant[] =>
-  FAST_BUTTON_DASHBOARD_OPTIONS.filter(
-    value => isCompany || value !== 'no-executor-assign',
-  );
+  isCompany
+    ? [...COMPANY_DASHBOARD_CARD_OPTIONS]
+    : [...CREATOR_DASHBOARD_CARD_OPTIONS];
 
 export const ACTIVE_KANBAN_STATUSES: TaskStatus[] = [
   TASK_STATUS_ENUM.PREPARING,
@@ -95,6 +117,7 @@ export const toTasksParams = (
   filters: {
     status: TaskStatusFilter;
     postId?: string;
+    executorId?: string;
     updatedDate?: string | null;
   },
   pagination?: { page?: number; limit?: number },
@@ -103,6 +126,7 @@ export const toTasksParams = (
   limit: pagination?.limit ?? 20,
   ...(filters.status !== 'all' && { status: filters.status }),
   ...(filters.postId && { postId: filters.postId }),
+  ...(filters.executorId && { executorId: filters.executorId }),
   ...(filters.updatedDate && { createdDate: filters.updatedDate }),
 });
 
@@ -170,20 +194,29 @@ const applyExtraFilterQueryParams = (
 
 export const toMyTasksQueryParams = (filters: {
   postId: string;
+  executorId: string;
   status: TaskStatusFilter;
   updatedDate: string | null;
   viewMode: 'grid' | 'kanban' | 'table';
   fastButtonValue: FastButtonFilter;
   extraFilter: TaskExtraFilter | null;
   isCompany: boolean;
+  q?: string;
   page?: number;
   limit?: number;
 }): TaskListParams => {
-  const base = toTaskFilterParams({
-    status: filters.viewMode === 'kanban' ? 'all' : filters.status,
-    postId: filters.postId === 'all' ? undefined : filters.postId,
-    updatedDate: filters.updatedDate,
-  });
+  const base = {
+    ...toTaskFilterParams({
+      status: filters.viewMode === 'kanban' ? 'all' : filters.status,
+      postId: filters.postId === 'all' ? undefined : filters.postId,
+      updatedDate: filters.updatedDate,
+    }),
+    ...(filters.executorId !== 'all' &&
+      (filters.isCompany
+        ? { executorId: filters.executorId }
+        : { ownerId: filters.executorId })),
+    ...(filters.q && { q: filters.q }),
+  };
 
   let params = base;
 

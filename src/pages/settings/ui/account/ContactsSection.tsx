@@ -1,8 +1,13 @@
-import { Add, Close, Delete } from '@mui/icons-material';
+import {
+  Add,
+  Close,
+  Delete,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from '@mui/icons-material';
 import {
   Stack,
   Typography,
-  Button,
   Box,
   IconButton,
   TextField,
@@ -28,7 +33,7 @@ export const ContactsSection = ({
   isOpenAddContacts,
   setIsOpenAddContacts,
 }: ContactsSectionProps) => {
-  const { control, setValue } = useFormContext<AccountSchemaFormType>();
+  const { control } = useFormContext<AccountSchemaFormType>();
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -40,7 +45,6 @@ export const ContactsSection = ({
 
   const handleCloseAddContacts = () => {
     setIsOpenAddContacts(!isOpenAddContacts);
-    setValue('contacts', []);
   };
 
   useEffect(() => {
@@ -71,16 +75,14 @@ export const ContactsSection = ({
               Дополнительные контакты
             </Typography>
 
-            <Button
-              size="small"
+            <IconButton
               sx={{
-                display: { xs: 'none', md: 'block' },
-                px: 2,
+                display: { xs: 'none', md: 'flex' },
               }}
               onClick={handleCloseAddContacts}
             >
-              {isOpenAddContacts ? 'Закрыть' : 'Добавить контакты'}
-            </Button>
+              {isOpenAddContacts ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </IconButton>
 
             <Box
               sx={{

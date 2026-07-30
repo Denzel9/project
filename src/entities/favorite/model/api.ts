@@ -72,7 +72,10 @@ const fetchFavoriteUserIds = async () => {
   return userIds
 }
 
-export const useFavoritesQuery = (params?: FavoriteListParams) =>
+export const useFavoritesQuery = (
+  params?: FavoriteListParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: favoriteKeys.list(params),
     queryFn: async () => {
@@ -81,10 +84,12 @@ export const useFavoritesQuery = (params?: FavoriteListParams) =>
       })
       return data
     },
+    enabled: options?.enabled ?? true,
   })
 
 export const useFavoritesInfiniteQuery = (
   params?: Omit<FavoriteListParams, 'page'>,
+  options?: { enabled?: boolean },
 ) => {
   const limit = params?.limit ?? 20
 
@@ -98,8 +103,19 @@ export const useFavoritesInfiniteQuery = (
     },
     initialPageParam: 1,
     getNextPageParam: getFavoriteListNextPageParam,
+    enabled: options?.enabled ?? true,
   })
 }
+
+export const fetchAllFavorites = async (
+  params?: Omit<FavoriteListParams, 'page' | 'limit'>,
+) =>
+  fetchAllPages<FavoriteListItem>(async (page, limit) => {
+    const { data } = await mainAxios.get<FavoriteList>('/favorites', {
+      params: { ...params, page, limit },
+    })
+    return data
+  })
 
 export const useSearchFavoritesQuery = (params: SearchFavoritesParams) => {
   const trimmedQuery = params.q.trim()
@@ -249,8 +265,11 @@ export const useAddFavoriteMutation = () => {
       )
       return data
     },
-    onSuccess: () => {
+    onSuccess: (_data, dto) => {
       queryClient.invalidateQueries({ queryKey: favoriteKeys.all })
+      if ('userId' in dto && dto.userId) {
+        queryClient.invalidateQueries({ queryKey: ['user', dto.userId] })
+      }
     },
   })
 }
@@ -304,9 +323,11 @@ export const useRemoveFavoriteUserMutation = () => {
   return useMutation({
     mutationFn: async (userId: string) => {
       await mainAxios.delete(`/favorites/users/${userId}`)
+      return userId
     },
-    onSuccess: () => {
+    onSuccess: userId => {
       queryClient.invalidateQueries({ queryKey: favoriteKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['user', userId] })
     },
   })
 }

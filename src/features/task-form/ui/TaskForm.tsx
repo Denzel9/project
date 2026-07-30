@@ -195,6 +195,8 @@ export const TaskForm = ({
     void handleSubmit(onFormValid)(event);
   };
 
+  console.log({ canChangeStatus });
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleFormSubmit}>

@@ -25,6 +25,7 @@ type RawPartnerUser = Partial<PartnerUserItem> & {
   lastActivityAt?: string;
   lastActivity?: string;
   updatedAt?: string;
+  publications?: number;
 };
 
 type RawPartnerApplicationCompany = PartnerApplicationCompanyItem & {
@@ -40,11 +41,10 @@ export const normalizePartnerUser = (item: RawPartnerUser): PartnerUserItem => {
     id: profile.id ?? item.id ?? '',
     role: profile.role ?? item.role ?? 'CREATOR',
     avatar: profile.avatar ?? item.avatar,
-    bio: profile.bio ?? item.bio ?? null,
     name: profile.name ?? item.name,
     lastName: profile.lastName ?? item.lastName,
     companyName: profile.companyName ?? item.companyName,
-    followers: item.followers ?? 0,
+    publicationsCount: item.publicationsCount ?? item.publications ?? 0,
     interactionsCount: item.interactionsCount ?? item.tasksTotal ?? 0,
     lastInteractionAt:
       pickIsoDate(
@@ -104,6 +104,7 @@ export const mapPartnerUserToRow = (item: PartnerUserItem) => ({
   name: getPartnerName(item),
   avatar: item.avatar ?? undefined,
   kind: getPartnerKind(item),
+  publicationsCount: item.publicationsCount,
   interactionsCount: item.interactionsCount,
   lastInteractionAt: item.lastInteractionAt || undefined,
 });

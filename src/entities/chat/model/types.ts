@@ -21,13 +21,34 @@ export type ChatMessage = {
   content: string
   media: ChatMessageMedia[]
   createdAt: string
+  editedAt: string | null
+  isRedirected: boolean
+  isRead: boolean
 }
 
 export type ChatConversation = {
   id: string
   peer: ChatPeer
   lastMessage: ChatMessage | null
+  unreadCount: number
   updatedAt: string
+}
+
+export type ChatMessagesReadEvent = {
+  conversationId: string
+  userId: string
+  readAt: string
+}
+
+export type ChatMessageDeletedEvent = {
+  conversationId: string
+  messageId: string
+}
+
+export type ChatMessageEditedEvent = ChatMessage
+
+export type PatchChatMessageDto = {
+  content: string
 }
 
 export type CreateConversationDto = {
@@ -56,6 +77,11 @@ export type SearchMessagesParams = {
   q: string
   page?: number
   limit?: number
+}
+
+export type ConversationsParams = {
+  q?: string
+  peerId?: string
 }
 
 export type AttachmentsParams = {

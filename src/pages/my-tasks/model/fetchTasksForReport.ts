@@ -5,12 +5,14 @@ import type { FastButtonFilter, TaskExtraFilter, TaskStatusFilter, TaskViewMode 
 
 type FetchTasksForReportOptions = {
   postId: string;
+  executorId: string;
   viewMode: TaskViewMode;
   status: TaskStatusFilter;
   updatedDate: string | null;
   fastButtonValue: FastButtonFilter;
   extraFilter?: TaskExtraFilter | null;
   isCompany: boolean;
+  q?: string;
 };
 
 export const fetchTasksForReport = async (

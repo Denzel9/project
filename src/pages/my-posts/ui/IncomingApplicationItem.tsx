@@ -1,4 +1,4 @@
-import { AccessTime, ChatBubbleOutlined, Update } from '@mui/icons-material';
+import { AccessTime, Update } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -161,6 +161,7 @@ export const IncomingApplicationItem = ({
 
                 <UserDisplayName
                   user={applicantToUserPartial(application.applicant)}
+                  variant="subtitle1"
                 />
                 {/* TODO add something like company name */}
               </Stack>
@@ -332,17 +333,14 @@ export const IncomingApplicationItem = ({
                       В задачу
                     </Button>
 
-                    {application.applicant?.id && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        component={Link}
-                        startIcon={<ChatBubbleOutlined sx={{ fontSize: 16 }} />}
-                        to={`${ROUTES.CHAT}?recipientId=${application.applicant.id}`}
-                      >
-                        Чат
-                      </Button>
-                    )}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      component={Link}
+                      to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
+                    >
+                      Чат
+                    </Button>
                   </>
                 )}
               </Stack>

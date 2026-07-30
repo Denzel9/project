@@ -16,6 +16,7 @@ export type User = {
   createdAt: string;
   creatorProfile: CreatorProfile;
   followers: number;
+  completedTasksCount: number;
   location: string | null;
   contacts: Contact[];
   phone: string | null;

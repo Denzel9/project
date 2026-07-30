@@ -51,6 +51,8 @@ export type TaskComment = {
   media?: TaskCommentMedia[]
   createdAt: string
   updatedAt: string
+  editedAt: string | null
+  isRead: boolean
 }
 
 export type TaskMediaKind = 'MAIN' | 'REPORT'
@@ -253,6 +255,7 @@ export type TaskCalendarParams = {
 export type TaskCommentListParams = {
   page?: number
   limit?: number
+  markRead?: boolean
 }
 
 export type TaskCommentFeedParams = {
@@ -279,9 +282,9 @@ export type TaskWithCommentsParams = {
   limit?: number
   role?: TaskRole
   postId?: string
+  taskId?: string
   status?: TaskStatus
   q?: string
-  readAfter?: string
 }
 
 export type TaskWithCommentsItem = {
@@ -295,7 +298,7 @@ export type TaskWithCommentsItem = {
   post?: Pick<Post, 'id' | 'title'>
   lastComment: TaskComment
   commentsCount: number
-  unreadCount?: number
+  unreadCount: number
 }
 
 export type TaskWithCommentsRawItem = TaskWithCommentsItem & {
@@ -350,8 +353,8 @@ export type TaskCommentAttachmentsParams = {
 }
 
 export type TaskActivityPayload = {
-  to?: string | null
-  from?: string | null
+  to?: unknown
+  from?: unknown
   field?: string
   key?: string
   url?: string
@@ -462,10 +465,26 @@ export type CreateTaskDto = {
 }
 
 export type CreateTaskCommentDto = {
-  content: string
+  content?: string
   media?: TaskCommentMedia[]
 }
 
 export type UpdateTaskCommentDto = {
   content: string
+}
+
+export type MarkTaskCommentsReadResponse = {
+  taskId: string
+  readAt: string
+}
+
+export type TaskCommentsReadEvent = {
+  taskId: string
+  userId: string
+  readAt: string
+}
+
+export type TaskCommentDeletedEvent = {
+  taskId: string
+  commentId: string
 }

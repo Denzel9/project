@@ -4,7 +4,6 @@ import {
   Checkbox,
   CircularProgress,
   Collapse,
-  Divider,
   FormControlLabel,
   Stack,
   Typography,
@@ -91,7 +90,10 @@ const ChannelSection = ({
         }
       />
 
-      <Collapse in={isEditing}>
+      <Collapse
+        in={isEditing}
+        sx={{ mt: isEditing ? 2 : '0px !important' }}
+      >
         <Stack
           spacing={3}
           sx={{ pt: 1 }}
@@ -235,7 +237,7 @@ export const SettingsNotificationPage = () => {
   const toggleInList = (
     setter: typeof setInAppTypes,
     type: NotificationType,
-    checked: boolean,
+    checked: boolean
   ) => {
     setter(current => {
       if (checked) {
@@ -297,10 +299,7 @@ export const SettingsNotificationPage = () => {
   }
 
   return (
-    <Stack
-      spacing={4}
-      divider={<Divider />}
-    >
+    <Stack spacing={4}>
       <Typography
         variant="h6"
         sx={{ fontWeight: 600 }}
@@ -323,9 +322,7 @@ export const SettingsNotificationPage = () => {
           setInAppTypes(data.inAppNotificationTypes ?? []);
           setIsEditingInApp(false);
         }}
-        onToggle={(type, checked) =>
-          toggleInList(setInAppTypes, type, checked)
-        }
+        onToggle={(type, checked) => toggleInList(setInAppTypes, type, checked)}
         onEnableAll={() => setInAppTypes([...ALL_NOTIFICATION_TYPES])}
         onDisableAll={() => setInAppTypes([])}
         onSave={() => void handleSaveInApp()}
@@ -347,9 +344,7 @@ export const SettingsNotificationPage = () => {
           setEmailTypes(data.emailNotificationTypes ?? []);
           setIsEditingEmail(false);
         }}
-        onToggle={(type, checked) =>
-          toggleInList(setEmailTypes, type, checked)
-        }
+        onToggle={(type, checked) => toggleInList(setEmailTypes, type, checked)}
         onEnableAll={() => setEmailTypes([...ALL_NOTIFICATION_TYPES])}
         onDisableAll={() => setEmailTypes([])}
         onSave={() => void handleSaveEmail()}

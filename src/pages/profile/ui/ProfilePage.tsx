@@ -53,6 +53,8 @@ export const ProfilePage = () => {
           width: '100%',
           position: 'relative',
           backgroundSize: 'cover',
+          border: '1px solid',
+          borderColor: 'divider',
           bgcolor: 'secondary.main',
           height: { xs: 250, md: 300 },
           minHeight: { xs: 250, md: 300 },

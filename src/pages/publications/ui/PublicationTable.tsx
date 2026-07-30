@@ -38,6 +38,7 @@ import {
 } from '../model/constants';
 import {
   getPublicationGalleryMediaItems,
+  getPublicationPlatforms,
   getPublicationPreviewMedia,
   getPublicationTaskPath,
   getPublicationTitle,
@@ -94,9 +95,28 @@ export const PublicationTable = ({
     [publications, sortField, sortOrder]
   );
 
-  const paginationCount = serverPagination
-    ? (total ?? sortedPublications.length)
-    : sortedPublications.length;
+  const paginationCount = useMemo(() => {
+    if (!serverPagination) {
+      return sortedPublications.length;
+    }
+
+    const base = Math.max(total ?? 0, sortedPublications.length);
+
+    if (
+      sortedPublications.length >= rowsPerPage &&
+      base <= (page + 1) * rowsPerPage
+    ) {
+      return (page + 1) * rowsPerPage + 1;
+    }
+
+    return base;
+  }, [
+    serverPagination,
+    sortedPublications.length,
+    total,
+    page,
+    rowsPerPage,
+  ]);
 
   const pageCount = Math.max(1, Math.ceil(paginationCount / rowsPerPage));
   const currentPage = Math.min(page, pageCount - 1);
@@ -116,7 +136,12 @@ export const PublicationTable = ({
   ]);
 
   const showPagination =
-    paginated && paginationCount > rowsPerPage && !forPrint;
+    paginated &&
+    !forPrint &&
+    (serverPagination
+      ? paginationCount > rowsPerPage ||
+        sortedPublications.length >= rowsPerPage
+      : paginationCount > rowsPerPage);
 
   const scrollTableToTop = () => {
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -270,7 +295,7 @@ export const PublicationTable = ({
                     hideSortIcon={forPrint}
                     sx={forPrint ? { pointerEvents: 'none' } : undefined}
                   >
-                    Площадка
+                    Площадки
                   </TableSortLabel>
                 </TableCell>
 
@@ -362,26 +387,40 @@ export const PublicationTable = ({
                         PUBLICATION_TABLE_COLUMN_WIDTHS.platform
                       )}
                     >
-                      {publication.platform ? (
-                        forPrint ? (
-                          <Typography variant="body2">
-                            {getPlatformLabel(publication.platform)}
-                          </Typography>
-                        ) : (
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={getPlatformLabel(publication.platform)}
-                          />
-                        )
-                      ) : (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                        >
-                          —
-                        </Typography>
-                      )}
+                      {(() => {
+                        const platforms = getPublicationPlatforms(publication);
+
+                        if (!platforms.length) {
+                          return (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                            >
+                              —
+                            </Typography>
+                          );
+                        }
+
+                        if (forPrint) {
+                          return (
+                            <Typography variant="body2">
+                              {platforms.map(getPlatformLabel).join(', ')}
+                            </Typography>
+                          );
+                        }
+
+                        return (
+                          <Tooltip
+                            title={platforms.map(getPlatformLabel).join(', ')}
+                          >
+                            <Chip
+                              size="small"
+                              variant="outlined"
+                              label={platforms.length}
+                            />
+                          </Tooltip>
+                        );
+                      })()}
                     </TableCell>
 
                     <TableCell
@@ -404,7 +443,10 @@ export const PublicationTable = ({
                             sx={{ width: 28, height: 28 }}
                           />
                         )}
-                        <UserDisplayName user={participantUser} />
+                        <UserDisplayName
+                          user={participantUser}
+                          variant="body2"
+                        />
                       </Stack>
                     </TableCell>
 

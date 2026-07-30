@@ -1,39 +1,134 @@
+import { type UseFormGetValues, type UseFormSetValue } from 'react-hook-form'
+import { useNavigate } from 'react-router'
 
-import { type UseFormGetValues } from "react-hook-form"
-import { useNavigate } from "react-router"
+import {
+  useDeletePostMutation,
+  useUpdatePostMutation,
+} from '@/entities/post'
+import { ROUTES } from '@/shared'
+import { useSnackbarStore } from '@/widgets'
 
-import { useDeletePostMutation } from '@/entities/post'
-import { ROUTES } from "@/shared"
+import { type FormProductType } from '../model/schema/schema'
 
-import { type FormProductType } from "../model/schema/schema"
+export const MENU_ACTION = {
+  DELETE: 'Удалить',
+  ADD_TO_ARCHIVE: 'Переместить в архив',
+  REMOVE_FROM_ARCHIVE: 'Вернуть из архива',
+  MAKE_PRIVATE: 'Сделать приватным',
+  MAKE_PUBLIC: 'Сделать публичным',
+} as const
 
 type Props = {
-    id: string
-    getValues: UseFormGetValues<FormProductType>
+  id: string
+  isEdit?: boolean
+  isPrivate?: boolean
+  isArchived?: boolean
+  setValue?: UseFormSetValue<FormProductType>
+  getValues: UseFormGetValues<FormProductType>
+  setIsConfirmDialogOpen?: (isOpen: boolean) => void
 }
 
-export const useActions = ({ getValues, id }: Props) => {
+export const useActions = ({
+  id,
+  setValue,
+  getValues,
+  isEdit = false,
+  isPrivate = false,
+  isArchived = false,
+  setIsConfirmDialogOpen,
+}: Props) => {
+  const { mutateAsync: deleteApplication } = useDeletePostMutation()
+  const { mutateAsync: updatePost } = useUpdatePostMutation()
+  const { setSnackbarOpen } = useSnackbarStore()
+  const navigate = useNavigate()
 
-    const { mutate: deleteApplication } = useDeletePostMutation()
+  const handleGoToPreview = () => {
+    const formData = getValues()
 
-    const navigate = useNavigate()
+    if (Object.values(formData).filter(Boolean).length) {
+      navigate(ROUTES.PROFILE)
+    }
+  }
 
-    const handleGoToPreview = () => {
-        const formData = getValues()
+  const handleDelete = async () => {
+    if (!id) return
+    setIsConfirmDialogOpen?.(true)
+  }
 
+  const handleAddToArchive = async () => {
+    if (!id) return
+    await updatePost({ id, body: { isArchived: true } })
+    setSnackbarOpen?.(true, 'Объявление перемещено в архив')
+  }
 
-        if (Object.values(formData).filter(Boolean).length) {
-            navigate(ROUTES.PROFILE)
-        }
+  const handleRemoveFromArchive = async () => {
+    if (!id) return
+    await updatePost({ id, body: { isArchived: false } })
+    setSnackbarOpen?.(true, 'Объявление возвращено из архива')
+  }
+
+  const handleMakePrivate = async () => {
+    if (!id) return
+    await updatePost({ id, body: { isPrivate: true } })
+    setValue?.('isPrivate', true)
+    setSnackbarOpen?.(true, 'Объявление сделано приватным')
+  }
+
+  const handleMakePublic = async () => {
+    if (!id) return
+    await updatePost({ id, body: { isPrivate: false } })
+    setValue?.('isPrivate', false)
+    setSnackbarOpen?.(true, 'Объявление сделано публичным')
+  }
+
+  const menuOptions = (() => {
+    const options: string[] = [MENU_ACTION.DELETE]
+
+    if (!isEdit || !id) return options
+
+    options.push(
+      isArchived
+        ? MENU_ACTION.REMOVE_FROM_ARCHIVE
+        : MENU_ACTION.ADD_TO_ARCHIVE,
+    )
+    options.push(
+      isPrivate ? MENU_ACTION.MAKE_PUBLIC : MENU_ACTION.MAKE_PRIVATE,
+    )
+
+    return options
+  })()
+
+  const handleMenuAction = (action: string) => {
+    if (action === MENU_ACTION.DELETE) {
+      void handleDelete()
+      return
     }
 
-    const handleOpenConfirmModal = () => {
-        // dispatch(openModal({ type: ModalTypes.CONFIRM }))
+    if (action === MENU_ACTION.ADD_TO_ARCHIVE) {
+      void handleAddToArchive()
+      return
     }
 
-    const handleDelete = async () => {
-        deleteApplication(id)
+    if (action === MENU_ACTION.REMOVE_FROM_ARCHIVE) {
+      void handleRemoveFromArchive()
+      return
     }
 
-    return { handleGoToPreview, handleOpenConfirmModal, handleDelete }
+    if (action === MENU_ACTION.MAKE_PRIVATE) {
+      void handleMakePrivate()
+      return
+    }
+
+    if (action === MENU_ACTION.MAKE_PUBLIC) {
+      void handleMakePublic()
+    }
+  }
+
+  return {
+    menuOptions,
+    handleDelete,
+    handleMenuAction,
+    deleteApplication,
+    handleGoToPreview,
+  }
 }

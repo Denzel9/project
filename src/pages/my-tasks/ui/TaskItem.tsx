@@ -1,5 +1,5 @@
 import { Whatshot } from '@mui/icons-material';
-import { Avatar, Box, Chip, Stack, Typography } from '@mui/material';
+import { Avatar, Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
@@ -52,7 +52,7 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
   return (
     <Box
       component={Link}
-      to={`${ROUTES.TASK}/${task.post?.id}?taskId=${task.id}&inviteId=${task.id}`}
+      to={`${ROUTES.TASK}/${task.post?.id}`}
       sx={{
         p: 2,
         height: '100%',
@@ -83,13 +83,13 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
         <Stack
           direction="row"
           spacing={0.75}
-          sx={{ flexWrap: 'wrap', gap: 0.75 }}
+          sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}
         >
           <Chip
             size="small"
+            variant="outlined"
             label={taskConfig?.label}
             color={accentColor}
-            sx={{ opacity: 0.75 }}
           />
 
           {task.urgent && <Whatshot color="error" />}
@@ -181,18 +181,22 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
             >
               {contact.label}
             </Typography>
-            <UserDisplayName user={contact.user} />
+            <UserDisplayName
+              user={contact.user}
+              variant="body2"
+            />
           </Box>
         </Stack>
 
         {task.finalDate && (
-          <Chip
-            size="small"
-            sx={{ opacity: 0.75 }}
-            color={overdue ? 'error' : 'default'}
-            variant={overdue ? 'filled' : 'outlined'}
-            label={`Дедлайн: ${format(new Date(task.finalDate), 'dd.MM.yyyy')}`}
-          />
+          <Tooltip title={overdue ? 'Просрочено' : 'Дедлайн'}>
+            <Chip
+              size="small"
+              variant={'outlined'}
+              color={overdue ? 'error' : 'default'}
+              label={`Дедлайн: ${format(new Date(task.finalDate), 'dd.MM.yyyy')}`}
+            />
+          </Tooltip>
         )}
       </Stack>
     </Box>

@@ -47,6 +47,7 @@ export type PublicationListParams = {
   role?: PublicationRole
   postId?: string
   taskId?: string
+  executorId?: string
   q?: string
   page?: number
   limit?: number

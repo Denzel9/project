@@ -366,7 +366,10 @@ export const TaskTable = ({
                           sx={{ width: 28, height: 28 }}
                         />
                       )}
-                      <UserDisplayName user={task.owner as User} />
+                      <UserDisplayName
+                        user={task.owner as User}
+                        variant="body2"
+                      />
                     </Stack>
                   </TableCell>
 
@@ -426,7 +429,7 @@ export const TaskTable = ({
                     >
                       <TaskActionsMenu
                         task={task}
-                        ownerOnly
+                        ownerOnly={isCompany}
                       />
                     </TableCell>
                   )}

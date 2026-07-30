@@ -12,12 +12,27 @@ import { getUserName } from '../model/utils';
 
 import type { User } from '../model/types';
 
+export type UserDisplayNameVariant = 'h6' | 'subtitle1' | 'body2';
+
+const BADGE_ICON_SIZE: Record<UserDisplayNameVariant, number> = {
+  h6: 20,
+  body2: 16,
+  subtitle1: 18,
+};
+
+const SKELETON_HEIGHT: Record<UserDisplayNameVariant, number> = {
+  h6: 28,
+  body2: 20,
+  subtitle1: 24,
+};
+
 export type UserDisplayNameProps = {
-  user?: Partial<User> | null;
   name?: string;
   isLoading?: boolean;
-  variant?: 'h6' | 'body2';
   sx?: SxProps<Theme>;
+  withBadges?: boolean;
+  user?: Partial<User> | null;
+  variant?: UserDisplayNameVariant;
 };
 
 export const UserDisplayName = ({
@@ -26,16 +41,18 @@ export const UserDisplayName = ({
   name,
   variant = 'h6',
   isLoading = false,
+  withBadges = true,
 }: UserDisplayNameProps) => {
   const displayName = (name ?? getUserName(user))?.trim();
-  const shouldShowBadges = Boolean(displayName) && Boolean(user);
+  const shouldShowBadges = Boolean(displayName) && Boolean(user) && withBadges;
+  const badgeIconSize = BADGE_ICON_SIZE[variant];
 
   if (isLoading) {
     return (
       <Skeleton
         variant="rounded"
         width="100%"
-        height={24}
+        height={SKELETON_HEIGHT[variant]}
       />
     );
   }
@@ -50,7 +67,13 @@ export const UserDisplayName = ({
       spacing={0.75}
       sx={{ alignItems: 'center', minWidth: 0, ...sx }}
     >
-      <Typography variant={variant}>{displayName}</Typography>
+      <Typography
+        variant={variant}
+        sx={{ minWidth: 0 }}
+        noWrap
+      >
+        {displayName}
+      </Typography>
 
       {shouldShowBadges && (
         <>
@@ -62,7 +85,7 @@ export const UserDisplayName = ({
             }
           >
             <Verified
-              sx={{ fontSize: 20, flexShrink: 0 }}
+              sx={{ fontSize: badgeIconSize, flexShrink: 0 }}
               color={user?.isVerified ? 'primary' : 'error'}
             />
           </Tooltip>
@@ -75,7 +98,7 @@ export const UserDisplayName = ({
             }
           >
             <Email
-              sx={{ fontSize: 20, flexShrink: 0 }}
+              sx={{ fontSize: badgeIconSize, flexShrink: 0 }}
               color={user?.isEmailConfirmed ? 'primary' : 'error'}
             />
           </Tooltip>

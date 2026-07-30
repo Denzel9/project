@@ -1,5 +1,18 @@
-import { Delete, Search } from '@mui/icons-material';
-import { IconButton, MenuItem, Stack, TextField } from '@mui/material';
+import {
+  Close,
+  Delete,
+  DownloadOutlined,
+  PrintOutlined,
+  Search,
+} from '@mui/icons-material';
+import {
+  CircularProgress,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  Tooltip,
+} from '@mui/material';
 import { useState } from 'react';
 
 import { USER_ROLE } from '@/entities';
@@ -14,15 +27,26 @@ import { useScroll } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog';
-import { FavoriteSearchPanel } from './FavoriteSearchPanel';
+import { FavoriteViewModeToggle } from './FavoriteViewModeToggle';
 
 import type { FavoriteGroupFilter } from '../model/utils';
+import type {
+  FavoriteTableReportControls,
+  FavoriteViewMode,
+} from '../model/types';
 
 type FavoriteFilterProps = {
   value: FavoriteGroupFilter;
   favoriteType: FavoriteType;
   onChange: (value: FavoriteGroupFilter) => void;
   onTypeChange: (value: FavoriteType) => void;
+  searchQuery: string;
+  isSearchOpen: boolean;
+  onSearchQueryChange: (value: string) => void;
+  onSearchOpenChange: (open: boolean) => void;
+  viewMode: FavoriteViewMode;
+  onViewModeChange: (value: FavoriteViewMode) => void;
+  tableReport?: FavoriteTableReportControls;
 };
 
 const FavoriteFilter = ({
@@ -30,12 +54,17 @@ const FavoriteFilter = ({
   favoriteType,
   onChange,
   onTypeChange,
+  searchQuery,
+  isSearchOpen,
+  onSearchQueryChange,
+  onSearchOpenChange,
+  viewMode,
+  onViewModeChange,
+  tableReport,
 }: FavoriteFilterProps) => {
   const { isScrolled, ref } = useScroll(150);
 
   const { role } = useAuthStore();
-
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -92,6 +121,16 @@ const FavoriteFilter = ({
     }
   };
 
+  const handleToggleSearch = () => {
+    if (isSearchOpen) {
+      onSearchOpenChange(false);
+      onSearchQueryChange('');
+      return;
+    }
+
+    onSearchOpenChange(true);
+  };
+
   const isCompany = role === USER_ROLE.COMPANY;
 
   return (
@@ -115,7 +154,7 @@ const FavoriteFilter = ({
         <Stack
           direction="row"
           spacing={1}
-          sx={{ width: { xs: '100%', md: '50%' } }}
+          sx={{ width: { xs: '100%', md: '50%' }, minWidth: 0 }}
         >
           <TextField
             select
@@ -125,7 +164,7 @@ const FavoriteFilter = ({
             sx={{
               width: {
                 xs: '100%',
-                md: favoriteType === 'POST' ? '50%' : '100%',
+                md: '50%',
               },
             }}
             onChange={e => handleTypeChange(e.target.value as FavoriteType)}
@@ -182,10 +221,66 @@ const FavoriteFilter = ({
         <Stack
           direction="row"
           spacing={1}
+          sx={{ alignItems: 'center', flexShrink: 0 }}
         >
-          <IconButton onClick={() => setIsSearchOpen(true)}>
-            <Search />
+          {isSearchOpen && (
+            <TextField
+              autoFocus
+              label="Поиск"
+              size="small"
+              variant="outlined"
+              value={searchQuery}
+              onChange={event => onSearchQueryChange(event.target.value)}
+              sx={{ width: { xs: 160, sm: 220, md: 300 } }}
+            />
+          )}
+
+          <IconButton onClick={handleToggleSearch}>
+            {isSearchOpen ? <Close /> : <Search />}
           </IconButton>
+
+          {viewMode === 'table' && tableReport && (
+            <>
+              <Tooltip title="Печать">
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isPrinting}
+                  onClick={tableReport.onPrint}
+                >
+                  {tableReport.isPrinting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <PrintOutlined fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Экспорт CSV">
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isExporting}
+                  onClick={tableReport.onExport}
+                >
+                  {tableReport.isExporting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <DownloadOutlined fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+
+          <FavoriteViewModeToggle
+            viewMode={viewMode}
+            onChange={onViewModeChange}
+          />
         </Stack>
       </Stack>
 
@@ -194,13 +289,6 @@ const FavoriteFilter = ({
         isPending={isPending}
         onClose={() => setGroupToDelete(null)}
         onConfirm={() => void handleConfirmDelete()}
-      />
-
-      <FavoriteSearchPanel
-        open={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        groupFilter={value}
-        favoriteType={favoriteType}
       />
     </>
   );

@@ -1,4 +1,8 @@
-import { BusinessOutlined, Favorite, PersonOutlined } from '@mui/icons-material';
+import {
+  BusinessOutlined,
+  Favorite,
+  PersonOutlined,
+} from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -36,6 +40,8 @@ export const FavoriteUserItemCard = ({
       to={`${ROUTES.PROFILE}?userId=${favorite.userId}`}
       sx={{
         p: 2,
+        width: '100%',
+        height: '100%',
         display: 'flex',
         gap: 2,
         color: 'inherit',
@@ -99,11 +105,8 @@ export const FavoriteUserItemCard = ({
         <Stack
           direction="row"
           spacing={2}
-          sx={{ color: 'text.secondary' }}
+          sx={{ color: 'text.secondary', mt: 'auto' }}
         >
-          <Typography variant="caption">
-            Подписчиков: {user.followers}
-          </Typography>
           <Typography variant="caption">
             Добавлено: {format(new Date(favorite.savedAt), 'dd.MM.yyyy')}
           </Typography>

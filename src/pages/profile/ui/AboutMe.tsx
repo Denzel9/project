@@ -2,7 +2,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { formatDate } from 'date-fns';
 
 import { MY_PARAMETERS_LABELS, type Person } from '@/entities/user';
-import { FormBlock } from '@/shared';
+import { EmptyBlock, FormBlock } from '@/shared';
 
 import { UserCardItem } from './UserCardItem';
 
@@ -28,14 +28,11 @@ export const AboutMe = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
-        <Typography
-          sx={{ fontSize: { xs: '24px', md: '34px' }, opacity: 0.3 }}
-          color="info"
-        >
-          Нет данных
-        </Typography>
+        <EmptyBlock title="Нет данных" />
       </Box>
     );
   }

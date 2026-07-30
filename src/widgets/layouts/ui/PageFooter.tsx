@@ -1,9 +1,10 @@
-import { Cyclone } from '@mui/icons-material';
 import { Box, Stack, Typography } from '@mui/material';
 import { Link } from 'react-router';
 
 import { BASE_COLOR } from '@/app/index';
 import { ROUTES } from '@/shared';
+
+import logo from '../../../../public/Mark.png';
 
 const FOOTER_LINKS = [
   { label: 'Настройки', path: ROUTES.SETTINGS },
@@ -45,22 +46,12 @@ export const PageFooter = () => {
           justifyContent: 'space-between',
         }}
       >
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center' }}
-        >
-          <Cyclone
-            color="primary"
-            sx={{ fontSize: { xs: 28, md: 32 } }}
-          />
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, lineHeight: 1 }}
-          >
-            NIKS<span style={{ color: BASE_COLOR }}>SENS</span>
-          </Typography>
-        </Stack>
+        <img
+          src={logo}
+          alt="NIKSENS"
+          width={40}
+          height={40}
+        />
 
         <Stack
           direction={{ xs: 'column', md: 'row' }}

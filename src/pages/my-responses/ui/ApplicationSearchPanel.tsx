@@ -25,16 +25,25 @@ import { ApplicationSearchResultItem } from './ApplicationSearchResultItem';
 type ApplicationSearchPanelProps = {
   open: boolean;
   onClose: () => void;
+  query?: string;
+  onQueryChange?: (value: string) => void;
 };
 
 export const ApplicationSearchPanel = ({
   open,
   onClose,
+  query: controlledQuery,
+  onQueryChange,
 }: ApplicationSearchPanelProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const navigate = useNavigate();
 
-  const [query, setQuery] = useState('');
+  const isControlled =
+    controlledQuery !== undefined && onQueryChange !== undefined;
+  const [internalQuery, setInternalQuery] = useState('');
+  const query = isControlled ? controlledQuery : internalQuery;
+  const setQuery = isControlled ? onQueryChange : setInternalQuery;
+
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<Application[]>([]);
@@ -55,15 +64,15 @@ export const ApplicationSearchPanel = ({
   }, [debouncedQuery]);
 
   useEffect(() => {
-    if (!open) {
+    if (!open && !isControlled) {
       setTimeout(() => {
-        setQuery('');
+        setInternalQuery('');
         setDebouncedQuery('');
         setPage(1);
         setItems([]);
       }, 0);
     }
-  }, [open]);
+  }, [open, isControlled]);
 
   const { data, isLoading, isFetching, error } = useSearchMyApplicationsQuery({
     q: debouncedQuery,

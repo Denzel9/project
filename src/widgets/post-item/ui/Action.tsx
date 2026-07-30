@@ -1,7 +1,7 @@
 import { Chat } from '@mui/icons-material';
 import { Box, Button, IconButton, Tooltip } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import {
   APPLICATION_STATUS_ENUM,
@@ -9,6 +9,7 @@ import {
   useWithdrawApplicationMutation,
   type ApplicationStatus,
 } from '@/entities/application';
+import { useRequireEmailConfirmed } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 import { FavoriteButton } from '@/widgets';
 
@@ -51,6 +52,7 @@ export const Action = ({
     useCreateApplicationMutation();
   const { mutate: withdrawApplication, isPending: isWithdrawing } =
     useWithdrawApplicationMutation();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   useEffect(() => {
     setTimeout(() => {
@@ -74,6 +76,8 @@ export const Action = ({
   const canWithdraw = currentApplicationStatus === APPLICATION_STATUS_ENUM.NEW;
 
   const handleApply = (message: string) => {
+    if (!requireEmailConfirmed()) return;
+
     createApplication(
       { postId, message },
       {
@@ -89,6 +93,7 @@ export const Action = ({
 
   const handleWithdraw = () => {
     if (!currentApplicationId || !canWithdraw || isApplicationPending) return;
+    if (!requireEmailConfirmed()) return;
 
     withdrawApplication(currentApplicationId, {
       onSuccess: () => {
@@ -102,6 +107,7 @@ export const Action = ({
   };
 
   const handleOpenChat = () => {
+    if (!requireEmailConfirmed()) return;
     navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
   };
 
@@ -109,17 +115,21 @@ export const Action = ({
     <Button
       variant="contained"
       disabled={isApplicationPending}
-      onClick={() => setIsApplyDialogOpen(true)}
+      onClick={() => {
+        if (!requireEmailConfirmed()) return;
+        setIsApplyDialogOpen(true);
+      }}
     >
       Откликнуться
     </Button>
   ) : (
     <Button
       size="small"
-      target="_blank"
-      component={Link}
       variant="outlined"
-      to={`${ROUTES.CHAT}?recipientId=${ownerId}`}
+      onClick={() => {
+        if (!requireEmailConfirmed()) return;
+        navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
+      }}
     >
       Написать
     </Button>

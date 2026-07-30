@@ -122,39 +122,59 @@ export const fetchPartnerApplicationCompanies = async (
 export const usePartnerExecutorsQuery = (
   params?: PartnerTaskContactsParams,
   options?: { enabled?: boolean },
-) =>
-  useQuery({
-    queryKey: partnerKeys.executors(params),
-    queryFn: () => fetchPartnerExecutors(params),
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 20;
+  const { page: _page, limit: _limit, ...filterParams } = params ?? {};
+
+  return useQuery({
+    queryKey: partnerKeys.executors({ ...filterParams, page, limit }),
+    queryFn: () => fetchPartnerExecutors(filterParams, page, limit),
     enabled: options?.enabled ?? true,
   });
+};
 
 export const usePartnerCustomersQuery = (
   params?: PartnerTaskContactsParams,
   options?: { enabled?: boolean },
-) =>
-  useQuery({
-    queryKey: partnerKeys.customers(params),
-    queryFn: () => fetchPartnerCustomers(params),
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 20;
+  const { page: _page, limit: _limit, ...filterParams } = params ?? {};
+
+  return useQuery({
+    queryKey: partnerKeys.customers({ ...filterParams, page, limit }),
+    queryFn: () => fetchPartnerCustomers(filterParams, page, limit),
     enabled: options?.enabled ?? true,
   });
+};
 
 export const usePartnerApplicantsQuery = (
   params?: PartnerApplicantsParams,
   options?: { enabled?: boolean },
-) =>
-  useQuery({
-    queryKey: partnerKeys.applicants(params),
-    queryFn: () => fetchPartnerApplicants(params),
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 20;
+  const { page: _page, limit: _limit, ...filterParams } = params ?? {};
+
+  return useQuery({
+    queryKey: partnerKeys.applicants({ ...filterParams, page, limit }),
+    queryFn: () => fetchPartnerApplicants(filterParams, page, limit),
     enabled: options?.enabled ?? true,
   });
+};
 
 export const usePartnerApplicationCompaniesQuery = (
   params?: PartnerApplicationCompaniesParams,
   options?: { enabled?: boolean },
-) =>
-  useQuery({
-    queryKey: partnerKeys.applicationCompanies(params),
-    queryFn: () => fetchPartnerApplicationCompanies(params),
+) => {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 20;
+  const { page: _page, limit: _limit, ...filterParams } = params ?? {};
+
+  return useQuery({
+    queryKey: partnerKeys.applicationCompanies({ ...filterParams, page, limit }),
+    queryFn: () => fetchPartnerApplicationCompanies(filterParams, page, limit),
     enabled: options?.enabled ?? true,
   });
+};

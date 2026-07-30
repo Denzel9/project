@@ -207,6 +207,8 @@ export type PostList = {
 export type PostOwner = {
   id: string
   avatar: string
+  followers?: number
+  completedTasksCount?: number
   creatorProfile: {
     name: string
     lastName: string
@@ -284,6 +286,7 @@ export type PostListParams = {
   q?: string
   title?: string
   urgent?: boolean
+  hasPhoto?: boolean
   chips?: string[]
   categories?: string[]
   platforms?: Platform[]

@@ -1,22 +1,30 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { VisibilityOff, Visibility } from '@mui/icons-material';
-import { Box, Button, IconButton } from '@mui/material';
+import {
+  HelpOutlineOutlined,
+  VisibilityOffOutlined,
+  VisibilityOutlined,
+} from '@mui/icons-material';
+import { Box, Button, IconButton, Stack, Tooltip } from '@mui/material';
 import axios from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
-import { RHFInput } from '@/shared/ui/rhf';
 import { prefetchUserConfig } from '@/entities/user-config';
 import { queryClient } from '@/shared/api';
+import { RHFInput } from '@/shared/ui/rhf';
 
 import {
   defaultRegistrationCreatorValues,
   registrationCreatorSchema,
+  type RegistrationCreatorFormType,
   type RegistrationCreatorRequest,
 } from '../model';
 import { useRegistrationUserMutation } from '../model/api/api';
 import { useAuthStore } from '../model/store/store';
+import { PASSWORD_RULES_HINT } from '../model/utils/validation';
+
+import { AuthLegalNotice } from './AuthLegalNotice';
 
 type RegistrationCreatorFormProps = {
   onSuccess?: () => void;
@@ -28,6 +36,7 @@ const RegistrationCreatorForm = ({
   onError,
 }: RegistrationCreatorFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutateAsync: registrationCreator } = useRegistrationUserMutation();
 
@@ -43,16 +52,27 @@ const RegistrationCreatorForm = ({
 
   const { handleSubmit, control } = methods;
 
-  const onSubmit = async (formData: RegistrationCreatorRequest) => {
+  const onSubmit = async (formData: RegistrationCreatorFormType) => {
+    const payload: RegistrationCreatorRequest = {
+      name: formData.name,
+      lastName: formData.lastName,
+      email: formData.email,
+      password: formData.password,
+    };
+
     try {
-      const data = await registrationCreator(formData);
+      const data = await registrationCreator(payload);
 
       if (data?.data?.user) {
-        setAuth(
-          data.data.user.id,
-          data.data.user.role,
-          data.data.user.membershipRole
-        );
+        setAuth({
+          id: data.data.user.id,
+          role: data.data.user.role,
+          membershipRole: data.data.user.membershipRole,
+          isPrime: Boolean(data.data.user.isPrime),
+          primeStatus: data.data.user.primeStatus ?? 'NONE',
+          primeExpiresAt: data.data.user.primeExpiresAt ?? null,
+          isEmailConfirmed: Boolean(data.data.user.isEmailConfirmed),
+        });
 
         try {
           await prefetchUserConfig(queryClient);
@@ -110,13 +130,56 @@ const RegistrationCreatorForm = ({
             name="password"
             control={control}
             endAdornment={
-              <IconButton onClick={() => setShowPassword(!showPassword)}>
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
+              <Stack
+                spacing={1}
+                direction="row"
+                sx={{ alignItems: 'center' }}
+              >
+                <Tooltip
+                  title={PASSWORD_RULES_HINT}
+                  slotProps={{
+                    tooltip: {
+                      sx: { whiteSpace: 'pre-line' },
+                    },
+                  }}
+                >
+                  <HelpOutlineOutlined
+                    color="info"
+                    sx={{ cursor: 'help' }}
+                  />
+                </Tooltip>
+                <IconButton onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? (
+                    <VisibilityOffOutlined />
+                  ) : (
+                    <VisibilityOutlined />
+                  )}
+                </IconButton>
+              </Stack>
             }
             props={{
               label: 'Пароль',
               type: showPassword ? 'text' : 'password',
+            }}
+          />
+
+          <RHFInput
+            name="confirmPassword"
+            control={control}
+            endAdornment={
+              <IconButton
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <VisibilityOffOutlined />
+                ) : (
+                  <VisibilityOutlined />
+                )}
+              </IconButton>
+            }
+            props={{
+              label: 'Повторите пароль',
+              type: showConfirmPassword ? 'text' : 'password',
             }}
           />
 
@@ -128,6 +191,8 @@ const RegistrationCreatorForm = ({
           >
             Зарегистрироваться
           </Button>
+
+          <AuthLegalNotice actionLabel="Зарегистрироваться" />
         </Box>
       </form>
     </FormProvider>

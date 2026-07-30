@@ -1,10 +1,16 @@
-import { Box } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 import { PickerDay } from '@mui/x-date-pickers/PickerDay';
 
 import {
+  CALENDAR_DAY_CELL_HEIGHT,
+  CALENDAR_DAY_CELL_WIDTH,
+  CALENDAR_DAY_SIZE,
+} from '../model/styles';
+import {
+  getCalendarDayStats,
   getCalendarDaySx,
+  getCalendarDayTooltip,
   getDateCategory,
-  hasOverdueDeadlineOnDate,
   toCalendarDateKey,
   type CalendarEvent,
 } from '../model/utils';
@@ -22,40 +28,84 @@ export const CalendarPickerDay = ({
   ...props
 }: CalendarPickerDayProps) => {
   const dateKey = toCalendarDateKey(day);
-  const hasEvents = events.some(event => event.dateKey === dateKey);
+  const stats = getCalendarDayStats(events, dateKey);
   const category = getDateCategory(dateKey);
-  const hasOverdue = hasOverdueDeadlineOnDate(events, dateKey);
+  const hasEvents = stats.total > 0;
+  const tooltip = getCalendarDayTooltip(stats);
+
+  const markerColor = stats.overdue
+    ? 'error.main'
+    : category === 'today'
+      ? 'primary.main'
+      : category === 'future'
+        ? 'info.main'
+        : 'text.disabled';
 
   return (
-    <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-      <PickerDay
-        {...props}
-        day={day}
-        selected={selected}
-        sx={getCalendarDaySx(dateKey, selected)}
-      />
-
-      {hasEvents && (
-        <Box
+    <Tooltip
+      title={tooltip}
+      arrow
+      disableHoverListener={!hasEvents}
+      enterDelay={400}
+    >
+      <Box
+        sx={{
+          width: CALENDAR_DAY_CELL_WIDTH,
+          height: CALENDAR_DAY_CELL_HEIGHT,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+        }}
+      >
+        <PickerDay
+          {...props}
+          day={day}
+          selected={selected}
           sx={{
-            position: 'absolute',
-            bottom: 4,
-            left: '50%',
-            width: hasOverdue ? 8 : 6,
-            height: hasOverdue ? 8 : 6,
-            borderRadius: '50%',
-            transform: 'translateX(-50%)',
-            pointerEvents: 'none',
-            bgcolor: hasOverdue
-              ? 'error.main'
-              : category === 'today'
-                ? 'primary.main'
-                : category === 'future'
-                  ? 'info.main'
-                  : 'text.secondary',
+            ...getCalendarDaySx(dateKey, selected),
+            width: CALENDAR_DAY_SIZE,
+            height: CALENDAR_DAY_SIZE,
           }}
         />
-      )}
-    </Box>
+
+        <Box
+          sx={{
+            height: 10,
+            mt: 0.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.35,
+          }}
+        >
+          {hasEvents && (
+            <>
+              <Box
+                sx={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  bgcolor: markerColor,
+                }}
+              />
+              {stats.total > 1 && stats.deadlines > 0 && stats.created > 0 && (
+                <Box
+                  sx={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    bgcolor:
+                      markerColor === 'error.main'
+                        ? 'error.light'
+                        : 'text.disabled',
+                  }}
+                />
+              )}
+            </>
+          )}
+        </Box>
+      </Box>
+    </Tooltip>
   );
 };

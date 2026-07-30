@@ -1,5 +1,6 @@
 import {
   AssignmentLateOutlined,
+  CancelOutlined,
   EventBusyOutlined,
   FactCheckOutlined,
   PendingActionsOutlined,
@@ -32,6 +33,10 @@ export const CARD_CONFIG: Record<
   'no-executor-assign': {
     icon: AssignmentLateOutlined,
     accentColor: 'info',
+  },
+  cancelled: {
+    icon: CancelOutlined,
+    accentColor: 'error',
   },
   overdue: {
     icon: EventBusyOutlined,

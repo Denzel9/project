@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   TASK_ACTIVITY_LABELS,
   useAllTaskActivitiesInfiniteQuery,
+  useTasksQuery,
   type Task,
   type TaskActivityType,
 } from '@/entities';
@@ -29,6 +30,8 @@ import {
 } from '../model/utils';
 
 import { DashboardActivityListItem } from './DashboardActivityListItem';
+
+const ACTIVITY_FILTER_TASKS_LIMIT = 200;
 
 export const DashboardActivityPanel = () => {
   const [activityType, setActivityType] = useState<
@@ -49,6 +52,11 @@ export const DashboardActivityPanel = () => {
       ...(taskId !== 'all' && { taskId }),
     });
 
+  const { data: tasksData } = useTasksQuery({
+    page: 1,
+    limit: ACTIVITY_FILTER_TASKS_LIMIT,
+  });
+
   const feedItems = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
     [data?.pages]
@@ -57,26 +65,63 @@ export const DashboardActivityPanel = () => {
   const taskMap = useMemo(() => {
     const map = new Map<string, Task>();
 
-    feedItems.forEach(item => {
-      if (!item.task || map.has(item.taskId)) return;
+    tasksData?.items.forEach(task => {
+      map.set(task.id, task);
+    });
 
-      map.set(item.taskId, {
-        id: item.task.id,
-        title: item.task.title ?? '',
-        ownerId: item.task.ownerId,
-        executorId: item.task.executorId ?? '',
-        postId: item.task.postId ?? '',
-        post: item.task.post,
-      } as Task);
+    feedItems.forEach(item => {
+      const existing = map.get(item.taskId);
+      const embedded = item.task;
+
+      if (embedded) {
+        map.set(item.taskId, {
+          id: embedded.id,
+          title: embedded.title || existing?.title || '',
+          ownerId: embedded.ownerId || existing?.ownerId || '',
+          executorId: embedded.executorId ?? existing?.executorId ?? '',
+          postId: embedded.postId ?? existing?.postId ?? '',
+          post: embedded.post ?? existing?.post,
+        } as Task);
+        return;
+      }
+
+      if (!existing) {
+        map.set(item.taskId, {
+          id: item.taskId,
+          title: '',
+          ownerId: '',
+          executorId: '',
+          postId: '',
+        } as Task);
+      }
     });
 
     return map;
-  }, [feedItems]);
+  }, [feedItems, tasksData]);
 
-  const taskOptions = useMemo(
-    () => getDashboardTaskOptions(Array.from(taskMap.values())),
-    [taskMap]
-  );
+  const taskOptions = useMemo(() => {
+    const feedTaskIds = new Set(feedItems.map(item => item.taskId));
+
+    const tasksInFeed = Array.from(taskMap.values()).filter(task =>
+      feedTaskIds.has(task.id)
+    );
+
+    // Пока фильтр по задаче активен, в ленте может быть только одна задача —
+    // подмешиваем полный список задач, чтобы селект не опустел.
+    if (
+      taskId !== 'all' &&
+      tasksInFeed.length <= 1 &&
+      tasksData?.items?.length
+    ) {
+      return getDashboardTaskOptions(tasksData.items);
+    }
+
+    if (tasksInFeed.length > 0) {
+      return getDashboardTaskOptions(tasksInFeed);
+    }
+
+    return getDashboardTaskOptions(tasksData?.items ?? []);
+  }, [feedItems, taskMap, taskId, tasksData]);
 
   const items = useMemo(
     () => feedItems.map(item => mapActivityFeedItem(item, taskMap)),
@@ -199,14 +244,6 @@ export const DashboardActivityPanel = () => {
                 />
               )}
             </Stack>
-
-            <Typography
-              variant="caption"
-              color="info"
-              sx={{ lineHeight: 1.7, display: { xs: 'none', md: 'block' } }}
-            >
-              Последние события по задачам
-            </Typography>
           </Stack>
         </Stack>
 

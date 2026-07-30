@@ -6,7 +6,10 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
+import { useMemo } from 'react';
 import { NavLink } from 'react-router';
+
+import { useAuthStore } from '@/features/auth';
 
 import { SETTINGS_MENU_SECTIONS } from '../../model/constants';
 
@@ -22,10 +25,19 @@ export const SettingsNavSections = ({
   variant = 'sidebar',
 }: SettingsNavSectionsProps) => {
   const isDrawer = variant === 'drawer';
+  const isPrime = useAuthStore(state => state.isPrime);
+
+  const sections = useMemo(
+    () =>
+      isPrime
+        ? SETTINGS_MENU_SECTIONS
+        : SETTINGS_MENU_SECTIONS.filter(section => section.title !== 'CRM'),
+    [isPrime]
+  );
 
   return (
     <>
-      {SETTINGS_MENU_SECTIONS.map(section => (
+      {sections.map(section => (
         <Box
           key={section.title}
           sx={{ mb: isDrawer ? 2 : 3, mt: isDrawer ? 2 : 0 }}

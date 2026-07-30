@@ -7,6 +7,7 @@ import {
   getContentStyleLabel,
   getUsageRightsLabel,
 } from '@/entities/post';
+import { LocationAutocomplete } from '@/shared';
 import { RHFInput, RHFSwitch } from '@/shared/ui/rhf';
 
 import { FormSection } from './components/FormSection';
@@ -28,7 +29,10 @@ export const MetaSection = () => (
     title="Категории и теги"
     description="Помогают блогерам находить объявление"
   >
-    <Stack spacing={3}>
+    <Stack
+      spacing={3}
+      sx={{ width: { xs: '100%', md: '50%' } }}
+    >
       <TagsInput
         name="categories"
         label="Категории"
@@ -54,37 +58,30 @@ export const MetaSection = () => (
 );
 
 export const LocationSection = () => {
-  const { control } = useFormContext();
+  const { control, setValue } = useFormContext();
 
   return (
     <FormSection title="Локация">
-      <Stack spacing={2}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-        >
-          <RHFInput
-            name="locationCountry"
-            control={control}
-            props={{ fullWidth: true, label: 'Страна' }}
-          />
-          <RHFInput
-            name="locationCity"
-            control={control}
-            props={{ fullWidth: true, label: 'Город' }}
-          />
-        </Stack>
-
-        <RHFInput
+      <Stack
+        spacing={2}
+        sx={{ width: { xs: '100%', md: '50%' } }}
+      >
+        <LocationAutocomplete
           name="locationAddress"
           control={control}
-          props={{ fullWidth: true, label: 'Адрес' }}
-        />
-
-        <RHFSwitch
-          name="shootingRequired"
-          control={control}
-          label="Нужна съёмка на месте"
+          label="Местоположение"
+          onPlaceSelect={place => {
+            const address = place?.address;
+            setValue(
+              'locationCity',
+              address?.city ||
+                address?.town ||
+                address?.village ||
+                address?.municipality ||
+                ''
+            );
+            setValue('locationCountry', address?.country || '');
+          }}
         />
       </Stack>
     </FormSection>
@@ -96,7 +93,10 @@ export const BloggerRequirementsSection = () => {
 
   return (
     <FormSection title="Требования к блогеру">
-      <Stack spacing={3}>
+      <Stack
+        spacing={3}
+        sx={{ width: { xs: '100%', md: '50%' } }}
+      >
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={2}
@@ -157,7 +157,10 @@ export const CooperationSection = () => {
 
   return (
     <FormSection title="Условия сотрудничества">
-      <Stack spacing={3}>
+      <Stack
+        spacing={3}
+        sx={{ width: { xs: '100%', md: '50%' } }}
+      >
         <Stack
           direction="column"
           spacing={2}
@@ -237,7 +240,10 @@ export const BriefSection = () => {
 
   return (
     <FormSection title="Бриф">
-      <Stack spacing={3}>
+      <Stack
+        spacing={3}
+        sx={{ width: { xs: '100%', md: '50%' } }}
+      >
         <RHFInput
           name="briefTaskDescription"
           control={control}

@@ -12,8 +12,6 @@ import { useState } from 'react';
 import { Link as RouterLink } from 'react-router';
 
 import {
-  formatPlatforms,
-  formatPlacementFormats,
   formatPostBudget,
   formatPostBudgetDetails,
   getWorkFormatLabel,
@@ -70,7 +68,6 @@ const ChipRow = ({ label, items }: { label: string; items: string[] }) => {
         {items.map(item => (
           <Chip
             key={item}
-            size="small"
             label={item}
             sx={{ bgcolor: 'white' }}
           />
@@ -216,18 +213,6 @@ export const TaskPostBrief = ({ post }: TaskPostBriefProps) => {
                 {getWorkFormatLabel(post.workFormat)}
               </DetailItem>
             )}
-
-            {post.platforms?.length ? (
-              <DetailItem label="Площадки">
-                {formatPlatforms(post.platforms)}
-              </DetailItem>
-            ) : null}
-
-            {post.placementFormats?.length ? (
-              <DetailItem label="Форматы размещения">
-                {formatPlacementFormats(post.placementFormats)}
-              </DetailItem>
-            ) : null}
           </Box>
 
           <ChipRow

@@ -35,11 +35,12 @@ export const TaskStatusStepper = ({ status }: TaskStatusStepperProps) => {
       alternativeLabel
       activeStep={activeStep}
       sx={{
-        border: '1px solid',
-        borderColor: 'divider',
+        mb: 2,
         bgcolor: 'white',
+        border: '1px solid',
         p: { xs: 2, md: 3 },
         borderRadius: '32px',
+        borderColor: 'divider',
         '& .MuiStepLabel-label': {
           mt: 1,
           fontSize: { xs: '0.7rem', sm: '0.8rem' },

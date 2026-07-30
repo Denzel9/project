@@ -14,11 +14,7 @@ import {
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
 
-import {
-  useSearchTaskCommentsQuery,
-  type TaskComment,
-} from '@/entities/task';
-import type { User } from '@/entities/user';
+import { useSearchTaskCommentsQuery, type TaskComment } from '@/entities/task';
 
 import { TaskCommentItem } from './TaskCommentItem';
 
@@ -27,9 +23,9 @@ type TaskCommentSearchPanelProps = {
   onClose: () => void;
   taskId: string;
   currentUserId: string | null;
-  userAvatar?: string;
-  contact?: User;
   onOpenGallery: (media: TaskComment['media'], initialSlide: number) => void;
+  query?: string;
+  onQueryChange?: (value: string) => void;
 };
 
 export const TaskCommentSearchPanel = ({
@@ -37,14 +33,19 @@ export const TaskCommentSearchPanel = ({
   onClose,
   taskId,
   currentUserId,
-  userAvatar,
-  contact,
   onOpenGallery,
+  query: controlledQuery,
+  onQueryChange,
 }: TaskCommentSearchPanelProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [query, setQuery] = useState('');
+  const isControlled =
+    controlledQuery !== undefined && onQueryChange !== undefined;
+  const [internalQuery, setInternalQuery] = useState('');
+  const query = isControlled ? controlledQuery : internalQuery;
+  const setQuery = isControlled ? onQueryChange : setInternalQuery;
+
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<TaskComment[]>([]);
@@ -65,19 +66,19 @@ export const TaskCommentSearchPanel = ({
   }, [debouncedQuery, taskId]);
 
   useEffect(() => {
-    if (!open) {
+    if (!open && !isControlled) {
       setTimeout(() => {
-        setQuery('');
+        setInternalQuery('');
         setDebouncedQuery('');
         setPage(1);
         setItems([]);
       }, 0);
     }
-  }, [open]);
+  }, [open, isControlled]);
 
   const { data, isLoading, isFetching, error } = useSearchTaskCommentsQuery(
     open ? taskId : null,
-    { q: debouncedQuery, page, limit: 20 },
+    { q: debouncedQuery, page, limit: 20 }
   );
 
   useEffect(() => {
@@ -191,8 +192,6 @@ export const TaskCommentSearchPanel = ({
             <TaskCommentItem
               comment={comment}
               currentUserId={currentUserId}
-              userAvatar={userAvatar}
-              contactAvatar={contact?.avatar ?? undefined}
               highlight={debouncedQuery}
               showActions={false}
               onOpenGallery={onOpenGallery}

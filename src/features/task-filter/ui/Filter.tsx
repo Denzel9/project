@@ -29,6 +29,12 @@ import { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { TASK_STATUS_LABELS } from '@/entities';
+import {
+  getPartnerName,
+  mapPartnerUserToRow,
+  usePartnerCustomersQuery,
+  usePartnerExecutorsQuery,
+} from '@/entities/partner';
 import { useScroll, DateCalendarFilter } from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/constants';
@@ -36,8 +42,8 @@ import { useMyTaskFilterStore } from '../model/store';
 
 import { AddTaskDialog } from './AddTaskDialog';
 import { FastButtonGroup } from './components/FastButtonGroup';
+import { FilterAutocomplete } from './components/FilterAutocomplete';
 import { TaskViewModeToggle } from './components/TaskViewModeToggle';
-import { TaskSearchPanel } from './TaskSearchPanel';
 
 import type { TaskStatusFilter } from '../model/utils';
 
@@ -67,23 +73,59 @@ export const MyTaskFilter = ({
 
   const {
     postId,
+    executorId,
     status,
     viewMode,
     extraFilter,
     setStatus,
     setPostId,
+    setExecutorId,
     updatedDate,
     setUpdatedDate,
     setExtraFilter,
     resetKanbanColumns,
     toggleKanbanColumn,
     visibleKanbanColumns,
+    isSearchOpen,
+    searchQuery,
+    setIsSearchOpen,
+    setSearchQuery,
   } = useMyTaskFilterStore();
+
+  const { data: executorsData, isLoading: isExecutorsLoading } =
+    usePartnerExecutorsQuery({ sort: 'name' }, { enabled: isCompany });
+  const { data: customersData, isLoading: isCustomersLoading } =
+    usePartnerCustomersQuery({ sort: 'name' }, { enabled: !isCompany });
+
+  const partnerOptions = useMemo(() => {
+    const items = isCompany
+      ? (executorsData?.items ?? [])
+      : (customersData?.items ?? []);
+
+    return items.map(item => ({
+      id: item.id,
+      label: isCompany ? mapPartnerUserToRow(item).name : getPartnerName(item),
+    }));
+  }, [customersData?.items, executorsData?.items, isCompany]);
+
+  const isPartnersLoading = isCompany ? isExecutorsLoading : isCustomersLoading;
+
+  const postOptions = useMemo(
+    () =>
+      (initialPosts ?? [])
+        .filter((post): post is { id: string; title?: string } =>
+          Boolean(post.id)
+        )
+        .map(post => ({
+          id: post.id,
+          label: post.title?.trim() || 'Без названия',
+        })),
+    [initialPosts]
+  );
 
   const isUrgentActive = extraFilter === 'urgent';
 
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [columnsAnchorEl, setColumnsAnchorEl] =
     useState<HTMLButtonElement | null>(null);
 
@@ -101,14 +143,16 @@ export const MyTaskFilter = ({
     () =>
       (viewMode !== 'kanban' && status !== 'all') ||
       postId !== 'all' ||
+      executorId !== 'all' ||
       extraFilter !== null ||
       updatedDate !== null,
-    [viewMode, status, postId, extraFilter, updatedDate],
+    [viewMode, status, postId, executorId, extraFilter, updatedDate]
   );
 
   const handleResetSelectFilters = () => {
     setStatus('all');
     setPostId('all');
+    setExecutorId('all');
     setExtraFilter(null);
     setUpdatedDate(null);
   };
@@ -126,6 +170,7 @@ export const MyTaskFilter = ({
         className="print-no-print"
         sx={{
           p: 4,
+          pb: 1,
           mb: 2,
           bgcolor: 'white',
           borderRadius: '32px',
@@ -171,24 +216,22 @@ export const MyTaskFilter = ({
               </TextField>
             )}
 
-            <TextField
-              select
+            <FilterAutocomplete
               label="Пост"
               value={postId}
-              size="small"
-              onChange={e => setPostId(e.target.value)}
-              sx={{ flex: 1, width: '250px' }}
-            >
-              <MenuItem value="all">Все</MenuItem>
-              {initialPosts?.map(({ id, title }) => (
-                <MenuItem
-                  key={id}
-                  value={id}
-                >
-                  {title}
-                </MenuItem>
-              ))}
-            </TextField>
+              options={postOptions}
+              onChange={setPostId}
+              sx={{ width: 250, flex: '0 0 250px' }}
+            />
+
+            <FilterAutocomplete
+              label={isCompany ? 'Исполнитель' : 'Компания'}
+              value={executorId}
+              options={partnerOptions}
+              loading={isPartnersLoading}
+              onChange={setExecutorId}
+              sx={{ width: 250, flex: '0 0 250px' }}
+            />
 
             <Tooltip
               title={updatedDate ? `Дата: ${updatedDate}` : 'Фильтр по дате'}
@@ -277,23 +320,55 @@ export const MyTaskFilter = ({
             direction="row"
             sx={{
               width: '100%',
-              alignItems: 'end',
+              alignItems: 'center',
               justifyContent: 'space-between',
               gap: 1,
-              mt: 2,
+              height: '64px',
             }}
           >
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <FastButtonGroup />
+            <Box sx={{ flex: 1 }}>
+              <FastButtonGroup isSearchOpen={isSearchOpen} />
             </Box>
 
             <Stack
               direction="row"
               spacing={0.5}
-              sx={{ flexShrink: 0, alignItems: 'center' }}
+              sx={{ alignItems: 'center', minWidth: '150px' }}
             >
-              {viewMode === 'table' && tableReport && (
-                <>
+              {isSearchOpen && (
+                <TextField
+                  autoFocus
+                  size="small"
+                  label="Поиск"
+                  variant="outlined"
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                  sx={{
+                    width: { xs: 160, sm: 220, md: 300 },
+                    transition: 'width .5s ease-in-out',
+                  }}
+                />
+              )}
+
+              <Tooltip title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
+                <IconButton
+                  size="small"
+                  color={isSearchOpen ? 'primary' : 'default'}
+                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                >
+                  {isSearchOpen ? (
+                    <Close fontSize="small" />
+                  ) : (
+                    <Search fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              {tableReport && (
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                >
                   <Tooltip title="Печать">
                     <span>
                       <IconButton
@@ -335,18 +410,8 @@ export const MyTaskFilter = ({
                       </IconButton>
                     </span>
                   </Tooltip>
-                </>
+                </Stack>
               )}
-
-              <Tooltip title="Поиск">
-                <IconButton
-                  size="small"
-                  color={isSearchOpen ? 'primary' : 'default'}
-                  onClick={() => setIsSearchOpen(true)}
-                >
-                  <Search fontSize="small" />
-                </IconButton>
-              </Tooltip>
 
               {viewMode === 'kanban' && (
                 <Tooltip title="Колонки Kanban">
@@ -434,11 +499,6 @@ export const MyTaskFilter = ({
       <AddTaskDialog
         open={isAddTaskOpen}
         onClose={() => setIsAddTaskOpen(false)}
-      />
-
-      <TaskSearchPanel
-        open={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
       />
     </>
   );

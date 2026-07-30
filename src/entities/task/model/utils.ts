@@ -1,6 +1,20 @@
 import { isPast, startOfDay } from 'date-fns'
 
 import {
+  formatBloggerRequirements,
+  formatCooperationDetails,
+  formatPostBrief,
+  formatPostDeliverables,
+  formatPostLocation,
+  type PostBrief,
+  type PostDeliverable,
+  type PostLocation,
+  type BloggerRequirements,
+  type CooperationDetails,
+  type UploadMediaResponse,
+} from '@/entities/post'
+
+import {
   TaskActivityType,
   TASK_ACTIVITY_LABELS,
   TASK_STATUS_ENUM,
@@ -9,31 +23,31 @@ import {
   type TaskActivityPayload,
   type TaskMedia,
   type TaskStatus,
+  type TaskComment,
   type TaskCommentMedia,
   type TaskWithCommentsItem,
   type TaskWithCommentsRawItem,
 } from './types'
 
 import type { Photo } from '@/entities/photo'
-import type { UploadMediaResponse } from '@/entities/post'
 
 export const mapTaskMediaToPhotos = (media: TaskMedia[]): Photo[] =>
   media.map(item => ({
     id: item.id,
     url: item.url,
     key: item.key,
-    mimeType: item.mimeType,
     size: item.size,
+    mimeType: item.mimeType,
   }))
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  COMPLETED: 'Завершена',
   PREPARING: 'Подготовка',
-  PENDING_APPROVAL: 'На согласовании',
+  CHECKING: 'На проверке',
   IN_PROGRESS: 'В работе',
   REVISION: 'На доработке',
-  COMPLETED: 'Завершена',
-  CANCELLED: 'Отменена',
-  CHECKING: 'На проверке',
+  CANCELLED: 'Отменена заказчиком',
+  PENDING_APPROVAL: 'На согласовании',
   CANCELLED_EXECUTOR: 'Отменена исполнителем',
 }
 
@@ -60,6 +74,11 @@ const TASK_FIELD_LABELS: Record<string, string> = {
   videoCount: 'Кол-во видео',
   urgent: 'Срочность',
   status: 'Статус',
+  deliverables: 'Материалы',
+  location: 'Локация',
+  bloggerRequirements: 'Требования к блогеру',
+  cooperationDetails: 'Условия сотрудничества',
+  brief: 'Бриф',
 }
 
 export const getTaskFieldLabel = (field?: string) =>
@@ -181,7 +200,9 @@ export const getActivityMediaFromPayload = (
       ? payload.to ?? payload.from
       : payload.from ?? payload.to
 
-  return parseActivityMediaPayload(rawValue ?? null)
+  return parseActivityMediaPayload(
+    (rawValue as string | Record<string, unknown> | null | undefined) ?? null,
+  )
 }
 
 const formatMediaActivityPayload = (
@@ -207,10 +228,18 @@ const formatMediaActivityPayload = (
   }
 }
 
+const formatObjectFallback = (value: unknown): string => {
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
 const formatActivityValue = (
   field: string | undefined,
-  value: string | boolean | null | undefined,
-) => {
+  value: unknown,
+): string => {
   if (value === null || value === undefined || value === '') {
     return '—'
   }
@@ -231,6 +260,49 @@ const formatActivityValue = (
       hour: '2-digit',
       minute: '2-digit',
     })
+  }
+
+  if (field === 'deliverables') {
+    const items = Array.isArray(value)
+      ? (value as PostDeliverable[])
+      : typeof value === 'string'
+        ? (() => {
+          try {
+            return JSON.parse(value) as PostDeliverable[]
+          } catch {
+            return null
+          }
+        })()
+        : null
+
+    if (items) {
+      return formatPostDeliverables(items)
+    }
+  }
+
+  if (field === 'location' && typeof value === 'object') {
+    return formatPostLocation(value as PostLocation)
+  }
+
+  if (field === 'bloggerRequirements' && typeof value === 'object') {
+    const lines = formatBloggerRequirements(value as BloggerRequirements)
+    return lines.length ? lines.join('; ') : '—'
+  }
+
+  if (field === 'cooperationDetails' && typeof value === 'object') {
+    const lines = formatCooperationDetails(value as CooperationDetails)
+    return lines.length ? lines.join('; ') : '—'
+  }
+
+  if (field === 'brief' && typeof value === 'object') {
+    const items = formatPostBrief(value as PostBrief)
+    return items.length
+      ? items.map(item => `${item.label}: ${item.value}`).join('; ')
+      : '—'
+  }
+
+  if (typeof value === 'object') {
+    return formatObjectFallback(value)
   }
 
   return String(value)
@@ -333,8 +405,8 @@ export const getTaskActivityDetail = (
 
   return {
     title: 'Изменение задачи',
-    from: activity.payload.from ?? '',
-    to: activity.payload.to ?? '',
+    from: formatActivityValue(undefined, activity.payload.from),
+    to: formatActivityValue(undefined, activity.payload.to),
     showDiff: false,
     variant: 'field',
   }
@@ -377,19 +449,68 @@ export const getIsCompanyAction = (
   return !task.isCompanyAction
 }
 
+export const COMMENT_MODIFY_WINDOW_MS = 60_000
+
 export const canManageComment = (
   commentAuthorId: string,
   userId: string | null,
 ) => Boolean(userId && commentAuthorId === userId)
 
-const COMMENT_EDIT_WINDOW_MS = 3 * 60 * 1000
-const COMMENT_DELETE_WINDOW_MS = 5 * 60 * 1000
+export const isCommentWithinModifyWindow = (
+  createdAt: string,
+  now = Date.now(),
+) => now - new Date(createdAt).getTime() < COMMENT_MODIFY_WINDOW_MS
 
-export const canEditComment = (createdAt: string) =>
-  Date.now() - new Date(createdAt).getTime() < COMMENT_EDIT_WINDOW_MS
+export const canEditTaskComment = (
+  comment: Pick<TaskComment, 'authorId' | 'createdAt'>,
+  context: { userId: string | null; isOwner: boolean },
+  now = Date.now(),
+) => {
+  if (!context.userId) return false
+  if (!isCommentWithinModifyWindow(comment.createdAt, now)) return false
+  if (context.isOwner) return true
+  return comment.authorId === context.userId
+}
 
-export const canDeleteComment = (createdAt: string) =>
-  Date.now() - new Date(createdAt).getTime() < COMMENT_DELETE_WINDOW_MS
+export const canDeleteTaskComment = canEditTaskComment
+
+export const getUnreadDividerCommentId = (
+  comments: Pick<TaskComment, 'id' | 'authorId' | 'isRead'>[],
+  currentUserId: string,
+  unreadCount: number,
+): string | null => {
+  if (unreadCount <= 0) return null
+
+  const incoming = comments.filter(
+    comment => comment.authorId !== currentUserId,
+  )
+
+  if (!incoming.length) return null
+
+  const firstExplicitUnread = incoming.find(comment => !comment.isRead)
+
+  if (firstExplicitUnread) {
+    return firstExplicitUnread.id
+  }
+
+  const startIndex = Math.max(0, incoming.length - unreadCount)
+
+  return incoming[startIndex]?.id ?? null
+}
+
+export const normalizeTaskComment = (
+  comment: TaskComment | (Partial<TaskComment> & Pick<TaskComment, 'id' | 'taskId' | 'authorId' | 'createdAt' | 'updatedAt'>),
+): TaskComment => ({
+  id: comment.id,
+  taskId: comment.taskId,
+  authorId: comment.authorId,
+  content: comment.content ?? '',
+  media: comment.media ?? [],
+  createdAt: comment.createdAt,
+  updatedAt: comment.updatedAt,
+  editedAt: comment.editedAt ?? null,
+  isRead: comment.isRead ?? false,
+})
 
 export const toTaskCommentMedia = (
   upload: UploadMediaResponse,
@@ -442,8 +563,8 @@ export const normalizeTaskWithCommentsItem = (
     status: raw.status ?? embedded?.status,
     isExecutorApprove: raw.isExecutorApprove ?? embedded?.isExecutorApprove,
     post: raw.post ?? embedded?.post,
-    lastComment: raw.lastComment,
+    lastComment: normalizeTaskComment(raw.lastComment),
     commentsCount: raw.commentsCount,
-    unreadCount: raw.unreadCount,
+    unreadCount: raw.unreadCount ?? 0,
   }
 }

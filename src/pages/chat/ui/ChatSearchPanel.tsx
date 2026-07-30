@@ -23,6 +23,8 @@ type ChatSearchPanelProps = {
   onClose: () => void;
   conversationId: string | null;
   currentUserId: string | null;
+  query?: string;
+  onQueryChange?: (value: string) => void;
 };
 
 const toMessageSide = (
@@ -36,11 +38,18 @@ export const ChatSearchPanel = ({
   onClose,
   conversationId,
   currentUserId,
+  query: controlledQuery,
+  onQueryChange,
 }: ChatSearchPanelProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [query, setQuery] = useState('');
+  const isControlled =
+    controlledQuery !== undefined && onQueryChange !== undefined;
+  const [internalQuery, setInternalQuery] = useState('');
+  const query = isControlled ? controlledQuery : internalQuery;
+  const setQuery = isControlled ? onQueryChange : setInternalQuery;
+
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<ChatMessage[]>([]);
@@ -61,15 +70,15 @@ export const ChatSearchPanel = ({
   }, [debouncedQuery, conversationId]);
 
   useEffect(() => {
-    if (!open) {
+    if (!open && !isControlled) {
       setTimeout(() => {
-        setQuery('');
+        setInternalQuery('');
         setDebouncedQuery('');
         setPage(1);
         setItems([]);
       }, 0);
     }
-  }, [open]);
+  }, [open, isControlled]);
 
   const { data, isLoading, isFetching, error } = useSearchMessagesQuery(
     conversationId,
@@ -185,11 +194,17 @@ export const ChatSearchPanel = ({
               {format(new Date(message.createdAt), 'dd.MM.yyyy HH:mm')}
             </Typography>
             <ChatMessageBubble
+              messageId={message.id}
               senderId={message.senderId}
+              createdAt={message.createdAt}
+              currentUserId={currentUserId}
               text={message.content}
               media={message.media}
               highlight={debouncedQuery}
+              editedAt={message.editedAt}
+              isRedirected={message.isRedirected}
               side={toMessageSide(message.senderId, currentUserId)}
+              isRead={message.isRead}
             />
           </Box>
         ))}

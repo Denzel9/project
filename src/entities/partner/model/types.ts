@@ -7,22 +7,19 @@ export type PartnerProfile = {
   id: string;
   role: PartnerRole;
   avatar?: string | null;
-  bio?: string | null;
   name?: string | null;
   lastName?: string | null;
   companyName?: string | null;
-  followers?: number;
 };
 
 export type PartnerUserItem = {
   id: string;
   role: PartnerRole;
   avatar?: string | null;
-  bio?: string | null;
   name?: string | null;
   lastName?: string | null;
   companyName?: string | null;
-  followers: number;
+  publicationsCount: number;
   interactionsCount: number;
   lastInteractionAt: string;
 };

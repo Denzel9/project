@@ -1,10 +1,9 @@
-import { Box, Grid } from '@mui/material';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import { Grid } from '@mui/material';
 import { PickerDay } from '@mui/x-date-pickers/PickerDay';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState, type ComponentProps } from 'react';
 
-import { DatePickerProvider, PageLayout } from '@/widgets';
+import { PageLayout } from '@/widgets';
 
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
 import { useCalendarFilterOptions } from '../model/useCalendarFilterOptions';
@@ -14,9 +13,11 @@ import {
   buildCalendarPostMetaMap,
   filterCalendarTasksByPostMeta,
   filterEventsInMonthRange,
+  getCalendarMonthStats,
 } from '../model/utils';
 
 import { CalendarFilters } from './CalendarFilters';
+import { CalendarMonthPanel } from './CalendarMonthPanel';
 import { CalendarPickerDay } from './CalendarPickerDay';
 import { CalendarTaskList } from './CalendarTaskList';
 
@@ -69,6 +70,8 @@ export const CalendarPage = () => {
     );
   }, [tasks, filters.eventType, monthRange.dateFrom, monthRange.dateTo]);
 
+  const monthStats = useMemo(() => getCalendarMonthStats(events), [events]);
+
   const CalendarDay = useMemo(
     () =>
       function CalendarDaySlot(props: ComponentProps<typeof PickerDay>) {
@@ -90,6 +93,18 @@ export const CalendarPage = () => {
     setFilters(DEFAULT_CALENDAR_FILTERS);
   };
 
+  const handleSelectDate = (date: Dayjs) => {
+    setSelectedDate(date);
+    setVisibleMonth(date);
+  };
+
+  const handleGoToToday = () => {
+    const today = dayjs();
+
+    setSelectedDate(today);
+    setVisibleMonth(today);
+  };
+
   return (
     <PageLayout withFooter={false}>
       <CalendarFilters
@@ -107,42 +122,25 @@ export const CalendarPage = () => {
       <Grid
         container
         spacing={2}
-        sx={{ alignItems: 'flex-start' }}
+        sx={{ alignItems: 'stretch' }}
       >
         <Grid
           size={{ xs: 12, lg: 5, xl: 4 }}
           sx={{
-            position: { lg: 'sticky' },
             top: { lg: 16 },
             zIndex: { lg: 1 },
+            position: { lg: 'sticky' },
+            alignSelf: { lg: 'flex-start' },
           }}
         >
-          <Box
-            sx={{
-              p: { xs: 1, md: 2 },
-              bgcolor: 'white',
-              borderRadius: '32px',
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <DatePickerProvider>
-              <DateCalendar
-                value={selectedDate}
-                views={['year', 'month', 'day']}
-                onChange={date => {
-                  if (!date) return;
-
-                  setSelectedDate(date);
-                  setVisibleMonth(date);
-                }}
-                onMonthChange={month => setVisibleMonth(month)}
-                slots={{
-                  day: CalendarDay,
-                }}
-              />
-            </DatePickerProvider>
-          </Box>
+          <CalendarMonthPanel
+            selectedDate={selectedDate}
+            isLoading={isLoading}
+            monthStats={monthStats}
+            daySlot={CalendarDay}
+            onSelectDate={handleSelectDate}
+            onMonthChange={setVisibleMonth}
+          />
         </Grid>
 
         <Grid
@@ -158,6 +156,8 @@ export const CalendarPage = () => {
             events={events}
             isLoading={isLoading}
             selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+            onGoToToday={handleGoToToday}
           />
         </Grid>
       </Grid>

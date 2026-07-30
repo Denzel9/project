@@ -1,44 +1,66 @@
+import { InboxOutlined } from '@mui/icons-material';
 import { Stack, Typography, Button } from '@mui/material';
 
 type EmptyBlockProps = {
-  title: string;
+  title?: string;
+  description?: string;
   buttonText?: string;
   buttonOnClick?: () => void;
+  hasActiveFilters?: boolean;
+  resetFilters?: () => void;
+  navigate?: () => void;
 };
 
 export const EmptyBlock = ({
   title = 'Тут пока ничего нет',
+  description,
   buttonText = 'На главную',
-  buttonOnClick = undefined,
+  buttonOnClick,
+  hasActiveFilters = false,
+  resetFilters,
+  navigate,
 }: EmptyBlockProps) => {
+  const showDescription = Boolean(
+    hasActiveFilters || (description !== undefined && description !== '')
+  );
+
+  const action = hasActiveFilters ? resetFilters : (buttonOnClick ?? navigate);
+
+  const showButton = Boolean(action);
+
   return (
     <Stack
-      direction="column"
       spacing={2}
       sx={{
-        width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
+      <InboxOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />
       <Typography
-        sx={{
-          opacity: 0.3,
-          textAlign: 'center',
-          fontSize: { xs: '24px', md: '34px' },
-        }}
+        variant="h6"
+        color="text.secondary"
+        sx={{ textAlign: 'center' }}
       >
-        {title}
+        {hasActiveFilters ? 'По выбранным фильтрам ничего не найдено' : title}
       </Typography>
-
-      {buttonText && buttonOnClick && (
-        <Button
-          color="primary"
-          variant="outlined"
-          sx={{ width: 'fit-content' }}
-          onClick={buttonOnClick}
+      {showDescription && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: 'center' }}
         >
-          {buttonText}
+          {hasActiveFilters
+            ? 'Попробуйте изменить фильтры или сбросить их'
+            : description}
+        </Typography>
+      )}
+      {showButton && (
+        <Button
+          variant="contained"
+          onClick={() => action?.()}
+        >
+          {hasActiveFilters ? 'Сбросить фильтры' : buttonText}
         </Button>
       )}
     </Stack>

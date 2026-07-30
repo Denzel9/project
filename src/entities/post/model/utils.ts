@@ -249,6 +249,14 @@ export const formatBloggerRequirements = (
     lines.push(`Языки: ${requirements.languages.join(', ')}`)
   }
 
+  if (requirements.contentStyle?.length) {
+    lines.push(
+      `Стиль контента: ${requirements.contentStyle
+        .map(getContentStyleLabel)
+        .join(', ')}`,
+    )
+  }
+
   return lines
 }
 
@@ -312,6 +320,10 @@ export const formatPostBrief = (
 
   if (brief.mentions?.length) {
     items.push({ label: 'Упоминания', value: brief.mentions.join(', ') })
+  }
+
+  if (brief.cta?.trim()) {
+    items.push({ label: 'CTA', value: brief.cta.trim() })
   }
 
   return items

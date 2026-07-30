@@ -1,10 +1,11 @@
-import { ArrowBack, MoreVert, Search } from '@mui/icons-material';
+import { ArrowBack, Assignment, Close, MoreVert, Search } from '@mui/icons-material';
 import {
   Avatar,
   IconButton,
   Menu,
   MenuItem,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
@@ -17,20 +18,36 @@ type ChatHeaderProps = {
   peer?: ChatPeer;
   isMobile: boolean;
   headerTime?: string;
-  onOpenSearch: () => void;
+  hasActiveTasks?: boolean;
+  hasTaskTzMessages?: boolean;
+  isSearchOpen: boolean;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+  onToggleSearch: () => void;
+  onOpenTaskTz?: () => void;
   onOpenProfile: () => void;
   onBackToContacts: () => void;
   onOpenAttachments: () => void;
+  onOpenPhotoReport?: () => void;
+  onOpenAddTask?: () => void;
 };
 
 export const ChatHeader = ({
   peer,
   headerTime,
   isMobile,
-  onOpenSearch,
+  hasActiveTasks = false,
+  hasTaskTzMessages = false,
+  isSearchOpen,
+  searchQuery,
+  onSearchQueryChange,
+  onToggleSearch,
+  onOpenTaskTz,
   onOpenProfile,
   onBackToContacts,
   onOpenAttachments,
+  onOpenPhotoReport,
+  onOpenAddTask,
 }: ChatHeaderProps) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
@@ -47,6 +64,16 @@ export const ChatHeader = ({
   const handleOpenAttachments = () => {
     handleCloseMenu();
     onOpenAttachments();
+  };
+
+  const handleOpenPhotoReport = () => {
+    handleCloseMenu();
+    onOpenPhotoReport?.();
+  };
+
+  const handleOpenAddTask = () => {
+    handleCloseMenu();
+    onOpenAddTask?.();
   };
 
   return (
@@ -119,9 +146,30 @@ export const ChatHeader = ({
         direction="row"
         sx={{ alignItems: 'center', flexShrink: 0 }}
       >
-        <IconButton onClick={onOpenSearch}>
-          <Search />
+        {isSearchOpen && !isMobile && (
+          <TextField
+            autoFocus
+            label="Поиск"
+            size="small"
+            variant="outlined"
+            value={searchQuery}
+            onChange={event => onSearchQueryChange(event.target.value)}
+            sx={{ width: 240 }}
+          />
+        )}
+
+        <IconButton onClick={onToggleSearch}>
+          {isSearchOpen ? <Close /> : <Search />}
         </IconButton>
+
+        {hasTaskTzMessages && (
+          <IconButton
+            aria-label="Технические задания"
+            onClick={() => onOpenTaskTz?.()}
+          >
+            <Assignment />
+          </IconButton>
+        )}
 
         <IconButton onClick={handleOpenMenu}>
           <MoreVert />
@@ -144,14 +192,13 @@ export const ChatHeader = ({
           <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
 
           {role === USER_ROLE.COMPANY && (
-            <>
-              <MenuItem>Запросить фото-отчет</MenuItem>
-              <MenuItem>Добавить ТЗ</MenuItem>
-            </>
+            <MenuItem onClick={handleOpenAddTask}>Добавить ТЗ</MenuItem>
           )}
 
-          {role === USER_ROLE.CREATOR && (
-            <MenuItem>Добавить фото-отчет</MenuItem>
+          {role === USER_ROLE.CREATOR && hasActiveTasks && (
+            <MenuItem onClick={handleOpenPhotoReport}>
+              Добавить фото-отчет
+            </MenuItem>
           )}
         </Menu>
       </Stack>

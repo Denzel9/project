@@ -1,0 +1,199 @@
+import { CalendarMonthOutlined, OpenInNewOutlined } from '@mui/icons-material';
+import { Box, Grid, IconButton, Stack, Typography } from '@mui/material';
+import { PickerDay } from '@mui/x-date-pickers/PickerDay';
+import dayjs, { type Dayjs } from 'dayjs';
+import { useMemo, useState, type ComponentProps } from 'react';
+import { useNavigate } from 'react-router';
+
+import { USER_ROLE } from '@/entities';
+import { useAuthStore } from '@/features';
+import { DEFAULT_CALENDAR_FILTERS } from '@/pages/calendar/model/constants';
+import { useCalendarTasks } from '@/pages/calendar/model/useCalendarTasks';
+import {
+  buildCalendarEvents,
+  filterEventsInMonthRange,
+} from '@/pages/calendar/model/utils';
+import { CalendarMonthPanel } from '@/pages/calendar/ui/CalendarMonthPanel';
+import { CalendarPickerDay } from '@/pages/calendar/ui/CalendarPickerDay';
+import { CalendarTaskList } from '@/pages/calendar/ui/CalendarTaskList';
+import { ROUTES } from '@/shared';
+
+export const DashboardCalendarPanel = () => {
+  const navigate = useNavigate();
+  const { role } = useAuthStore();
+  const isCompany = role === USER_ROLE.COMPANY;
+
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
+  const [visibleMonth, setVisibleMonth] = useState<Dayjs>(() => dayjs());
+
+  const monthRange = useMemo(() => {
+    const month = dayjs(visibleMonth);
+
+    return {
+      dateFrom: month.startOf('month').format('YYYY-MM-DD'),
+      dateTo: month.endOf('month').format('YYYY-MM-DD'),
+    };
+  }, [visibleMonth]);
+
+  const { tasks, isLoading } = useCalendarTasks({
+    ...monthRange,
+    eventType: DEFAULT_CALENDAR_FILTERS.eventType,
+    urgentOnly: DEFAULT_CALENDAR_FILTERS.urgentOnly,
+    companyId: DEFAULT_CALENDAR_FILTERS.companyId,
+    isCompany,
+  });
+
+  const events = useMemo(() => {
+    const calendarEvents = buildCalendarEvents(
+      tasks,
+      DEFAULT_CALENDAR_FILTERS.eventType
+    );
+
+    return filterEventsInMonthRange(
+      calendarEvents,
+      monthRange.dateFrom,
+      monthRange.dateTo
+    );
+  }, [tasks, monthRange.dateFrom, monthRange.dateTo]);
+
+  const CalendarDay = useMemo(
+    () =>
+      function CalendarDaySlot(props: ComponentProps<typeof PickerDay>) {
+        return (
+          <CalendarPickerDay
+            {...props}
+            events={events}
+          />
+        );
+      },
+    [events]
+  );
+
+  const handleSelectDate = (date: Dayjs) => {
+    setSelectedDate(date);
+    setVisibleMonth(date);
+  };
+
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        height: { xs: 'auto', lg: '600px' },
+        minHeight: { lg: '600px' },
+        display: 'flex',
+        bgcolor: 'white',
+        overflow: 'hidden',
+        border: '1px solid',
+        borderRadius: '32px',
+        p: { xs: 2, md: 2.5 },
+        borderColor: 'divider',
+        flexDirection: 'column',
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          mb: 1.5,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: 'center', minWidth: 0 }}
+        >
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              display: 'flex',
+              borderRadius: '12px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'secondary.light',
+              color: 'primary.main',
+            }}
+          >
+            <CalendarMonthOutlined fontSize="small" />
+          </Box>
+
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 600 }}
+          >
+            Календарь
+          </Typography>
+        </Stack>
+
+        <IconButton
+          aria-label="Открыть календарь"
+          onClick={() => navigate(ROUTES.CALENDAR)}
+        >
+          <OpenInNewOutlined />
+        </IconButton>
+      </Stack>
+
+      <Grid
+        container
+        spacing={2}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          alignItems: 'stretch',
+        }}
+      >
+        <Grid
+          size={{ xs: 12, md: 5, lg: 5 }}
+          sx={{
+            minHeight: 0,
+            overflow: 'auto',
+            '& > .MuiStack-root > .MuiBox-root': {
+              border: 'none',
+              bgcolor: 'transparent',
+              borderRadius: 0,
+              p: 0,
+            },
+          }}
+        >
+          <CalendarMonthPanel
+            withLegend={false}
+            isLoading={isLoading}
+            daySlot={CalendarDay}
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+            onMonthChange={setVisibleMonth}
+          />
+        </Grid>
+
+        <Grid
+          size={{ xs: 12, md: 7, lg: 7 }}
+          sx={{
+            display: 'flex',
+            minHeight: { xs: 320, lg: 0 },
+            height: { lg: '100%' },
+            '& > .MuiBox-root': {
+              border: 'none',
+              bgcolor: 'transparent',
+              borderRadius: 0,
+              p: 0,
+              height: '100%',
+              minHeight: 0,
+            },
+          }}
+        >
+          <CalendarTaskList
+            events={events}
+            isLoading={isLoading}
+            withHeader={false}
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+            onGoToToday={() => handleSelectDate(dayjs())}
+          />
+        </Grid>
+      </Grid>
+    </Box>
+  );
+};

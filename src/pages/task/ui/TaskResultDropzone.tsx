@@ -25,9 +25,11 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from 'react';
+import { Link } from 'react-router';
 
 import { theme } from '@/app/index';
 import { TASK_STATUS_ENUM, type TaskStatus } from '@/entities/task';
+import { ROUTES } from '@/shared';
 import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
@@ -44,6 +46,8 @@ const ACCEPT = 'image/*,video/*';
 type TaskResultDropzoneProps = {
   files: File[];
   images: Photo[];
+  postId?: string | null;
+  postTitle?: string | null;
   isSaving?: boolean;
   onSave: () => void;
   status: TaskStatus;
@@ -106,6 +110,8 @@ const getStatusHint = (
 export const TaskResultDropzone = ({
   files,
   images,
+  postId,
+  postTitle,
   status,
   onSave,
   onCancel,
@@ -242,6 +248,8 @@ export const TaskResultDropzone = ({
         bgcolor: 'white',
         p: { xs: 2.5, md: 3 },
         borderRadius: '32px',
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Stack spacing={2.5}>
@@ -324,9 +332,16 @@ export const TaskResultDropzone = ({
                 </Box>
               </Stack>
 
-              {status === TASK_STATUS_ENUM.COMPLETED && (
+              {status === TASK_STATUS_ENUM.COMPLETED && postId && (
                 <Button
                   size="small"
+                  component={Link}
+                  to={`${ROUTES.PUBLICATIONS}?postId=${encodeURIComponent(postId)}`}
+                  state={
+                    postTitle?.trim()
+                      ? { postTitle: postTitle.trim() }
+                      : undefined
+                  }
                   sx={{ px: 2 }}
                 >
                   Перейти к публикации

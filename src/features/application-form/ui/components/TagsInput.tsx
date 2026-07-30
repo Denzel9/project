@@ -1,4 +1,5 @@
-import { Box, Chip, Stack, TextField } from '@mui/material';
+import { Add } from '@mui/icons-material';
+import { Box, Chip, IconButton, Stack, TextField } from '@mui/material';
 import { useState, type KeyboardEvent } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
@@ -52,7 +53,15 @@ export const TagsInput = ({ name, label, placeholder }: TagsInputProps) => {
               onBlur={() => {
                 if (input.trim()) addTag(input);
               }}
-              sx={{ maxWidth: { xs: '100%', md: '50%' } }}
+              slotProps={{
+                input: {
+                  endAdornment: input ? (
+                    <IconButton onClick={() => addTag(input)}>
+                      <Add />
+                    </IconButton>
+                  ) : null,
+                },
+              }}
             />
 
             {Boolean(tags.length) && (

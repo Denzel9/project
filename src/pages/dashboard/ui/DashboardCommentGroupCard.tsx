@@ -1,5 +1,6 @@
 import {
   AttachFile,
+  Close,
   ExpandMore,
   ForumOutlined,
   Search,
@@ -14,11 +15,13 @@ import {
   Fade,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { format } from 'date-fns';
 import {
   useCallback,
   useEffect,
@@ -28,12 +31,25 @@ import {
 } from 'react';
 import { Link } from 'react-router';
 
-import { type TaskCommentMedia } from '@/entities';
+import {
+  isTaskOwner,
+  useSearchTaskCommentsQuery,
+  useUpdateTaskCommentMutation,
+  type TaskComment,
+  type TaskCommentMedia,
+} from '@/entities';
 import { useAuthStore } from '@/features';
-import { toGalleryItems } from '@/pages/task/model/lib/commentMedia';
+import { useUnreadCommentsDivider } from '@/pages/task/model/hooks/useUnreadCommentsDivider';
+import {
+  hasCommentText,
+  toGalleryItems,
+} from '@/pages/task/model/lib/commentMedia';
+import { DeleteCommentDialog } from '@/pages/task/ui/DeleteCommentDialog';
 import { TaskCommentAttachmentsPanel } from '@/pages/task/ui/TaskCommentAttachmentsPanel';
 import { TaskCommentComposer } from '@/pages/task/ui/TaskCommentComposer';
+import { TaskCommentItem } from '@/pages/task/ui/TaskCommentItem';
 import { TaskCommentSearchPanel } from '@/pages/task/ui/TaskCommentSearchPanel';
+import { UnreadCommentsDivider } from '@/pages/task/ui/UnreadCommentsDivider';
 import { FullScreenGallery } from '@/widgets';
 
 import { DASHBOARD_COMMENT_CARD_COLLAPSE_MS } from '../model/constants';
@@ -44,8 +60,6 @@ import {
   getTaskDisplayTitle,
   type DashboardTaskCommentsItem,
 } from '../model/utils';
-
-import { DashboardCommentListItem } from './DashboardCommentListItem';
 
 const SCROLL_LOAD_THRESHOLD_PX = 48;
 
@@ -72,6 +86,16 @@ type DashboardCommentGroupCardProps = {
   highlight?: string;
   expanded: boolean;
   fillHeight?: boolean;
+  /** Без шапки карточки — тред на весь виджет, как диалог в чатах */
+  embedded?: boolean;
+  /** Скрыть кнопки поиска/вложений (управляются снаружи) */
+  hideActions?: boolean;
+  searchOpen?: boolean;
+  searchQuery?: string;
+  onSearchOpenChange?: (open: boolean) => void;
+  onSearchQueryChange?: (query: string) => void;
+  attachmentsOpen?: boolean;
+  onAttachmentsOpenChange?: (open: boolean) => void;
   onToggle?: () => void;
   onCommentSuccess?: () => void;
 };
@@ -81,6 +105,14 @@ export const DashboardCommentGroupCard = ({
   highlight,
   expanded,
   fillHeight = false,
+  embedded = false,
+  hideActions = false,
+  searchOpen: searchOpenProp,
+  searchQuery: searchQueryProp,
+  onSearchOpenChange,
+  onSearchQueryChange,
+  attachmentsOpen: attachmentsOpenProp,
+  onAttachmentsOpenChange,
   onToggle,
   onCommentSuccess,
 }: DashboardCommentGroupCardProps) => {
@@ -91,14 +123,62 @@ export const DashboardCommentGroupCard = ({
   const skipScrollToBottomRef = useRef(false);
   const prevItemsLengthRef = useRef(0);
   const taskId = item.task.id;
+  const isOwner = isTaskOwner(item.task, currentUserId);
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
+  const [internalSearchOpen, setInternalSearchOpen] = useState(false);
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchItems, setSearchItems] = useState<TaskComment[]>([]);
+  const [internalAttachmentsOpen, setInternalAttachmentsOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+
+  const isSearchOpen = searchOpenProp ?? internalSearchOpen;
+  const searchQuery = searchQueryProp ?? internalSearchQuery;
+  const isAttachmentsOpen = attachmentsOpenProp ?? internalAttachmentsOpen;
+
+  const setIsSearchOpen = useCallback(
+    (open: boolean) => {
+      onSearchOpenChange?.(open);
+      if (searchOpenProp === undefined) {
+        setInternalSearchOpen(open);
+      }
+    },
+    [onSearchOpenChange, searchOpenProp]
+  );
+
+  const setSearchQuery = useCallback(
+    (query: string) => {
+      onSearchQueryChange?.(query);
+      if (searchQueryProp === undefined) {
+        setInternalSearchQuery(query);
+      }
+    },
+    [onSearchQueryChange, searchQueryProp]
+  );
+
+  const setIsAttachmentsOpen = useCallback(
+    (open: boolean) => {
+      onAttachmentsOpenChange?.(open);
+      if (attachmentsOpenProp === undefined) {
+        setInternalAttachmentsOpen(open);
+      }
+    },
+    [onAttachmentsOpenChange, attachmentsOpenProp]
+  );
   const [galleryItems, setGalleryItems] = useState<
     ReturnType<typeof toGalleryItems>
   >([]);
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [deletingId, setDeletingId] = useState('');
+  const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
+
+  const { mutate: updateComment, isPending: isUpdating } =
+    useUpdateTaskCommentMutation();
+
+  const isThreadOpen = expanded || embedded;
 
   const {
     items: sortedComments,
@@ -108,16 +188,25 @@ export const DashboardCommentGroupCard = ({
     isRefreshing,
     consumeScrollRestoreHeight,
   } = useDashboardTaskCommentsThread({
-    taskId: expanded ? taskId : null,
+    taskId: isThreadOpen ? taskId : null,
     task: item.task,
     lastComment: item.lastComment,
-    expanded,
+    expanded: isThreadOpen,
+  });
+
+  const threadComments = sortedComments.map(threadItem => threadItem.comment);
+  const unreadDividerCommentId = useUnreadCommentsDivider({
+    taskId: isThreadOpen ? taskId : null,
+    comments: threadComments,
+    currentUserId,
+    isLoading: isRefreshing,
+    initialUnreadCount: item.unreadCount,
   });
 
   const taskTitle = getTaskDisplayTitle(item.task);
   const taskPath = getDashboardTaskPath(item.task);
   const latestPreview = getCommentPreview(item.lastComment);
-  const unreadCount = item.unreadCount ?? 0;
+  const unreadCount = item.unreadCount;
 
   const openGallery = useCallback(
     (media: TaskCommentMedia[] | undefined, initialSlide: number) => {
@@ -148,6 +237,40 @@ export const DashboardCommentGroupCard = ({
     void loadOlder(messagesRef.current);
   }, [loadOlder]);
 
+  const handleStartEdit = (commentId: string, text: string) => {
+    setEditingId(commentId);
+    setEditContent(hasCommentText(text) ? text : '');
+  };
+
+  const handleSaveEdit = (commentId: string) => {
+    const comment = sortedComments.find(
+      threadItem => threadItem.comment.id === commentId
+    )?.comment;
+    const trimmed = editContent.trim();
+    const hasMedia = Boolean(comment?.media?.length);
+
+    if (!trimmed && !hasMedia) return;
+
+    updateComment(
+      {
+        taskId,
+        commentId,
+        body: { content: trimmed },
+      },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          setEditContent('');
+        },
+      }
+    );
+  };
+
+  const handleDelete = (commentId: string) => {
+    setDeletingId(commentId);
+    setIsOpenDeleteDialog(true);
+  };
+
   const handleMessagesScroll = useCallback(() => {
     const container = messagesRef.current;
 
@@ -172,7 +295,7 @@ export const DashboardCommentGroupCard = ({
   }, [sortedComments.length, consumeScrollRestoreHeight]);
 
   useEffect(() => {
-    if (!expanded) {
+    if (!isThreadOpen) {
       prevItemsLengthRef.current = 0;
       return;
     }
@@ -196,245 +319,463 @@ export const DashboardCommentGroupCard = ({
     }
 
     prevItemsLengthRef.current = sortedComments.length;
-  }, [expanded, sortedComments.length]);
+  }, [isThreadOpen, sortedComments.length]);
 
   useEffect(() => {
-    if (expanded) return;
+    if (isThreadOpen) return;
 
     const timer = window.setTimeout(() => {
       setIsSearchOpen(false);
+      setSearchQuery('');
       setIsAttachmentsOpen(false);
     }, DASHBOARD_COMMENT_CARD_COLLAPSE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [expanded]);
+  }, [isThreadOpen, setIsAttachmentsOpen, setIsSearchOpen, setSearchQuery]);
+
+  const isDesktopSearch = isSearchOpen && !isMobile;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!isDesktopSearch) {
+      setTimeout(() => {
+        setDebouncedQuery('');
+        setSearchPage(1);
+        setSearchItems([]);
+      }, 0);
+    }
+  }, [isDesktopSearch]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setSearchPage(1);
+      setSearchItems([]);
+    }, 0);
+  }, [debouncedQuery, taskId]);
+
+  const canSearch = isDesktopSearch && debouncedQuery.length >= 2;
+
+  const {
+    data: searchData,
+    isLoading: isSearchLoading,
+    isFetching: isSearchFetching,
+    error: searchError,
+  } = useSearchTaskCommentsQuery(canSearch ? taskId : null, {
+    q: debouncedQuery,
+    page: searchPage,
+    limit: 20,
+  });
+
+  useEffect(() => {
+    if (!canSearch || !searchData) return;
+
+    setTimeout(() => {
+      setSearchItems(prev =>
+        searchPage === 1 ? searchData.items : [...prev, ...searchData.items]
+      );
+    }, 0);
+  }, [canSearch, searchData, searchPage]);
+
+  const searchHasMore = Boolean(
+    searchData && searchData.page * searchData.limit < searchData.total
+  );
+
+  const handleToggleSearch = () => {
+    if (isSearchOpen) {
+      setIsSearchOpen(false);
+      setSearchQuery('');
+      return;
+    }
+
+    setIsSearchOpen(true);
+  };
 
   return (
     <Box
       sx={{
         display: 'flex',
         overflow: 'hidden',
-        borderRadius: '20px',
         flexDirection: 'column',
-        border: '1px solid',
-        borderColor: expanded ? 'primary.light' : 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: expanded
-          ? theme => `0 8px 24px ${theme.palette.primary.main}12`
-          : '0 1px 2px rgba(15, 23, 42, 0.04)',
-        transition: theme.transitions.create(
-          ['box-shadow', 'border-color', 'flex'],
-          { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS }
-        ),
-        ...(fillHeight && {
-          flex: 1,
-          minHeight: 0,
-        }),
+        ...(embedded
+          ? {
+              flex: 1,
+              minHeight: 0,
+              border: 'none',
+              bgcolor: 'transparent',
+            }
+          : {
+              borderRadius: '20px',
+              border: '1px solid',
+              borderColor: expanded ? 'primary.light' : 'divider',
+              bgcolor: 'background.paper',
+              boxShadow: expanded
+                ? theme => `0 8px 24px ${theme.palette.primary.main}12`
+                : '0 1px 2px rgba(15, 23, 42, 0.04)',
+              transition: theme.transitions.create(
+                ['box-shadow', 'border-color', 'flex'],
+                { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS }
+              ),
+              ...(fillHeight && {
+                flex: 1,
+                minHeight: 0,
+              }),
+            }),
       }}
     >
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{
-          px: 1.5,
-          py: 1.25,
-          cursor: 'pointer',
-          flexShrink: 0,
-          alignItems: 'center',
-          borderBottom: expanded ? '1px solid' : 'none',
-          borderColor: 'divider',
-        }}
-        onClick={handleToggle}
-      >
-        <Box
+      {!embedded && (
+        <Stack
+          direction="row"
+          spacing={1}
           sx={{
-            width: 36,
-            height: 36,
-            display: 'flex',
+            px: 1.5,
+            py: 1.25,
+            cursor: 'pointer',
             flexShrink: 0,
-            borderRadius: '12px',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: 'primary.main',
-            bgcolor: theme => `${theme.palette.primary.main}12`,
+            borderBottom: expanded ? '1px solid' : 'none',
+            borderColor: 'divider',
           }}
+          onClick={handleToggle}
         >
-          <ForumOutlined sx={{ fontSize: 20 }} />
-        </Box>
-
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography
-            onClick={event => event.stopPropagation()}
-            component={Link}
-            to={taskPath}
-            variant="subtitle2"
-            color="primary"
+          <Box
             sx={{
-              fontWeight: 600,
-              display: 'block',
-              textDecoration: 'none',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              width: 'fit-content',
-              maxWidth: '100%',
-              ':hover': { textDecoration: 'underline' },
+              width: 36,
+              height: 36,
+              display: 'flex',
+              flexShrink: 0,
+              borderRadius: '12px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'primary.main',
+              bgcolor: theme => `${theme.palette.primary.main}12`,
             }}
           >
-            {taskTitle}
-          </Typography>
+            <ForumOutlined sx={{ fontSize: 20 }} />
+          </Box>
 
-          {!expanded && latestPreview && (
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              onClick={event => event.stopPropagation()}
+              component={Link}
+              to={taskPath}
+              variant="subtitle2"
+              color="primary"
+              sx={{
+                fontWeight: 600,
+                display: 'block',
+                textDecoration: 'none',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                width: 'fit-content',
+                maxWidth: '100%',
+                ':hover': { textDecoration: 'underline' },
+              }}
+            >
+              {taskTitle}
+            </Typography>
+
+            {!expanded && latestPreview && (
+              <Fade
+                in
+                timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    mt: 0.25,
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {latestPreview}
+                </Typography>
+              </Fade>
+            )}
+          </Box>
+
+          {unreadCount > 0 && (
+            <Chip
+              size="small"
+              color="error"
+              label={unreadCount}
+              sx={{ minWidth: 28 }}
+            />
+          )}
+
+          {expanded && !hideActions && (
             <Fade
               in
               timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  mt: 0.25,
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+              <Stack
+                direction="row"
+                spacing={0.25}
+                sx={{ flexShrink: 0 }}
+                onClick={event => event.stopPropagation()}
               >
-                {latestPreview}
-              </Typography>
+                {isSearchOpen && !isMobile && (
+                  <TextField
+                    autoFocus
+                    size="small"
+                    label="Поиск"
+                    value={searchQuery}
+                    onClick={event => event.stopPropagation()}
+                    onChange={event => setSearchQuery(event.target.value)}
+                    sx={{ width: 200 }}
+                  />
+                )}
+
+                <Tooltip title="Поиск по комментариям">
+                  <IconButton
+                    size="small"
+                    aria-label="Поиск по комментариям"
+                    onClick={handleToggleSearch}
+                  >
+                    {isSearchOpen ? (
+                      <Close fontSize="small" />
+                    ) : (
+                      <Search fontSize="small" />
+                    )}
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Вложения">
+                  <IconButton
+                    size="small"
+                    aria-label="Вложения"
+                    onClick={() => setIsAttachmentsOpen(true)}
+                  >
+                    <AttachFile fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Fade>
           )}
-        </Box>
 
-        {unreadCount > 0 && (
-          <Chip
+          <IconButton
             size="small"
-            color="error"
-            label={unreadCount}
-            sx={{ minWidth: 28 }}
-          />
-        )}
-
-        {expanded && (
-          <Fade
-            in
-            timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
+            aria-expanded={expanded}
+            aria-label={
+              expanded ? 'Свернуть комментарии' : 'Развернуть комментарии'
+            }
+            onClick={event => {
+              event.stopPropagation();
+              handleToggle();
+            }}
+            sx={{
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: `transform ${DASHBOARD_COMMENT_CARD_COLLAPSE_MS}ms ease`,
+            }}
           >
-            <Stack
-              direction="row"
-              spacing={0.25}
-              sx={{ flexShrink: 0 }}
-              onClick={event => event.stopPropagation()}
-            >
-              <Tooltip title="Поиск по комментариям">
-                <IconButton
-                  size="small"
-                  aria-label="Поиск по комментариям"
-                  onClick={() => setIsSearchOpen(true)}
-                >
-                  <Search fontSize="small" />
-                </IconButton>
-              </Tooltip>
+            <ExpandMore fontSize="small" />
+          </IconButton>
+        </Stack>
+      )}
 
-              <Tooltip title="Вложения">
-                <IconButton
-                  size="small"
-                  aria-label="Вложения"
-                  onClick={() => setIsAttachmentsOpen(true)}
-                >
-                  <AttachFile fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Fade>
-        )}
-
-        <IconButton
-          size="small"
-          aria-expanded={expanded}
-          aria-label={
-            expanded ? 'Свернуть комментарии' : 'Развернуть комментарии'
-          }
-          onClick={event => {
-            event.stopPropagation();
-            handleToggle();
-          }}
-          sx={{
-            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: `transform ${DASHBOARD_COMMENT_CARD_COLLAPSE_MS}ms ease`,
-          }}
+      {embedded && !hideActions && (
+        <Stack
+          direction="row"
+          spacing={0.25}
+          sx={{ flexShrink: 0, justifyContent: 'flex-end', mb: 1 }}
         >
-          <ExpandMore fontSize="small" />
-        </IconButton>
-      </Stack>
+          {isSearchOpen && !isMobile && (
+            <TextField
+              autoFocus
+              size="small"
+              label="Поиск"
+              value={searchQuery}
+              onChange={event => setSearchQuery(event.target.value)}
+              sx={{ width: 180, mr: 'auto' }}
+            />
+          )}
+
+          <Tooltip title="Поиск по комментариям">
+            <IconButton
+              size="small"
+              aria-label="Поиск по комментариям"
+              onClick={handleToggleSearch}
+            >
+              {isSearchOpen ? (
+                <Close fontSize="small" />
+              ) : (
+                <Search fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Вложения">
+            <IconButton
+              size="small"
+              aria-label="Вложения"
+              onClick={() => setIsAttachmentsOpen(true)}
+            >
+              <AttachFile fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      )}
 
       <Collapse
-        in={expanded}
+        in={isThreadOpen}
         unmountOnExit
-        timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
-        sx={fillHeight ? flexCollapseSx : undefined}
+        timeout={embedded ? 0 : DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
+        sx={fillHeight || embedded ? flexCollapseSx : undefined}
       >
-        <Divider />
+        {!embedded && <Divider />}
         <Stack
           ref={messagesRef}
           spacing={1.25}
           onScroll={handleMessagesScroll}
           sx={{
-            p: 1.5,
-            flex: fillHeight ? 1 : undefined,
-            minHeight: fillHeight ? 0 : undefined,
-            maxHeight: fillHeight ? undefined : 360,
+            p: embedded ? 0 : 1.5,
+            flex: fillHeight || embedded ? 1 : undefined,
+            minHeight: fillHeight || embedded ? 0 : undefined,
+            maxHeight: fillHeight || embedded ? undefined : 360,
             overflowY: 'auto',
-            bgcolor: 'grey.50',
+            bgcolor: embedded ? 'transparent' : 'grey.50',
             opacity: isRefreshing ? 0.72 : 1,
             transition: 'opacity 0.2s ease',
           }}
         >
-          {hasOlder && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', pb: 0.5 }}>
-              <Button
-                size="small"
-                variant="text"
-                disabled={isLoadingOlder}
-                onClick={handleLoadOlder}
-              >
-                {isLoadingOlder ? (
-                  <CircularProgress size={16} />
-                ) : (
-                  'Загрузить ранние сообщения'
-                )}
-              </Button>
-            </Box>
-          )}
+          {canSearch ? (
+            <>
+              {isSearchLoading && searchItems.length === 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              )}
 
-          {sortedComments.length === 0 && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ py: 2, textAlign: 'center' }}
-            >
-              Нет сообщений
-            </Typography>
-          )}
+              {searchError && (
+                <Typography
+                  variant="body2"
+                  color="error"
+                  sx={{ py: 2, textAlign: 'center' }}
+                >
+                  Не удалось выполнить поиск
+                </Typography>
+              )}
 
-          {sortedComments.map(threadItem => (
-            <DashboardCommentListItem
-              key={threadItem.comment.id}
-              item={threadItem}
-              highlight={highlight}
-              currentUserId={currentUserId}
-            />
-          ))}
+              {!isSearchLoading && !searchError && !searchItems.length && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ py: 2, textAlign: 'center' }}
+                >
+                  Ничего не найдено
+                </Typography>
+              )}
+
+              {searchItems.map(comment => (
+                <Box key={comment.id}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mb: 0.5, display: 'block' }}
+                  >
+                    {format(new Date(comment.createdAt), 'dd.MM.yyyy HH:mm')}
+                  </Typography>
+                  <TaskCommentItem
+                    comment={comment}
+                    currentUserId={currentUserId}
+                    highlight={debouncedQuery}
+                    showActions={false}
+                    onOpenGallery={openGallery}
+                  />
+                </Box>
+              ))}
+
+              {searchHasMore && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={isSearchFetching}
+                  onClick={() => setSearchPage(prev => prev + 1)}
+                >
+                  {isSearchFetching ? 'Загрузка…' : 'Загрузить ещё'}
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              {hasOlder && (
+                <Box
+                  sx={{ display: 'flex', justifyContent: 'center', pb: 0.5 }}
+                >
+                  <Button
+                    size="small"
+                    variant="text"
+                    disabled={isLoadingOlder}
+                    onClick={handleLoadOlder}
+                  >
+                    {isLoadingOlder ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      'Загрузить ранние сообщения'
+                    )}
+                  </Button>
+                </Box>
+              )}
+
+              {sortedComments.length === 0 && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ py: 2, textAlign: 'center' }}
+                >
+                  Нет сообщений
+                </Typography>
+              )}
+
+              {sortedComments.map(threadItem => (
+                <Box
+                  key={threadItem.comment.id}
+                  sx={{ width: '100%' }}
+                >
+                  {unreadDividerCommentId === threadItem.comment.id && (
+                    <UnreadCommentsDivider />
+                  )}
+
+                  <TaskCommentItem
+                    comment={threadItem.comment}
+                    isOwner={isOwner}
+                    currentUserId={currentUserId}
+                    highlight={highlight}
+                    isPending={isUpdating}
+                    isEditing={editingId === threadItem.comment.id}
+                    editContent={editContent}
+                    onEditContentChange={setEditContent}
+                    onStartEdit={handleStartEdit}
+                    onSaveEdit={handleSaveEdit}
+                    onCancelEdit={() => setEditingId(null)}
+                    onDelete={handleDelete}
+                    onOpenGallery={openGallery}
+                  />
+                </Box>
+              ))}
+            </>
+          )}
         </Stack>
 
         <Box
           sx={{
-            px: 1.5,
-            py: 1.25,
+            px: embedded ? 0 : 1.5,
+            py: embedded ? 1.5 : 1.25,
+            pt: embedded ? 1.5 : 1.25,
             flexShrink: 0,
             borderTop: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'background.paper',
+            bgcolor: embedded ? 'transparent' : 'background.paper',
           }}
           onClick={event => event.stopPropagation()}
         >
@@ -448,14 +789,19 @@ export const DashboardCommentGroupCard = ({
         </Box>
       </Collapse>
 
-      {expanded && taskId && (
+      {isThreadOpen && taskId && (
         <>
           <TaskCommentSearchPanel
             taskId={taskId}
-            open={isSearchOpen}
+            open={isSearchOpen && isMobile}
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
             onOpenGallery={openGallery}
             currentUserId={currentUserId}
-            onClose={() => setIsSearchOpen(false)}
+            onClose={() => {
+              setIsSearchOpen(false);
+              setSearchQuery('');
+            }}
           />
 
           <TaskCommentAttachmentsPanel
@@ -463,6 +809,13 @@ export const DashboardCommentGroupCard = ({
             open={isAttachmentsOpen}
             onOpenGallery={openGalleryFromItems}
             onClose={() => setIsAttachmentsOpen(false)}
+          />
+
+          <DeleteCommentDialog
+            taskId={taskId}
+            commentId={deletingId}
+            open={isOpenDeleteDialog}
+            onClose={() => setIsOpenDeleteDialog(false)}
           />
         </>
       )}

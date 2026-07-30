@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 
 import { useUpdatePostMutation, useRemoveFavoriteMutation } from "@/entities";
-import { useDeletePostDialogStore } from "@/features";
+import { useDeletePostDialogStore, useRequireEmailConfirmed } from "@/features";
 import { ROUTES } from "@/shared";
 import { useSnackbarStore } from "@/widgets";
 
@@ -16,6 +16,7 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
     const { mutateAsync: updatePost } = useUpdatePostMutation();
 
     const { setSnackbarOpen } = useSnackbarStore();
+    const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
     const { openDeletePostDialog } = useDeletePostDialogStore();
     const { setOpenAddToCollectionDialog } = useApplicationItemStore();
@@ -26,37 +27,45 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
     const allowedActions: ActionButton[] = [];
 
     const handleAddToCollection = () => {
+        if (!requireEmailConfirmed()) return;
         setOpenAddToCollectionDialog(true, id);
     };
 
     const handleRemoveFromCollection = () => {
+        if (!requireEmailConfirmed()) return;
         removeFavorite(id);
     };
 
     const handleDelete = () => {
+        if (!requireEmailConfirmed()) return;
         openDeletePostDialog(id);
     };
 
     const handleEdit = () => {
+        if (!requireEmailConfirmed()) return;
         navigate({ pathname: ROUTES.MANAGE_APPLICATION, search: `?id=${id}` });
     };
 
     const handleAddToArchive = async () => {
+        if (!requireEmailConfirmed()) return;
         await updatePost({ id, body: { isArchived: true } });
         setSnackbarOpen?.(true, 'Пост перемещен в архив');
     };
 
     const handleRemoveFromArchive = async () => {
+        if (!requireEmailConfirmed()) return;
         await updatePost({ id, body: { isArchived: false } });
         setSnackbarOpen?.(true, 'Пост возвращен из архива');
     };
 
     const handleMakePrivate = async () => {
+        if (!requireEmailConfirmed()) return;
         await updatePost({ id, body: { isPrivate: true } });
         setSnackbarOpen?.(true, 'Пост сделан приватным');
     };
 
     const handleMakePublic = async () => {
+        if (!requireEmailConfirmed()) return;
         await updatePost({ id, body: { isPrivate: false } });
         setSnackbarOpen?.(true, 'Пост сделан публичным');
     };

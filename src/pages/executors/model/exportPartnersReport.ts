@@ -42,11 +42,19 @@ const buildExportFilename = (tabId: PartnersTabId) => {
 const buildTaskContactsCsv = (
   rows: TaskContactRow[],
   contactColumnLabel: string,
+  interactionsColumnLabel = 'Взаимодействий',
 ) => {
-  const headers = [contactColumnLabel, 'Взаимодействий', 'Последнее', 'ID'];
+  const headers = [
+    contactColumnLabel,
+    interactionsColumnLabel,
+    'Публикации',
+    'Последнее',
+    'ID',
+  ];
   const data = rows.map(row => [
     row.name,
     String(row.interactionsCount),
+    String(row.publicationsCount),
     formatDateTime(row.lastInteractionAt, 'dd.MM.yyyy HH:mm'),
     row.id,
   ]);
@@ -126,9 +134,12 @@ export const exportPartnersReport = async (tabId: PartnersTabId) => {
   }
 
   const contactColumnLabel = CONTACT_COLUMN_LABEL[tabId];
+  const interactionsColumnLabel =
+    tabId === 'applicants' ? 'Отклики' : 'Взаимодействий';
   const { headers, data } = buildTaskContactsCsv(
     rows as TaskContactRow[],
     contactColumnLabel,
+    interactionsColumnLabel,
   );
 
   downloadCsv(filename, headers, data);

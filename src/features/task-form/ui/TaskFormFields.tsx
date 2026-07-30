@@ -1,13 +1,14 @@
 import { SyncOutlined } from '@mui/icons-material';
 import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { isPast, startOfDay } from 'date-fns';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import { TASK_STATUS_ENUM, type TaskStatus } from '@/entities';
 import { RHFDateTimePicker, RHFInput } from '@/shared';
 
 import { RequirementCard } from './RequirementCard';
+import { TaskTzSections } from './task-tz-sections';
 import { TaskPostBrief } from './TaskPostBrief';
-import { TaskTzSections } from './TaskTzSections';
 
 import type { TaskFormType } from '../model/schema/schema';
 import type { Post } from '@/entities/post';
@@ -31,6 +32,20 @@ const SectionTitle = ({ children }: { children: string }) => (
   </Typography>
 );
 
+const isDeadlineOverdue = (
+  finalDate: string | null | undefined,
+  status: TaskStatus
+) => {
+  if (!finalDate) return false;
+
+  const isTerminal =
+    status === TASK_STATUS_ENUM.COMPLETED ||
+    status === TASK_STATUS_ENUM.CANCELLED ||
+    status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR;
+
+  return !isTerminal && isPast(startOfDay(new Date(finalDate)));
+};
+
 export const TaskFormFields = ({
   isMe,
   status,
@@ -52,9 +67,15 @@ export const TaskFormFields = ({
   ].includes(status as TASK_STATUS_ENUM);
 
   const isEditEnabled = isEdit && !isCancelled;
+  const isOverdue = isDeadlineOverdue(finalDate, status);
+  const canEditForm =
+    isMe &&
+    (status === TASK_STATUS_ENUM.PREPARING ||
+      status === TASK_STATUS_ENUM.REVISION);
+  const canApplyFromPost = canEditForm && onApplyFromPost;
 
   const handleStartEdit = () => {
-    if (isMe && !isCancelled) {
+    if (canEditForm) {
       onStartEdit();
     }
   };
@@ -74,7 +95,7 @@ export const TaskFormFields = ({
         >
           <SectionTitle>Параметры задания</SectionTitle>
 
-          {isMe && !isCancelled && onApplyFromPost && (
+          {canApplyFromPost && (
             <Button
               size="small"
               variant="outlined"
@@ -86,129 +107,139 @@ export const TaskFormFields = ({
           )}
         </Stack>
 
-        {showPrefillHint && (
+        {showPrefillHint && canApplyFromPost && (
           <Alert
             severity="info"
-            sx={{ mb: 2, borderRadius: '16px' }}
+            sx={{ mb: 2, borderRadius: '16px', color: 'info.main' }}
           >
             Нажмите «Заполнить из объявления», чтобы подставить данные из поста.
           </Alert>
         )}
 
         <Stack spacing={4}>
-          <Box>
-            {isEditEnabled ? (
-              <RHFInput
-                name="title"
-                control={control}
-                props={{
-                  label: 'Заголовок',
-                  fullWidth: true,
-                }}
-              />
-            ) : title?.trim() ? (
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 600, cursor: isMe ? 'pointer' : 'default' }}
-                onClick={handleStartEdit}
-              >
-                {title}
-              </Typography>
-            ) : isMe ? (
-              <Typography
-                variant="body1"
-                onClick={handleStartEdit}
-                sx={{
-                  color: 'info.main',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  ':hover': { color: 'primary.main' },
-                }}
-              >
-                Добавить заголовок
-              </Typography>
-            ) : null}
-          </Box>
-
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1.5}
-          >
-            <RequirementCard
-              isEdit={isEdit}
-              icon="photo"
-              label="Фото"
-              value={photoCount}
-              canEdit={isMe && !isCancelled}
-              placeholder="Указать количество"
-              emptyReadOnlyLabel={isMe ? undefined : '—'}
-              onEdit={handleStartEdit}
+          {isEditEnabled ? (
+            <RHFInput
+              name="title"
+              control={control}
+              props={{
+                label: 'Заголовок',
+                fullWidth: true,
+              }}
+            />
+          ) : title?.trim() ? (
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                cursor: canEditForm ? 'pointer' : 'default',
+              }}
+              onClick={handleStartEdit}
             >
-              {isEditEnabled ? (
-                <RHFInput
-                  name="photoCount"
-                  control={control}
-                  props={{
-                    label: 'Кол-во фото',
-                    size: 'small',
-                    fullWidth: true,
-                    sx: { mt: 0.5 },
-                  }}
-                />
-              ) : undefined}
-            </RequirementCard>
-
-            <RequirementCard
-              isEdit={isEdit}
-              icon="video"
-              label="Видео"
-              value={videoCount}
-              canEdit={isMe && !isCancelled}
-              placeholder="Указать количество"
-              emptyReadOnlyLabel={isMe ? undefined : '—'}
-              onEdit={handleStartEdit}
+              {title}
+            </Typography>
+          ) : canEditForm ? (
+            <Typography
+              variant="body1"
+              onClick={handleStartEdit}
+              sx={{
+                color: 'info.main',
+                fontWeight: 500,
+                cursor: 'pointer',
+                ':hover': { color: 'primary.main' },
+              }}
             >
-              {isEditEnabled ? (
-                <RHFInput
-                  name="videoCount"
-                  control={control}
-                  props={{
-                    label: 'Кол-во видео',
-                    size: 'small',
-                    fullWidth: true,
-                    sx: { mt: 0.5 },
-                  }}
-                />
-              ) : undefined}
-            </RequirementCard>
+              Добавить заголовок
+            </Typography>
+          ) : null}
 
-            <RequirementCard
-              isEdit={isEdit}
-              icon="deadline"
-              label="Дедлайн"
-              value={finalDate}
-              canEdit={isMe && !isCancelled}
-              placeholder="Указать дату"
-              onEdit={handleStartEdit}
+          {(Number(photoCount) > 0 ||
+            Number(videoCount) > 0 ||
+            Boolean(finalDate)) && (
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
             >
-              {isEditEnabled ? (
-                <Box sx={{ mt: 0.5 }}>
-                  <RHFDateTimePicker
-                    name="finalDate"
-                    label="Дедлайн"
-                    size="small"
-                    control={control}
-                  />
-                </Box>
-              ) : undefined}
-            </RequirementCard>
-          </Stack>
+              {photoCount && Number(photoCount) > 0 && (
+                <RequirementCard
+                  isEdit={isEdit}
+                  icon="photo"
+                  label="Фото"
+                  value={photoCount}
+                  onEdit={handleStartEdit}
+                  canEdit={canEditForm}
+                  placeholder="Указать количество"
+                  emptyReadOnlyLabel={isMe ? undefined : '—'}
+                >
+                  {isEditEnabled ? (
+                    <RHFInput
+                      name="photoCount"
+                      control={control}
+                      props={{
+                        size: 'small',
+                        sx: { mt: 0.5 },
+                        label: 'Кол-во фото',
+                      }}
+                    />
+                  ) : undefined}
+                </RequirementCard>
+              )}
+
+              {videoCount && Number(videoCount) > 0 && (
+                <RequirementCard
+                  isEdit={isEdit}
+                  icon="video"
+                  label="Видео"
+                  value={videoCount}
+                  onEdit={handleStartEdit}
+                  canEdit={canEditForm}
+                  placeholder="Указать количество"
+                  emptyReadOnlyLabel={isMe ? undefined : '—'}
+                >
+                  {isEditEnabled ? (
+                    <RHFInput
+                      name="videoCount"
+                      control={control}
+                      props={{
+                        size: 'small',
+                        sx: { mt: 0.5 },
+                        label: 'Кол-во видео',
+                      }}
+                    />
+                  ) : undefined}
+                </RequirementCard>
+              )}
+
+              {finalDate && (
+                <RequirementCard
+                  isEdit={isEdit}
+                  icon="deadline"
+                  label="Дедлайн"
+                  value={finalDate}
+                  error={isOverdue}
+                  onEdit={handleStartEdit}
+                  placeholder="Указать дату"
+                  canEdit={canEditForm}
+                >
+                  {isEditEnabled ? (
+                    <Box sx={{ mt: 0.5 }}>
+                      <RHFDateTimePicker
+                        size="small"
+                        label="Дедлайн"
+                        name="finalDate"
+                        control={control}
+                      />
+                    </Box>
+                  ) : undefined}
+                </RequirementCard>
+              )}
+            </Stack>
+          )}
         </Stack>
       </Box>
 
       <TaskTzSections
-        isMe={isMe}
         isEdit={isEditEnabled}
+        canEdit={canEditForm}
         onEdit={handleStartEdit}
       />
     </Stack>

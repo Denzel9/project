@@ -6,6 +6,7 @@ import { downloadCsv } from '@/shared/lib/export'
 
 import {
   getPublicationExecutorName,
+  getPublicationPlatforms,
   getPublicationPreviewMedia,
   getPublicationTitle,
 } from './utils'
@@ -29,7 +30,7 @@ const buildExportFilename = () => {
 export const exportPublicationsReport = (publications: Publication[]) => {
   const headers = [
     'Название',
-    'Площадка',
+    'Площадки',
     'Исполнитель',
     'Создано',
     'Ссылка',
@@ -39,10 +40,13 @@ export const exportPublicationsReport = (publications: Publication[]) => {
 
   const rows = publications.map(publication => {
     const previewMediaCount = getPublicationPreviewMedia(publication).length
+    const platforms = getPublicationPlatforms(publication)
 
     return [
       getPublicationTitle(publication),
-      publication.platform ? getPlatformLabel(publication.platform) : '—',
+      platforms.length
+        ? platforms.map(getPlatformLabel).join(', ')
+        : '—',
       getPublicationExecutorName(publication) || '—',
       formatExportDateTime(publication.createdAt),
       publication.externalUrl || '—',

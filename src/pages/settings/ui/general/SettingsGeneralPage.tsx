@@ -1,8 +1,35 @@
-import { Button, Stack, Typography } from '@mui/material';
+import { Button, CircularProgress, Stack, Typography } from '@mui/material';
+import axios from 'axios';
+
+import { useAuthStore, useSendConfirmEmailMutation } from '@/features/auth';
+import { useSnackbarStore } from '@/widgets';
 
 import { SettingsRow } from '../SettingsRow';
 
 export const SettingsGeneralPage = () => {
+  const { isEmailConfirmed } = useAuthStore();
+  const { setSnackbarOpen } = useSnackbarStore();
+  const { mutateAsync: sendConfirmEmail, isPending } =
+    useSendConfirmEmailMutation();
+
+  const handleConfirm = async () => {
+    try {
+      const { data } = await sendConfirmEmail();
+      setSnackbarOpen?.(
+        true,
+        data.message || 'Письмо для подтверждения почты отправлено'
+      );
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+      setSnackbarOpen?.(
+        true,
+        typeof message === 'string' ? message : 'Не удалось отправить письмо'
+      );
+    }
+  };
+
   return (
     <Stack spacing={4}>
       <Typography
@@ -14,15 +41,31 @@ export const SettingsGeneralPage = () => {
 
       <SettingsRow
         title="Почта"
-        description="Подтвердить почту, чтобы получить полный доступ к сервису"
+        description={
+          isEmailConfirmed
+            ? 'Почта подтверждена'
+            : 'Подтвердить почту, чтобы получить полный доступ к сервису'
+        }
         action={
-          <Button
-            size="small"
-            variant="outlined"
-            color="primary"
-          >
-            Подтвердить
-          </Button>
+          isEmailConfirmed ? undefined : (
+            <Button
+              size="small"
+              variant="outlined"
+              color="primary"
+              disabled={isPending}
+              onClick={() => void handleConfirm()}
+              startIcon={
+                isPending ? (
+                  <CircularProgress
+                    size={14}
+                    color="inherit"
+                  />
+                ) : undefined
+              }
+            >
+              {isPending ? 'Отправка…' : 'Подтвердить'}
+            </Button>
+          )
         }
       />
 

@@ -2,6 +2,7 @@ export const ROUTES = {
     CRM: "/crm",
     INDEX: "/",
     AUTH: "/auth",
+    AUTH_CONFIRM_EMAIL: "/auth/confirm-email",
     CHAT: "/chat",
     POST: "/post",
     TASK: "/task",
@@ -17,6 +18,8 @@ export const ROUTES = {
     MY_RESPONSES: "/my-responses",
     SETTINGS_APPS: "/settings/apps",
     PUBLICATIONS: "/crm/publications",
+    USER_AGREEMENT: "/user-agreement",
+    PRIVACY_POLICY: "/privacy-policy",
     SETTINGS_GENERAL: "/settings/general",
     SETTINGS_MEMBERS: "/settings/members",
     SETTINGS_BILLING: "/settings/billing",
@@ -30,5 +33,3 @@ export const ROUTES = {
     SETTINGS_CRM_PIPELINE: "/settings/crm/pipeline",
     SETTINGS_CRM_AUTOMATION: "/settings/crm/automation",
 } as const;
-
-

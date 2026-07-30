@@ -5,7 +5,6 @@ import {
   Typography,
   Chip,
   IconButton,
-  Rating,
   Menu,
   MenuItem,
 } from '@mui/material';
@@ -14,13 +13,14 @@ import { Link, useNavigate } from 'react-router';
 
 import {
   UserDisplayName,
+  UserStatsRow,
   USER_ROLE,
   useFavoritePostIds,
   type Post,
   type User,
   type Application,
 } from '@/entities';
-import { DeletePostDialog } from '@/features';
+import { DeletePostDialog, useRequireEmailConfirmed } from '@/features';
 import { ShareButton, ROUTES } from '@/shared';
 import {
   Media,
@@ -59,12 +59,13 @@ export const MainCard = ({
   const open = Boolean(anchorEl);
 
   const navigate = useNavigate();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   const closeMenu = () => {
     setAnchorEl(null);
   };
 
-  const handleClick = (event: MouseEvent<HTMLElement>) => {
+  const handleMenuClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
@@ -133,7 +134,7 @@ export const MainCard = ({
                 title={post?.title ?? ''}
               />
 
-              <IconButton onClick={handleClick}>
+              <IconButton onClick={handleMenuClick}>
                 <MoreVert />
               </IconButton>
 
@@ -146,6 +147,7 @@ export const MainCard = ({
                   <MenuItem
                     onClick={() => {
                       closeMenu();
+                      if (!requireEmailConfirmed()) return;
                       navigate(
                         `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`
                       );
@@ -159,6 +161,7 @@ export const MainCard = ({
                   <MenuItem
                     onClick={() => {
                       closeMenu();
+                      if (!requireEmailConfirmed()) return;
                       setIsOpenDeleteDialog(true);
                     }}
                   >
@@ -170,6 +173,7 @@ export const MainCard = ({
                   <MenuItem
                     onClick={() => {
                       closeMenu();
+                      if (!requireEmailConfirmed()) return;
                       setOpenAddToCollectionDialog(true, post?.id ?? '');
                     }}
                   >
@@ -209,13 +213,16 @@ export const MainCard = ({
               }}
               direction="row"
             >
-              <UserDisplayName user={user} />
+              <UserDisplayName
+                user={user}
+                variant="subtitle1"
+              />
             </Stack>
 
-            <Rating
-              readOnly
-              value={4.5}
-              precision={0.5}
+            <UserStatsRow
+              followers={user?.followers}
+              completedTasksCount={user?.completedTasksCount}
+              sx={{ mt: 0.5 }}
             />
 
             <Typography

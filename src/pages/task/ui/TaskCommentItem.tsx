@@ -1,24 +1,23 @@
-import { Delete, Edit } from '@mui/icons-material';
+import { Done, DoneAll, MoreVert } from '@mui/icons-material';
 import {
-  Avatar,
   Box,
   Button,
+  CircularProgress,
   IconButton,
   InputBase,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from '@mui/material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useEffect, useState, type MouseEvent } from 'react';
 
-import {
-  canDeleteComment,
-  canEditComment,
-  canManageComment,
-  type TaskComment,
-} from '@/entities/task';
+import { canManageComment, type TaskComment } from '@/entities/task';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
+import { useIsCommentModifiable } from '../model/hooks/useIsCommentModifiable';
 import {
   getGallerySlideIndex,
   hasCommentText,
@@ -28,8 +27,7 @@ import {
 type TaskCommentItemProps = {
   comment: TaskComment;
   currentUserId: string | null;
-  userAvatar?: string;
-  contactAvatar?: string;
+  isOwner?: boolean;
   highlight?: string;
   isPending?: boolean;
   isEditing?: boolean;
@@ -38,7 +36,7 @@ type TaskCommentItemProps = {
   onStartEdit?: (commentId: string, text: string) => void;
   onSaveEdit?: (commentId: string) => void;
   onCancelEdit?: () => void;
-  onDelete?: (commentId: string, createdAt: string) => void;
+  onDelete?: (commentId: string) => void;
   onOpenGallery?: (media: TaskComment['media'], initialSlide: number) => void;
   showActions?: boolean;
 };
@@ -54,7 +52,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
   }
 
   const parts = text.split(
-    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'),
+    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi')
   );
 
   return parts.map((part, index) =>
@@ -73,7 +71,7 @@ const renderHighlightedText = (text: string, highlight?: string) => {
       </Box>
     ) : (
       part
-    ),
+    )
   );
 };
 
@@ -89,8 +87,7 @@ const formatCommentTime = (date: string) => {
 export const TaskCommentItem = ({
   comment,
   currentUserId,
-  userAvatar = '',
-  contactAvatar = '',
+  isOwner = false,
   highlight,
   isPending = false,
   isEditing = false,
@@ -103,24 +100,58 @@ export const TaskCommentItem = ({
   onOpenGallery,
   showActions = true,
 }: TaskCommentItemProps) => {
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
   const isOwn = canManageComment(comment.authorId, currentUserId);
-  const canEdit = canEditComment(comment.createdAt);
-  const canDelete = canDeleteComment(comment.createdAt);
+  const canModify = useIsCommentModifiable(comment, currentUserId, isOwner);
+  const canEdit = canModify;
+  const canDelete = canModify;
+  const showMenu = showActions && !isEditing && (canEdit || canDelete);
+
+  useEffect(() => {
+    if (!showMenu) {
+      setTimeout(() => {
+        setMenuAnchor(null);
+      }, 0);
+    }
+  }, [showMenu]);
+
   const commentMedia = comment.media ?? [];
+  const hasMedia = commentMedia.length > 0;
   const hasText = hasCommentText(comment.content);
   const time = formatCommentTime(comment.createdAt);
+  const editedTimeLabel = comment.editedAt
+    ? format(new Date(comment.editedAt), 'HH:mm')
+    : null;
 
   const bubbleColors = isOwn
     ? {
         bgcolor: 'primary.main',
         color: 'primary.contrastText',
-        actionColor: 'primary.contrastText',
+        actionColor: 'common.white',
       }
     : {
         bgcolor: 'background.paper',
         color: 'text.primary',
         actionColor: 'text.secondary',
       };
+
+  const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => setMenuAnchor(null);
+
+  const handleStartEdit = () => {
+    handleCloseMenu();
+    onStartEdit?.(comment.id, comment.content);
+  };
+
+  const handleDelete = () => {
+    handleCloseMenu();
+    onDelete?.(comment.id);
+  };
 
   const handleMediaClick = (index: number) => {
     const item = commentMedia[index];
@@ -143,21 +174,16 @@ export const TaskCommentItem = ({
         direction={isOwn ? 'row-reverse' : 'row'}
         spacing={1.5}
         sx={{
-          width: '100%',
           maxWidth: { xs: '92%', sm: '78%', md: '68%' },
           alignItems: 'flex-end',
         }}
       >
-        <Avatar
-          src={(isOwn ? userAvatar : contactAvatar) || undefined}
-          sx={{ width: 32, height: 32, flexShrink: 0 }}
-        />
-
         <Box
           sx={{
             p: 1.5,
             minWidth: 0,
             flex: 1,
+            position: 'relative',
             borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
             bgcolor: bubbleColors.bgcolor,
             color: bubbleColors.color,
@@ -166,13 +192,62 @@ export const TaskCommentItem = ({
             borderColor: 'divider',
           }}
         >
-          {commentMedia.length > 0 && (
+          {showMenu && (
+            <>
+              <IconButton
+                aria-label="Действия с комментарием"
+                onClick={handleOpenMenu}
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  zIndex: 1,
+                  color: bubbleColors.actionColor,
+                  opacity: 0.85,
+                }}
+              >
+                <MoreVert sx={{ fontSize: 16 }} />
+              </IconButton>
+
+              <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={handleCloseMenu}
+              >
+                {canEdit && (
+                  <MenuItem
+                    disabled={isPending}
+                    onClick={handleStartEdit}
+                  >
+                    Редактировать
+                  </MenuItem>
+                )}
+                {canDelete && (
+                  <MenuItem
+                    disabled={isPending}
+                    onClick={handleDelete}
+                  >
+                    {isPending ? (
+                      <CircularProgress
+                        size={14}
+                        sx={{ mr: 1 }}
+                      />
+                    ) : null}
+                    Удалить
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
+          )}
+
+          {hasMedia && (
             <Box
               sx={{
                 gap: 1,
                 display: 'flex',
                 flexWrap: 'wrap',
                 mb: hasText || isEditing ? 1 : 0,
+                pr: showMenu ? 4 : 0,
               }}
             >
               {commentMedia.map((item, index) => (
@@ -184,7 +259,9 @@ export const TaskCommentItem = ({
                     flexShrink: 0,
                     overflow: 'hidden',
                     borderRadius: '12px',
-                    cursor: isGalleryMedia(item.mimeType) ? 'pointer' : 'default',
+                    cursor: isGalleryMedia(item.mimeType)
+                      ? 'pointer'
+                      : 'default',
                   }}
                   onClick={() => handleMediaClick(index)}
                 >
@@ -230,6 +307,7 @@ export const TaskCommentItem = ({
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                   lineHeight: 1.5,
+                  pr: showMenu && !hasMedia ? 4 : 0,
                 }}
               >
                 {renderHighlightedText(comment.content, highlight)}
@@ -241,9 +319,9 @@ export const TaskCommentItem = ({
             direction="row"
             spacing={1}
             sx={{
-              mt: hasText || commentMedia.length || isEditing ? 1 : 0,
+              mt: hasText || hasMedia || isEditing ? 1 : 0,
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: isEditing ? 'space-between' : 'flex-end',
               gap: 1,
             }}
           >
@@ -260,17 +338,25 @@ export const TaskCommentItem = ({
                 {time.relative}
               </Typography>
 
-              {comment.createdAt !== comment.updatedAt && (
+              {editedTimeLabel && (
                 <Typography
                   variant="caption"
                   sx={{ opacity: 0.8, whiteSpace: 'nowrap' }}
                 >
-                  · изменено
+                  · изменено {editedTimeLabel}
                 </Typography>
               )}
+
+              {isOwn &&
+                !isEditing &&
+                (comment.isRead ? (
+                  <DoneAll sx={{ fontSize: 15, opacity: 0.9 }} />
+                ) : (
+                  <Done sx={{ fontSize: 15, opacity: 0.75 }} />
+                ))}
             </Stack>
 
-            {isEditing ? (
+            {isEditing && (
               <Stack
                 direction="row"
                 spacing={0.5}
@@ -309,36 +395,6 @@ export const TaskCommentItem = ({
                   Отмена
                 </Button>
               </Stack>
-            ) : (
-              showActions &&
-              isOwn && (
-                <Stack
-                  direction="row"
-                  sx={{ flexShrink: 0 }}
-                >
-                  {canEdit && (
-                    <IconButton
-                      size="small"
-                      disabled={isPending}
-                      onClick={() => onStartEdit?.(comment.id, comment.content)}
-                      sx={{ color: bubbleColors.actionColor }}
-                    >
-                      <Edit sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  )}
-
-                  {canDelete && (
-                    <IconButton
-                      size="small"
-                      disabled={isPending}
-                      onClick={() => onDelete?.(comment.id, comment.createdAt)}
-                      sx={{ color: bubbleColors.actionColor }}
-                    >
-                      <Delete sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  )}
-                </Stack>
-              )
             )}
           </Stack>
         </Box>

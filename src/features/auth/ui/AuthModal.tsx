@@ -1,6 +1,8 @@
 import { Close } from '@mui/icons-material';
 import { Box, Dialog, IconButton, Typography } from '@mui/material';
 
+import { BASE_COLOR } from '@/app/index';
+
 import { useAuthStore } from '../model/store/store';
 
 import LoginForm from './LoginForm';
@@ -43,7 +45,7 @@ export const AuthModal = () => {
           variant="h5"
           sx={{ mb: 2 }}
         >
-          LOGO
+          NIKS<span style={{ color: BASE_COLOR }}>SENSES</span>
         </Typography>
 
         <Typography

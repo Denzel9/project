@@ -14,7 +14,12 @@ import {
   uploadPostMediaBatch,
   type Post,
 } from '@/entities/post';
+import {
+  useRequireEmailConfirmed,
+  getEmailConfirmErrorMessage,
+} from '@/features/auth';
 import { ROUTES } from '@/shared';
+import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 import { useActions } from '../hooks/useActions';
 import {
@@ -45,8 +50,8 @@ import type { Photo } from '@/entities/photo';
 const isLocalPreview = (photo: Photo) => photo.url.startsWith('blob:');
 
 type ApplicationFormProps = {
-  isEdit?: boolean;
   data?: Post;
+  isEdit?: boolean;
   isLoading?: boolean;
 };
 
@@ -57,14 +62,18 @@ export const ApplicationForm = ({
 }: ApplicationFormProps) => {
   const navigate = useNavigate();
 
+  const { setSnackbarOpen } = useSnackbarStore();
+
   const [files, setFiles] = useState<File[]>([]);
   const [images, setImages] = useState<Photo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const { mutateAsync: createPost } = useCreatePostMutation();
   const { mutateAsync: updatePost } = useUpdatePostMutation();
   const { mutateAsync: deleteMedia } = useDeleteMediaMutation();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   const methods = useForm<FormProductType>({
     defaultValues,
@@ -74,7 +83,20 @@ export const ApplicationForm = ({
 
   const { handleSubmit, setValue, getValues } = methods;
 
-  const { handleGoToPreview } = useActions({ getValues, id: data?.id || '' });
+  const {
+    menuOptions,
+    handleMenuAction,
+    handleGoToPreview,
+    deleteApplication,
+  } = useActions({
+    isEdit,
+    setValue,
+    getValues,
+    id: data?.id || '',
+    setIsConfirmDialogOpen,
+    isPrivate: data?.isPrivate ?? false,
+    isArchived: data?.isArchived ?? false,
+  });
 
   const handleDeletePhoto = async (key: string) => {
     const photo = images.find(image => image.key === key);
@@ -108,6 +130,8 @@ export const ApplicationForm = ({
   };
 
   const onSubmit = async (formData: FormProductType) => {
+    if (!requireEmailConfirmed()) return;
+
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -128,7 +152,7 @@ export const ApplicationForm = ({
       navigate(ROUTES.PROFILE);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'Не удалось сохранить пост'
+        getEmailConfirmErrorMessage(error, 'Не удалось сохранить пост')
       );
     } finally {
       setIsSubmitting(false);
@@ -153,6 +177,19 @@ export const ApplicationForm = ({
     }
   }, [data, setValue, files.length]);
 
+  const handleDeleteApplication = async () => {
+    if (!data?.id) return;
+
+    try {
+      await deleteApplication(data.id);
+      navigate(ROUTES.PROFILE);
+    } catch {
+      setSnackbarOpen?.(true, 'Не удалось удалить объявление');
+    }
+
+    setIsConfirmDialogOpen(false);
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -164,7 +201,11 @@ export const ApplicationForm = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <MainInfo isEdit={isEdit} />
+        <MainInfo
+          isEdit={isEdit}
+          menuOptions={menuOptions}
+          onMenuAction={handleMenuAction}
+        />
 
         <Gallery
           files={files}
@@ -211,6 +252,14 @@ export const ApplicationForm = ({
           </Button>
         </Box>
       </form>
+
+      <ConfirmDialog
+        title="Удалить объявление"
+        isOpen={isConfirmDialogOpen}
+        onSuccess={handleDeleteApplication}
+        onClose={() => setIsConfirmDialogOpen(false)}
+        description="Вы уверены, что хотите удалить это объявление?"
+      />
     </FormProvider>
   );
 };

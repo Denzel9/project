@@ -214,7 +214,10 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
               {contact.label}
             </Typography>
 
-            <UserDisplayName user={contact.user} />
+            <UserDisplayName
+              user={contact.user}
+              variant="body2"
+            />
           </Box>
         </Stack>
 

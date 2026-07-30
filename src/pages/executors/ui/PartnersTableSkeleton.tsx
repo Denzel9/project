@@ -1,8 +1,13 @@
 import { Box, Skeleton, Stack } from '@mui/material';
 
-const TABLE_SHELL_SX = {
+export const partnersTableShellSx = {
   width: '100%',
-  overflowX: 'auto' as const,
+  flex: 1,
+  minHeight: 0,
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  overflow: 'hidden' as const,
   bgcolor: 'white',
   borderRadius: { xs: '16px', md: '32px' },
   border: (theme: { palette: { secondary: { main: string } } }) =>
@@ -10,10 +15,10 @@ const TABLE_SHELL_SX = {
 };
 
 export const PartnersTableSkeleton = () => (
-  <Box sx={TABLE_SHELL_SX}>
+  <Box sx={partnersTableShellSx}>
     <Stack
       spacing={1.5}
-      sx={{ p: 2 }}
+      sx={{ p: 2, flex: 1 }}
     >
       {Array.from({ length: 5 }, (_, index) => (
         <Skeleton
@@ -26,5 +31,3 @@ export const PartnersTableSkeleton = () => (
     </Stack>
   </Box>
 );
-
-export const partnersTableShellSx = TABLE_SHELL_SX;

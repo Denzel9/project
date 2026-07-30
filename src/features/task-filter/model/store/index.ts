@@ -52,15 +52,19 @@ const readStoredKanbanColumns = (): TaskStatus[] => {
 
 type MyTaskFilterStore = {
     postId: string;
+    executorId: string;
     viewMode: TaskViewMode;
     status: TaskStatusFilter;
     updatedDate: string | null;
     visibleKanbanColumns: TaskStatus[];
     fastButtonValue: FastButtonFilter;
     extraFilter: TaskExtraFilter | null;
+    isSearchOpen: boolean;
+    searchQuery: string;
 
     resetKanbanColumns: () => void;
     setPostId: (postId: string) => void;
+    setExecutorId: (executorId: string) => void;
     setStatus: (status: TaskStatusFilter) => void;
     setExtraFilter: (extraFilter: TaskExtraFilter | null) => void;
     setViewMode: (viewMode: TaskViewMode) => void;
@@ -70,6 +74,8 @@ type MyTaskFilterStore = {
     applyDefaultFastFilter: () => void;
     setVisibleKanbanColumns: (visibleKanbanColumns: TaskStatus[]) => void;
     ensureKanbanColumnVisible: (status: TaskStatus) => void;
+    setIsSearchOpen: (isSearchOpen: boolean) => void;
+    setSearchQuery: (searchQuery: string) => void;
 };
 
 const initialViewMode = readStoredViewMode();
@@ -77,6 +83,8 @@ const initialFastButtonValue: FastButtonFilter = 'pending-action';
 
 export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
     postId: 'all',
+
+    executorId: 'all',
 
     status: 'all',
 
@@ -93,9 +101,19 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     extraFilter: null,
 
+    isSearchOpen: false,
+
+    searchQuery: '',
+
     setPostId: postId =>
         set({
             postId,
+            extraFilter: null,
+        }),
+
+    setExecutorId: executorId =>
+        set({
+            executorId,
             extraFilter: null,
         }),
 
@@ -176,6 +194,15 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     resetKanbanColumns: () =>
         set({ visibleKanbanColumns: [...ALL_TASK_STATUSES] }),
+
+    setIsSearchOpen: isSearchOpen =>
+        set(
+            isSearchOpen
+                ? { isSearchOpen: true }
+                : { isSearchOpen: false, searchQuery: '' },
+        ),
+
+    setSearchQuery: searchQuery => set({ searchQuery }),
 }));
 
 useMyTaskFilterStore.subscribe((state, prev) => {

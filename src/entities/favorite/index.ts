@@ -1,5 +1,6 @@
 export {
   favoriteKeys,
+  fetchAllFavorites,
   useAddFavoriteMutation,
   useCreateFavoriteGroupMutation,
   useDeleteFavoriteGroupMutation,

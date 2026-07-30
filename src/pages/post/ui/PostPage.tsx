@@ -2,11 +2,9 @@ import {
   Box,
   Chip,
   CircularProgress,
-  MenuItem,
   Stack,
   Tab,
   Tabs,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
@@ -18,26 +16,32 @@ import {
   useGetUserByIdQuery,
   useMyApplicationsMap,
   usePostApplicationsQuery,
+  USER_ROLE,
 } from '@/entities';
 import { useAuthStore } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
 import { PageLayout, ContactCard } from '@/widgets';
 
 import {
-  POST_APPLICATION_STATUS_FILTER_LABELS,
-  filterPostApplicationsByStatus,
+  getPostApplicationApplicantOptions,
+  hasActivePostApplicationFilters,
   toPostApplicationsQueryParams,
+  type PostApplicationApplicantFilter,
   type PostApplicationStatusFilter,
 } from '../model/utils';
 
 import { IncomingApplications } from './IncomingApplications';
 import { MainCard } from './MainCard';
+import { PostApplicationsFilter } from './PostApplicationsFilter';
 import { PostDetailsCard } from './PostDetailsCard';
 
 export const PostPage = () => {
   const [tabValue, setTabValue] = useState(0);
   const [applicationStatusFilter, setApplicationStatusFilter] =
     useState<PostApplicationStatusFilter>('all');
+  const [applicantId, setApplicantId] =
+    useState<PostApplicationApplicantFilter>('all');
+  const [createdDate, setCreatedDate] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -46,25 +50,64 @@ export const PostPage = () => {
 
   const { id } = useParams<{ id: string }>();
 
-  const { id: currentUserId } = useAuthStore();
+  const { id: currentUserId, role } = useAuthStore();
 
   const { data: post, isLoading } = usePostByIdQuery(id ?? null);
 
   const { data: user } = useGetUserByIdQuery(post?.owner?.id ?? null);
 
+  const optionsQueryParams = useMemo(
+    () =>
+      toPostApplicationsQueryParams({
+        status: applicationStatusFilter,
+        applicantId: 'all',
+        createdDate,
+      }),
+    [applicationStatusFilter, createdDate]
+  );
+
   const applicationQueryParams = useMemo(
-    () => toPostApplicationsQueryParams(applicationStatusFilter),
-    [applicationStatusFilter]
+    () =>
+      toPostApplicationsQueryParams({
+        status: applicationStatusFilter,
+        applicantId,
+        createdDate,
+      }),
+    [applicationStatusFilter, applicantId, createdDate]
   );
 
   const { data: postApplications, isLoading: isPostApplicationsLoading } =
     usePostApplicationsQuery(post?.id || null, applicationQueryParams, true);
 
-  const filteredApplications = useMemo(
-    () =>
-      filterPostApplicationsByStatus(postApplications, applicationStatusFilter),
-    [postApplications, applicationStatusFilter]
+  const { data: applicantSourceApplications } = usePostApplicationsQuery(
+    post?.id || null,
+    optionsQueryParams,
+    true
   );
+
+  const applicantOptions = useMemo(() => {
+    const options = getPostApplicationApplicantOptions(
+      applicantSourceApplications?.items ?? postApplications?.items ?? []
+    );
+
+    if (
+      applicantId !== 'all' &&
+      !options.some(option => option.id === applicantId)
+    ) {
+      options.unshift({
+        id: applicantId,
+        label: 'Выбранный кандидат',
+      });
+    }
+
+    return options;
+  }, [applicantId, applicantSourceApplications?.items, postApplications?.items]);
+
+  const hasActiveFilters = hasActivePostApplicationFilters({
+    status: applicationStatusFilter,
+    applicantId,
+    createdDate,
+  });
 
   const { map: myApplicationsMap } = useMyApplicationsMap();
 
@@ -81,6 +124,7 @@ export const PostPage = () => {
   }, [tab]);
 
   const isOwner = Boolean(post?.owner?.id === currentUserId);
+  const isCompanyPost = post?.owner?.companyProfile?.companyName;
   const application = myApplicationsMap.get(post?.id ?? '');
 
   const mediaItems =
@@ -137,7 +181,7 @@ export const PostPage = () => {
         spacing={2}
         sx={{ flex: 1 }}
       >
-        {isOwner && (
+        {isOwner && role === USER_ROLE.COMPANY && (
           <Stack
             direction="row"
             sx={{
@@ -176,40 +220,23 @@ export const PostPage = () => {
                     <Chip
                       size="small"
                       color="primary"
-                      label={filteredApplications?.items?.length ?? 0}
+                      label={postApplications?.total ?? postApplications?.items?.length ?? 0}
                     />
                   </Stack>
                 }
               />
             </Tabs>
 
-            {tabValue === 1 && (
-              <TextField
-                select
-                size="small"
-                label="Статус"
-                value={applicationStatusFilter}
-                sx={{ minWidth: 160 }}
-                onChange={event =>
-                  setApplicationStatusFilter(
-                    event.target.value as PostApplicationStatusFilter
-                  )
-                }
-              >
-                {(
-                  Object.entries(POST_APPLICATION_STATUS_FILTER_LABELS) as [
-                    PostApplicationStatusFilter,
-                    string,
-                  ][]
-                ).map(([value, label]) => (
-                  <MenuItem
-                    key={value}
-                    value={value}
-                  >
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
+            {isOwner && role === USER_ROLE.COMPANY && tabValue === 1 && (
+              <PostApplicationsFilter
+                status={applicationStatusFilter}
+                applicantId={applicantId}
+                createdDate={createdDate}
+                applicantOptions={applicantOptions}
+                onStatusChange={setApplicationStatusFilter}
+                onApplicantChange={setApplicantId}
+                onCreatedDateChange={setCreatedDate}
+              />
             )}
           </Stack>
         )}
@@ -257,36 +284,40 @@ export const PostPage = () => {
               sx={{ alignItems: 'flex-start' }}
             >
               <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-                <PostDetailsCard post={post} />
-              </Box>
-
-              <Box
-                sx={{
-                  width: { xs: '100%', lg: '30%' },
-                  flexShrink: 0,
-                  position: { lg: 'sticky' },
-                  top: { lg: 16 },
-                }}
-              >
-                <ContactCard
-                  withTitle
-                  isMyPost={isOwner}
-                  contact={user?.data}
-                  taskId={post.id}
+                <PostDetailsCard
+                  post={post}
+                  isCompanyPost={Boolean(isCompanyPost)}
                 />
               </Box>
+
+              {!isOwner && (
+                <Box
+                  sx={{
+                    width: { xs: '100%', lg: '30%' },
+                    flexShrink: 0,
+                    position: { lg: 'sticky' },
+                    top: { lg: 16 },
+                  }}
+                >
+                  <ContactCard
+                    withTitle
+                    taskId={post.id}
+                    isMyPost={isOwner}
+                    contact={user?.data}
+                  />
+                </Box>
+              )}
             </Stack>
           </Stack>
         )}
 
         {isOwner && tabValue === 1 && (
           <IncomingApplications
-            applications={filteredApplications}
+            applications={postApplications}
             isLoading={isPostApplicationsLoading}
             emptyTitle={
-              applicationStatusFilter !== 'all' &&
-              Boolean(postApplications?.items?.length)
-                ? 'Нет откликов с выбранным статусом'
+              hasActiveFilters
+                ? 'Нет откликов по выбранным фильтрам'
                 : undefined
             }
           />

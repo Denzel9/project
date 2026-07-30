@@ -3,10 +3,8 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   MoreVertOutlined,
-  OpenInNew,
   Person,
   PersonAddOutlined,
-  Schedule,
 } from '@mui/icons-material';
 import {
   Avatar,
@@ -44,7 +42,6 @@ type ContactCardProps = {
   isMyPost?: boolean;
   withTitle?: boolean;
   status?: TaskStatus;
-  isExecutorApprove?: boolean | null;
 };
 
 const cardSx = {
@@ -63,7 +60,6 @@ export const ContactCard = ({
   contact,
   withTitle = false,
   isMyPost = false,
-  isExecutorApprove = null,
 }: ContactCardProps) => {
   const [isOpenAddExecutorDialog, setIsOpenAddExecutorDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -73,93 +69,7 @@ export const ContactCard = ({
 
   const roleLabel = isMyPost ? 'Исполнитель' : 'Заказчик';
 
-  if (isExecutorApprove === null && contact?.id) {
-    return (
-      <Box sx={cardSx}>
-        <Chip
-          size="small"
-          icon={<Schedule sx={{ fontSize: 16 }} />}
-          label="Ожидает подтверждения"
-          color="warning"
-          sx={{ mb: 2.5, fontWeight: 500 }}
-        />
-
-        <Stack
-          spacing={2}
-          direction="row"
-          sx={{ alignItems: 'center' }}
-        >
-          <Avatar
-            src={contact.avatar || ''}
-            sx={{
-              width: 56,
-              height: 56,
-              border: '2px solid',
-              borderColor: 'warning.light',
-            }}
-          >
-            {getUserName(contact)?.charAt(0) ?? '?'}
-          </Avatar>
-
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mb: 0.25 }}
-            >
-              {roleLabel}
-            </Typography>
-
-            <Link
-              target="_blank"
-              to={`${ROUTES.PROFILE}?userId=${contact.id}`}
-              style={{ color: 'inherit', textDecoration: 'none' }}
-            >
-              <Stack
-                direction="row"
-                spacing={0.5}
-                sx={{
-                  alignItems: 'center',
-                  transition: 'color 0.2s ease',
-                  '&:hover': { color: 'primary.main' },
-                }}
-              >
-                <UserDisplayName user={contact} />
-                <OpenInNew sx={{ fontSize: 16, opacity: 0.6 }} />
-              </Stack>
-            </Link>
-          </Box>
-        </Stack>
-
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          sx={{ mt: 2.5 }}
-        >
-          <Button
-            fullWidth
-            size="small"
-            variant="outlined"
-            component={Link}
-            to={`${ROUTES.PROFILE}?userId=${contact.id}`}
-            target="_blank"
-          >
-            Профиль
-          </Button>
-
-          <Button
-            fullWidth
-            size="small"
-            variant="contained"
-            startIcon={<ChatBubbleOutlined />}
-            onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${contact.id}`)}
-          >
-            Написать
-          </Button>
-        </Stack>
-      </Box>
-    );
-  }
+  //
 
   if (!contact) {
     return (
@@ -300,7 +210,10 @@ export const ContactCard = ({
           onClick={() => navigate(`${ROUTES.PROFILE}?userId=${contact.id}`)}
           sx={{ cursor: 'pointer' }}
         >
-          <UserDisplayName user={contact} />
+          <UserDisplayName
+            user={contact}
+            variant="h6"
+          />
         </Box>
       </Stack>
 

@@ -14,7 +14,7 @@ export const FILTERS = [
         value: FILTERS_VALUES.REMOTE,
     },
     {
-        label: 'Только с фото ???',
+        label: 'Только с фото',
         value: FILTERS_VALUES.WITH_PHOTO,
     },
 ] as const;

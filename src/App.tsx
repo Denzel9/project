@@ -6,18 +6,20 @@ import { NotificationsProvider } from './app/providers/NotificationsProvider';
 import { theme } from './app/theme/theme';
 import { Router } from './pages';
 import { queryClient } from './shared';
-import { SnackbarLocal } from './widgets';
+import { DatePickerProvider, SnackbarLocal } from './widgets';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <AuthProvider>
-          <NotificationsProvider>
-            <Router />
-            <SnackbarLocal />
-          </NotificationsProvider>
-        </AuthProvider>
+        <DatePickerProvider>
+          <AuthProvider>
+            <NotificationsProvider>
+              <Router />
+              <SnackbarLocal />
+            </NotificationsProvider>
+          </AuthProvider>
+        </DatePickerProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

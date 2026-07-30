@@ -1,20 +1,29 @@
-import { DownloadOutlined, PrintOutlined, Search } from '@mui/icons-material';
+import {
+  Close,
+  DownloadOutlined,
+  PrintOutlined,
+  Search,
+} from '@mui/icons-material';
 import {
   CircularProgress,
   IconButton,
-  MenuItem,
   Stack,
   TextField,
   Tooltip,
+  useMediaQuery,
 } from '@mui/material';
 import { useState } from 'react';
 
+import { FilterAutocomplete } from '@/features';
 import { useScroll } from '@/shared';
 
 import { PublicationSearchPanel } from './PublicationSearchPanel';
 import { PublicationViewModeToggle } from './PublicationViewModeToggle';
 
-import type { PublicationTableReportControls, PublicationViewMode } from '../model/types';
+import type {
+  PublicationTableReportControls,
+  PublicationViewMode,
+} from '../model/types';
 import type {
   PublicationExecutorFilter,
   PublicationPostFilter,
@@ -52,14 +61,26 @@ export const PublicationsFilter = ({
   onViewModeChange,
   tableReport,
 }: PublicationsFilterProps) => {
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { isScrolled, ref } = useScroll(150);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const handleToggleSearch = () => {
+    if (isSearchOpen) {
+      setIsSearchOpen(false);
+      onQueryChange('');
+      return;
+    }
+
+    setIsSearchOpen(true);
+  };
 
   return (
     <>
       <Stack
         ref={ref}
         direction="row"
+        className="print-no-print"
         sx={{
           px: 2,
           pb: 2,
@@ -84,45 +105,21 @@ export const PublicationsFilter = ({
             flexWrap: { xs: 'wrap', md: 'nowrap' },
           }}
         >
-          <TextField
-            select
-            fullWidth
-            size="small"
-            label="Объявление"
+          <FilterAutocomplete
+            label="Задача"
             value={postId}
-            onChange={event => onPostChange(event.target.value)}
-            sx={{ minWidth: { xs: '100%', md: 220 } }}
-          >
-            <MenuItem value="all">Все</MenuItem>
-            {postOptions.map(option => (
-              <MenuItem
-                key={option.id}
-                value={option.id}
-              >
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
+            options={postOptions}
+            onChange={onPostChange}
+            sx={{ flex: 1 }}
+          />
 
-          <TextField
-            select
-            fullWidth
-            size="small"
+          <FilterAutocomplete
             label="Исполнитель"
             value={executorId}
-            onChange={event => onExecutorChange(event.target.value)}
-            sx={{ minWidth: { xs: '100%', md: 220 } }}
-          >
-            <MenuItem value="all">Все</MenuItem>
-            {executorOptions.map(option => (
-              <MenuItem
-                key={option.id}
-                value={option.id}
-              >
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
+            options={executorOptions}
+            onChange={onExecutorChange}
+            sx={{ flex: 1 }}
+          />
         </Stack>
 
         <Stack
@@ -130,44 +127,59 @@ export const PublicationsFilter = ({
           spacing={0.5}
           sx={{ alignItems: 'center', flexShrink: 0 }}
         >
+          {isSearchOpen && !isMobile && (
+            <TextField
+              autoFocus
+              label="Поиск"
+              size="small"
+              variant="outlined"
+              value={q}
+              onChange={event => onQueryChange(event.target.value)}
+              sx={{ width: 300 }}
+            />
+          )}
+
+          <IconButton
+            color={q.trim() || isSearchOpen ? 'primary' : 'default'}
+            onClick={handleToggleSearch}
+          >
+            {isSearchOpen ? <Close /> : <Search />}
+          </IconButton>
+
           {viewMode === 'table' && tableReport && (
             <>
               <Tooltip title="Печать">
-                <span>
-                  <IconButton
-                    size="small"
-                    disabled={tableReport.disabled || tableReport.isPrinting}
-                    onClick={tableReport.onPrint}
-                  >
-                    {tableReport.isPrinting ? (
-                      <CircularProgress
-                        size={16}
-                        color="inherit"
-                      />
-                    ) : (
-                      <PrintOutlined fontSize="small" />
-                    )}
-                  </IconButton>
-                </span>
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isPrinting}
+                  onClick={tableReport.onPrint}
+                >
+                  {tableReport.isPrinting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <PrintOutlined fontSize="small" />
+                  )}
+                </IconButton>
               </Tooltip>
 
               <Tooltip title="Экспорт CSV">
-                <span>
-                  <IconButton
-                    size="small"
-                    disabled={tableReport.disabled || tableReport.isExporting}
-                    onClick={tableReport.onExport}
-                  >
-                    {tableReport.isExporting ? (
-                      <CircularProgress
-                        size={16}
-                        color="inherit"
-                      />
-                    ) : (
-                      <DownloadOutlined fontSize="small" />
-                    )}
-                  </IconButton>
-                </span>
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isExporting}
+                  onClick={tableReport.onExport}
+                >
+                  {tableReport.isExporting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <DownloadOutlined fontSize="small" />
+                  )}
+                </IconButton>
               </Tooltip>
             </>
           )}
@@ -176,20 +188,16 @@ export const PublicationsFilter = ({
             viewMode={viewMode}
             onChange={onViewModeChange}
           />
-
-          <IconButton
-            color={q.trim() ? 'primary' : 'default'}
-            onClick={() => setIsSearchOpen(true)}
-          >
-            <Search />
-          </IconButton>
         </Stack>
       </Stack>
 
       <PublicationSearchPanel
-        open={isSearchOpen}
+        open={isSearchOpen && isMobile}
         query={q}
-        onClose={() => setIsSearchOpen(false)}
+        onClose={() => {
+          setIsSearchOpen(false);
+          onQueryChange('');
+        }}
         onQueryChange={onQueryChange}
       />
     </>

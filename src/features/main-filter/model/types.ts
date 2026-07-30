@@ -20,7 +20,6 @@ export type PostFilterBudget = {
 export type PostFilterLocation = {
   city: string;
   country: string;
-  address: string;
   shootingRequired: TriStateFilter;
 };
 
@@ -30,7 +29,6 @@ export type PostFilterBloggerRequirements = {
   minEngagementRate: string;
   verifiedAccount: TriStateFilter;
   experienceWithAds: TriStateFilter;
-  languages: string[];
   contentStyle: ContentStyle[];
 };
 
@@ -44,19 +42,8 @@ export type PostFilterCooperationDetails = {
   ndaRequired: TriStateFilter;
 };
 
-export type PostFilterBrief = {
-  hashtags: string[];
-  mentions: string[];
-};
-
-export type PostFilterDeliverable = {
-  platform: Platform | '';
-  format: PlacementFormat | '';
-};
-
 export type PostFilterDraft = {
   title: string;
-  chips: string[];
   urgent: TriStateFilter;
   createdAt: string;
   categories: string[];
@@ -69,9 +56,7 @@ export type PostFilterDraft = {
   location: PostFilterLocation;
   bloggerRequirements: PostFilterBloggerRequirements;
   cooperationDetails: PostFilterCooperationDetails;
-  brief: PostFilterBrief;
   tags: string[];
-  deliverables: PostFilterDeliverable;
 };
 
 const defaultBudget: PostFilterBudget = {
@@ -83,7 +68,6 @@ const defaultBudget: PostFilterBudget = {
 const defaultLocation: PostFilterLocation = {
   city: '',
   country: '',
-  address: '',
   shootingRequired: '',
 };
 
@@ -93,7 +77,6 @@ const defaultBloggerRequirements: PostFilterBloggerRequirements = {
   minEngagementRate: '',
   verifiedAccount: '',
   experienceWithAds: '',
-  languages: [],
   contentStyle: [],
 };
 
@@ -107,19 +90,8 @@ const defaultCooperationDetails: PostFilterCooperationDetails = {
   ndaRequired: '',
 };
 
-const defaultBrief: PostFilterBrief = {
-  hashtags: [],
-  mentions: [],
-};
-
-const defaultDeliverables: PostFilterDeliverable = {
-  platform: '',
-  format: '',
-};
-
 export const defaultPostFilterDraft: PostFilterDraft = {
   title: '',
-  chips: [],
   urgent: '',
   createdAt: '',
   categories: [],
@@ -132,7 +104,5 @@ export const defaultPostFilterDraft: PostFilterDraft = {
   location: defaultLocation,
   bloggerRequirements: defaultBloggerRequirements,
   cooperationDetails: defaultCooperationDetails,
-  brief: defaultBrief,
   tags: [],
-  deliverables: defaultDeliverables,
 };

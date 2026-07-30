@@ -1,7 +1,8 @@
-import { Box, Button, Divider, Typography } from '@mui/material';
+import { Box, Link, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
+import { BASE_COLOR } from '@/app/index';
 import { useAcceptInviteMutation } from '@/entities/workspace-member';
 import {
   AuthForms,
@@ -21,6 +22,7 @@ export const AuthPage = () => {
   const token = searchParams.get('token');
   const isAuthFailed = searchParams.get('isAuthFailed');
   const isResetPassword = searchParams.get('isResetPassword');
+  const emailConfirmed = searchParams.get('emailConfirmed');
 
   const { mutateAsync: acceptInvite } = useAcceptInviteMutation();
 
@@ -58,34 +60,30 @@ export const AuthPage = () => {
     >
       <Box
         sx={{
+          flex: 1,
+          width: '100%',
           height: '100%',
           display: 'flex',
           p: { xs: 2, md: 4 },
           position: 'relative',
           alignItems: 'center',
           flexDirection: 'column',
-          justifyContent: 'center',
-          width: { xs: '100%', md: '100%' },
+          justifyContent: 'space-between',
         }}
       >
         <Box
           sx={{
-            position: 'absolute',
-            top: { xs: '16px', md: '32px' },
-            left: { xs: '16px', md: '32px' },
-            right: { xs: '16px', md: '32px' },
+            alignSelf: 'start',
           }}
         >
-          <Typography
-            variant="h3"
-            sx={{ mb: 1 }}
-          >
-            LOGO
-          </Typography>
+          <img
+            src="./Primary.png"
+            alt="auth-background"
+          />
 
           <Typography
             color="info"
-            sx={{ mb: 4 }}
+            sx={{ mt: 1 }}
             variant="body1"
           >
             Лучший способ создавать и управлять своим контентом
@@ -95,20 +93,20 @@ export const AuthPage = () => {
         <Box
           sx={{
             width: '100%',
+            maxWidth: 500,
             display: 'flex',
             alignItems: 'center',
             flexDirection: 'column',
+            justifyContent: 'center',
           }}
         >
           {token && !isAuthFailed && <ResetPasswordForm />}
-
           {token && isAuthFailed && (
             <LoginForm
               onError={setSnackbarOpen}
               onSuccess={handleSuccessLogin}
             />
           )}
-
           {isRecoveryPassword && (
             <RecoveryPasswordForm
               onError={setSnackbarOpen}
@@ -118,7 +116,7 @@ export const AuthPage = () => {
           )}
 
           {!token && !isRecoveryPassword && (
-            <Box sx={{ width: { xs: '100%', md: '500px' } }}>
+            <Box sx={{ width: '100%' }}>
               {isResetPassword && (
                 <Typography
                   variant="h6"
@@ -128,45 +126,48 @@ export const AuthPage = () => {
                 </Typography>
               )}
 
+              {emailConfirmed && (
+                <Typography
+                  variant="h6"
+                  color="info"
+                  sx={{ mb: 2 }}
+                >
+                  Почта подтверждена! Войдите в систему
+                </Typography>
+              )}
+
               <AuthForms
                 onError={setSnackbarOpen}
                 onRecoveryPassword={() => setIsRecoveryPassword(true)}
               />
             </Box>
           )}
-
-          {!token && !isRecoveryPassword && (
-            <Box sx={{ mt: 2, width: { xs: '100%', md: '500px' } }}>
-              <Divider sx={{ mb: 2 }}>
-                <Typography
-                  variant="body1"
-                  color="info"
-                >
-                  или
-                </Typography>
-              </Divider>
-
-              <Button
-                fullWidth
-                variant="outlined"
-              >
-                Войти с Google
-              </Button>
-            </Box>
-          )}
         </Box>
-      </Box>
 
-      {/* <Box
-        sx={{
-          width: '50%',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          display: { xs: 'none', md: 'block' },
-          backgroundImage: `url('main-bg.jpg')`,
-        }}
-      /> */}
+        <Stack
+          direction="row"
+          spacing={4}
+          sx={{ alignSelf: 'start', width: '100%' }}
+        >
+          <Typography
+            variant="body2"
+            color="white"
+          >
+            NIKS<span style={{ color: BASE_COLOR }}>SENSES</span> © 2026
+          </Typography>
+
+          <Link
+            href="/help"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              '&:hover': { color: BASE_COLOR },
+            }}
+          >
+            <Typography variant="body2">Помощь</Typography>
+          </Link>
+        </Stack>
+      </Box>
     </Box>
   );
 };

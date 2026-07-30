@@ -1,22 +1,29 @@
-import { CalendarMonthOutlined, Search } from '@mui/icons-material';
+import { CalendarMonthOutlined, Close, DownloadOutlined, PrintOutlined, Search } from '@mui/icons-material';
 import {
-  Chip,
+  CircularProgress,
   IconButton,
-  MenuItem,
   Popover,
   Stack,
   TextField,
+  Tooltip,
+  useMediaQuery,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
+import { FilterAutocomplete } from '@/features';
 import { useScroll } from '@/shared';
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import { ApplicationSearchPanel } from './ApplicationSearchPanel';
+import { MyResponsesViewModeToggle } from './MyResponsesViewModeToggle';
 
 import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils';
+import type {
+  MyResponseTableReportControls,
+  MyResponseViewMode,
+} from '../model/types';
 
 type CompanyOption = {
   ownerId: string;
@@ -31,6 +38,13 @@ type MyResponsesFilterProps = {
   updatedDate: string | null;
   onUpdatedDateChange: (value: string | null) => void;
   companyOptions: CompanyOption[];
+  searchQuery: string;
+  isSearchOpen: boolean;
+  onSearchQueryChange: (value: string) => void;
+  onSearchOpenChange: (open: boolean) => void;
+  viewMode: MyResponseViewMode;
+  onViewModeChange: (value: MyResponseViewMode) => void;
+  tableReport?: MyResponseTableReportControls;
 };
 
 const MyResponsesFilter = ({
@@ -41,11 +55,36 @@ const MyResponsesFilter = ({
   updatedDate,
   onUpdatedDateChange,
   companyOptions,
+  searchQuery,
+  isSearchOpen,
+  onSearchQueryChange,
+  onSearchOpenChange,
+  viewMode,
+  onViewModeChange,
+  tableReport,
 }: MyResponsesFilterProps) => {
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { isScrolled, ref } = useScroll(150);
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+  const statusOptions = useMemo(
+    () =>
+      Object.entries(APPLICATION_STATUS_LABELS).map(([id, label]) => ({
+        id,
+        label,
+      })),
+    []
+  );
+
+  const companyAutocompleteOptions = useMemo(
+    () =>
+      companyOptions.map(({ ownerId, companyName }) => ({
+        id: ownerId,
+        label: companyName,
+      })),
+    [companyOptions]
+  );
 
   const handleDateChange = (date: Dayjs | null) => {
     onUpdatedDateChange(date ? date.format('YYYY-MM-DD') : null);
@@ -55,6 +94,16 @@ const MyResponsesFilter = ({
   const handleClearDate = () => {
     onUpdatedDateChange(null);
     setAnchorEl(null);
+  };
+
+  const handleToggleSearch = () => {
+    if (isSearchOpen) {
+      onSearchOpenChange(false);
+      onSearchQueryChange('');
+      return;
+    }
+
+    onSearchOpenChange(true);
   };
 
   return (
@@ -78,75 +127,106 @@ const MyResponsesFilter = ({
         <Stack
           spacing={2}
           direction="row"
-          sx={{ width: { xs: '90%', md: '50%' } }}
+          sx={{ width: { xs: '90%', md: '50%' }, minWidth: 0 }}
         >
-          <TextField
-            select
-            fullWidth
+          <FilterAutocomplete
             label="Статус"
             value={status}
-            size="small"
-            onChange={e =>
-              onStatusChange(e.target.value as ApplicationStatusFilter)
-            }
-          >
-            <MenuItem value="all">Все</MenuItem>
-            {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
-              <MenuItem
-                key={value}
-                value={value}
-              >
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
+            options={statusOptions}
+            onChange={value => onStatusChange(value as ApplicationStatusFilter)}
+            sx={{ flex: 1 }}
+          />
 
-          <TextField
-            select
-            fullWidth
+          <FilterAutocomplete
             label="Компания"
             value={companyId}
-            size="small"
-            onChange={e => onCompanyChange(e.target.value)}
-          >
-            <MenuItem value="all">Все</MenuItem>
-            {companyOptions.map(({ ownerId, companyName }) => (
-              <MenuItem
-                key={ownerId}
-                value={ownerId}
-              >
-                {companyName}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <Chip
-            label="Ожидают ответа"
-            color="primary"
-            size="small"
+            options={companyAutocompleteOptions}
+            onChange={onCompanyChange}
+            sx={{ flex: 1 }}
           />
-        </Stack>
 
-        <Stack
-          direction="row"
-          spacing={2}
-        >
           <IconButton
             color={updatedDate ? 'primary' : 'default'}
             onClick={event => setAnchorEl(event.currentTarget)}
           >
             <CalendarMonthOutlined />
           </IconButton>
+        </Stack>
 
-          <IconButton onClick={() => setIsSearchOpen(true)}>
-            <Search />
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'center', flexShrink: 0 }}
+        >
+          {isSearchOpen && !isMobile && (
+            <TextField
+              autoFocus
+              label="Поиск"
+              size="small"
+              variant="outlined"
+              value={searchQuery}
+              onChange={event => onSearchQueryChange(event.target.value)}
+              sx={{ width: 300 }}
+            />
+          )}
+
+          <IconButton onClick={handleToggleSearch}>
+            {isSearchOpen ? <Close /> : <Search />}
           </IconButton>
+
+          {viewMode === 'table' && tableReport && (
+            <>
+              <Tooltip title="Печать">
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isPrinting}
+                  onClick={tableReport.onPrint}
+                >
+                  {tableReport.isPrinting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <PrintOutlined fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Экспорт CSV">
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isExporting}
+                  onClick={tableReport.onExport}
+                >
+                  {tableReport.isExporting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <DownloadOutlined fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+
+          <MyResponsesViewModeToggle
+            viewMode={viewMode}
+            onChange={onViewModeChange}
+          />
         </Stack>
       </Stack>
 
       <ApplicationSearchPanel
-        open={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
+        open={isSearchOpen && isMobile}
+        query={searchQuery}
+        onQueryChange={onSearchQueryChange}
+        onClose={() => {
+          onSearchOpenChange(false);
+          onSearchQueryChange('');
+        }}
       />
 
       <Popover

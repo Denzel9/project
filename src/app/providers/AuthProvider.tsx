@@ -28,7 +28,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     hasFetched.current = true;
 
     const fetchToken = async () => {
-      if (pathname === ROUTES.AUTH || pathname === ROUTES.INVITE) {
+      const isPublicPath =
+        pathname === ROUTES.AUTH ||
+        pathname === ROUTES.AUTH_CONFIRM_EMAIL ||
+        pathname === ROUTES.INVITE ||
+        pathname === ROUTES.USER_AGREEMENT ||
+        pathname === ROUTES.PRIVACY_POLICY;
+
+      if (isPublicPath) {
         setIsInitialized(true);
         return;
       }
@@ -37,11 +44,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await refreshToken();
 
         if (res?.data?.user) {
-          setAuth(
-            res.data.user.id,
-            res.data.user.role,
-            res.data.user.membershipRole
-          );
+          setAuth({
+            id: res.data.user.id,
+            role: res.data.user.role,
+            membershipRole: res.data.user.membershipRole,
+            isPrime: Boolean(res.data.user.isPrime),
+            primeStatus: res.data.user.primeStatus ?? 'NONE',
+            primeExpiresAt: res.data.user.primeExpiresAt ?? null,
+            isEmailConfirmed: Boolean(res.data.user.isEmailConfirmed),
+          });
 
           try {
             await prefetchUserConfig(queryClient);

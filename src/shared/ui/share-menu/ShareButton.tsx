@@ -7,8 +7,15 @@ import {
 } from '@mui/material';
 import { useMemo, useState, type MouseEvent } from 'react';
 
+import {
+  useConversationsQuery,
+  useCreateConversationMutation,
+} from '@/entities/chat';
+import { sendPostLinkToChat } from '@/features';
 import { getPostShareUrl, openShareUrl, SHARE_TARGETS } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
+
+import { SharePostToChatDialog } from './SharePostToChatDialog';
 
 type ShareButtonProps = {
   postId: string;
@@ -18,12 +25,19 @@ type ShareButtonProps = {
 
 export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isShareToChatOpen, setIsShareToChatOpen] = useState(false);
+  const [isSendingToChat, setIsSendingToChat] = useState(false);
+  const [shareToChatError, setShareToChatError] = useState<string | null>(null);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
   const shareUrl = useMemo(() => getPostShareUrl(postId), [postId]);
   const open = Boolean(anchorEl);
   const canUseNativeShare = typeof navigator.share === 'function';
+
+  const { data: conversations = [], isLoading: isConversationsLoading } =
+    useConversationsQuery(undefined, { enabled: isShareToChatOpen });
+  const { mutateAsync: createConversation } = useCreateConversationMutation();
 
   const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -33,6 +47,39 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleOpenShareToChat = () => {
+    setShareToChatError(null);
+    setIsShareToChatOpen(true);
+    handleClose();
+  };
+
+  const handleSendPostToChat = async (peerId: string) => {
+    if (!postId || isSendingToChat) {
+      return false;
+    }
+
+    try {
+      setIsSendingToChat(true);
+      setShareToChatError(null);
+
+      await sendPostLinkToChat({
+        postId,
+        postTitle: title,
+        peerId,
+        conversations,
+        createConversation,
+      });
+
+      setSnackbarOpen?.(true, 'Ссылка на пост отправлена в чат');
+      return true;
+    } catch {
+      setShareToChatError('Не удалось отправить ссылку в чат');
+      return false;
+    } finally {
+      setIsSendingToChat(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -62,6 +109,7 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
       <IconButton
         size={size}
         onClick={handleOpen}
+        disabled={!postId}
       >
         <Share />
       </IconButton>
@@ -76,6 +124,13 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
           <MenuItem onClick={() => void handleNativeShare()}>Ещё…</MenuItem>
         )}
 
+        <MenuItem
+          key="send-to-chat"
+          onClick={handleOpenShareToChat}
+        >
+          Отправить в чат
+        </MenuItem>
+
         {SHARE_TARGETS.map(target => (
           <MenuItem
             key={target.id}
@@ -89,6 +144,18 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
           Скопировать ссылку
         </MenuItem>
       </Menu>
+
+      <SharePostToChatDialog
+        open={isShareToChatOpen}
+        onClose={() => setIsShareToChatOpen(false)}
+        conversations={conversations}
+        isLoading={isConversationsLoading}
+        isSending={isSendingToChat}
+        error={shareToChatError}
+        postTitle={title}
+        postUrl={shareUrl}
+        onSend={handleSendPostToChat}
+      />
     </>
   );
 };

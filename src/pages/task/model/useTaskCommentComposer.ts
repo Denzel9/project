@@ -6,8 +6,6 @@ import {
   validateChatMediaFile,
 } from '@/entities';
 
-import { COMMENT_MEDIA_PLACEHOLDER } from './lib/commentMedia';
-
 export const useTaskCommentComposer = (taskId: string) => {
   const [content, setContent] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -67,7 +65,7 @@ export const useTaskCommentComposer = (taskId: string) => {
       await createComment({
         taskId,
         body: {
-          content: hasContent ? trimmed : COMMENT_MEDIA_PLACEHOLDER,
+          ...(hasContent ? { content: trimmed } : { content: '' }),
           media,
         },
       });

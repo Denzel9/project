@@ -14,11 +14,12 @@ import {
 } from '@/shared/lib/media'
 import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
-import { toTaskCommentMedia, normalizeTaskWithCommentsItem, getCommentsTailPage } from './utils'
+import { toTaskCommentMedia, normalizeTaskWithCommentsItem, getCommentsTailPage, normalizeTaskComment } from './utils'
 
 import type {
   CreateTaskCommentDto,
   CreateTaskDto,
+  MarkTaskCommentsReadResponse,
   Task,
   TaskActivityList,
   TaskActivityListParams,
@@ -33,6 +34,7 @@ import type {
   TaskCommentFeedParams,
   TaskWithCommentsParams,
   TaskWithCommentsRawItem,
+  TaskWithCommentsList,
   TaskCommentMedia,
   SearchTaskCommentsParams,
   TaskList,
@@ -383,12 +385,14 @@ export const useSearchTasksQuery = (params: SearchTasksParams) => {
 export const useTaskByIdQuery = (id: string | null, skip?: boolean) =>
   useQuery({
     queryKey: taskKeys.detail(id ?? ''),
-    queryFn: async () => {
-      const { data } = await mainAxios.get<Task>(`/tasks/${id}`)
-      return data
-    },
+    queryFn: () => fetchTaskById(id!),
     enabled: Boolean(id) && !skip,
   })
+
+export const fetchTaskById = async (id: string) => {
+  const { data } = await mainAxios.get<Task>(`/tasks/${id}`)
+  return data
+}
 
 export const useUpdateTaskMutation = () => {
   const queryClient = useQueryClient()
@@ -442,9 +446,17 @@ export const useTaskCommentsQuery = (
     queryFn: async () => {
       const { data } = await mainAxios.get<TaskCommentList>(
         `/tasks/${taskId}/comments`,
-        { params },
+        {
+          params: {
+            ...params,
+            markRead: params?.markRead ?? true,
+          },
+        },
       )
-      return data
+      return {
+        ...data,
+        items: data.items.map(normalizeTaskComment),
+      }
     },
     enabled: Boolean(taskId),
   })
@@ -453,13 +465,17 @@ export const fetchTaskCommentsPage = async (
   taskId: string,
   page: number,
   limit: number,
+  markRead = true,
 ) => {
   const { data } = await mainAxios.get<TaskCommentList>(
     `/tasks/${taskId}/comments`,
-    { params: { page, limit } },
+    { params: { page, limit, markRead } },
   )
 
-  return data
+  return {
+    ...data,
+    items: data.items.map(normalizeTaskComment),
+  }
 }
 
 export const useAllTaskCommentsQuery = (
@@ -494,30 +510,35 @@ export const useTaskCommentsTailQuery = (
     queryFn: async () => {
       const { data: meta } = await mainAxios.get<TaskCommentList>(
         `/tasks/${taskId}/comments`,
-        { params: { page: 1, limit: 1 } },
+        { params: { page: 1, limit: 1, markRead: true } },
       )
 
       const page = getCommentsTailPage(Math.max(meta.total, 1), limit)
 
       const { data } = await mainAxios.get<TaskCommentList>(
         `/tasks/${taskId}/comments`,
-        { params: { page, limit } },
+        { params: { page, limit, markRead: true } },
       )
+
+      const items = data.items.map(normalizeTaskComment)
 
       const hasLastComment =
         !lastCommentId ||
-        data.items.some(comment => comment.id === lastCommentId)
+        items.some(comment => comment.id === lastCommentId)
 
       if (hasLastComment || page === 1) {
-        return data
+        return { ...data, items }
       }
 
       const { data: newestPage } = await mainAxios.get<TaskCommentList>(
         `/tasks/${taskId}/comments`,
-        { params: { page: 1, limit } },
+        { params: { page: 1, limit, markRead: true } },
       )
 
-      return newestPage
+      return {
+        ...newestPage,
+        items: newestPage.items.map(normalizeTaskComment),
+      }
     },
     enabled: enabled && Boolean(taskId),
   })
@@ -542,7 +563,10 @@ export const useSearchTaskCommentsQuery = (
         `/tasks/${taskId}/comments/search`,
         { params: { q: trimmedQuery, page, limit } },
       )
-      return data
+      return {
+        ...data,
+        items: data.items.map(normalizeTaskComment),
+      }
     },
     enabled: Boolean(taskId && trimmedQuery.length >= 2),
   })
@@ -709,6 +733,156 @@ const patchAllTaskCommentsCache = (
   )
 }
 
+export const appendTaskCommentToCache = (
+  queryClient: QueryClient,
+  comment: TaskComment,
+) => {
+  const normalized = normalizeTaskComment(comment)
+
+  patchAllTaskCommentsCache(queryClient, normalized.taskId, comments => {
+    if (comments.some(item => item.id === normalized.id)) {
+      return comments.map(item =>
+        item.id === normalized.id ? normalized : item,
+      )
+    }
+
+    return [...comments, normalized].sort(
+      (left, right) =>
+        new Date(left.createdAt).getTime() -
+        new Date(right.createdAt).getTime(),
+    )
+  })
+}
+
+export const updateTaskCommentInCache = (
+  queryClient: QueryClient,
+  comment: TaskComment,
+) => {
+  const normalized = normalizeTaskComment(comment)
+
+  patchAllTaskCommentsCache(queryClient, normalized.taskId, comments =>
+    comments.map(item => (item.id === normalized.id ? normalized : item)),
+  )
+}
+
+export const removeTaskCommentFromCache = (
+  queryClient: QueryClient,
+  taskId: string,
+  commentId: string,
+) => {
+  patchAllTaskCommentsCache(queryClient, taskId, comments =>
+    comments.filter(item => item.id !== commentId),
+  )
+}
+
+export const applyTaskCommentsReadInCache = (
+  queryClient: QueryClient,
+  taskId: string,
+  readAt: string,
+  currentUserId: string,
+) => {
+  const readAtTime = new Date(readAt).getTime()
+
+  patchAllTaskCommentsCache(queryClient, taskId, comments =>
+    comments.map(comment =>
+      comment.authorId === currentUserId &&
+      new Date(comment.createdAt).getTime() <= readAtTime
+        ? { ...comment, isRead: true }
+        : comment,
+    ),
+  )
+}
+
+export const setTaskWithCommentsUnread = (
+  queryClient: QueryClient,
+  taskId: string,
+  unreadCount: number,
+) => {
+  queryClient.setQueriesData<{
+    pages: TaskWithCommentsList[]
+    pageParams: unknown[]
+  }>({ queryKey: [...taskKeys.all, 'withComments'] }, old => {
+    if (!old?.pages) return old
+
+    return {
+      ...old,
+      pages: old.pages.map(page => ({
+        ...page,
+        items: page.items.map(item =>
+          item.id === taskId ? { ...item, unreadCount } : item,
+        ),
+      })),
+    }
+  })
+}
+
+export const getTaskWithCommentsUnread = (
+  queryClient: QueryClient,
+  taskId: string,
+): number => {
+  const queries = queryClient.getQueriesData<{
+    pages: TaskWithCommentsList[]
+    pageParams: unknown[]
+  }>({ queryKey: [...taskKeys.all, 'withComments'] })
+
+  for (const [, data] of queries) {
+    const item = data?.pages
+      ?.flatMap(page => page.items)
+      .find(entry => entry.id === taskId)
+
+    if (item) {
+      return item.unreadCount ?? 0
+    }
+  }
+
+  return 0
+}
+
+export const incrementTaskWithCommentsUnread = (
+  queryClient: QueryClient,
+  taskId: string,
+) => {
+  queryClient.setQueriesData<{
+    pages: TaskWithCommentsList[]
+    pageParams: unknown[]
+  }>({ queryKey: [...taskKeys.all, 'withComments'] }, old => {
+    if (!old?.pages) return old
+
+    return {
+      ...old,
+      pages: old.pages.map(page => ({
+        ...page,
+        items: page.items.map(item =>
+          item.id === taskId
+            ? { ...item, unreadCount: (item.unreadCount ?? 0) + 1 }
+            : item,
+        ),
+      })),
+    }
+  })
+}
+
+export const markTaskCommentsRead = async (taskId: string) => {
+  const { data } = await mainAxios.post<MarkTaskCommentsReadResponse>(
+    `/tasks/${taskId}/comments/read`,
+  )
+  return data
+}
+
+export const useMarkTaskCommentsReadMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (taskId: string) => markTaskCommentsRead(taskId),
+    onSuccess: data => {
+      setTaskWithCommentsUnread(queryClient, data.taskId, 0)
+      queryClient.invalidateQueries({
+        queryKey: [...taskKeys.all, 'withComments'],
+      })
+    },
+  })
+}
+
 export const useCreateTaskCommentMutation = () => {
   const queryClient = useQueryClient()
 
@@ -724,13 +898,10 @@ export const useCreateTaskCommentMutation = () => {
         `/tasks/${taskId}/comments`,
         body,
       )
-      return data
+      return normalizeTaskComment(data)
     },
     onSuccess: (comment, { taskId }) => {
-      patchAllTaskCommentsCache(queryClient, taskId, comments => [
-        ...comments,
-        comment,
-      ])
+      appendTaskCommentToCache(queryClient, comment)
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
       queryClient.invalidateQueries({
         queryKey: [...taskKeys.all, 'allComments'],
@@ -759,12 +930,10 @@ export const useUpdateTaskCommentMutation = () => {
         `/tasks/${taskId}/comments/${commentId}`,
         body,
       )
-      return data
+      return normalizeTaskComment(data)
     },
     onSuccess: (comment, { taskId }) => {
-      patchAllTaskCommentsCache(queryClient, taskId, comments =>
-        comments.map(item => (item.id === comment.id ? comment : item)),
-      )
+      updateTaskCommentInCache(queryClient, comment)
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
       queryClient.invalidateQueries({
         queryKey: [...taskKeys.all, 'allComments'],
@@ -891,9 +1060,7 @@ export const useDeleteTaskCommentMutation = () => {
       return commentId
     },
     onSuccess: (commentId, { taskId }) => {
-      patchAllTaskCommentsCache(queryClient, taskId, comments =>
-        comments.filter(item => item.id !== commentId),
-      )
+      removeTaskCommentFromCache(queryClient, taskId, commentId)
       queryClient.invalidateQueries({ queryKey: taskKeys.comments(taskId) })
       queryClient.invalidateQueries({
         queryKey: [...taskKeys.all, 'allComments'],

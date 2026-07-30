@@ -16,6 +16,7 @@ import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFavoriteUserIds } from '@/entities/favorite';
+import { useRequireEmailConfirmed } from '@/features/auth';
 import { ROUTES } from '@/shared';
 import { UserFavoriteButton } from '@/widgets';
 
@@ -43,6 +44,12 @@ export const ProfileControl = ({
 
   const navigate = useNavigate();
   const { favoriteUserIds } = useFavoriteUserIds();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
+
+  const handleCreatePost = () => {
+    if (!requireEmailConfirmed()) return;
+    navigate(ROUTES.MANAGE_APPLICATION);
+  };
 
   return (
     <Stack
@@ -57,7 +64,8 @@ export const ProfileControl = ({
         borderRadius: '32px',
         mt: { xs: 2, md: 20 },
         justifyContent: 'space-between',
-        boxShadow: { xs: 'none', md: '0 0 10px 0 rgba(0, 0, 0, 0.1)' },
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Stack
@@ -80,13 +88,6 @@ export const ProfileControl = ({
               direction="row"
               spacing={2}
             >
-              <Button
-                size="small"
-                sx={{ px: 2 }}
-                onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${id}`)}
-              >
-                Написать сообщение
-              </Button>
               <UserFavoriteButton
                 userId={id}
                 isFavorite={favoriteUserIds.has(id)}
@@ -199,7 +200,7 @@ export const ProfileControl = ({
               size="small"
               variant="contained"
               sx={{ display: { xs: 'none', md: 'block' } }}
-              onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
+              onClick={handleCreatePost}
             >
               Добавить
             </Button>
@@ -207,21 +208,11 @@ export const ProfileControl = ({
             <IconButton
               size="small"
               sx={{ display: { xs: 'block', md: 'none' } }}
-              onClick={() => navigate(ROUTES.MANAGE_APPLICATION)}
+              onClick={handleCreatePost}
             >
               <Add />
             </IconButton>
           </Box>
-
-          {!id && (
-            <Typography
-              color="info"
-              variant="subtitle1"
-              sx={{ display: { xs: 'none', md: 'block' } }}
-            >
-              Доступно: 5
-            </Typography>
-          )}
         </Stack>
       )}
     </Stack>

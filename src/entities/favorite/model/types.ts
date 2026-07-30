@@ -25,6 +25,7 @@ export type FavoriteUserProfile = {
   avatar: string | null
   bio: string | null
   followers: number
+  completedTasksCount: number
   location: string | null
   aboutMe: string | null
   banner: string | null

@@ -16,14 +16,20 @@ type PublicationsFilterState = {
   taskId?: string
 }
 
+const isValidFilterId = (value?: string | null): value is string =>
+  Boolean(value) && value !== 'all' && value !== 'undefined' && value !== 'null'
+
 export const toPublicationsParams = ({
   q,
   postId,
   taskId,
+  executorId,
 }: PublicationsFilterState): Omit<PublicationListParams, 'page'> => ({
   ...(q.trim() && { q: q.trim() }),
-  ...(postId && postId !== 'all' && { postId }),
-  ...(taskId && { taskId }),
+  ...(isValidFilterId(postId) && postId !== 'all' && { postId }),
+  ...(isValidFilterId(taskId) && { taskId }),
+  ...(isValidFilterId(executorId) &&
+    executorId !== 'all' && { executorId }),
 })
 
 export const hasActivePublicationFilters = ({
@@ -34,28 +40,22 @@ export const hasActivePublicationFilters = ({
   PublicationsFilterState,
   'q' | 'postId' | 'executorId'
 >) =>
-  Boolean(q.trim()) || postId !== 'all' || executorId !== 'all'
+  Boolean(q.trim()) ||
+  (isValidFilterId(postId) && postId !== 'all') ||
+  (isValidFilterId(executorId) && executorId !== 'all')
 
 export const parsePublicationSearchParams = (
   searchParams: URLSearchParams,
-): Pick<PublicationsFilterState, 'postId' | 'taskId'> => {
+): Pick<PublicationsFilterState, 'postId' | 'taskId' | 'executorId'> => {
   const postId = searchParams.get('postId')
+  const executorId = searchParams.get('executorId')
+  const taskId = searchParams.get('taskId')
 
   return {
-    ...(postId && { postId }),
-    taskId: searchParams.get('taskId') ?? undefined,
+    ...(isValidFilterId(postId) && { postId }),
+    ...(isValidFilterId(executorId) && { executorId }),
+    ...(isValidFilterId(taskId) && { taskId }),
   }
-}
-
-export const filterPublicationsByExecutor = (
-  publications: Publication[],
-  executorId: PublicationExecutorFilter,
-) => {
-  if (executorId === 'all') return publications
-
-  return publications.filter(
-    publication => publication.executor?.id === executorId,
-  )
 }
 
 export const getPublicationPostOptions = (publications: Publication[]) => {
@@ -78,6 +78,14 @@ export const getPublicationPostOptions = (publications: Publication[]) => {
 
 export const getPublicationTitle = (publication: Publication) =>
   publication.title?.trim() || 'Публикация'
+
+export const getPublicationPlatforms = (publication: Publication) => [
+  ...new Set(
+    (publication.deliverables ?? [])
+      .map(item => item.platform)
+      .filter(Boolean),
+  ),
+]
 
 export const getPublicationGalleryMediaItems = (publication: Publication) =>
   publication.media
@@ -116,12 +124,12 @@ export const sortPublications = (
           direction
         )
       case 'platform': {
-        const leftPlatform = left.platform
-          ? getPlatformLabel(left.platform)
-          : ''
-        const rightPlatform = right.platform
-          ? getPlatformLabel(right.platform)
-          : ''
+        const leftPlatform = getPublicationPlatforms(left)
+          .map(getPlatformLabel)
+          .join(', ')
+        const rightPlatform = getPublicationPlatforms(right)
+          .map(getPlatformLabel)
+          .join(', ')
 
         return leftPlatform.localeCompare(rightPlatform, 'ru') * direction
       }

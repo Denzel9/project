@@ -101,7 +101,10 @@ export const ApplicationSearchResultItem = ({
       </Typography>
     </Stack>
 
-    <UserDisplayName user={applicantToUserPartial(application.applicant)} />
+    <UserDisplayName
+      user={applicantToUserPartial(application.applicant)}
+      variant="body2"
+    />
 
     <Chip
       size="small"

@@ -1,5 +1,5 @@
 import { Close } from '@mui/icons-material';
-import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Chip, Grid, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
@@ -165,9 +165,9 @@ const DeliverableRow = ({
         />
 
         {showsDuration && (
-            <RHFInput
-              control={control}
-              name={`${fieldName}.${index}.durationSec`}
+          <RHFInput
+            control={control}
+            name={`${fieldName}.${index}.durationSec`}
             props={{
               size: 'small',
               label: 'Длительность, сек.',
@@ -204,20 +204,29 @@ export const DeliverablesField = ({
     <Stack spacing={2.5}>
       <DeliverablePresetChips onAdd={handleAddPreset} />
 
-      {fields?.map((field, index) => {
-        const item = deliverables[index];
+      <Grid
+        container
+        spacing={1.5}
+      >
+        {fields?.map((field, index) => {
+          const item = deliverables[index];
 
-        return (
-          <DeliverableRow
-            index={index}
-            key={field.id}
-            fieldName={fieldName}
-            onRemove={() => remove(index)}
-            platform={item?.platform as Platform}
-            format={item?.format as PlacementFormat}
-          />
-        );
-      })}
+          return (
+            <Grid
+              key={field.id}
+              size={{ xs: 12, sm: 6, md: 4 }}
+            >
+              <DeliverableRow
+                index={index}
+                fieldName={fieldName}
+                onRemove={() => remove(index)}
+                platform={item?.platform as Platform}
+                format={item?.format as PlacementFormat}
+              />
+            </Grid>
+          );
+        })}
+      </Grid>
     </Stack>
   );
 };

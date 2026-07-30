@@ -1,4 +1,8 @@
-import { Whatshot } from '@mui/icons-material';
+import {
+  AccessTimeOutlined,
+  LayersOutlined,
+  Whatshot,
+} from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -15,12 +19,19 @@ import {
   formatPostBrief,
   formatPostBudget,
   formatPostBudgetDetails,
-  formatPostDeliverable,
+  formatPostLocation,
+  formatBloggerRequirements,
+  formatCooperationDetails,
+  getPlacementFormatLabel,
+  getPlatformLabel,
   getPostTypeLabel,
   getWorkFormatLabel,
-} from '@/entities/post';
+  type Post,
+  type PostDeliverable,
+} from '@/entities';
 
-import type { Post, PostDeliverable } from '@/entities/post';
+import { getYandexMapsUrl } from '@/shared/lib/maps/openYandexMaps';
+
 import type { ReactNode } from 'react';
 
 type DetailRowProps = {
@@ -116,24 +127,75 @@ const ChipSection = ({ title, items }: ChipSectionProps) => {
   );
 };
 
-const DeliverableItem = ({ item }: { item: PostDeliverable }) => (
-  <Box
-    sx={{
-      p: 1.5,
-      borderRadius: '14px',
-      bgcolor: 'white',
-      border: '1px solid',
-      borderColor: 'divider',
-    }}
-  >
-    <Typography
-      variant="body2"
-      sx={{ fontWeight: 600 }}
+const DeliverableItem = ({ item }: { item: PostDeliverable }) => {
+  const countLabel = item.count === 1 ? '1 шт.' : `${item.count} шт.`;
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.25,
+        borderRadius: '16px',
+        bgcolor: 'secondary.light',
+        border: '1px solid',
+        borderColor: 'divider',
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': {
+          borderColor: 'primary.light',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+        },
+      }}
     >
-      {formatPostDeliverable(item)}
-    </Typography>
-  </Box>
-);
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}
+      >
+        <Chip
+          size="small"
+          color="primary"
+          variant="outlined"
+          label={getPlatformLabel(item.platform)}
+          sx={{ fontWeight: 600 }}
+        />
+        <Chip
+          size="small"
+          label={getPlacementFormatLabel(item.format)}
+          sx={{ bgcolor: 'white' }}
+        />
+      </Stack>
+
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{ alignItems: 'center', color: 'text.secondary', mt: 'auto' }}
+      >
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{ alignItems: 'center' }}
+        >
+          <LayersOutlined sx={{ fontSize: 16 }} />
+          <Typography variant="caption">{countLabel}</Typography>
+        </Stack>
+
+        {item.durationSec != null && (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: 'center' }}
+          >
+            <AccessTimeOutlined sx={{ fontSize: 16 }} />
+            <Typography variant="caption">{item.durationSec} сек.</Typography>
+          </Stack>
+        )}
+      </Stack>
+    </Box>
+  );
+};
 
 const ListBlock = ({ items }: { items: string[] }) => {
   if (!items.length) return null;
@@ -154,77 +216,107 @@ const ListBlock = ({ items }: { items: string[] }) => {
 
 type PostDetailsCardProps = {
   post: Post;
+  isCompanyPost?: boolean;
 };
 
-export const PostDetailsCard = ({ post }: PostDetailsCardProps) => {
+export const PostDetailsCard = ({
+  post,
+  isCompanyPost = false,
+}: PostDetailsCardProps) => {
   const price = formatPostBudget(post.budget);
   const budgetDetails = formatPostBudgetDetails(post.budget);
   const briefItems = formatPostBrief(post.brief);
+  const locationLabel = formatPostLocation(post.location);
+  const bloggerRequirements = formatBloggerRequirements(
+    post.bloggerRequirements
+  );
+  const cooperationDetails = formatCooperationDetails(post.cooperationDetails);
 
   return (
-    <Stack spacing={2}>
-      <DetailSection
-        title="Детали объявления"
-        sx={{ bgcolor: 'white', borderRadius: '32px' }}
-      >
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-            gap: 2.5,
-          }}
+    <Stack
+      spacing={2}
+      sx={{ width: '100%' }}
+      direction={isCompanyPost ? 'column' : 'row'}
+    >
+      {isCompanyPost && (
+        <DetailSection
+          title="Детали объявления"
+          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
         >
-          <DetailRow label="Тип автора">
-            {getPostTypeLabel(post.type)}
-          </DetailRow>
-          <DetailRow label="Формат работы">
-            {post.workFormat ? getWorkFormatLabel(post.workFormat) : '—'}
-          </DetailRow>
-          <DetailRow label="Срочность">
-            {post.urgent ? (
-              <Chip
-                size="small"
-                color="error"
-                icon={<Whatshot />}
-                label="Срочно"
-              />
-            ) : (
-              'Не срочно'
-            )}
-          </DetailRow>
-          <DetailRow
-            label="Бюджет"
-            highlight={price !== '—'}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gap: 2.5,
+            }}
           >
-            {price}
-          </DetailRow>
-          <DetailRow label="Дедлайн">
-            {post.deadline
-              ? format(new Date(post.deadline), 'dd.MM.yyyy')
-              : '—'}
-          </DetailRow>
-          <DetailRow label="Опубликовано">
-            {format(new Date(post.createdAt), 'dd.MM.yyyy')}
-          </DetailRow>
-          <DetailRow label="Обновлено">
-            {format(new Date(post.updatedAt), 'dd.MM.yyyy')}
-          </DetailRow>
-        </Box>
-
-        {budgetDetails.length > 1 && (
-          <Box sx={{ mt: 2.5 }}>
-            <ListBlock
-              items={budgetDetails
-                .filter(item => item.label !== 'Сумма')
-                .map(item => `${item.label}: ${item.value}`)}
-            />
+            <DetailRow label="Тип автора">
+              {getPostTypeLabel(post.type)}
+            </DetailRow>
+            <DetailRow label="Формат работы">
+              {post.workFormat ? getWorkFormatLabel(post.workFormat) : '—'}
+            </DetailRow>
+            <DetailRow label="Срочность">
+              {post.urgent ? (
+                <Chip
+                  size="small"
+                  color="error"
+                  icon={<Whatshot />}
+                  label="Срочно"
+                />
+              ) : (
+                'Не срочно'
+              )}
+            </DetailRow>
+            <DetailRow
+              label="Бюджет"
+              highlight={price !== '—'}
+            >
+              {price}
+            </DetailRow>
+            <DetailRow label="Дедлайн">
+              {post.deadline
+                ? format(new Date(post.deadline), 'dd.MM.yyyy')
+                : '—'}
+            </DetailRow>
+            <DetailRow label="Локация">
+              {locationLabel !== '—' ? (
+                <Link
+                  href={getYandexMapsUrl(locationLabel)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="hover"
+                  color="inherit"
+                >
+                  {locationLabel}
+                </Link>
+              ) : (
+                locationLabel
+              )}
+            </DetailRow>
+            <DetailRow label="Опубликовано">
+              {format(new Date(post.createdAt), 'dd.MM.yyyy')}
+            </DetailRow>
+            <DetailRow label="Обновлено">
+              {format(new Date(post.updatedAt), 'dd.MM.yyyy')}
+            </DetailRow>
           </Box>
-        )}
-      </DetailSection>
+
+          {budgetDetails.length > 1 && (
+            <Box sx={{ mt: 2.5 }}>
+              <ListBlock
+                items={budgetDetails
+                  .filter(item => item.label !== 'Сумма')
+                  .map(item => `${item.label}: ${item.value}`)}
+              />
+            </Box>
+          )}
+        </DetailSection>
+      )}
 
       <DetailSection
         title="Контент и площадки"
-        sx={{ bgcolor: 'white', borderRadius: '32px' }}
+        sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
       >
         <Stack spacing={2}>
           {post.deliverables?.length ? (
@@ -235,14 +327,23 @@ export const PostDetailsCard = ({ post }: PostDetailsCardProps) => {
               >
                 Позиции контента
               </Typography>
-              <Stack spacing={1}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                  },
+                  gap: 1.25,
+                }}
+              >
                 {post.deliverables.map((item, index) => (
                   <DeliverableItem
                     key={`${item.platform}-${item.format}-${index}`}
                     item={item}
                   />
                 ))}
-              </Stack>
+              </Box>
             </Stack>
           ) : (
             <DetailRow label="Контент">—</DetailRow>
@@ -265,10 +366,28 @@ export const PostDetailsCard = ({ post }: PostDetailsCardProps) => {
         </Stack>
       </DetailSection>
 
-      {briefItems.length > 0 && (
+      {bloggerRequirements.length > 0 && isCompanyPost && (
+        <DetailSection
+          title="Требования к блогеру"
+          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
+        >
+          <ListBlock items={bloggerRequirements} />
+        </DetailSection>
+      )}
+
+      {cooperationDetails.length > 0 && isCompanyPost && (
+        <DetailSection
+          title="Условия сотрудничества"
+          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
+        >
+          <ListBlock items={cooperationDetails} />
+        </DetailSection>
+      )}
+
+      {briefItems.length > 0 && isCompanyPost && (
         <DetailSection
           title="Бриф"
-          sx={{ bgcolor: 'white', borderRadius: '32px' }}
+          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
         >
           <Stack spacing={2}>
             {briefItems.map(item => (
@@ -322,7 +441,7 @@ export const PostDetailsCard = ({ post }: PostDetailsCardProps) => {
 
       <DetailSection
         title="Метки и категории"
-        sx={{ bgcolor: 'white', borderRadius: '32px' }}
+        sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
       >
         <Stack spacing={2}>
           <ChipSection

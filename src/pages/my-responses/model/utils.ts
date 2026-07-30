@@ -1,5 +1,11 @@
+import { getUserName, type User } from '@/entities/user';
 
-import type { Application, ApplicationListParams, ApplicationStatus } from '@/entities';
+import type { MyResponseSortField, MyResponseSortOrder } from './types';
+import type {
+  Application,
+  ApplicationListParams,
+  ApplicationStatus,
+} from '@/entities';
 
 export type ApplicationStatusFilter = ApplicationStatus | 'all';
 export type CompanyFilter = 'all' | string;
@@ -53,4 +59,62 @@ export const countApplicationsByStatus = (applications: Application[]) => {
   });
 
   return counts;
+};
+
+const getCompanySortValue = (application: Application) =>
+  getUserName(application.post?.owner as Partial<User> | undefined)?.toLowerCase();
+
+const getPostSortValue = (application: Application) =>
+  (application.post?.title ?? '').toLowerCase();
+
+const compareStrings = (a: string, b: string) => a.localeCompare(b, 'ru');
+
+export const sortMyResponses = (
+  applications: Application[],
+  field: MyResponseSortField,
+  order: MyResponseSortOrder,
+) => {
+  const direction = order === 'asc' ? 1 : -1;
+
+  return [...applications].sort((left, right) => {
+    // eslint-disable-next-line no-useless-assignment
+    let result = 0;
+
+    switch (field) {
+      case 'post':
+        result = compareStrings(getPostSortValue(left), getPostSortValue(right));
+        break;
+      case 'company':
+        result = compareStrings(
+          getCompanySortValue(left) ?? '',
+          getCompanySortValue(right) ?? '',
+        );
+        break;
+      case 'status':
+        result = compareStrings(left.status, right.status);
+        break;
+      case 'createdAt':
+        result =
+          new Date(left.createdAt).getTime() -
+          new Date(right.createdAt).getTime();
+        break;
+      case 'updatedAt':
+        result =
+          new Date(left.updatedAt).getTime() -
+          new Date(right.updatedAt).getTime();
+        break;
+      default:
+        result = 0;
+    }
+
+    return result * direction;
+  });
+};
+
+export const getMyResponseStatusColor = (status: Application['status']) => {
+  if (status === 'ACCEPTED') return 'success';
+  if (status === 'REJECTED') return 'error';
+  if (status === 'WITHDRAWN') return 'default';
+  if (status === 'VIEWED') return 'info';
+  return 'primary';
 };

@@ -1,79 +1,75 @@
 import {
+  AttachFile,
   ChatBubbleOutlined,
+  ChevronLeft,
   Close,
   FilterList,
+  ForumOutlined,
+  Search,
 } from '@mui/icons-material';
 import {
+  Badge,
   Box,
   Button,
   Chip,
   CircularProgress,
-  Collapse,
   IconButton,
   InputAdornment,
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
+import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useTasksWithCommentsInfiniteQuery, type Task } from '@/entities';
 import { TaskCommentComposer } from '@/pages/task/ui/TaskCommentComposer';
-import { useSnackbarStore } from '@/widgets';
 
-import {
-  DASHBOARD_COMMENTS_ITEMS_LIMIT,
-  DASHBOARD_COMMENT_CARD_COLLAPSE_MS,
-} from '../model/constants';
+import { DASHBOARD_COMMENTS_ITEMS_LIMIT } from '../model/constants';
 import {
   canCommentOnTask,
-  getDashboardCommentsReadAfter,
+  getCommentPreview,
   getDashboardTaskOptions,
+  getTaskDisplayTitle,
   mapTaskWithCommentsItem,
-  setDashboardCommentsReadAfter,
 } from '../model/utils';
 
 import { DashboardCommentGroupCard } from './DashboardCommentGroupCard';
 
-const listFlexCollapseSx = {
-  flex: 1,
-  minHeight: 0,
-  display: 'flex',
-  flexDirection: 'column',
-  '& .MuiCollapse-wrapper': {
-    flex: 1,
-    minHeight: 0,
-    display: 'flex',
-  },
-  '& .MuiCollapse-wrapperInner': {
-    flex: 1,
-    minHeight: 0,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-} as const;
-
 export const DashboardCommentsPanel = () => {
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const [taskId, setTaskId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
   const [isOpenFilter, setIsOpenFilter] = useState(false);
-  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [readAfter, setReadAfter] = useState(getDashboardCommentsReadAfter);
-
-  const { setSnackbarOpen } = useSnackbarStore();
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isThreadSearchOpen, setIsThreadSearchOpen] = useState(false);
+  const [threadSearchQuery, setThreadSearchQuery] = useState('');
+  const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useTasksWithCommentsInfiniteQuery({
       limit: DASHBOARD_COMMENTS_ITEMS_LIMIT,
       ...(appliedQuery && { q: appliedQuery }),
-      ...(readAfter && { readAfter }),
+      ...(taskId !== 'all' && { taskId }),
     });
+
+  const { data: optionsData } = useTasksWithCommentsInfiniteQuery({
+    limit: DASHBOARD_COMMENTS_ITEMS_LIMIT,
+    ...(appliedQuery && { q: appliedQuery }),
+  });
 
   const rawItems = useMemo(
     () => data?.pages.flatMap(page => page.items) ?? [],
-    [data?.pages],
+    [data]
+  );
+
+  const optionsRawItems = useMemo(
+    () => optionsData?.pages.flatMap(page => page.items) ?? [],
+    [optionsData]
   );
 
   const taskMap = useMemo(() => {
@@ -99,38 +95,84 @@ export const DashboardCommentsPanel = () => {
     return map;
   }, [rawItems]);
 
-  const taskOptions = useMemo(
-    () => getDashboardTaskOptions(Array.from(taskMap.values())),
-    [taskMap],
-  );
+  const taskOptions = useMemo(() => {
+    const map = new Map<string, Task>();
 
-  const apiItems = useMemo(
-    () => rawItems.map(item => mapTaskWithCommentsItem(item, taskMap)),
-    [rawItems, taskMap],
-  );
+    optionsRawItems.forEach(item => {
+      const id = item.id || item.lastComment?.taskId;
+
+      if (!id || map.has(id)) return;
+
+      map.set(id, {
+        id,
+        title: item.title ?? '',
+        ownerId: item.ownerId,
+        executorId: item.executorId ?? '',
+        postId: item.postId ?? '',
+        status: item.status,
+        isExecutorApprove: item.isExecutorApprove ?? undefined,
+        post: item.post,
+      } as Task);
+    });
+
+    taskMap.forEach((task, id) => {
+      if (!map.has(id)) map.set(id, task);
+    });
+
+    return getDashboardTaskOptions(Array.from(map.values()));
+  }, [optionsRawItems, taskMap]);
 
   const items = useMemo(
-    () =>
-      taskId !== 'all'
-        ? apiItems.filter(item => item.task.id === taskId)
-        : apiItems,
-    [apiItems, taskId],
+    () => rawItems.map(item => mapTaskWithCommentsItem(item, taskMap)),
+    [rawItems, taskMap]
   );
 
   const hasActiveFilters = taskId !== 'all' || Boolean(appliedQuery);
 
   const selectedTaskTitle = useMemo(
     () => taskOptions.find(task => task.id === taskId)?.title,
-    [taskId, taskOptions],
+    [taskId, taskOptions]
   );
 
-  const selectedTask = useMemo(
-    () => (taskId !== 'all' ? taskMap.get(taskId) : undefined),
-    [taskId, taskMap],
+  const selectedTask = useMemo(() => {
+    if (taskId === 'all') return undefined;
+
+    const fromMap = taskMap.get(taskId);
+
+    if (fromMap) return fromMap;
+
+    const optionItem = optionsRawItems.find(
+      item => (item.id || item.lastComment?.taskId) === taskId
+    );
+
+    if (!optionItem) return undefined;
+
+    const id = optionItem.id || optionItem.lastComment?.taskId;
+
+    if (!id) return undefined;
+
+    return {
+      id,
+      title: optionItem.title ?? '',
+      ownerId: optionItem.ownerId,
+      executorId: optionItem.executorId ?? '',
+      postId: optionItem.postId ?? '',
+      status: optionItem.status,
+      isExecutorApprove: optionItem.isExecutorApprove ?? undefined,
+      post: optionItem.post,
+    } as Task;
+  }, [taskId, taskMap, optionsRawItems]);
+
+  const selectedItem = useMemo(
+    () => items.find(item => item.task.id === selectedTaskId) ?? null,
+    [items, selectedTaskId]
   );
 
   const showSelectedTaskComposer =
-    Boolean(selectedTask) && items.length === 0 && !isLoading;
+    Boolean(selectedTask) &&
+    items.length === 0 &&
+    !isLoading &&
+    !selectedTaskId;
 
   const emptyMessage = useMemo(() => {
     if (appliedQuery) {
@@ -155,35 +197,9 @@ export const DashboardCommentsPanel = () => {
   useEffect(() => {
     setTimeout(() => {
       setIsOpenFilter(false);
-      setExpandedTaskId(null);
+      setSelectedTaskId(null);
     }, 0);
-  }, [taskId]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setExpandedTaskId(null);
-    }, 0);
-  }, [appliedQuery]);
-
-  const markTaskAsRead = () => {
-    const now = new Date().toISOString();
-    setDashboardCommentsReadAfter(now);
-    setReadAfter(now);
-  };
-
-  const handleToggleGroup = (taskIdToToggle: string) => {
-    if (!taskIdToToggle) return;
-
-    setExpandedTaskId(prev => {
-      if (prev === taskIdToToggle) {
-        return null;
-      }
-
-      markTaskAsRead();
-
-      return taskIdToToggle;
-    });
-  };
+  }, [taskId, appliedQuery]);
 
   const handleResetFilters = () => {
     setTaskId('all');
@@ -191,33 +207,19 @@ export const DashboardCommentsPanel = () => {
     setAppliedQuery('');
   };
 
-  const handleCommentSuccess = () => {
-    setSnackbarOpen?.(true, 'Комментарий отправлен');
-  };
-
-  const isExpandedView = Boolean(expandedTaskId);
-
   return (
     <Box
       sx={{
         width: '100%',
+        height: '600px',
         display: 'flex',
         bgcolor: 'white',
-        overflow: isExpandedView ? 'hidden' : 'auto',
-        p: { xs: 2, md: 2.5 },
-        borderRadius: '32px',
+        overflow: 'hidden',
         border: '1px solid',
+        borderRadius: '32px',
+        p: { xs: 2, md: 2.5 },
         borderColor: 'divider',
         flexDirection: 'column',
-        maxHeight: { xs: 560, lg: 'min(72vh, 720px)' },
-        transition: theme =>
-          theme.transitions.create(['height', 'max-height'], {
-            duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS,
-            easing: theme.transitions.easing.easeInOut,
-          }),
-        ...(isExpandedView && {
-          height: { xs: 560, lg: 'min(72vh, 720px)' },
-        }),
       }}
     >
       <Stack
@@ -231,57 +233,110 @@ export const DashboardCommentsPanel = () => {
       >
         <Stack
           direction="row"
-          spacing={1.5}
-          sx={{ alignItems: 'center', minWidth: 0 }}
+          spacing={1}
+          sx={{ alignItems: 'center', minWidth: 0, flex: 1 }}
         >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              flexShrink: 0,
-              display: 'flex',
-              borderRadius: '12px',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'secondary.light',
-              color: 'primary.main',
-            }}
-          >
-            <ChatBubbleOutlined fontSize="small" />
-          </Box>
-
-          <Stack
-            spacing={0}
-            sx={{ minWidth: 0 }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ lineHeight: 1.2 }}
+          {selectedItem ? (
+            <IconButton
+              aria-label="К списку комментариев"
+              onClick={() => {
+                setSelectedTaskId(null);
+                setIsThreadSearchOpen(false);
+                setThreadSearchQuery('');
+                setIsAttachmentsOpen(false);
+              }}
             >
-              Комментарии
-            </Typography>
-
-            <Typography
-              variant="caption"
-              color="info"
-              sx={{ lineHeight: 1.7, display: { xs: 'none', md: 'block' } }}
+              <ChevronLeft />
+            </IconButton>
+          ) : (
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                display: 'flex',
+                borderRadius: '12px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'secondary.light',
+                color: 'primary.main',
+              }}
             >
-              Последние комментарии по задачам
-            </Typography>
-          </Stack>
+              <ChatBubbleOutlined fontSize="small" />
+            </Box>
+          )}
+
+          <Typography
+            variant="subtitle1"
+            noWrap
+            sx={{ fontWeight: 600 }}
+          >
+            {selectedItem
+              ? getTaskDisplayTitle(selectedItem.task)
+              : 'Комментарии'}
+          </Typography>
         </Stack>
 
-        <IconButton
-          onClick={() => setIsOpenFilter(prev => !prev)}
-          sx={{
-            color: hasActiveFilters ? 'primary.main' : 'text.secondary',
-          }}
+        <Stack
+          direction="row"
+          spacing={0.25}
+          sx={{ flexShrink: 0, alignItems: 'center' }}
         >
-          <FilterList />
-        </IconButton>
+          {!selectedItem && (
+            <IconButton
+              onClick={() => setIsOpenFilter(prev => !prev)}
+              sx={{
+                color: hasActiveFilters ? 'primary.main' : 'text.secondary',
+              }}
+            >
+              <FilterList />
+            </IconButton>
+          )}
+
+          {selectedItem && (
+            <>
+              {isThreadSearchOpen && !isMobile && (
+                <TextField
+                  autoFocus
+                  size="small"
+                  label="Поиск"
+                  value={threadSearchQuery}
+                  onChange={event => setThreadSearchQuery(event.target.value)}
+                  sx={{ width: 180 }}
+                />
+              )}
+
+              <Tooltip title="Поиск по комментариям">
+                <IconButton
+                  aria-label="Поиск по комментариям"
+                  onClick={() => {
+                    if (isThreadSearchOpen) {
+                      setIsThreadSearchOpen(false);
+                      setThreadSearchQuery('');
+                      return;
+                    }
+
+                    setIsThreadSearchOpen(true);
+                  }}
+                >
+                  {isThreadSearchOpen ? <Close /> : <Search />}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Вложения">
+                <IconButton
+                  aria-label="Вложения"
+                  onClick={() => setIsAttachmentsOpen(true)}
+                >
+                  <AttachFile />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Stack>
       </Stack>
 
-      {isOpenFilter && (
+      {!selectedItem && isOpenFilter && (
         <Box
           sx={{
             mb: 1.5,
@@ -383,7 +438,7 @@ export const DashboardCommentsPanel = () => {
         </Box>
       )}
 
-      {showSelectedTaskComposer && selectedTask && (
+      {!selectedItem && showSelectedTaskComposer && selectedTask && (
         <Box
           sx={{
             mb: 2,
@@ -392,6 +447,7 @@ export const DashboardCommentsPanel = () => {
             bgcolor: 'grey.50',
             border: '1px solid',
             borderColor: 'divider',
+            flexShrink: 0,
           }}
         >
           <Typography
@@ -407,7 +463,6 @@ export const DashboardCommentsPanel = () => {
               executorId={selectedTask.executorId}
               isExecutorApprove={selectedTask.isExecutorApprove}
               placeholder="Написать комментарий…"
-              onSuccess={handleCommentSuccess}
             />
           ) : (
             <Typography
@@ -420,88 +475,152 @@ export const DashboardCommentsPanel = () => {
         </Box>
       )}
 
-      {!isLoading && items.length === 0 && (
-        <Stack
-          spacing={1}
-          sx={{ py: 5, alignItems: 'center', textAlign: 'center' }}
-        >
-          <ChatBubbleOutlined sx={{ fontSize: 44, color: 'text.disabled' }} />
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            {emptyMessage}
-          </Typography>
-          {hasActiveFilters && (
-            <Button
-              size="small"
-              onClick={handleResetFilters}
-            >
-              Сбросить фильтры
-            </Button>
-          )}
-        </Stack>
-      )}
-
-      {items.length > 0 && (
+      {!selectedItem && (
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            ...(isExpandedView
-              ? { flex: 1, minHeight: 0, overflow: 'hidden' }
-              : { flexShrink: 0 }),
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
           }}
         >
-          <Stack
-            spacing={1}
-            sx={{
-              ...(isExpandedView && {
-                flex: 1,
-                minHeight: 0,
-                overflow: 'hidden',
-              }),
-              ...(!isExpandedView && { pr: 0.5 }),
-            }}
-          >
-            {items.map(item => {
+          {isLoading && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                py: 6,
+              }}
+            >
+              <CircularProgress size={28} />
+            </Box>
+          )}
+
+          {!isLoading && items.length === 0 && (
+            <Stack
+              spacing={1}
+              sx={{ py: 5, alignItems: 'center', textAlign: 'center' }}
+            >
+              <ChatBubbleOutlined
+                sx={{ fontSize: 44, color: 'text.disabled' }}
+              />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                {emptyMessage}
+              </Typography>
+              {hasActiveFilters && (
+                <Button
+                  size="small"
+                  onClick={handleResetFilters}
+                >
+                  Сбросить фильтры
+                </Button>
+              )}
+            </Stack>
+          )}
+
+          {!isLoading &&
+            items.map(item => {
               if (!item.task.id) return null;
 
-              const isExpanded = expandedTaskId === item.task.id;
-              const isVisible =
-                expandedTaskId === null || expandedTaskId === item.task.id;
+              const preview = getCommentPreview(item.lastComment);
+              const timeLabel = item.lastComment
+                ? format(new Date(item.lastComment.createdAt), 'HH:mm')
+                : null;
+              const hasUnread = item.unreadCount > 0;
 
               return (
-                <Collapse
+                <Stack
                   key={item.task.id}
-                  in={isVisible}
-                  timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
-                  unmountOnExit={!isExpanded}
-                  sx={isExpanded ? listFlexCollapseSx : undefined}
+                  direction="row"
+                  spacing={2}
+                  onClick={() => setSelectedTaskId(item.task.id)}
+                  sx={{
+                    mb: 1,
+                    p: 2,
+                    width: '100%',
+                    cursor: 'pointer',
+                    borderRadius: '16px',
+                    bgcolor: 'secondary.light',
+                  }}
                 >
-                  <DashboardCommentGroupCard
-                    item={item}
-                    highlight={appliedQuery || undefined}
-                    expanded={isExpanded}
-                    fillHeight={isExpanded}
-                    onToggle={() => handleToggleGroup(item.task.id)}
-                    onCommentSuccess={handleCommentSuccess}
-                  />
-                </Collapse>
+                  <Badge
+                    overlap="circular"
+                    invisible={!hasUnread}
+                    badgeContent={
+                      item.unreadCount > 99 ? '99+' : item.unreadCount
+                    }
+                    color="error"
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontWeight: 600,
+                        fontSize: '0.65rem',
+                        minWidth: 18,
+                        height: 18,
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        borderRadius: '50%',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'common.white',
+                        color: 'primary.main',
+                      }}
+                    >
+                      <ForumOutlined fontSize="small" />
+                    </Box>
+                  </Badge>
+
+                  <Stack
+                    direction="column"
+                    spacing={0.5}
+                    sx={{ minWidth: 0, flex: 1 }}
+                  >
+                    <Typography
+                      variant="body1"
+                      noWrap
+                      sx={{ fontWeight: hasUnread ? 700 : 500 }}
+                    >
+                      {getTaskDisplayTitle(item.task)}
+                    </Typography>
+
+                    <Typography
+                      variant="body2"
+                      noWrap
+                      sx={{ fontWeight: hasUnread ? 600 : 400 }}
+                    >
+                      {preview || 'Нет комментариев'}
+                    </Typography>
+                  </Stack>
+
+                  {timeLabel && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        flexShrink: 0,
+                        fontWeight: hasUnread ? 600 : 400,
+                      }}
+                    >
+                      {timeLabel}
+                    </Typography>
+                  )}
+                </Stack>
               );
             })}
-          </Stack>
 
-          <Collapse
-            in={!expandedTaskId}
-            timeout={DASHBOARD_COMMENT_CARD_COLLAPSE_MS}
-            unmountOnExit
-          >
-            {hasNextPage && taskId === 'all' && (
+          {hasNextPage &&
+            taskId === 'all' &&
+            !isLoading &&
+            items.length > 0 && (
               <Box
                 sx={{
                   pt: 1.5,
-                  flexShrink: 0,
                   display: 'flex',
                   justifyContent: 'center',
                 }}
@@ -520,8 +639,29 @@ export const DashboardCommentsPanel = () => {
                 </Button>
               </Box>
             )}
-          </Collapse>
         </Box>
+      )}
+
+      {selectedItem && (
+        <Stack
+          spacing={0}
+          sx={{ flex: 1, minHeight: 0 }}
+        >
+          <DashboardCommentGroupCard
+            item={selectedItem}
+            highlight={appliedQuery || undefined}
+            expanded
+            fillHeight
+            embedded
+            hideActions
+            searchOpen={isThreadSearchOpen}
+            searchQuery={threadSearchQuery}
+            onSearchOpenChange={setIsThreadSearchOpen}
+            onSearchQueryChange={setThreadSearchQuery}
+            attachmentsOpen={isAttachmentsOpen}
+            onAttachmentsOpenChange={setIsAttachmentsOpen}
+          />
+        </Stack>
       )}
     </Box>
   );

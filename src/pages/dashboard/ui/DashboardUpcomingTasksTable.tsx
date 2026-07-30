@@ -195,14 +195,6 @@ export const DashboardUpcomingTasksTable = ({
                 />
               )}
             </Stack>
-
-            <Typography
-              variant="caption"
-              color="info"
-              sx={{ lineHeight: 1.7, display: { xs: 'none', md: 'block' } }}
-            >
-              Дедлайн сегодня и задачи, ожидающие вашего действия
-            </Typography>
           </Stack>
         </Stack>
 

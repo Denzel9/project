@@ -23,6 +23,7 @@ const MenuButton = ({ options, onAction }: MenuButtonProps) => {
   const handleAction = (action: string, e: MouseEvent<HTMLLIElement>) => {
     e.stopPropagation();
     onAction(action);
+    handleClose();
   };
 
   return (

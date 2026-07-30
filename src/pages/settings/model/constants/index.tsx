@@ -2,13 +2,10 @@ import {
   PersonOutlined,
   BuildOutlined,
   NotificationsNoneOutlined,
-  LanguageOutlined,
   PeopleOutlined,
   SecurityOutlined,
   DashboardOutlined,
-  TaskOutlined,
-  ViewKanbanOutlined,
-  AutoAwesomeOutlined,
+  PaymentOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
@@ -52,7 +49,7 @@ export const SETTINGS_MENU_SECTIONS: SettingsMenuSection[] = [
       {
         label: 'Платежи',
         path: ROUTES.SETTINGS_BILLING,
-        icon: <LanguageOutlined fontSize="small" />,
+        icon: <PaymentOutlined fontSize="small" />,
       },
     ],
   },
@@ -60,24 +57,9 @@ export const SETTINGS_MENU_SECTIONS: SettingsMenuSection[] = [
     title: 'CRM',
     items: [
       {
-        label: 'Общие',
+        label: 'Дашборд',
         path: ROUTES.SETTINGS_CRM,
         icon: <DashboardOutlined fontSize="small" />,
-      },
-      {
-        label: 'Задачи',
-        path: ROUTES.SETTINGS_CRM_TASKS,
-        icon: <TaskOutlined fontSize="small" />,
-      },
-      {
-        label: 'Воронка',
-        path: ROUTES.SETTINGS_CRM_PIPELINE,
-        icon: <ViewKanbanOutlined fontSize="small" />,
-      },
-      {
-        label: 'Автоматизация',
-        path: ROUTES.SETTINGS_CRM_AUTOMATION,
-        icon: <AutoAwesomeOutlined fontSize="small" />,
       },
     ],
   },

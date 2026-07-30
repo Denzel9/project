@@ -34,13 +34,15 @@ mainAxios.interceptors.response.use(
           },
         });
 
-        useAuthStore
-          .getState()
-          .setAuth(
-            refreshResult?.data?.user?.id,
-            refreshResult?.data?.user?.role,
-            refreshResult?.data?.user?.membershipRole
-          );
+        useAuthStore.getState().setAuth({
+          id: refreshResult?.data?.user?.id,
+          role: refreshResult?.data?.user?.role,
+          membershipRole: refreshResult?.data?.user?.membershipRole,
+          isPrime: Boolean(refreshResult?.data?.user?.isPrime),
+          primeStatus: refreshResult?.data?.user?.primeStatus ?? 'NONE',
+          primeExpiresAt: refreshResult?.data?.user?.primeExpiresAt ?? null,
+          isEmailConfirmed: Boolean(refreshResult?.data?.user?.isEmailConfirmed),
+        });
       } else {
         if (originalRequest.url.includes('invites/accept')) {
           window.location.href = `${ROUTES.AUTH}?isAuthFailed=true&token=${window.location.search.split('=')[1]}`;

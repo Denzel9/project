@@ -6,6 +6,7 @@ import {
   useAddFavoriteMutation,
   useRemoveFavoriteMutation,
 } from '@/entities/favorite';
+import { useRequireEmailConfirmed } from '@/features/auth';
 
 type FavoriteButtonProps = {
   postId: string;
@@ -21,6 +22,7 @@ export const FavoriteButton = ({
   const { mutate: addFavorite, isPending: isAdding } = useAddFavoriteMutation();
   const { mutate: removeFavorite, isPending: isRemoving } =
     useRemoveFavoriteMutation();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   useEffect(() => {
     setTimeout(() => {
@@ -32,6 +34,7 @@ export const FavoriteButton = ({
 
   const handleToggleFavorite = () => {
     if (isFavoritePending) return;
+    if (!requireEmailConfirmed()) return;
 
     if (isFavorite) {
       removeFavorite(postId, {

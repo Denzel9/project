@@ -1,4 +1,4 @@
-import { Stack, Avatar, Typography } from '@mui/material';
+import { Badge, Stack, Avatar, Typography } from '@mui/material';
 import { format } from 'date-fns';
 
 import { getMessagePreview, type ChatConversation } from '@/entities/chat';
@@ -12,9 +12,14 @@ export const ConversationItem = ({
   isSelected: boolean;
   onSelect: () => void;
 }) => {
-  const { peer, lastMessage, updatedAt } = conversation;
+  const { peer, lastMessage, updatedAt, unreadCount } = conversation;
+  const hasUnread = unreadCount > 0;
   const preview = lastMessage
-    ? getMessagePreview(lastMessage.content, lastMessage.media ?? [])
+    ? getMessagePreview(
+        lastMessage.content,
+        lastMessage.media ?? [],
+        lastMessage.isRedirected,
+      )
     : 'Нет сообщений';
   const timeLabel = format(new Date(updatedAt), 'HH:mm');
 
@@ -29,13 +34,29 @@ export const ConversationItem = ({
         width: '100%',
         cursor: 'pointer',
         borderRadius: '16px',
-        bgcolor: isSelected ? 'primary.light' : 'secondary.main',
+        bgcolor: isSelected ? 'primary.light' : 'secondary.light',
       }}
     >
-      <Avatar
-        src={peer.avatar ?? undefined}
-        alt={peer.displayName}
-      />
+      <Badge
+        overlap="circular"
+        invisible={!hasUnread}
+        badgeContent={unreadCount > 99 ? '99+' : unreadCount}
+        color="error"
+        sx={{
+          '& .MuiBadge-badge': {
+            fontWeight: 600,
+            fontSize: '0.65rem',
+            minWidth: 18,
+            height: 18,
+          },
+        }}
+      >
+        <Avatar
+          src={peer.avatar ?? undefined}
+          alt={peer.displayName}
+        />
+      </Badge>
+
       <Stack
         direction="column"
         spacing={0.5}
@@ -43,14 +64,21 @@ export const ConversationItem = ({
       >
         <Typography
           variant="body1"
-          sx={{ ...(isSelected && { color: 'common.white' }) }}
+          sx={{
+            fontWeight: hasUnread ? 700 : 500,
+            ...(isSelected && { color: 'common.white' }),
+          }}
         >
           {peer.displayName}
         </Typography>
 
         <Typography
           variant="body2"
-          sx={{ ...(isSelected && { color: 'common.white' }) }}
+          noWrap
+          sx={{
+            fontWeight: hasUnread ? 600 : 400,
+            ...(isSelected && { color: 'common.white' }),
+          }}
         >
           {preview}
         </Typography>
@@ -58,7 +86,11 @@ export const ConversationItem = ({
 
       <Typography
         variant="body2"
-        sx={{ ...(isSelected && { color: 'common.white' }) }}
+        sx={{
+          flexShrink: 0,
+          fontWeight: hasUnread ? 600 : 400,
+          ...(isSelected && { color: 'common.white' }),
+        }}
       >
         {timeLabel}
       </Typography>

@@ -6,10 +6,13 @@ export * from './ui/share-menu/ShareButton';
 export * from './ui/infinite-scroll/index';
 export * from './hooks/useScrolltoTop';
 export * from './ui/markdown';
-export * from './ui/rhf';
+export * from './ui/rhf'
+export * from './ui/location-autocomplete/LocationAutocomplete';
 export * from './api';
 export * from './lib/share/shareTargets';
+export * from './lib/maps/openYandexMaps';
 export * from './hooks/useScroll';
 export * from './hooks/useInfiniteScroll';
 export * from './ui/date-picker/DateCalendarFilter';
+export * from './ui/date-picker/DatePicker';
 export * from './ui/messenger';

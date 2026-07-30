@@ -11,3 +11,7 @@ export * from './workspace-member'
 export * from './notification'
 export * from './publication'
 export * from './user-config'
+export * from './settings'
+export * from './geo'
+export * from './billing'
+

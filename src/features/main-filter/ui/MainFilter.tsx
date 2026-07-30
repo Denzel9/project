@@ -1,12 +1,14 @@
-import { Search, Tune } from '@mui/icons-material';
+import { Close, Search, Tune } from '@mui/icons-material';
 import {
   Box,
   Chip,
   Drawer,
   IconButton,
   Stack,
+  TextField,
+  useMediaQuery,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { scrollMainToTop, useScroll } from '@/shared';
 
@@ -18,7 +20,7 @@ import { PostSearchPanel } from './PostSearchPanel';
 import { SideBarFilter } from './SideBarFilter';
 
 export const MainFilter = () => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const {
     filters,
@@ -27,6 +29,10 @@ export const MainFilter = () => {
     resetAllFilters,
     isOpenMainFilter,
     setIsOpenMainFilter,
+    isSearchOpen,
+    setIsSearchOpen,
+    searchQuery,
+    setSearchQuery,
   } = useMainFilterStore();
 
   const { isScrolled, ref } = useScroll(150);
@@ -96,7 +102,9 @@ export const MainFilter = () => {
               alignItems: 'center',
             }}
           >
-            {FILTERS.map(({ label, value }) => renderFastFilterChip(label, value))}
+            {FILTERS.map(({ label, value }) =>
+              renderFastFilterChip(label, value)
+            )}
 
             {hasAnyFilters && (
               <Chip
@@ -113,8 +121,20 @@ export const MainFilter = () => {
             spacing={1}
             sx={{ alignItems: 'center', flexShrink: 0 }}
           >
-            <IconButton onClick={() => setIsSearchOpen(true)}>
-              <Search />
+            {isSearchOpen && !isMobile && (
+              <TextField
+                autoFocus
+                label="Поиск"
+                size="small"
+                variant="outlined"
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
+                sx={{ width: 300 }}
+              />
+            )}
+
+            <IconButton onClick={() => setIsSearchOpen(!isSearchOpen)}>
+              {isSearchOpen ? <Close /> : <Search />}
             </IconButton>
 
             <IconButton onClick={() => setIsOpenMainFilter(!isOpenMainFilter)}>
@@ -129,7 +149,7 @@ export const MainFilter = () => {
       </Stack>
 
       <PostSearchPanel
-        open={isSearchOpen}
+        open={isSearchOpen && isMobile}
         onClose={() => setIsSearchOpen(false)}
       />
 

@@ -1,64 +1,73 @@
 import {
   AttachFile,
   ChatBubbleOutlined,
+  Close,
   MoreVert,
   Search,
 } from '@mui/icons-material';
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
   IconButton,
   Menu,
   MenuItem,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { format } from 'date-fns';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  canEditComment,
+  canEditTaskComment,
   uploadTaskCommentMediaBatch,
   useAllTaskCommentsQuery,
   useCreateTaskCommentMutation,
+  useSearchTaskCommentsQuery,
   useUpdateTaskCommentMutation,
   validateChatMediaFile,
-  useGetUserByIdQuery,
+  type TaskComment,
   type User,
   type TaskCommentMedia,
 } from '@/entities';
-import { useAuthStore } from '@/features';
+import { useAuthStore, useTaskCommentsRealtime } from '@/features';
 import { ChatInput } from '@/shared';
 import { FullScreenGallery } from '@/widgets';
 
-import {
-  COMMENT_MEDIA_PLACEHOLDER,
-  hasCommentText,
-  toGalleryItems,
-} from '../model/lib/commentMedia';
+import { hasCommentText, toGalleryItems } from '../model/lib/commentMedia';
+import { useUnreadCommentsDivider } from '../model/hooks/useUnreadCommentsDivider';
 
 import { DeleteCommentDialog } from './DeleteCommentDialog';
 import { TaskCommentAttachmentsPanel } from './TaskCommentAttachmentsPanel';
 import { TaskCommentItem } from './TaskCommentItem';
 import { TaskCommentSearchPanel } from './TaskCommentSearchPanel';
+import { UnreadCommentsDivider } from './UnreadCommentsDivider';
 
 type TaskCommentsProps = {
   taskId: string;
   contact?: User;
+  isOwner?: boolean;
+  disabled?: boolean;
   isExecutorApprove?: boolean | null;
 };
 
 export const TaskComments = ({
   taskId,
   contact,
+  isOwner = false,
+  disabled = false,
   isExecutorApprove,
 }: TaskCommentsProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const currentUserId = useAuthStore(state => state.id);
+
+  useTaskCommentsRealtime({ taskId });
 
   const [content, setContent] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -69,6 +78,10 @@ export const TaskComments = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchItems, setSearchItems] = useState<TaskComment[]>([]);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -77,13 +90,82 @@ export const TaskComments = ({
   >([]);
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0);
 
-  const { data: user } = useGetUserByIdQuery(currentUserId || '');
   const { data: comments = [], isLoading: isCommentsLoading } =
     useAllTaskCommentsQuery(taskId);
+  const unreadDividerCommentId = useUnreadCommentsDivider({
+    taskId,
+    comments,
+    currentUserId,
+    isLoading: isCommentsLoading,
+  });
   const { mutateAsync: createComment, isPending: isCreating } =
     useCreateTaskCommentMutation();
   const { mutate: updateComment, isPending: isUpdating } =
     useUpdateTaskCommentMutation();
+
+  const isDesktopSearch = isSearchOpen && !isMobile;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!isDesktopSearch) {
+      setTimeout(() => {
+        setDebouncedQuery('');
+        setSearchPage(1);
+        setSearchItems([]);
+      }, 0);
+    }
+  }, [isDesktopSearch]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setSearchPage(1);
+      setSearchItems([]);
+    }, 0);
+  }, [debouncedQuery, taskId]);
+
+  const canSearch = isDesktopSearch && debouncedQuery.length >= 2;
+
+  const {
+    data: searchData,
+    isLoading: isSearchLoading,
+    isFetching: isSearchFetching,
+    error: searchError,
+  } = useSearchTaskCommentsQuery(canSearch ? taskId : null, {
+    q: debouncedQuery,
+    page: searchPage,
+    limit: 20,
+  });
+
+  useEffect(() => {
+    if (!canSearch || !searchData) return;
+
+    setTimeout(() => {
+      setSearchItems(prev =>
+        searchPage === 1 ? searchData.items : [...prev, ...searchData.items]
+      );
+    }, 0);
+  }, [canSearch, searchData, searchPage]);
+
+  const searchHasMore = Boolean(
+    searchData && searchData.page * searchData.limit < searchData.total
+  );
+
+  const handleToggleSearch = () => {
+    if (isSearchOpen) {
+      setIsSearchOpen(false);
+      setSearchQuery('');
+      return;
+    }
+
+    setIsSearchOpen(true);
+  };
 
   const isPending = isCreating || isUpdating || isSendingMedia;
 
@@ -168,6 +250,8 @@ export const TaskComments = ({
   }, []);
 
   const handleCreate = async () => {
+    if (disabled) return;
+
     const trimmed = content.trim();
     const hasContent = Boolean(trimmed);
     const hasFiles = pendingFiles.length > 0;
@@ -185,7 +269,7 @@ export const TaskComments = ({
       await createComment({
         taskId,
         body: {
-          content: hasContent ? trimmed : COMMENT_MEDIA_PLACEHOLDER,
+          ...(hasContent ? { content: trimmed } : { content: '' }),
           media,
         },
       });
@@ -200,9 +284,16 @@ export const TaskComments = ({
   };
 
   const handleStartEdit = (commentId: string, text: string) => {
+    if (disabled) return;
+
     const comment = comments.find(item => item.id === commentId);
 
-    if (!comment || !canEditComment(comment.createdAt)) return;
+    if (
+      !comment ||
+      !canEditTaskComment(comment, { userId: currentUserId, isOwner })
+    ) {
+      return;
+    }
 
     setEditingId(commentId);
     setEditContent(hasCommentText(text) ? text : '');
@@ -219,7 +310,7 @@ export const TaskComments = ({
       {
         taskId,
         commentId,
-        body: { content: trimmed || COMMENT_MEDIA_PLACEHOLDER },
+        body: { content: trimmed },
       },
       {
         onSuccess: () => {
@@ -231,6 +322,8 @@ export const TaskComments = ({
   };
 
   const handleDelete = (commentId: string) => {
+    if (disabled) return;
+
     setDeletingId(commentId);
     setIsOpenDeleteDialog(true);
   };
@@ -242,9 +335,13 @@ export const TaskComments = ({
     setIsAttachmentsOpen(true);
   };
 
-  const emptyMessage = isExecutorApprove
-    ? 'Комментариев пока нет — напишите первым'
-    : 'Комментарии станут доступны после назначения исполнителя';
+  const emptyMessage = disabled
+    ? 'Комментарии недоступны для этой задачи'
+    : isExecutorApprove
+      ? 'Комментариев пока нет — напишите первым'
+      : 'Комментарии станут доступны после назначения исполнителя';
+
+  const canUseCommentTools = Boolean(isExecutorApprove);
 
   return (
     <Box
@@ -273,22 +370,6 @@ export const TaskComments = ({
           spacing={1.5}
           sx={{ alignItems: 'center', minWidth: 0 }}
         >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              display: 'flex',
-              flexShrink: 0,
-              borderRadius: '12px',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-            }}
-          >
-            <ChatBubbleOutlined fontSize="small" />
-          </Box>
-
           <Stack
             spacing={1}
             direction="row"
@@ -307,54 +388,69 @@ export const TaskComments = ({
           </Stack>
         </Stack>
 
-        <Stack
-          direction="row"
-          spacing={0.5}
-        >
-          <Tooltip title="Поиск">
-            <IconButton
-              size="small"
-              onClick={() => setIsSearchOpen(true)}
-            >
-              <Search fontSize="small" />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Вложения">
-            <IconButton
-              size="small"
-              onClick={() => setIsAttachmentsOpen(true)}
-            >
-              <AttachFile fontSize="small" />
-            </IconButton>
-          </Tooltip>
-
-          <IconButton
-            size="small"
-            onClick={event => setMenuAnchor(event.currentTarget)}
+        {canUseCommentTools && (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: 'center' }}
           >
-            <MoreVert fontSize="small" />
-          </IconButton>
+            {isSearchOpen && !isMobile && (
+              <TextField
+                autoFocus
+                label="Поиск"
+                size="small"
+                variant="outlined"
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
+                sx={{ width: 240 }}
+              />
+            )}
 
-          <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={handleCloseMenu}
-          >
-            <MenuItem onClick={handleOpenAttachments}>Все вложения</MenuItem>
-          </Menu>
-        </Stack>
+            <Tooltip title="Поиск">
+              <IconButton onClick={handleToggleSearch}>
+                {isSearchOpen ? <Close /> : <Search />}
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Вложения">
+              <IconButton onClick={() => setIsAttachmentsOpen(true)}>
+                <AttachFile />
+              </IconButton>
+            </Tooltip>
+
+            <IconButton onClick={event => setMenuAnchor(event.currentTarget)}>
+              <MoreVert />
+            </IconButton>
+
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={handleCloseMenu}
+            >
+              <MenuItem onClick={handleOpenAttachments}>Все вложения</MenuItem>
+            </Menu>
+          </Stack>
+        )}
       </Stack>
 
-      <Box sx={{ px: { xs: 2, md: 3 }, py: 2 }}>
+      <Box
+        sx={{
+          px: { xs: 2, md: 3 },
+          py: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
         <Stack
           ref={commentsListRef}
           spacing={1.5}
           direction="column"
           sx={{
             mb: 2,
+            flex: 1,
             width: '100%',
-            minHeight: 220,
+            minHeight: 320,
             maxHeight: 480,
             overflowY: 'auto',
             p: comments.length ? 1.5 : 0,
@@ -364,11 +460,17 @@ export const TaskComments = ({
             borderColor: 'divider',
           }}
         >
-          {!isCommentsLoading && !comments.length && (
+          {!isCommentsLoading && !comments.length && !canSearch && (
             <Box
               sx={{
-                py: 6,
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 320,
                 px: 2,
+                py: 4,
                 textAlign: 'center',
                 borderRadius: '20px',
                 bgcolor: 'grey.50',
@@ -392,36 +494,115 @@ export const TaskComments = ({
             </Box>
           )}
 
-          {isCommentsLoading && (
+          {isCommentsLoading && !canSearch && (
             <Box
               sx={{
-                py: 6,
+                flex: 1,
                 display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
+                minHeight: '100%',
+                py: 6,
               }}
             >
               <CircularProgress size={28} />
             </Box>
           )}
 
-          {!isCommentsLoading &&
+          {canSearch && (
+            <>
+              {isSearchLoading && searchItems.length === 0 && (
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 6,
+                  }}
+                >
+                  <CircularProgress size={28} />
+                </Box>
+              )}
+
+              {searchError && (
+                <Typography
+                  variant="body2"
+                  color="error"
+                  sx={{ textAlign: 'center', py: 2 }}
+                >
+                  Не удалось выполнить поиск
+                </Typography>
+              )}
+
+              {!isSearchLoading && !searchError && !searchItems.length && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ textAlign: 'center', py: 4 }}
+                >
+                  Ничего не найдено
+                </Typography>
+              )}
+
+              {searchItems.map(comment => (
+                <Box key={comment.id}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mb: 0.5, display: 'block' }}
+                  >
+                    {format(new Date(comment.createdAt), 'dd.MM.yyyy HH:mm')}
+                  </Typography>
+                  <TaskCommentItem
+                    comment={comment}
+                    currentUserId={currentUserId}
+                    highlight={debouncedQuery}
+                    showActions={false}
+                    onOpenGallery={openGallery}
+                  />
+                </Box>
+              ))}
+
+              {searchHasMore && (
+                <Button
+                  variant="outlined"
+                  disabled={isSearchFetching}
+                  onClick={() => setSearchPage(prev => prev + 1)}
+                >
+                  {isSearchFetching ? 'Загрузка…' : 'Загрузить ещё'}
+                </Button>
+              )}
+            </>
+          )}
+
+          {!canSearch &&
+            !isCommentsLoading &&
             comments.map(comment => (
-              <TaskCommentItem
+              <Box
                 key={comment.id}
-                comment={comment}
-                currentUserId={currentUserId}
-                userAvatar={user?.data?.avatar ?? undefined}
-                contactAvatar={contact?.avatar ?? undefined}
-                isPending={isPending}
-                isEditing={editingId === comment.id}
-                editContent={editContent}
-                onEditContentChange={setEditContent}
-                onStartEdit={handleStartEdit}
-                onSaveEdit={handleSaveEdit}
-                onCancelEdit={() => setEditingId(null)}
-                onDelete={handleDelete}
-                onOpenGallery={openGallery}
-              />
+                sx={{ width: '100%' }}
+              >
+                {unreadDividerCommentId === comment.id && (
+                  <UnreadCommentsDivider />
+                )}
+
+                <TaskCommentItem
+                  comment={comment}
+                  isOwner={isOwner}
+                  currentUserId={currentUserId}
+                  isPending={isPending}
+                  isEditing={editingId === comment.id}
+                  editContent={editContent}
+                  onEditContentChange={setEditContent}
+                  onStartEdit={handleStartEdit}
+                  onSaveEdit={handleSaveEdit}
+                  onCancelEdit={() => setEditingId(null)}
+                  onDelete={handleDelete}
+                  onOpenGallery={openGallery}
+                  showActions={!disabled}
+                />
+              </Box>
             ))}
         </Stack>
 
@@ -435,26 +616,25 @@ export const TaskComments = ({
           </Typography>
         )}
 
-        <Box
-          sx={{
-            pt: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
+        {canUseCommentTools && (
           <ChatInput
             value={content}
             onChange={setContent}
             isSending={isPending}
+            disabled={disabled}
             executorId={contact?.id}
             pendingFiles={pendingFiles}
             onAttachFiles={addPendingFiles}
             onRemoveFile={removePendingFile}
-            placeholder="Написать комментарий…"
+            placeholder={
+              disabled
+                ? 'Комментарии недоступны'
+                : 'Написать комментарий…'
+            }
             onSend={() => void handleCreate()}
             isExecutorApprove={isExecutorApprove}
           />
-        </Box>
+        )}
       </Box>
 
       <DeleteCommentDialog
@@ -466,12 +646,15 @@ export const TaskComments = ({
 
       <TaskCommentSearchPanel
         taskId={taskId}
-        contact={contact}
-        open={isSearchOpen}
+        open={isSearchOpen && isMobile}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
         onOpenGallery={openGallery}
         currentUserId={currentUserId}
-        onClose={() => setIsSearchOpen(false)}
-        userAvatar={user?.data?.avatar ?? undefined}
+        onClose={() => {
+          setIsSearchOpen(false);
+          setSearchQuery('');
+        }}
       />
 
       <TaskCommentAttachmentsPanel

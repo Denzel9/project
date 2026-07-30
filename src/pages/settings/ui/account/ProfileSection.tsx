@@ -2,7 +2,13 @@ import { Avatar, Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
-import { FormBlock, FormBlockRowItem, PhoneInput, RHFInput } from '@/shared';
+import {
+  FormBlock,
+  FormBlockRowItem,
+  LocationAutocomplete,
+  PhoneInput,
+  RHFInput,
+} from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 import { ContactsSection } from './ContactsSection';
@@ -49,7 +55,6 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         Личная информация
       </Typography>
 
-      {/* Аватар */}
       <Box sx={{ position: 'relative', mt: 4, width: 'fit-content' }}>
         <Avatar
           src={avatarUrl}
@@ -102,19 +107,26 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         </Box>
       </Box>
 
-      {/* Название компании */}
       {user?.companyProfile && (
-        <RHFInput
-          name="companyName"
-          control={control}
-          props={{
-            fullWidth: true,
-            label: 'Название компании',
-          }}
-        />
+        <FormBlock>
+          <RHFInput
+            name="companyName"
+            control={control}
+            props={{
+              fullWidth: true,
+              label: 'Название компании',
+            }}
+          />
+
+          <FormBlockRowItem>
+            <LocationAutocomplete
+              name="location"
+              control={control}
+            />
+          </FormBlockRowItem>
+        </FormBlock>
       )}
 
-      {/* Имя и фамилия */}
       {!user?.companyProfile && (
         <FormBlock>
           <RHFInput
@@ -150,19 +162,14 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
           </FormBlockRowItem>
 
           <FormBlockRowItem>
-            <RHFInput
+            <LocationAutocomplete
               name="location"
               control={control}
-              props={{
-                fullWidth: true,
-                label: 'Местоположение',
-              }}
             />
           </FormBlockRowItem>
         </FormBlock>
       )}
 
-      {/* Контактная информация */}
       <FormBlock title="Контактная информация">
         <RHFInput
           name="email"
@@ -189,7 +196,6 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         />
       </FormBlock>
 
-      {/* Дополнительные контакты */}
       <ContactsSection
         isOpenAddContacts={isOpenAddContacts}
         setIsOpenAddContacts={setIsOpenAddContacts}
@@ -205,7 +211,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
               rows: 4,
               multiline: true,
               fullWidth: true,
-              label: 'Обо мне',
+              label: 'Биография',
             }}
           />
         </FormBlockRowItem>
@@ -213,7 +219,6 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         <ParametersSection />
       </FormBlock>
 
-      {/* Кнопка сохранения */}
       <FormBlock>
         <Button
           size="small"

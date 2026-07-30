@@ -7,7 +7,7 @@ import { useGetProfilesQuery, useSwitchProfileMutation } from '@/entities';
 import { prefetchUserConfig } from '@/entities/user-config';
 import { useAuthStore } from '@/features';
 import { queryClient } from '@/shared/api';
-import { ROUTES } from '@/shared';
+import { ROUTES } from '@/shared/config/routes';
 import { useSnackbarStore } from '@/widgets';
 
 import { useCurrentUserStore } from '../model/store';
@@ -44,11 +44,19 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
 
   const handleSwitchProfile = async (id: string) => {
     const res = await switchProfile(id);
-    setAuth(
-      res.data.user?.id,
-      res.data.user?.role as string,
-      res.data.user?.membershipRole as string
-    );
+    const user = res.data.user;
+
+    if (!user?.id) return;
+
+    setAuth({
+      id: user.id,
+      role: user.role as string,
+      membershipRole: user.membershipRole as string,
+      isPrime: Boolean(user.isPrime),
+      primeStatus: user.primeStatus ?? 'NONE',
+      primeExpiresAt: user.primeExpiresAt ?? null,
+      isEmailConfirmed: Boolean(user.isEmailConfirmed),
+    });
 
     try {
       await prefetchUserConfig(queryClient);
@@ -64,7 +72,6 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
     }
 
     await handleSwitchProfile(value);
-    // TODO: Обязательно разкомментировать
     navigate(ROUTES.INDEX);
     setCurrentUser(value);
     setAnchorEl(null);

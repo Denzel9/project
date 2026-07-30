@@ -2,8 +2,6 @@ import { Button } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { DatePickerProvider } from '@/widgets';
-
 type DateCalendarFilterProps = {
   value: string | null;
   onChange: (date: Dayjs | null) => void;
@@ -15,7 +13,7 @@ export const DateCalendarFilter = ({
   onChange,
   onClear,
 }: DateCalendarFilterProps) => (
-  <DatePickerProvider>
+  <>
     <DateCalendar
       value={value ? dayjs(value) : null}
       onChange={onChange}
@@ -30,5 +28,5 @@ export const DateCalendarFilter = ({
         Все даты
       </Button>
     )}
-  </DatePickerProvider>
+  </>
 );

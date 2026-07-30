@@ -1,7 +1,9 @@
-import { fetchAllPublications, type Publication } from '@/entities/publication'
+import {
+  fetchAllPublications,
+  type Publication,
+} from '@/entities/publication'
 
 import {
-  filterPublicationsByExecutor,
   toPublicationsParams,
   type PublicationExecutorFilter,
   type PublicationPostFilter,
@@ -18,7 +20,6 @@ export const fetchPublicationsForReport = async (
   options: FetchPublicationsForReportOptions,
 ): Promise<Publication[]> => {
   const params = toPublicationsParams(options)
-  const items = await fetchAllPublications(params)
 
-  return filterPublicationsByExecutor(items, options.executorId)
+  return fetchAllPublications(params)
 }

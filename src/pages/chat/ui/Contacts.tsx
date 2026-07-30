@@ -1,6 +1,8 @@
 import { Box, CircularProgress, Stack, TextField } from '@mui/material';
 import { useMemo, useState } from 'react';
 
+import { sortConversationsByUnread } from '@/entities/chat';
+
 import { ConversationItem } from './ConversationItem';
 
 import type { ChatConversation } from '@/entities/chat';
@@ -22,11 +24,13 @@ export const Contacts = ({
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return conversations;
+    const list = !query
+      ? conversations
+      : conversations.filter(c =>
+          c.peer.displayName.toLowerCase().includes(query),
+        );
 
-    return conversations.filter(c =>
-      c.peer.displayName.toLowerCase().includes(query)
-    );
+    return sortConversationsByUnread(list);
   }, [conversations, search]);
 
   return (

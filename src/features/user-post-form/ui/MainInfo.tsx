@@ -16,11 +16,15 @@ const ADVANTAGE_OPTIONS = [
 
 type Props = {
   isEdit?: boolean;
+  menuOptions?: string[];
+  onMenuAction?: (action: string) => void;
 };
 
-const options = ['Удалить', 'Сохранить как черновик'];
-
-export const MainInfo = ({ isEdit = false }: Props) => {
+export const MainInfo = ({
+  isEdit = false,
+  menuOptions = [],
+  onMenuAction,
+}: Props) => {
   const { control, setValue } = useFormContext();
 
   const { chips } = useWatch({
@@ -28,14 +32,6 @@ export const MainInfo = ({ isEdit = false }: Props) => {
   });
 
   const navigate = useNavigate();
-
-  // const { handleOpenConfirmModal, handleDelete, handleGoToPreview } =
-  //   useActions({ getValues, id });
-
-  const handleAction = () => {
-    // if (action === 'Предпросмотр') handleGoToPreview();
-    // if (action === 'Удалить') handleOpenConfirmModal();
-  };
 
   const handleSetChips = (value: string) => {
     if (chips.includes(value)) {
@@ -68,10 +64,12 @@ export const MainInfo = ({ isEdit = false }: Props) => {
           </Typography>
         </Box>
 
-        <MenuButton
-          options={options}
-          onAction={handleAction}
-        />
+        {isEdit && menuOptions.length > 0 && onMenuAction && (
+          <MenuButton
+            options={menuOptions}
+            onAction={onMenuAction}
+          />
+        )}
       </Box>
 
       <Box sx={{ width: { lg: '50%', xs: '100%' } }}>

@@ -210,7 +210,10 @@ export const MyResponseItem = ({
                     to={`${ROUTES.PROFILE}?userId=${post?.ownerId}`}
                     style={{ textDecoration: 'none', color: 'inherit' }}
                   >
-                    <UserDisplayName user={companyUser} />
+                    <UserDisplayName
+                      user={companyUser}
+                      variant="body2"
+                    />
                   </Link>
                 )}
               </Box>

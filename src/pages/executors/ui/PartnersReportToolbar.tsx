@@ -1,5 +1,5 @@
 import { DownloadOutlined, PrintOutlined } from '@mui/icons-material';
-import { Button, CircularProgress, IconButton, Stack } from '@mui/material';
+import { CircularProgress, IconButton, Stack, Tooltip } from '@mui/material';
 
 type PartnersReportToolbarProps = {
   disabled?: boolean;
@@ -19,53 +19,38 @@ export const PartnersReportToolbar = ({
     direction="row"
     className="partners-no-print"
   >
-    <Button
-      size="small"
-      onClick={onPrint}
-      variant="outlined"
-      disabled={disabled}
-      startIcon={<PrintOutlined />}
-      sx={{ display: { xs: 'none', md: 'flex', textTransform: 'none' } }}
-    >
-      Печать
-    </Button>
-
-    <IconButton
-      size="small"
-      onClick={onPrint}
-      disabled={disabled}
-      sx={{ display: { xs: 'block', md: 'none' } }}
-    >
-      <PrintOutlined />
-    </IconButton>
-
-    <Button
-      size="small"
-      variant="outlined"
-      startIcon={
-        isExporting ? (
+    <Tooltip title="Печать">
+      <IconButton
+        size="small"
+        disabled={disabled}
+        onClick={onPrint}
+      >
+        {isExporting ? (
           <CircularProgress
             size={16}
             color="inherit"
           />
         ) : (
-          <DownloadOutlined />
-        )
-      }
-      onClick={onExport}
-      disabled={disabled || isExporting}
-      sx={{ display: { xs: 'none', md: 'flex', textTransform: 'none' } }}
-    >
-      Экспорт CSV
-    </Button>
+          <PrintOutlined fontSize="small" />
+        )}
+      </IconButton>
+    </Tooltip>
 
-    <IconButton
-      size="small"
-      onClick={onExport}
-      disabled={disabled || isExporting}
-      sx={{ display: { xs: 'block', md: 'none' } }}
-    >
-      <DownloadOutlined />
-    </IconButton>
+    <Tooltip title="Экспорт CSV">
+      <IconButton
+        size="small"
+        disabled={disabled || isExporting}
+        onClick={onExport}
+      >
+        {isExporting ? (
+          <CircularProgress
+            size={16}
+            color="inherit"
+          />
+        ) : (
+          <DownloadOutlined fontSize="small" />
+        )}
+      </IconButton>
+    </Tooltip>
   </Stack>
 );

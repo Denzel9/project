@@ -1,6 +1,5 @@
-import { More } from '@mui/icons-material';
-import { Chip, IconButton, Menu, MenuItem, Stack } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { Chip, Stack, type SxProps, type Theme } from '@mui/material';
+import { useMemo } from 'react';
 
 import { getTaskStatsCount, USER_ROLE, useTaskStatsQuery } from '@/entities';
 import { useAuthStore } from '@/features';
@@ -19,27 +18,32 @@ type FastChipProps = {
   count: number;
   isActive: boolean;
   onClick: () => void;
+  sx?: SxProps<Theme>;
 };
 
-const FastChip = ({ label, count, isActive, onClick }: FastChipProps) => (
+const FastChip = ({ label, count, isActive, onClick, sx }: FastChipProps) => (
   <Chip
-    size="small"
+    sx={{
+      transition: 'all 0.1s ease-in-out',
+      bgcolor: isActive ? 'primary.main' : 'white',
+      ':hover': {
+        bgcolor: isActive ? 'primary.dark' : '#f0f0f0 !important',
+      },
+      ...sx,
+    }}
+    clickable
     onClick={onClick}
     color={isActive ? 'primary' : 'default'}
     variant={isActive ? 'filled' : 'outlined'}
     label={count > 0 ? `${label} · ${count}` : label}
-    sx={{
-      flexShrink: 0,
-      cursor: 'pointer',
-      borderRadius: '10px',
-      fontWeight: isActive ? 600 : 400,
-    }}
   />
 );
 
-export const FastButtonGroup = () => {
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-
+export const FastButtonGroup = ({
+  isSearchOpen,
+}: {
+  isSearchOpen: boolean;
+}) => {
   const { role } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
 
@@ -48,7 +52,7 @@ export const FastButtonGroup = () => {
 
   const fastButtonOptions = useMemo(
     () => getFastButtonOptions(isCompany),
-    [isCompany],
+    [isCompany]
   );
 
   const primaryOptions = fastButtonOptions.slice(0, FAST_BUTTON_PRIMARY_COUNT);
@@ -56,77 +60,58 @@ export const FastButtonGroup = () => {
 
   const statsParams = useMemo(
     () => (postId !== 'all' ? { postId } : undefined),
-    [postId],
+    [postId]
   );
 
   const { data: stats } = useTaskStatsQuery(statsParams);
 
   const handleFastButtonClick = (value: FastButtonValueType) => {
     setFastButtonValue(fastButtonValue === value ? null : value);
-    setMenuAnchorEl(null);
+    // setMenuAnchorEl(null);
   };
 
   const getCount = (value: FastButtonValueType) =>
     getTaskStatsCount(value, stats);
-
-  const isMenuFilterActive = useMemo(
-    () =>
-      fastButtonValue !== null && menuOptions.includes(fastButtonValue),
-    [fastButtonValue, menuOptions],
-  );
 
   return (
     <Stack
       direction="row"
       spacing={1}
       sx={{
-        gap: 1,
+        width: 'fit-content',
         alignItems: 'center',
         scrollbarWidth: 'none',
         pb: { xs: 0.5, md: 0 },
-        flexWrap: { xs: 'nowrap', md: 'wrap' },
+        flexWrap: { xs: 'nowrap', md: 'nowrap' },
         overflowX: { xs: 'auto', md: 'visible' },
         '&::-webkit-scrollbar': { display: 'none' },
       }}
     >
-      {primaryOptions.map(value => (
+      {primaryOptions.map((value, index) => (
         <FastChip
+          sx={{ ml: isSearchOpen ? (index > 0 ? '-30px !important' : 0) : 0 }}
           key={value}
           count={getCount(value)}
-          isActive={fastButtonValue === value}
           label={getFastButtonLabel(value)}
+          isActive={fastButtonValue === value}
           onClick={() => handleFastButtonClick(value)}
         />
       ))}
 
-      {menuOptions.length > 0 && (
-        <>
-          <IconButton
-            color={isMenuFilterActive ? 'primary' : 'default'}
-            onClick={event => setMenuAnchorEl(event.currentTarget)}
-          >
-            <More />
-          </IconButton>
+      {menuOptions.map((value, index) => {
+        if (value === 'urgent') return null;
 
-          <Menu
-            open={!!menuAnchorEl}
-            anchorEl={menuAnchorEl}
-            onClose={() => setMenuAnchorEl(null)}
-          >
-            {menuOptions.map(value => (
-              <MenuItem
-                key={value}
-                selected={fastButtonValue === value}
-                onClick={() => handleFastButtonClick(value)}
-              >
-                {getCount(value) > 0
-                  ? `${getFastButtonLabel(value)} · ${getCount(value)}`
-                  : getFastButtonLabel(value)}
-              </MenuItem>
-            ))}
-          </Menu>
-        </>
-      )}
+        return (
+          <FastChip
+            sx={{ ml: isSearchOpen ? '-30px !important' : 0, zIndex: index }}
+            key={value}
+            count={getCount(value)}
+            label={getFastButtonLabel(value)}
+            isActive={fastButtonValue === value}
+            onClick={() => handleFastButtonClick(value)}
+          />
+        );
+      })}
     </Stack>
   );
 };

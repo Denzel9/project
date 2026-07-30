@@ -1,4 +1,4 @@
-import { Stack, Button, CircularProgress } from '@mui/material';
+import { Stack, Button } from '@mui/material';
 import { useEffect, useMemo, type MouseEvent } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -189,14 +189,6 @@ export const Action = ({
                 isLoading || isDisabled || !executorId || !isExecutorApprove
               }
               onClick={() => handleSubmitForm(newStatus)}
-              endIcon={
-                isDisabled && (
-                  <CircularProgress
-                    color="inherit"
-                    size={16}
-                  />
-                )
-              }
             >
               {label}
             </Button>

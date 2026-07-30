@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import {
   usePublicationsInfiniteQuery,
@@ -24,7 +24,6 @@ import {
 import { exportPublicationsReport } from '../model/exportPublicationsReport';
 import { fetchPublicationsForReport } from '../model/fetchPublicationsForReport';
 import {
-  filterPublicationsByExecutor,
   getPublicationExecutorOptions,
   getPublicationPostOptions,
   hasActivePublicationFilters,
@@ -52,12 +51,18 @@ const getInitialViewMode = (): PublicationViewMode => {
 
 export const PublicationsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const contentRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const deepLinkFilters = useMemo(
     () => parsePublicationSearchParams(searchParams),
     [searchParams]
   );
+  const deepLinkPostTitle = useMemo(() => {
+    const state = location.state as { postTitle?: string } | null;
+
+    return state?.postTitle?.trim() || undefined;
+  }, [location.state]);
 
   const [viewMode, setViewMode] =
     useState<PublicationViewMode>(getInitialViewMode);
@@ -65,8 +70,9 @@ export const PublicationsPage = () => {
   const [postId, setPostId] = useState<PublicationPostFilter>(
     deepLinkFilters.postId ?? 'all'
   );
-  const [executorId, setExecutorId] =
-    useState<PublicationExecutorFilter>('all');
+  const [executorId, setExecutorId] = useState<PublicationExecutorFilter>(
+    deepLinkFilters.executorId ?? 'all'
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [reportPublications, setReportPublications] = useState<
@@ -74,17 +80,33 @@ export const PublicationsPage = () => {
   >(null);
   const [pendingPrint, setPendingPrint] = useState(false);
 
+  useEffect(() => {
+    if (deepLinkFilters.postId) {
+      setTimeout(() => {
+        setPostId(deepLinkFilters.postId ?? 'all');
+      }, 0);
+    }
+
+    if (deepLinkFilters.executorId) {
+      setTimeout(() => {
+        setExecutorId(deepLinkFilters.executorId ?? 'all');
+        setViewMode('table');
+      }, 0);
+    }
+  }, [deepLinkFilters.executorId, deepLinkFilters.postId]);
+
   const isTableView = viewMode === 'table';
-  const useServerTablePagination = isTableView && executorId === 'all';
+  const useServerTablePagination = isTableView;
 
   const listParams = useMemo(
     () =>
       toPublicationsParams({
         q,
         postId,
-        ...deepLinkFilters,
+        executorId,
+        taskId: deepLinkFilters.taskId,
       }),
-    [q, postId, deepLinkFilters]
+    [q, postId, executorId, deepLinkFilters.taskId]
   );
 
   const paginationResetKey = useMemo(
@@ -144,32 +166,51 @@ export const PublicationsPage = () => {
     [infiniteData]
   );
 
-  const rawPublications = useServerTablePagination
-    ? (tableData?.items ?? [])
-    : infinitePublications;
-
-  const visiblePublications = useMemo(
-    () => filterPublicationsByExecutor(rawPublications, executorId),
-    [rawPublications, executorId]
+  const rawPublications = useMemo(
+    () =>
+      useServerTablePagination
+        ? (tableData?.items ?? [])
+        : infinitePublications,
+    [useServerTablePagination, tableData, infinitePublications]
   );
 
-  const postOptions = useMemo(
-    () =>
-      getPublicationPostOptions(rawPublications).map(([id, label]) => ({
+  const visiblePublications = rawPublications;
+
+  const postOptions = useMemo(() => {
+    const options = getPublicationPostOptions(rawPublications).map(
+      ([id, label]) => ({
         id,
         label,
-      })),
-    [rawPublications]
-  );
+      })
+    );
 
-  const executorOptions = useMemo(
-    () =>
-      getPublicationExecutorOptions(rawPublications).map(([id, label]) => ({
+    if (postId !== 'all' && !options.some(option => option.id === postId)) {
+      options.unshift({
+        id: postId,
+        label: deepLinkPostTitle || `Объявление ${postId.slice(0, 8)}`,
+      });
+    }
+
+    return options;
+  }, [deepLinkPostTitle, postId, rawPublications]);
+
+  const executorOptions = useMemo(() => {
+    const options = getPublicationExecutorOptions(rawPublications).map(
+      ([id, label]) => ({
         id,
         label,
-      })),
-    [rawPublications]
-  );
+      })
+    );
+
+    if (
+      executorId !== 'all' &&
+      !options.some(option => option.id === executorId)
+    ) {
+      options.unshift({ id: executorId, label: 'Выбранный участник' });
+    }
+
+    return options;
+  }, [executorId, rawPublications]);
 
   const hasActiveFilters = hasActivePublicationFilters({
     q,
@@ -194,7 +235,7 @@ export const PublicationsPage = () => {
       executorId,
       taskId: deepLinkFilters.taskId,
     }),
-    [q, postId, executorId, deepLinkFilters.taskId],
+    [q, postId, executorId, deepLinkFilters.taskId]
   );
 
   const printPublications = reportPublications ?? visiblePublications;
@@ -268,35 +309,8 @@ export const PublicationsPage = () => {
       onPrint: handlePrint,
       onExport: handleExport,
     }),
-    [
-      handleExport,
-      handlePrint,
-      isExporting,
-      isPrinting,
-      tableReportDisabled,
-    ],
+    [handleExport, handlePrint, isExporting, isPrinting, tableReportDisabled]
   );
-
-  useEffect(() => {
-    if (
-      executorId === 'all' ||
-      visiblePublications.length > 0 ||
-      !hasNextPage ||
-      isFetchingNextPage ||
-      useServerTablePagination
-    ) {
-      return;
-    }
-
-    void fetchNextPage();
-  }, [
-    executorId,
-    visiblePublications.length,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    useServerTablePagination,
-  ]);
 
   const handleResetFilters = () => {
     setQ('');
@@ -447,87 +461,90 @@ export const PublicationsPage = () => {
 
         {!isInitialLoading &&
           !isError &&
-          (visiblePublications.length > 0 || Boolean(reportPublications?.length)) && (
-          <Box
-            ref={contentRef}
-            sx={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              flex: isTableView ? 1 : undefined,
-              minHeight: isTableView ? 0 : undefined,
-            }}
-          >
-            {!isTableView && (
-              <Box
-                sx={{
-                  gap: 1.5,
-                  width: '100%',
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: 'repeat(2, minmax(0, 1fr))',
-                    lg: 'repeat(3, minmax(0, 1fr))',
-                  },
-                }}
-              >
-                {visiblePublications.map(publication => (
-                  <PublicationItem
-                    key={publication.id}
-                    publication={publication}
-                  />
-                ))}
-              </Box>
-            )}
-
-            {(isTableView || reportPublications) && (
-              <>
-                <PublicationsPrintHeader total={printPublications.length} />
-
-                {isTableView && (
-                  <Box
-                    className="print-no-print"
-                    sx={{
-                      flex: 1,
-                      minHeight: 0,
-                      display: 'flex',
-                      width: '100%',
-                    }}
-                  >
-                    <PublicationTable
-                      page={tablePage}
-                      publications={visiblePublications}
-                      total={
-                        useServerTablePagination
-                          ? tableData?.total
-                          : visiblePublications.length
-                      }
-                      serverPagination={useServerTablePagination}
-                      onPageChange={handleTablePageChange}
-                    />
-                  </Box>
-                )}
-
+          (visiblePublications.length > 0 ||
+            Boolean(reportPublications?.length)) && (
+            <Box
+              ref={contentRef}
+              sx={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: isTableView ? 1 : undefined,
+                minHeight: isTableView ? 0 : undefined,
+              }}
+            >
+              {!isTableView && (
                 <Box
-                  className="print-only"
                   sx={{
-                    display: 'none',
-                    '@media print': {
-                      display: 'flex',
-                      width: '100%',
+                    gap: 1.5,
+                    width: '100%',
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, minmax(0, 1fr))',
+                      lg: 'repeat(3, minmax(0, 1fr))',
                     },
                   }}
                 >
-                  <PublicationTable
-                    publications={printPublications}
-                    paginated={false}
-                    forPrint
-                  />
+                  {visiblePublications.map(publication => (
+                    <PublicationItem
+                      key={publication.id}
+                      publication={publication}
+                    />
+                  ))}
                 </Box>
-              </>
-            )}
-          </Box>
-        )}
+              )}
+
+              {(isTableView || reportPublications) && (
+                <>
+                  <PublicationsPrintHeader total={printPublications.length} />
+
+                  {isTableView && (
+                    <Box
+                      className="print-no-print"
+                      sx={{
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <PublicationTable
+                        page={tablePage}
+                        publications={visiblePublications}
+                        total={
+                          useServerTablePagination
+                            ? (tableData?.total ?? 0)
+                            : visiblePublications.length
+                        }
+                        serverPagination={useServerTablePagination}
+                        onPageChange={handleTablePageChange}
+                      />
+                    </Box>
+                  )}
+
+                  <Box
+                    className="print-only"
+                    sx={{
+                      display: 'none',
+                      '@media print': {
+                        display: 'flex',
+                        width: '100%',
+                      },
+                    }}
+                  >
+                    <PublicationTable
+                      publications={printPublications}
+                      paginated={false}
+                      forPrint
+                    />
+                  </Box>
+                </>
+              )}
+            </Box>
+          )}
 
         {!isTableView &&
           !isInitialLoading &&

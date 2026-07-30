@@ -1,7 +1,6 @@
 import { MoreVertOutlined } from '@mui/icons-material';
 import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   canEditTaskFields,
@@ -14,7 +13,6 @@ import { useAuthStore } from '@/features';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
 
-import { getTaskPath } from '../model/utils';
 type TaskActionsMenuProps = {
   task: Task;
   ownerOnly?: boolean;
@@ -26,7 +24,6 @@ export const TaskActionsMenu = ({
   ownerOnly = false,
   size = 'medium',
 }: TaskActionsMenuProps) => {
-  const navigate = useNavigate();
   const currentUserId = useAuthStore(state => state.id);
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -39,10 +36,6 @@ export const TaskActionsMenu = ({
   const { mutateAsync: deleteTask } = useDeleteTaskMutation();
 
   const isOwner = canEditTaskFields(task, currentUserId);
-
-  if (ownerOnly && !isOwner) {
-    return null;
-  }
 
   const canAssign = task.executorId == null && (ownerOnly || isOwner);
   const showOwnerActions = ownerOnly || isOwner;
@@ -74,7 +67,7 @@ export const TaskActionsMenu = ({
     closeMenu();
 
     try {
-      const copiedTask = await createTask({
+      await createTask({
         postId: task.post?.id ?? '',
         executorId: task.executorId ? task.executorId : undefined,
         description: task.description,
@@ -90,7 +83,6 @@ export const TaskActionsMenu = ({
         title: task.title,
       });
       setSnackbarOpen(true, 'Задача успешно скопирована');
-      navigate(getTaskPath(copiedTask));
     } catch {
       setSnackbarOpen(true, 'Не удалось скопировать задачу');
     }

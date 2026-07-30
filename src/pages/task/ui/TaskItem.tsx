@@ -9,7 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   useGetUserByIdQuery,
@@ -17,6 +17,7 @@ import {
   canEditTaskStatus,
   getIsCompanyAction,
   isTaskExecutor,
+  isTaskOverdue,
   isTaskOwner,
   useTaskActivitiesQuery,
   useUpdateTaskMutation,
@@ -27,18 +28,24 @@ import {
   type Task,
 } from '@/entities';
 import {
+  useConversationsQuery,
+  useCreateConversationMutation,
+} from '@/entities/chat';
+import {
   mapFormToUpdateTask,
   TaskForm,
   Gallery,
   useAuthStore,
   type TaskFormType,
 } from '@/features';
+import { sendTaskTzToChat } from '@/features/chat';
 import { scrollMainToTop } from '@/shared';
 import { ConfirmDialog, useSnackbarStore, ContactCard } from '@/widgets';
 
 import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
 
 import { Activity } from './Activity';
+import { TaskAlertBanner } from './TaskAlertBanner';
 import { TaskComments } from './TaskComments';
 import { TaskResultDropzone } from './TaskResultDropzone';
 import { TaskStatusStepper } from './TaskStatusStepper';
@@ -80,10 +87,22 @@ export const TaskItem = ({
   const [status, setStatus] = useState<TaskStatus>('PREPARING');
   const [isOpenCancelDialog, setIsOpenCancelDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isSendingTz, setIsSendingTz] = useState(false);
+  const [hiddenCancelForTaskId, setHiddenCancelForTaskId] = useState<
+    string | null
+  >(null);
+  const [hiddenOverdueForTaskId, setHiddenOverdueForTaskId] = useState<
+    string | null
+  >(null);
   const [activityType, setActivityType] = useState<
     TaskActivityType | undefined
   >(undefined);
   const [activityLimit, setActivityLimit] = useState(20);
+
+  const { data: conversations } = useConversationsQuery(undefined, {
+    enabled: Boolean(task?.executorId),
+  });
+  const { mutateAsync: createConversation } = useCreateConversationMutation();
 
   useEffect(() => {
     setTimeout(() => {
@@ -92,11 +111,17 @@ export const TaskItem = ({
   }, [activityType, task?.id]);
 
   const isOwner = task ? canEditTaskFields(task, currentUserId) : false;
-  const canChangeStatus = task ? canEditTaskStatus(task, currentUserId) : false;
+
+  const canChangeStatus = task
+    ? canEditTaskStatus(task, currentUserId) &&
+      status !== TASK_STATUS_ENUM.COMPLETED
+    : false;
+
   const canEditMedia = task
     ? isTaskOwner(task, currentUserId) &&
       !finalStatuses.includes(status as TASK_STATUS_ENUM)
     : false;
+
   const canEditReportMedia = isTaskExecutor(task, currentUserId);
 
   const {
@@ -224,10 +249,40 @@ export const TaskItem = ({
     handleCancelMedia();
   };
 
+  const handleSendTzToExecutor = useCallback(async () => {
+    if (!task?.executorId || isSendingTz) {
+      return;
+    }
+
+    setIsSendingTz(true);
+
+    try {
+      await sendTaskTzToChat({
+        task,
+        taskId: task.id,
+        peerId: task.executorId,
+        conversations,
+        createConversation: body => createConversation(body),
+      });
+      setSnackbarOpen?.(true, 'ТЗ отправлено исполнителю');
+    } catch {
+      setSnackbarOpen?.(
+        true,
+        'Не удалось отправить ТЗ. Попробуйте позже',
+        'error'
+      );
+    } finally {
+      setIsSendingTz(false);
+    }
+  }, [conversations, createConversation, isSendingTz, setSnackbarOpen, task]);
+
   const isLoadingTask = isUpdating || isMediaSaving || isReportMediaSaving;
   const isCancelled = CANCELLED_STATUSES.includes(
     status as (typeof CANCELLED_STATUSES)[number]
   );
+  const isOverdue = isTaskOverdue(task);
+  const isCancelBannerHidden = hiddenCancelForTaskId === task.id;
+  const isOverdueBannerHidden = hiddenOverdueForTaskId === task.id;
   const isEnabledCancel = [
     TASK_STATUS_ENUM.PREPARING,
     TASK_STATUS_ENUM.PENDING_APPROVAL,
@@ -252,51 +307,32 @@ export const TaskItem = ({
         </Typography>
       )}
 
-      {status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR && (
-        <Box
-          sx={{
-            bgcolor: 'error.light',
-            p: { xs: 2, md: 3 },
-            borderRadius: '24px',
-            border: '1px solid',
-            borderColor: 'error.main',
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 500, color: 'white' }}
-          >
-            Задача отменена исполнителем
-          </Typography>
-        </Box>
+      {status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR &&
+        !isCancelBannerHidden && (
+          <TaskAlertBanner
+            message="Задача отменена исполнителем"
+            onClose={() => setHiddenCancelForTaskId(task.id)}
+          />
+        )}
+
+      {status === TASK_STATUS_ENUM.CANCELLED && !isCancelBannerHidden && (
+        <TaskAlertBanner
+          message="Задача отменена заказчиком"
+          onClose={() => setHiddenCancelForTaskId(task.id)}
+        />
       )}
 
-      {status === TASK_STATUS_ENUM.CANCELLED && (
-        <Box
-          sx={{
-            bgcolor: 'error.light',
-            p: { xs: 2, md: 3 },
-            borderRadius: '24px',
-            border: '1px solid',
-            borderColor: 'error.main',
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 500, color: 'white' }}
-          >
-            Задача отменена заказчиком
-          </Typography>
-        </Box>
+      {isOverdue && !isOverdueBannerHidden && (
+        <TaskAlertBanner
+          message="Задача просрочена"
+          onClose={() => setHiddenOverdueForTaskId(task.id)}
+        />
       )}
 
       {!isCancelled && <TaskStatusStepper status={status} />}
 
       {task && (
-        <Stack
-          spacing={2}
-          sx={{ mt: 2 }}
-        >
+        <Stack spacing={2}>
           <Stack
             spacing={2}
             direction={{ xs: 'column', lg: 'row' }}
@@ -313,6 +349,8 @@ export const TaskItem = ({
               ) && (
                 <TaskResultDropzone
                   status={status}
+                  postId={task.postId ?? task.post?.id ?? post?.id}
+                  postTitle={post?.title ?? task.post?.title}
                   files={reportFiles}
                   images={reportImages}
                   setFiles={setReportFiles}
@@ -349,43 +387,61 @@ export const TaskItem = ({
                     Техническое задание
                   </Typography>
 
-                  {!isCancelled && isOwner && (
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                    >
-                      <Button
-                        color="primary"
-                        sx={{ px: 2 }}
+                  {!isCancelled &&
+                    status !== TASK_STATUS_ENUM.COMPLETED &&
+                    isOwner && (
+                      <Stack
+                        direction="row"
+                        spacing={1}
                       >
-                        Отправить исполнителю
-                      </Button>
-                      <IconButton
-                        onClick={event =>
-                          setAnchorEl(anchorEl ? null : event.currentTarget)
-                        }
-                      >
-                        <MoreVert />
-                      </IconButton>
-
-                      <Menu
-                        anchorEl={anchorEl}
-                        open={Boolean(anchorEl)}
-                        onClose={() => {
-                          setAnchorEl(null);
-                          setIsOpenCancelDialog(false);
-                        }}
-                      >
-                        {isEnabledCancel && (
-                          <MenuItem onClick={() => setIsOpenCancelDialog(true)}>
-                            <Typography color="error">
-                              Отменить задачу
-                            </Typography>
-                          </MenuItem>
+                        {Boolean(task.executorId) && (
+                          <Button
+                            color="primary"
+                            sx={{ px: 2 }}
+                            disabled={isSendingTz}
+                            onClick={() => void handleSendTzToExecutor()}
+                            startIcon={
+                              isSendingTz ? (
+                                <CircularProgress
+                                  size={16}
+                                  color="inherit"
+                                />
+                              ) : undefined
+                            }
+                          >
+                            Отправить исполнителю
+                          </Button>
                         )}
-                      </Menu>
-                    </Stack>
-                  )}
+                        <Box>
+                          <IconButton
+                            onClick={event =>
+                              setAnchorEl(anchorEl ? null : event.currentTarget)
+                            }
+                          >
+                            <MoreVert />
+                          </IconButton>
+                        </Box>
+
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={Boolean(anchorEl)}
+                          onClose={() => {
+                            setAnchorEl(null);
+                            setIsOpenCancelDialog(false);
+                          }}
+                        >
+                          {isEnabledCancel && (
+                            <MenuItem
+                              onClick={() => setIsOpenCancelDialog(true)}
+                            >
+                              <Typography color="error">
+                                Отменить задачу
+                              </Typography>
+                            </MenuItem>
+                          )}
+                        </Menu>
+                      </Stack>
+                    )}
                 </Stack>
 
                 {(canEditMedia || images.length > 0 || files.length > 0) &&
@@ -470,7 +526,6 @@ export const TaskItem = ({
                 taskId={task.id}
                 isMyPost={isOwner}
                 contact={contact?.data}
-                isExecutorApprove={task.isExecutorApprove}
               />
 
               <Activity
@@ -489,8 +544,10 @@ export const TaskItem = ({
 
           <TaskComments
             taskId={task.id}
+            isOwner={isOwner}
             contact={contact?.data}
             isExecutorApprove={task.isExecutorApprove}
+            disabled={isCancelled || status === TASK_STATUS_ENUM.COMPLETED}
           />
         </Stack>
       )}

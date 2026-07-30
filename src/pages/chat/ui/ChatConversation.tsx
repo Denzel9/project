@@ -1,16 +1,33 @@
-import { Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { KeyboardArrowDown } from '@mui/icons-material';
+import {
+  Box,
+  CircularProgress,
+  IconButton,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { format } from 'date-fns';
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { ChatInput } from './ChatInput';
+import { ChatErrorBanner } from './ChatErrorBanner';
 import { ChatMessageBubble } from './ChatMessageBubble';
+import { UnreadMessagesDivider } from './UnreadMessagesDivider';
 
 import type { MessageSide } from '../model/types';
 import type { ChatMessage, ChatPeer } from '@/entities/chat';
 
 type ChatConversationProps = {
   messages: ChatMessage[];
+  unreadDividerMessageId?: string | null;
   currentUserId: string | null;
+  onDeleteMessage?: (messageId: string) => void;
+  onEditMessage?: (messageId: string, content: string) => Promise<boolean>;
+  onForwardMessage?: (messageId: string) => void;
+  isDeletingMessage?: boolean;
+  deletingMessageId?: string | null;
+  isEditingMessage?: boolean;
+  editingMessageId?: string | null;
   peer?: ChatPeer | null;
   draft: string;
   pendingFiles: File[];
@@ -21,6 +38,8 @@ type ChatConversationProps = {
   onSend: () => void;
   isLoading?: boolean;
   error?: string | null;
+  onRetryError?: () => void;
+  onDismissError?: () => void;
 };
 
 const toMessageSide = (
@@ -31,7 +50,15 @@ const toMessageSide = (
 
 export const ChatConversation = ({
   messages,
+  unreadDividerMessageId = null,
   currentUserId,
+  onDeleteMessage,
+  onEditMessage,
+  onForwardMessage,
+  isDeletingMessage = false,
+  deletingMessageId = null,
+  isEditingMessage = false,
+  editingMessageId = null,
   peer,
   draft,
   pendingFiles,
@@ -42,11 +69,14 @@ export const ChatConversation = ({
   onSend,
   isLoading = false,
   error = null,
+  onRetryError,
+  onDismissError,
 }: ChatConversationProps) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesContentRef = useRef<HTMLDivElement>(null);
   const prevPeerIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current;
@@ -72,6 +102,39 @@ export const ChatConversation = ({
     );
   }, []);
 
+  const updateScrollButtonVisibility = useCallback(() => {
+    setShowScrollToBottom(!isNearBottom());
+  }, [isNearBottom]);
+
+  const handleScrollToBottomClick = useCallback(() => {
+    scrollToBottom('smooth');
+    setShowScrollToBottom(false);
+  }, [scrollToBottom]);
+
+  useEffect(() => {
+    if (!peer) {
+      setShowScrollToBottom(false);
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const handleScroll = () => {
+      updateScrollButtonVisibility();
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    updateScrollButtonVisibility();
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [peer, messages.length, updateScrollButtonVisibility]);
+
   useEffect(() => {
     if (!peer) {
       prevPeerIdRef.current = null;
@@ -90,19 +153,24 @@ export const ChatConversation = ({
 
     const peerChanged = prevPeerIdRef.current !== peer.id;
     const messagesAdded = messages.length > prevMessagesLengthRef.current;
+    const lastMessage = messages[messages.length - 1];
+    const isOwnMessage =
+      Boolean(currentUserId) && lastMessage?.senderId === currentUserId;
 
     prevPeerIdRef.current = peer.id;
     prevMessagesLengthRef.current = messages.length;
 
     if (peerChanged) {
       scrollToBottom('auto');
+      setShowScrollToBottom(false);
       return;
     }
 
-    if (messagesAdded && (peerChanged || isNearBottom())) {
-      scrollToBottom(peerChanged ? 'auto' : 'smooth');
+    if (messagesAdded && (isOwnMessage || isNearBottom())) {
+      scrollToBottom('smooth');
+      setShowScrollToBottom(false);
     }
-  }, [peer, messages, isLoading, isNearBottom, scrollToBottom]);
+  }, [peer, messages, isLoading, currentUserId, isNearBottom, scrollToBottom]);
 
   useEffect(() => {
     const content = messagesContentRef.current;
@@ -164,64 +232,116 @@ export const ChatConversation = ({
       }}
     >
       {error && (
-        <Typography
-          color="error"
-          sx={{ mb: 1 }}
-          variant="body2"
-        >
-          {error}
-        </Typography>
+        <ChatErrorBanner
+          message={error}
+          onRetry={onRetryError}
+          onDismiss={onDismissError}
+        />
       )}
 
       <Box
-        ref={messagesContainerRef}
         sx={{
+          position: 'relative',
           mb: 2,
           flex: 1,
           minHeight: 0,
-          display: 'flex',
-          overflowY: 'scroll',
-          overflowX: 'visible',
-          borderRadius: '24px',
-          scrollbarWidth: 'none',
-          flexDirection: 'column',
         }}
       >
         <Box
-          ref={messagesContentRef}
+          ref={messagesContainerRef}
           sx={{
-            gap: 2,
+            height: '100%',
             display: 'flex',
+            overflowY: 'scroll',
+            overflowX: 'visible',
+            borderRadius: '24px',
+            scrollbarWidth: 'none',
             flexDirection: 'column',
+            bgcolor: 'secondary.light',
           }}
         >
-          {isLoading && messages.length === 0 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={32} />
-            </Box>
-          )}
+          <Box
+            ref={messagesContentRef}
+            sx={{
+              gap: 1.75,
+              px: { xs: 1.5, md: 2 },
+              py: { xs: 1.5, md: 2 },
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {isLoading && messages.length === 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={32} />
+              </Box>
+            )}
 
-          {!isLoading && messages.length === 0 && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: 'center', py: 2 }}
-            >
-              Начните переписку
-            </Typography>
-          )}
+            {!isLoading && messages.length === 0 && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: 'center', py: 2 }}
+              >
+                Начните переписку
+              </Typography>
+            )}
 
-          {messages.map(message => (
-            <ChatMessageBubble
-              key={message.id}
-              text={message.content}
-              media={message.media}
-              senderId={message.senderId}
-              side={toMessageSide(message.senderId, currentUserId)}
-              time={format(new Date(message.createdAt), 'HH:mm')}
-            />
-          ))}
+            {messages.map(message => (
+              <Box
+                key={message.id}
+                sx={{ width: '100%' }}
+              >
+                {unreadDividerMessageId === message.id && (
+                  <UnreadMessagesDivider />
+                )}
+
+                <ChatMessageBubble
+                  messageId={message.id}
+                  text={message.content}
+                  media={message.media}
+                  senderId={message.senderId}
+                  createdAt={message.createdAt}
+                  editedAt={message.editedAt}
+                  isRedirected={message.isRedirected}
+                  currentUserId={currentUserId}
+                  side={toMessageSide(message.senderId, currentUserId)}
+                  time={format(new Date(message.createdAt), 'HH:mm')}
+                  isRead={message.isRead}
+                  onDelete={onDeleteMessage}
+                  onEdit={onEditMessage}
+                  onForward={onForwardMessage}
+                  isDeleting={
+                    isDeletingMessage && deletingMessageId === message.id
+                  }
+                  isEditing={
+                    isEditingMessage && editingMessageId === message.id
+                  }
+                />
+              </Box>
+            ))}
+          </Box>
         </Box>
+
+        {showScrollToBottom && (
+          <IconButton
+            aria-label="Прокрутить к последнему сообщению"
+            onClick={handleScrollToBottomClick}
+            sx={{
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              bgcolor: 'common.white',
+              boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
+              '&:hover': {
+                bgcolor: 'common.white',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+              },
+            }}
+          >
+            <KeyboardArrowDown />
+          </IconButton>
+        )}
       </Box>
 
       <Box sx={{ flexShrink: 0 }}>

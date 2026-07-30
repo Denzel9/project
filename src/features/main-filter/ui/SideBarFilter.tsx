@@ -26,6 +26,7 @@ import {
   getUsageRightsLabel,
   getWorkFormatLabel,
 } from '@/entities';
+import { DatePicker } from '@/shared';
 
 import { useMainFilterStore } from '../model/store';
 import {
@@ -33,7 +34,6 @@ import {
   type PostFilterBloggerRequirements,
   type PostFilterBudget,
   type PostFilterCooperationDetails,
-  type PostFilterDeliverable,
   type PostFilterDraft,
   type PostFilterLocation,
   type TriStateFilter,
@@ -42,13 +42,6 @@ import {
 import { FilterChipGroup } from './components/FilterChipGroup';
 import { FilterSection } from './components/FilterSection';
 import { FilterTagsInput } from './components/FilterTagsInput';
-
-const CHIP_OPTIONS = [
-  'Удаленно',
-  'На месте работадатель',
-  'По договору',
-  'Подтвержденный аккаунт',
-].map(value => ({ value, label: value }));
 
 const PLATFORM_OPTIONS = Object.values(PlatformEnum).map(value => ({
   value,
@@ -130,13 +123,6 @@ export const SideBarFilter = () => {
     }));
   };
 
-  const setDeliverables = (patch: Partial<PostFilterDeliverable>) => {
-    setDraft(prev => ({
-      ...prev,
-      deliverables: { ...prev.deliverables, ...patch },
-    }));
-  };
-
   const handleApply = () => {
     setPostFilters(draft);
     setIsOpenMainFilter(false);
@@ -192,12 +178,6 @@ export const SideBarFilter = () => {
                 onChange={event => setField('title', event.target.value)}
               />
 
-              <FilterChipGroup
-                value={draft.chips}
-                options={CHIP_OPTIONS}
-                onChange={value => setField('chips', value)}
-              />
-
               <TextField
                 size="small"
                 fullWidth
@@ -218,14 +198,10 @@ export const SideBarFilter = () => {
                 ))}
               </TextField>
 
-              <TextField
-                size="small"
-                fullWidth
-                type="date"
+              <DatePicker
                 label="Дата создания"
                 value={draft.createdAt}
-                slotProps={{ inputLabel: { shrink: true } }}
-                onChange={event => setField('createdAt', event.target.value)}
+                onChange={value => setField('createdAt', value)}
               />
             </Stack>
           </FilterSection>
@@ -401,14 +377,6 @@ export const SideBarFilter = () => {
               <TextField
                 size="small"
                 fullWidth
-                label="Адрес"
-                value={draft.location.address}
-                onChange={event => setLocation({ address: event.target.value })}
-              />
-
-              <TextField
-                size="small"
-                fullWidth
                 select
                 label="Съёмка на месте"
                 value={draft.location.shootingRequired}
@@ -478,13 +446,6 @@ export const SideBarFilter = () => {
                 onChange={value =>
                   setBloggerRequirements({ contentStyle: value })
                 }
-              />
-
-              <FilterTagsInput
-                label="Языки"
-                placeholder="ru, en..."
-                value={draft.bloggerRequirements.languages}
-                onChange={value => setBloggerRequirements({ languages: value })}
               />
 
               <Stack
@@ -692,58 +653,6 @@ export const SideBarFilter = () => {
                   ))}
                 </TextField>
               </Stack>
-            </Stack>
-          </FilterSection>
-
-          <FilterSection title="Контент">
-            <Stack spacing={2}>
-              <TextField
-                size="small"
-                fullWidth
-                select
-                label="Площадка"
-                value={draft.deliverables.platform}
-                onChange={event =>
-                  setDeliverables({
-                    platform: event.target
-                      .value as PostFilterDeliverable['platform'],
-                  })
-                }
-              >
-                <MenuItem value="">Любая</MenuItem>
-                {Object.values(PlatformEnum).map(option => (
-                  <MenuItem
-                    key={option}
-                    value={option}
-                  >
-                    {getPlatformLabel(option)}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                size="small"
-                fullWidth
-                select
-                label="Формат"
-                value={draft.deliverables.format}
-                onChange={event =>
-                  setDeliverables({
-                    format: event.target
-                      .value as PostFilterDeliverable['format'],
-                  })
-                }
-              >
-                <MenuItem value="">Любой</MenuItem>
-                {Object.values(PlacementFormatEnum).map(option => (
-                  <MenuItem
-                    key={option}
-                    value={option}
-                  >
-                    {getPlacementFormatLabel(option)}
-                  </MenuItem>
-                ))}
-              </TextField>
             </Stack>
           </FilterSection>
         </Stack>

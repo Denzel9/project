@@ -1,22 +1,30 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { VisibilityOff, Visibility } from '@mui/icons-material';
-import { Box, Button, IconButton } from '@mui/material';
+import {
+  VisibilityOffOutlined,
+  VisibilityOutlined,
+  HelpOutlineOutlined,
+} from '@mui/icons-material';
+import { Box, Button, IconButton, Stack, Tooltip } from '@mui/material';
 import axios from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
-import { RHFInput } from '@/shared/ui/rhf';
 import { prefetchUserConfig } from '@/entities/user-config';
 import { queryClient } from '@/shared/api';
+import { RHFInput } from '@/shared/ui/rhf';
 
 import {
   defaultRegistrationCompanyValues,
   registrationCompanySchema,
+  type RegistrationCompanyFormType,
   type RegistrationCompanyRequest,
 } from '../model';
 import { useRegistrationCompanyMutation } from '../model/api/api';
 import { useAuthStore } from '../model/store/store';
+import { PASSWORD_RULES_HINT } from '../model/utils/validation';
+
+import { AuthLegalNotice } from './AuthLegalNotice';
 
 type RegistrationCompanyFormProps = {
   onSuccess?: () => void;
@@ -28,6 +36,7 @@ const RegistrationCompanyForm = ({
   onError,
 }: RegistrationCompanyFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutateAsync: registrationCompany } = useRegistrationCompanyMutation();
 
@@ -43,16 +52,26 @@ const RegistrationCompanyForm = ({
 
   const { handleSubmit, control } = methods;
 
-  const onSubmit = async (formData: RegistrationCompanyRequest) => {
+  const onSubmit = async (formData: RegistrationCompanyFormType) => {
+    const payload: RegistrationCompanyRequest = {
+      companyName: formData.companyName,
+      email: formData.email,
+      password: formData.password,
+    };
+
     try {
-      const data = await registrationCompany(formData);
+      const data = await registrationCompany(payload);
 
       if (data?.data?.user) {
-        setAuth(
-          data.data.user.id,
-          data.data.user.role,
-          data.data.user.membershipRole
-        );
+        setAuth({
+          id: data.data.user.id,
+          role: data.data.user.role,
+          membershipRole: data.data.user.membershipRole,
+          isPrime: Boolean(data.data.user.isPrime),
+          primeStatus: data.data.user.primeStatus ?? 'NONE',
+          primeExpiresAt: data.data.user.primeExpiresAt ?? null,
+          isEmailConfirmed: Boolean(data.data.user.isEmailConfirmed),
+        });
 
         try {
           await prefetchUserConfig(queryClient);
@@ -101,13 +120,56 @@ const RegistrationCompanyForm = ({
             name="password"
             control={control}
             endAdornment={
-              <IconButton onClick={() => setShowPassword(!showPassword)}>
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
+              <Stack
+                spacing={1}
+                direction="row"
+                sx={{ alignItems: 'center' }}
+              >
+                <Tooltip
+                  title={PASSWORD_RULES_HINT}
+                  slotProps={{
+                    tooltip: {
+                      sx: { whiteSpace: 'pre-line' },
+                    },
+                  }}
+                >
+                  <HelpOutlineOutlined
+                    color="info"
+                    sx={{ cursor: 'help' }}
+                  />
+                </Tooltip>
+                <IconButton onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? (
+                    <VisibilityOffOutlined />
+                  ) : (
+                    <VisibilityOutlined />
+                  )}
+                </IconButton>
+              </Stack>
             }
             props={{
               label: 'Пароль',
               type: showPassword ? 'text' : 'password',
+            }}
+          />
+
+          <RHFInput
+            name="confirmPassword"
+            control={control}
+            endAdornment={
+              <IconButton
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <VisibilityOffOutlined />
+                ) : (
+                  <VisibilityOutlined />
+                )}
+              </IconButton>
+            }
+            props={{
+              label: 'Повторите пароль',
+              type: showConfirmPassword ? 'text' : 'password',
             }}
           />
 
@@ -119,6 +181,8 @@ const RegistrationCompanyForm = ({
           >
             Зарегистрироваться
           </Button>
+
+          <AuthLegalNotice actionLabel="Зарегистрироваться" />
         </Box>
       </form>
     </FormProvider>

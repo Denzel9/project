@@ -14,6 +14,7 @@ type RequirementCardProps = {
   onEdit?: () => void;
   children?: ReactNode;
   isEdit?: boolean;
+  error?: boolean;
 };
 
 const icons = {
@@ -32,6 +33,7 @@ export const RequirementCard = ({
   onEdit,
   children,
   isEdit = false,
+  error = false,
 }: RequirementCardProps) => {
   const Icon = icons[icon];
 
@@ -44,8 +46,8 @@ export const RequirementCard = ({
     <Box
       sx={{
         p: 2,
-        flex: 1,
         minWidth: 0,
+        width: '33%',
         borderRadius: '16px',
         bgcolor: 'secondary.light',
       }}
@@ -64,7 +66,7 @@ export const RequirementCard = ({
             alignItems: 'center',
             justifyContent: 'center',
             bgcolor: 'white',
-            color: 'primary.main',
+            color: error ? 'error.main' : 'primary.main',
             flexShrink: 0,
           }}
         >
@@ -75,7 +77,10 @@ export const RequirementCard = ({
           {!isEdit && (
             <Typography
               variant="caption"
-              sx={{ color: 'info.main', fontWeight: 500 }}
+              sx={{
+                color: error ? 'error.main' : 'info.main',
+                fontWeight: 500,
+              }}
             >
               {label}
             </Typography>
@@ -85,7 +90,11 @@ export const RequirementCard = ({
             (displayValue ? (
               <Typography
                 variant="body1"
-                sx={{ fontWeight: 600, mt: 0.25 }}
+                sx={{
+                  fontWeight: 600,
+                  mt: 0.25,
+                  ...(error && { color: 'error.main' }),
+                }}
               >
                 {displayValue}
               </Typography>

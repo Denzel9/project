@@ -99,7 +99,7 @@ export const useTaskData = () => {
   };
 
   const { data: post, isFetching: isPostLoading } = usePostByIdQuery(
-    currentTask?.post?.id ?? null,
+    currentTask?.postId ?? currentTask?.post?.id ?? postId ?? null,
   );
 
 

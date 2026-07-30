@@ -47,17 +47,19 @@ export const DeliverablePresetChips = ({
         ))}
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        {FORMAT_OPTIONS.map(format => (
-          <Chip
-            key={format}
-            clickable
-            label={getPlacementFormatLabel(format)}
-            disabled={!presetPlatform}
-            onClick={() => handleFormatClick(format)}
-          />
-        ))}
-      </Box>
+      {presetPlatform && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {FORMAT_OPTIONS.map(format => (
+            <Chip
+              key={format}
+              clickable
+              label={getPlacementFormatLabel(format)}
+              disabled={!presetPlatform}
+              onClick={() => handleFormatClick(format)}
+            />
+          ))}
+        </Box>
+      )}
     </Stack>
   );
 };

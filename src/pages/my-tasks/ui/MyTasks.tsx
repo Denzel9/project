@@ -22,7 +22,7 @@ import {
   toMyTasksQueryParams,
   MyTaskFilter,
 } from '@/features';
-import { EmptyBlock } from '@/shared';
+import { EmptyBlock, ROUTES } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
 import { TASK_TABLE_PAGE_SIZE } from '../model/constants';
@@ -58,27 +58,77 @@ export const MyTasks = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [reportTasks, setReportTasks] = useState<Task[] | null>(null);
   const [pendingPrint, setPendingPrint] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
-  const { role } = useAuthStore();
+  const { role, isPrime } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
 
   const {
     status,
     postId,
+    executorId,
     viewMode,
     updatedDate,
     extraFilter,
     setViewMode,
+    setExecutorId,
+    setFastButtonValue,
     fastButtonValue,
     toggleKanbanColumn,
     visibleKanbanColumns,
+    isSearchOpen,
+    searchQuery,
   } = useMyTaskFilterStore();
 
   useEffect(() => {
-    const state = location.state as MyTasksLocationState | null;
-    const fromDashboard = Boolean(state?.fromDashboard);
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
 
-    if (fromDashboard) {
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!isSearchOpen) {
+      setTimeout(() => {
+        setDebouncedQuery('');
+      }, 0);
+    }
+  }, [isSearchOpen]);
+
+  const searchQ =
+    isSearchOpen && debouncedQuery.length >= 2 ? debouncedQuery : undefined;
+
+  const executorIdFromUrl = useMemo(() => {
+    const value = new URLSearchParams(location.search).get('executorId');
+
+    if (
+      !value ||
+      value === 'all' ||
+      value === 'undefined' ||
+      value === 'null'
+    ) {
+      return null;
+    }
+
+    return value;
+  }, [location.search]);
+
+  useEffect(() => {
+    if (executorIdFromUrl) {
+      setExecutorId(executorIdFromUrl);
+      setFastButtonValue(null);
+      pendingDashboardNavRef.current = true;
+      navigate(location.pathname, { replace: true, state: null });
+      return;
+    }
+
+    const state = location.state as MyTasksLocationState | null;
+    const skipDefaultFastFilter = Boolean(
+      state?.fromDashboard || state?.skipDefaultFastFilter,
+    );
+
+    if (skipDefaultFastFilter) {
       pendingDashboardNavRef.current = true;
 
       if (state?.scrollToKanbanColumn) {
@@ -95,26 +145,40 @@ export const MyTasks = () => {
     }
 
     applyDefaultFastFilter();
-  }, [applyDefaultFastFilter, location.key, location.pathname, location.state, navigate]);
+  }, [
+    applyDefaultFastFilter,
+    executorIdFromUrl,
+    location.key,
+    location.pathname,
+    location.state,
+    navigate,
+    setExecutorId,
+    setFastButtonValue,
+  ]);
 
   const queryFilters = useMemo(
     () => ({
       postId,
+      executorId: executorIdFromUrl ?? executorId,
       status,
       viewMode,
       updatedDate,
       extraFilter,
-      fastButtonValue,
+      fastButtonValue: executorIdFromUrl ? null : fastButtonValue,
       isCompany,
+      q: searchQ,
     }),
     [
       postId,
+      executorIdFromUrl,
+      executorId,
       status,
       viewMode,
       updatedDate,
       extraFilter,
       fastButtonValue,
       isCompany,
+      searchQ,
     ],
   );
 
@@ -134,17 +198,21 @@ export const MyTasks = () => {
         viewMode,
         status,
         postId,
+        executorId,
         fastButtonValue,
         extraFilter ?? '',
         updatedDate ?? '',
+        searchQ ?? '',
       ].join('|'),
     [
       viewMode,
       status,
       postId,
+      executorId,
       fastButtonValue,
       extraFilter,
       updatedDate,
+      searchQ,
     ],
   );
 
@@ -205,6 +273,7 @@ export const MyTasks = () => {
   );
 
   useEffect(() => {
+    if (isPrime) return;
     if (localStorage.getItem('prime-recommendation-closed')) return;
 
     if (hasMultipleTasksForOnePost) {
@@ -212,7 +281,7 @@ export const MyTasks = () => {
         setIsOpenPrimeRecommendation(true);
       }, 0);
     }
-  }, [hasMultipleTasksForOnePost]);
+  }, [hasMultipleTasksForOnePost, isPrime]);
 
   useEffect(() => {
     if (listTasks.length && !initialPosts?.length) {
@@ -258,21 +327,25 @@ export const MyTasks = () => {
   const reportOptions = useMemo(
     () => ({
       postId,
+      executorId,
       viewMode,
       status,
       updatedDate,
       fastButtonValue,
       extraFilter,
       isCompany,
+      q: searchQ,
     }),
     [
       postId,
+      executorId,
       viewMode,
       status,
       updatedDate,
       fastButtonValue,
       extraFilter,
       isCompany,
+      searchQ,
     ],
   );
 
@@ -405,8 +478,12 @@ export const MyTasks = () => {
             }}
           >
             <EmptyBlock
-              buttonText="На главную"
-              title="У вас пока нет задач"
+              title={
+                searchQ ? 'Ничего не найдено' : 'У вас пока нет задач'
+              }
+              description={
+                searchQ ? 'Попробуйте изменить запрос' : undefined
+              }
             />
           </Box>
         )}
@@ -542,7 +619,7 @@ export const MyTasks = () => {
           </Box>
         )}
 
-        {/* TODO PRIME */}
+        {/* TODO PRIME: merge tasks by post */}
         <ConfirmDialog
           withButtons={false}
           isOpen={isOpenPrimeRecommendation}
@@ -574,7 +651,10 @@ export const MyTasks = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={() => setIsOpenPrimeRecommendation(false)}
+              onClick={() => {
+                setIsOpenPrimeRecommendation(false);
+                navigate(ROUTES.SETTINGS_BILLING);
+              }}
             >
               Подключить
             </Button>

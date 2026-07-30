@@ -19,7 +19,7 @@ import {
   useCreateTaskMutation,
   usePostsQuery,
 } from '@/entities';
-import { useAuthStore } from '@/features';
+import { useAuthStore, useRequireEmailConfirmed } from '@/features';
 import { ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -40,6 +40,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
   const { id } = useAuthStore();
 
   const { setSnackbarOpen } = useSnackbarStore();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   const { data: posts } = usePostsQuery({ ownerId: id ?? '' });
 
@@ -47,6 +48,8 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
   const { mutateAsync: createTask } = useCreateTaskMutation();
 
   const handleCreatePost = async () => {
+    if (!requireEmailConfirmed()) return;
+
     const res = await createPost({
       title: postTitle,
       isPrivate,
@@ -61,6 +64,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
 
   const handleCreateTask = async () => {
     if (!postId) return;
+    if (!requireEmailConfirmed()) return;
 
     const res = await createTask({
       postId,

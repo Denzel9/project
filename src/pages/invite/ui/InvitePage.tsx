@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useNavigate } from 'react-router';
 
+import { BASE_COLOR } from '@/app/index';
 import { useAcceptInviteMutation } from '@/entities/workspace-member';
 import { ROUTES } from '@/shared';
 
@@ -61,7 +62,7 @@ export const InvitePage = () => {
           variant="h6"
           sx={{ position: 'absolute', top: 32, left: 32 }}
         >
-          LOGO
+          NIKS<span style={{ color: BASE_COLOR }}>SENSES</span>
         </Typography>
 
         {!isError && (

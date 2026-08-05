@@ -1,21 +1,23 @@
 import {
-  Close,
   DownloadOutlined,
   PrintOutlined,
-  Search,
 } from '@mui/icons-material';
 import {
   CircularProgress,
   IconButton,
   Stack,
-  TextField,
   Tooltip,
   useMediaQuery,
 } from '@mui/material';
 import { useState } from 'react';
 
-import { FilterAutocomplete } from '@/features';
-import { useScroll } from '@/shared';
+import {
+  FilterAutocomplete,
+  useScroll,
+  type FilterAutocompleteOption,
+} from '@/shared';
+
+import { SEARCH_MIN } from '../model/constants';
 
 import { PublicationSearchPanel } from './PublicationSearchPanel';
 import { PublicationViewModeToggle } from './PublicationViewModeToggle';
@@ -29,21 +31,22 @@ import type {
   PublicationPostFilter,
 } from '../model/utils';
 
-type FilterOption = {
-  id: string;
-  label: string;
-};
-
 type PublicationsFilterProps = {
   q: string;
   postId: PublicationPostFilter;
   executorId: PublicationExecutorFilter;
   viewMode: PublicationViewMode;
-  postOptions: FilterOption[];
-  executorOptions: FilterOption[];
+  postOptions: FilterAutocompleteOption[];
+  executorOptions: FilterAutocompleteOption[];
+  selectedPostOption?: FilterAutocompleteOption | null;
+  selectedExecutorOption?: FilterAutocompleteOption | null;
+  isPostSearchLoading?: boolean;
+  isExecutorSearchLoading?: boolean;
   onQueryChange: (value: string) => void;
   onPostChange: (value: PublicationPostFilter) => void;
   onExecutorChange: (value: PublicationExecutorFilter) => void;
+  onPostSearch: (query: string) => void;
+  onExecutorSearch: (query: string) => void;
   onViewModeChange: (value: PublicationViewMode) => void;
   tableReport?: PublicationTableReportControls;
 };
@@ -55,25 +58,21 @@ export const PublicationsFilter = ({
   viewMode,
   postOptions,
   executorOptions,
+  selectedPostOption = null,
+  selectedExecutorOption = null,
+  isPostSearchLoading = false,
+  isExecutorSearchLoading = false,
   onQueryChange,
   onPostChange,
   onExecutorChange,
+  onPostSearch,
+  onExecutorSearch,
   onViewModeChange,
   tableReport,
 }: PublicationsFilterProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { isScrolled, ref } = useScroll(150);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const handleToggleSearch = () => {
-    if (isSearchOpen) {
-      setIsSearchOpen(false);
-      onQueryChange('');
-      return;
-    }
-
-    setIsSearchOpen(true);
-  };
 
   return (
     <>
@@ -109,6 +108,10 @@ export const PublicationsFilter = ({
             label="Задача"
             value={postId}
             options={postOptions}
+            selectedOption={selectedPostOption}
+            loading={isPostSearchLoading}
+            minInputLength={SEARCH_MIN}
+            onSearch={onPostSearch}
             onChange={onPostChange}
             sx={{ flex: 1 }}
           />
@@ -117,6 +120,10 @@ export const PublicationsFilter = ({
             label="Исполнитель"
             value={executorId}
             options={executorOptions}
+            selectedOption={selectedExecutorOption}
+            loading={isExecutorSearchLoading}
+            minInputLength={SEARCH_MIN}
+            onSearch={onExecutorSearch}
             onChange={onExecutorChange}
             sx={{ flex: 1 }}
           />
@@ -127,25 +134,6 @@ export const PublicationsFilter = ({
           spacing={0.5}
           sx={{ alignItems: 'center', flexShrink: 0 }}
         >
-          {isSearchOpen && !isMobile && (
-            <TextField
-              autoFocus
-              label="Поиск"
-              size="small"
-              variant="outlined"
-              value={q}
-              onChange={event => onQueryChange(event.target.value)}
-              sx={{ width: 300 }}
-            />
-          )}
-
-          <IconButton
-            color={q.trim() || isSearchOpen ? 'primary' : 'default'}
-            onClick={handleToggleSearch}
-          >
-            {isSearchOpen ? <Close /> : <Search />}
-          </IconButton>
-
           {viewMode === 'table' && tableReport && (
             <>
               <Tooltip title="Печать">

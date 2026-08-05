@@ -2,13 +2,14 @@ import { useMutation, useQuery, } from '@tanstack/react-query';
 
 import { mainAxios, queryClient } from '@/shared/api';
 
-import type { InviteUserRequest, WorkspaceMember } from '../types/types';
+import type { InviteUserRequest, ProfileMember, WorkspaceMember } from '../types/types';
 
 import type { AuthSessionUser } from '@/features/auth/model/types/types';
 
 const POSTS_KEY = ['posts'] as const;
 const APPLICATIONS_KEY = ['applications'] as const;
 const WORKSPACE_MEMBERS_KEY = ['workspace-members'] as const;
+const PROFILE_MEMBERS_KEY = ['profile-members'] as const;
 const USER_CONFIG_KEY = ['user-config'] as const;
 
 const invalidateProfileScopedQueries = () => {
@@ -16,6 +17,7 @@ const invalidateProfileScopedQueries = () => {
   void queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
   void queryClient.invalidateQueries({ queryKey: ['tasks'] });
   void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
+  void queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
   void queryClient.invalidateQueries({ queryKey: USER_CONFIG_KEY });
   void queryClient.invalidateQueries({ queryKey: ['billing'] });
 };
@@ -25,6 +27,18 @@ export const useGetProfilesQuery = () =>
     queryKey: ['profiles'],
     queryFn: async () =>
       await mainAxios.get<WorkspaceMember[]>('auth/profiles'),
+  });
+
+export const useGetProfileMembersQuery = (enabled = true) =>
+  useQuery({
+    queryKey: PROFILE_MEMBERS_KEY,
+    enabled,
+    queryFn: async () => {
+      const { data } = await mainAxios.get<ProfileMember[]>(
+        'auth/profile-members',
+      );
+      return data;
+    },
   });
 
 export const useSwitchProfileMutation = () =>
@@ -42,6 +56,7 @@ export const useAddInviteMutation = () =>
       await mainAxios.post<WorkspaceMember>('auth/invites', body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
+      queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
     },
   });
 
@@ -51,6 +66,7 @@ export const useAcceptInviteMutation = () =>
       await mainAxios.post<WorkspaceMember>('auth/invites/accept', { token }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
+      queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
     },
   });
 
@@ -60,6 +76,7 @@ export const useDeleteMembershipMutation = () =>
       await mainAxios.delete<WorkspaceMember>(`auth/memberships/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
+      queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
     },
   });
 

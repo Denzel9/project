@@ -7,7 +7,8 @@ import {
 import { useCallback, useMemo } from 'react'
 
 import { taskKeys } from '@/entities/task'
-import { getUserName, type User } from '@/entities/user'
+import { getUserName, USER_ROLE, type User } from '@/entities/user'
+import { useAuthStore } from '@/features/auth'
 import { mainAxios } from '@/shared/api'
 import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
@@ -15,6 +16,7 @@ import type {
   Application,
   ApplicationList,
   ApplicationListParams,
+  ApplicationStats,
   CreateApplicationDto,
   SearchApplicationsParams,
   UpdateApplicationStatusDto,
@@ -22,6 +24,7 @@ import type {
 
 export const applicationKeys = {
   all: ['applications'] as const,
+  stats: () => [...applicationKeys.all, 'stats'] as const,
   mine: (params?: ApplicationListParams) =>
     [...applicationKeys.all, 'mine', params ?? {}] as const,
   incoming: (params?: ApplicationListParams) =>
@@ -53,6 +56,18 @@ export const useMyApplicationsQuery = (
       const { data } = await mainAxios.get<ApplicationList>(
         '/applications/mine',
         { params },
+      )
+      return data
+    },
+    enabled: options?.enabled ?? true,
+  })
+
+export const useApplicationStatsQuery = (options?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: applicationKeys.stats(),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<ApplicationStats>(
+        '/applications/stats',
       )
       return data
     },
@@ -213,7 +228,14 @@ export const usePostApplicationsQuery = (
   })
 
 export const useMyApplicationsMap = () => {
-  const { data } = useMyApplicationsQuery({ page: 1, limit: 100 })
+  const role = useAuthStore(state => state.role)
+  const canHaveApplications =
+    role === USER_ROLE.CREATOR || role === USER_ROLE.COMPANY
+
+  const { data } = useMyApplicationsQuery(
+    { page: 1, limit: 100 },
+    { enabled: canHaveApplications },
+  )
 
   return useMemo(() => {
     const map = new Map<string, Application>()
@@ -228,6 +250,9 @@ export const useMyApplicationsMap = () => {
 
 export const useMyApplicationsMapForPosts = (postIds: string[]) => {
   const queryClient = useQueryClient()
+  const role = useAuthStore(state => state.role)
+  const canHaveApplications =
+    role === USER_ROLE.CREATOR || role === USER_ROLE.COMPANY
 
   const { data: allApplicationsMap, isLoading, isFetching } = useQuery({
     queryKey: applicationKeys.allMineMap(),
@@ -254,6 +279,7 @@ export const useMyApplicationsMapForPosts = (postIds: string[]) => {
       return map
     },
     staleTime: 5 * 60 * 1000,
+    enabled: canHaveApplications,
   })
 
   const map = useMemo(() => {

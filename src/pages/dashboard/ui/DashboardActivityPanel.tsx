@@ -4,6 +4,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Divider,
   IconButton,
   MenuItem,
   Skeleton,
@@ -21,6 +22,7 @@ import {
   type TaskActivityType,
 } from '@/entities';
 import { ActivityDetailDialog } from '@/pages/task/ui/activity/ActivityDetailDialog';
+import { EmptyBlock } from '@/shared';
 
 import { DASHBOARD_ACTIVITY_PAGE_SIZE } from '../model/constants';
 import {
@@ -31,7 +33,7 @@ import {
 
 import { DashboardActivityListItem } from './DashboardActivityListItem';
 
-const ACTIVITY_FILTER_TASKS_LIMIT = 200;
+const ACTIVITY_FILTER_TASKS_LIMIT = 20;
 
 export const DashboardActivityPanel = () => {
   const [activityType, setActivityType] = useState<
@@ -240,7 +242,7 @@ export const DashboardActivityPanel = () => {
                   size="small"
                   variant="outlined"
                   label={countLabel}
-                  sx={{ display: { xs: 'none', md: 'block' } }}
+                  sx={{ display: { xs: 'none', md: 'flex' } }}
                 />
               )}
             </Stack>
@@ -369,15 +371,12 @@ export const DashboardActivityPanel = () => {
       {!isLoading && items.length === 0 && (
         <Stack
           spacing={1}
-          sx={{ py: 5, alignItems: 'center', textAlign: 'center' }}
+          sx={{ height: '100%', alignItems: 'center', justifyContent: 'center' }}
         >
-          <HistoryOutlined sx={{ fontSize: 40, color: 'text.disabled' }} />
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            {emptyMessage}
-          </Typography>
+          <EmptyBlock
+            title={emptyMessage}
+            icon={<HistoryOutlined sx={{ fontSize: 40, color: 'text.disabled' }} />}
+          />
           {hasActiveFilters && (
             <Button
               size="small"
@@ -398,7 +397,10 @@ export const DashboardActivityPanel = () => {
             pr: 0.25,
           }}
         >
-          <Stack spacing={1}>
+          <Stack
+            spacing={0}
+            divider={<Divider flexItem sx={{ borderColor: 'divider' }} />}
+          >
             {visibleItems.map(item => (
               <DashboardActivityListItem
                 key={item.activity.id}

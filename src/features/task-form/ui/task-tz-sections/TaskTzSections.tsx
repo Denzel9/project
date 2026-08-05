@@ -19,9 +19,8 @@ export const TaskTzSections = ({
   onEdit,
 }: TaskTzSectionsProps) => {
   const { control } = useFormContext<TaskFormType>();
-  const values = useWatch({ control }) as TaskFormType;
 
-  console.log({ values });
+  const values = useWatch({ control }) as TaskFormType;
 
   return (
     <>

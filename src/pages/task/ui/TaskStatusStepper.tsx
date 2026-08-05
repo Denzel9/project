@@ -35,7 +35,7 @@ export const TaskStatusStepper = ({ status }: TaskStatusStepperProps) => {
       alternativeLabel
       activeStep={activeStep}
       sx={{
-        mb: 2,
+        mb: 1,
         bgcolor: 'white',
         border: '1px solid',
         p: { xs: 2, md: 3 },

@@ -19,4 +19,5 @@ export const MY_PARAMETERS_LABELS = {
 export enum USER_ROLE {
     CREATOR = 'CREATOR',
     COMPANY = 'COMPANY',
+    MANAGER = 'MANAGER',
 }

@@ -11,6 +11,8 @@ import {
   mapInBatches,
   MEDIA_UPLOAD_CONCURRENCY,
   prepareFileForUpload,
+  type LocalMediaFile,
+  type MediaUploadCallbacks,
 } from '@/shared/lib/media'
 
 import { serializePostListParams } from './utils'
@@ -25,6 +27,7 @@ import type {
   UpdatePostDto,
   UploadMediaResponse,
   PostList,
+  PostOptionsList,
 } from './types'
 import type { Task, TaskList } from '@/entities/task'
 
@@ -34,6 +37,7 @@ export const postKeys = {
   infiniteList: (params?: Omit<PostListParams, 'page'>) =>
     [...postKeys.all, 'infiniteList', params ?? {}] as const,
   detail: (id: string) => [...postKeys.all, 'detail', id] as const,
+  options: () => [...postKeys.all, 'options'] as const,
   search: (q: string, page: number, limit: number) =>
     [...postKeys.all, 'search', q, page, limit] as const,
   infiniteSearch: (params: Omit<SearchPostsParams, 'page'>) =>
@@ -54,6 +58,16 @@ export const usePostsQuery = (params?: PostListParams) =>
       })
       return data
     },
+  })
+
+export const useMyPostOptionsQuery = (enabled = true) =>
+  useQuery({
+    queryKey: postKeys.options(),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<PostOptionsList>('/posts/options')
+      return data
+    },
+    enabled,
   })
 
 export const usePostsInfiniteQuery = (
@@ -167,8 +181,19 @@ export const useDeletePostMutation = () => {
   })
 }
 
-export const uploadPostMedia = async (postId: string, file: File) => {
-  const prepared = await prepareFileForUpload(file)
+export type UploadPostMediaOptions = {
+  alreadyPrepared?: boolean
+  onProgress?: (progress: number) => void
+}
+
+export const uploadPostMedia = async (
+  postId: string,
+  file: File,
+  options?: UploadPostMediaOptions,
+) => {
+  const prepared = options?.alreadyPrepared
+    ? file
+    : await prepareFileForUpload(file)
   const formData = new FormData()
   formData.append('file', prepared)
 
@@ -178,28 +203,87 @@ export const uploadPostMedia = async (postId: string, file: File) => {
     {
       params: { postId },
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: event => {
+        if (!options?.onProgress || !event.total) return
+        options.onProgress(Math.round((event.loaded / event.total) * 100))
+      },
     },
   )
 
   return data
 }
 
-export const uploadPostMediaBatch = async (postId: string, files: File[]) => {
+export const uploadPostMediaBatch = async (
+  postId: string,
+  files: File[] | LocalMediaFile[],
+  callbacks?: MediaUploadCallbacks,
+) => {
   if (!files.length) return []
 
-  return mapInBatches(
-    files,
-    file => uploadPostMedia(postId, file),
+  type UploadResult =
+    | { ok: true; data: UploadMediaResponse; localId: string }
+    | { ok: false; error: Error; localId: string }
+
+  const normalizedFiles = files as Array<File | LocalMediaFile>
+
+  const results = await mapInBatches<File | LocalMediaFile, UploadResult>(
+    normalizedFiles,
+    async (item, index) => {
+      const isLocal = !(item instanceof File)
+      const file = isLocal ? item.file : item
+      const localId = isLocal ? item.localId : `file-${index}`
+
+      callbacks?.onFileStart?.(localId)
+
+      try {
+        const data = await uploadPostMedia(postId, file, {
+          alreadyPrepared: isLocal ? item.prepared : false,
+          onProgress: progress =>
+            callbacks?.onFileProgress?.(localId, progress),
+        })
+        callbacks?.onFileSuccess?.(localId)
+        return { ok: true, data, localId }
+      } catch (error) {
+        const err =
+          error instanceof Error
+            ? error
+            : new Error('Не удалось загрузить файл')
+        callbacks?.onFileError?.(localId, err)
+        return { ok: false, error: err, localId }
+      }
+    },
     MEDIA_UPLOAD_CONCURRENCY,
   )
+
+  const uploads = results
+    .filter((result): result is Extract<UploadResult, { ok: true }> => result.ok)
+    .map(result => result.data)
+
+  const failures = results.filter(
+    (result): result is Extract<UploadResult, { ok: false }> =>
+      !result.ok,
+  )
+
+  if (!uploads.length && failures.length) {
+    throw failures[0].error
+  }
+
+  return uploads
 }
 
 export const useUploadPostMediaMutation = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ postId, files }: { postId: string; files: File[] }) =>
-      uploadPostMediaBatch(postId, files),
+    mutationFn: async ({
+      postId,
+      files,
+      callbacks,
+    }: {
+      postId: string
+      files: File[] | LocalMediaFile[]
+      callbacks?: MediaUploadCallbacks
+    }) => uploadPostMediaBatch(postId, files, callbacks),
     onSuccess: (_, { postId }) => {
       queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) })
       queryClient.invalidateQueries({ queryKey: postKeys.all })

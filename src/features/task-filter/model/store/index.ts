@@ -9,9 +9,11 @@ import type {
   TaskStatusFilter,
   FastButtonFilter,
   TaskExtraFilter,
+  DashboardPeriod,
 } from '../utils';
 
 export type TaskViewMode = 'grid' | 'kanban' | 'table';
+export type { DashboardPeriod };
 
 const VIEW_MODE_KEY = 'my-tasks-view-mode';
 const KANBAN_COLUMNS_KEY = 'my-tasks-kanban-columns';
@@ -59,6 +61,9 @@ type MyTaskFilterStore = {
     visibleKanbanColumns: TaskStatus[];
     fastButtonValue: FastButtonFilter;
     extraFilter: TaskExtraFilter | null;
+    onlyMyTasks: boolean;
+    assigneeAccountId: string;
+    period: DashboardPeriod;
     isSearchOpen: boolean;
     searchQuery: string;
 
@@ -67,11 +72,13 @@ type MyTaskFilterStore = {
     setExecutorId: (executorId: string) => void;
     setStatus: (status: TaskStatusFilter) => void;
     setExtraFilter: (extraFilter: TaskExtraFilter | null) => void;
+    setOnlyMyTasks: (onlyMyTasks: boolean) => void;
+    setAssigneeAccountId: (assigneeAccountId: string) => void;
+    setPeriod: (period: DashboardPeriod) => void;
     setViewMode: (viewMode: TaskViewMode) => void;
     toggleKanbanColumn: (status: TaskStatus) => void;
     setUpdatedDate: (updatedDate: string | null) => void;
     setFastButtonValue: (fastButtonValue: FastButtonFilter) => void;
-    applyDefaultFastFilter: () => void;
     setVisibleKanbanColumns: (visibleKanbanColumns: TaskStatus[]) => void;
     ensureKanbanColumnVisible: (status: TaskStatus) => void;
     setIsSearchOpen: (isSearchOpen: boolean) => void;
@@ -79,7 +86,7 @@ type MyTaskFilterStore = {
 };
 
 const initialViewMode = readStoredViewMode();
-const initialFastButtonValue: FastButtonFilter = 'pending-action';
+const initialFastButtonValue: FastButtonFilter = null;
 
 export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
     postId: 'all',
@@ -100,6 +107,12 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
     fastButtonValue: initialFastButtonValue,
 
     extraFilter: null,
+
+    onlyMyTasks: false,
+
+    assigneeAccountId: 'all',
+
+    period: 'all',
 
     isSearchOpen: false,
 
@@ -130,6 +143,20 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
             ...(extraFilter && { status: 'all' as const }),
         }),
 
+    setOnlyMyTasks: onlyMyTasks =>
+        set({
+            onlyMyTasks,
+            ...(onlyMyTasks && { assigneeAccountId: 'all' }),
+        }),
+
+    setAssigneeAccountId: assigneeAccountId =>
+        set({
+            assigneeAccountId,
+            ...(assigneeAccountId !== 'all' && { onlyMyTasks: false }),
+        }),
+
+    setPeriod: period => set({ period }),
+
     setViewMode: viewMode =>
         set(state => ({
             viewMode,
@@ -152,15 +179,6 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
                     getKanbanColumnsForFastButton(fastButtonValue),
             }),
         })),
-
-    applyDefaultFastFilter: () =>
-        set(state => {
-            if (state.fastButtonValue === null) {
-                return { fastButtonValue: 'pending-action' as const };
-            }
-
-            return {};
-        }),
 
     setVisibleKanbanColumns: visibleKanbanColumns =>
         set({ visibleKanbanColumns }),

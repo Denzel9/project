@@ -47,6 +47,21 @@ export type RegistrationCreatorFormType = yup.InferType<
 export const defaultRegistrationCreatorValues =
   registrationCreatorSchema.getDefault()
 
+export const registrationManagerSchema = yup.object().shape({
+  name: yup.string().default('').required('Поле обязательно для заполнения'),
+  lastName: yup.string().default('').required('Поле обязательно для заполнения'),
+  email: yup.string().default('').required('Поле обязательно для заполнения'),
+  password: passwordSchemaField(),
+  confirmPassword: confirmPasswordSchemaField(),
+})
+
+export type RegistrationManagerFormType = yup.InferType<
+  typeof registrationManagerSchema
+>
+
+export const defaultRegistrationManagerValues =
+  registrationManagerSchema.getDefault()
+
 export const resetPasswordSchema = yup.object().shape({
   oldPassword: yup
     .string()

@@ -11,6 +11,8 @@ import {
   mapInBatches,
   MEDIA_UPLOAD_CONCURRENCY,
   prepareFileForUpload,
+  type LocalMediaFile,
+  type MediaUploadCallbacks,
 } from '@/shared/lib/media'
 import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
@@ -45,6 +47,8 @@ import type {
   TaskCalendarParams,
   TaskMediaUploadKind,
   SearchTasksParams,
+  RequestTaskAnnulmentDto,
+  RequestTaskDeadlineExtensionDto,
   UpdateTaskCommentDto,
   UpdateTaskDto,
 } from './types'
@@ -88,6 +92,45 @@ export const taskKeys = {
 const postTasksQueryPrefix = (postId: string) =>
   ['posts', 'postTasks', postId] as const
 
+const postTasksQueryRoot = ['posts', 'postTasks'] as const
+
+const findTaskInCache = (
+  queryClient: QueryClient,
+  taskId: string,
+): Task | undefined => {
+  const detail = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
+  if (detail) return detail
+
+  const lists = queryClient.getQueriesData<TaskList>({
+    queryKey: postTasksQueryRoot,
+  })
+
+  for (const [, list] of lists) {
+    const found = list?.items?.find(item => item.id === taskId)
+    if (found) return found
+  }
+
+  return undefined
+}
+
+const patchTaskInPostTasksCaches = (
+  queryClient: QueryClient,
+  taskId: string,
+  patchTask: (task: Task) => Task,
+) => {
+  queryClient.setQueriesData<TaskList>({ queryKey: postTasksQueryRoot }, old => {
+    if (!old?.items?.length) return old
+    if (!old.items.some(item => item.id === taskId)) return old
+
+    return {
+      ...old,
+      items: old.items.map(item =>
+        item.id === taskId ? patchTask(item) : item,
+      ),
+    }
+  })
+}
+
 const uploadsToTaskMedia = (
   uploads: UploadMediaResponse[],
   kind: TaskMediaUploadKind,
@@ -102,7 +145,7 @@ const uploadsToTaskMedia = (
   }))
 
 const getTaskMediaField = (kind: TaskMediaUploadKind) =>
-  kind === 'report' ? 'reportMedia' as const : 'media' as const
+  kind === 'report' ? ('reportMedia' as const) : ('media' as const)
 
 const mergeUploadedMediaIntoTaskCache = (
   queryClient: QueryClient,
@@ -130,24 +173,7 @@ const mergeUploadedMediaIntoTaskCache = (
     old ? patchTask(old) : old,
   )
 
-  const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
-  const postId = cachedTask?.postId
-
-  if (!postId) return
-
-  queryClient.setQueriesData<TaskList>(
-    { queryKey: postTasksQueryPrefix(postId) },
-    old => {
-      if (!old?.items?.length) return old
-
-      return {
-        ...old,
-        items: old.items.map(item =>
-          item.id === taskId ? patchTask(item) : item,
-        ),
-      }
-    },
-  )
+  patchTaskInPostTasksCaches(queryClient, taskId, patchTask)
 }
 
 export const removeTaskMediaFromCache = (
@@ -157,7 +183,9 @@ export const removeTaskMediaFromCache = (
 ) => {
   const patchTask = (task: Task): Task => ({
     ...task,
-    media: task.media?.filter(item => item.id !== mediaId && item.key !== mediaId),
+    media: task.media?.filter(
+      item => item.id !== mediaId && item.key !== mediaId,
+    ),
     reportMedia: task.reportMedia?.filter(
       item => item.id !== mediaId && item.key !== mediaId,
     ),
@@ -167,30 +195,19 @@ export const removeTaskMediaFromCache = (
     old ? patchTask(old) : old,
   )
 
-  const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
-  const postId = cachedTask?.postId
-
-  if (!postId) return
-
-  queryClient.setQueriesData<TaskList>(
-    { queryKey: postTasksQueryPrefix(postId) },
-    old => {
-      if (!old?.items?.length) return old
-
-      return {
-        ...old,
-        items: old.items.map(item =>
-          item.id === taskId ? patchTask(item) : item,
-        ),
-      }
-    },
-  )
+  patchTaskInPostTasksCaches(queryClient, taskId, patchTask)
 }
 
 const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
   const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(task.id))
-  const postId = task.postId || cachedTask?.postId
-  const mergedTask = { ...cachedTask, ...task, postId: postId ?? task.postId }
+  const postId =
+    task.postId || task.post?.id || cachedTask?.postId || cachedTask?.post?.id
+  const previousPostId = cachedTask?.postId || cachedTask?.post?.id
+  const mergedTask = {
+    ...cachedTask,
+    ...task,
+    postId: postId ?? task.postId,
+  }
 
   queryClient.setQueryData(taskKeys.detail(task.id), mergedTask)
 
@@ -200,9 +217,13 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
     queryKey: [...taskKeys.all, 'allActivities'],
   })
 
-  if (postId) {
+  const postIds = new Set(
+    [postId, previousPostId].filter((id): id is string => Boolean(id)),
+  )
+
+  for (const id of postIds) {
     void queryClient.invalidateQueries({
-      queryKey: postTasksQueryPrefix(postId),
+      queryKey: postTasksQueryPrefix(id),
     })
   }
 
@@ -226,6 +247,9 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
   }
 
   void queryClient.invalidateQueries({ queryKey: taskKeys.pendingApproval() })
+  void queryClient.invalidateQueries({
+    queryKey: [...taskKeys.all, 'stats'],
+  })
 }
 
 export const serializeTaskListParams = (
@@ -237,6 +261,17 @@ export const serializeTaskListParams = (
     if (value === undefined) continue
 
     serialized[key] = value === null ? 'null' : String(value)
+  }
+
+  const hasCalendarDayFilter =
+    params.createdDate !== undefined ||
+    params.updatedDate !== undefined ||
+    params.deadlineDate !== undefined ||
+    params.dateFrom !== undefined ||
+    params.dateTo !== undefined
+
+  if (hasCalendarDayFilter && params.tzOffset === undefined) {
+    serialized.tzOffset = String(new Date().getTimezoneOffset())
   }
 
   return serialized
@@ -301,7 +336,7 @@ export const fetchTasksCalendar = async (
     })
 
     return data
-  }, 500)
+  }, 20)
 
 export const useTasksCalendarQuery = (
   params?: Omit<TaskCalendarParams, 'page' | 'limit'>,
@@ -402,6 +437,132 @@ export const useUpdateTaskMutation = () => {
       const { data } = await mainAxios.patch<Task>(`/tasks/${id}`, body)
       return data
     },
+    onSuccess: (task, { id, body }) => {
+      const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(id))
+      const previousPostId = cachedTask?.postId || cachedTask?.post?.id
+
+      invalidateTaskRelatedQueries(queryClient, task)
+
+      if (
+        body.postId &&
+        previousPostId &&
+        previousPostId !== body.postId
+      ) {
+        void queryClient.invalidateQueries({
+          queryKey: postTasksQueryPrefix(previousPostId),
+        })
+      }
+
+      if (body.postId) {
+        void queryClient.invalidateQueries({
+          queryKey: ['posts', 'postTasks'],
+        })
+      }
+    },
+  })
+}
+
+export const useRequestTaskAnnulmentMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      body,
+    }: {
+      id: string
+      body: RequestTaskAnnulmentDto
+    }) => {
+      const { data } = await mainAxios.post<Task>(`/tasks/${id}/annulment`, body)
+      return data
+    },
+    onSuccess: task => {
+      invalidateTaskRelatedQueries(queryClient, task)
+    },
+  })
+}
+
+export const useConfirmTaskAnnulmentMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await mainAxios.post<Task>(
+        `/tasks/${id}/annulment/confirm`,
+      )
+      return data
+    },
+    onSuccess: task => {
+      invalidateTaskRelatedQueries(queryClient, task)
+    },
+  })
+}
+
+export const useRejectTaskAnnulmentMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await mainAxios.post<Task>(
+        `/tasks/${id}/annulment/reject`,
+      )
+      return data
+    },
+    onSuccess: task => {
+      invalidateTaskRelatedQueries(queryClient, task)
+    },
+  })
+}
+
+export const useRequestTaskDeadlineExtensionMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      body,
+    }: {
+      id: string
+      body: RequestTaskDeadlineExtensionDto
+    }) => {
+      const { data } = await mainAxios.post<Task>(
+        `/tasks/${id}/deadline-extension`,
+        body,
+      )
+      return data
+    },
+    onSuccess: task => {
+      invalidateTaskRelatedQueries(queryClient, task)
+    },
+  })
+}
+
+export const useConfirmTaskDeadlineExtensionMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await mainAxios.post<Task>(
+        `/tasks/${id}/deadline-extension/confirm`,
+      )
+      return data
+    },
+    onSuccess: task => {
+      invalidateTaskRelatedQueries(queryClient, task)
+    },
+  })
+}
+
+export const useRejectTaskDeadlineExtensionMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await mainAxios.post<Task>(
+        `/tasks/${id}/deadline-extension/reject`,
+      )
+      return data
+    },
     onSuccess: task => {
       invalidateTaskRelatedQueries(queryClient, task)
     },
@@ -416,9 +577,37 @@ export const useCreateTaskMutation = () => {
       const { data } = await mainAxios.post<Task>('/tasks', body)
       return data
     },
-    onSuccess: task => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.all })
-      queryClient.setQueryData(taskKeys.detail(task.id), task)
+    onSuccess: (task, variables) => {
+      const postId = task.postId || task.post?.id || variables.postId
+      const createdTask = { ...task, postId }
+
+      invalidateTaskRelatedQueries(queryClient, createdTask)
+
+      queryClient.setQueriesData<TaskList>(
+        { queryKey: postTasksQueryPrefix(postId) },
+        old => {
+          if (!old) {
+            return {
+              items: [createdTask],
+              total: 1,
+              page: 1,
+              limit: 20,
+            }
+          }
+
+          if (old.items.some(item => item.id === createdTask.id)) {
+            return old
+          }
+
+          return {
+            ...old,
+            items: [createdTask, ...old.items],
+            total: old.total + 1,
+          }
+        },
+      )
+
+      void queryClient.invalidateQueries({ queryKey: taskKeys.all })
     },
   })
 }
@@ -945,12 +1134,20 @@ export const useUpdateTaskCommentMutation = () => {
   })
 }
 
+export type UploadMediaOptions = {
+  alreadyPrepared?: boolean
+  onProgress?: (progress: number) => void
+}
+
 export const uploadTaskMedia = async (
   taskId: string,
   file: File,
   kind: TaskMediaUploadKind = 'main',
+  options?: UploadMediaOptions,
 ) => {
-  const prepared = await prepareFileForUpload(file)
+  const prepared = options?.alreadyPrepared
+    ? file
+    : await prepareFileForUpload(file)
   const formData = new FormData()
   formData.append('file', prepared)
 
@@ -963,6 +1160,10 @@ export const uploadTaskMedia = async (
         ...(kind === 'report' ? { kind: 'report' } : {}),
       },
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: event => {
+        if (!options?.onProgress || !event.total) return
+        options.onProgress(Math.round((event.loaded / event.total) * 100))
+      },
     },
   )
 
@@ -971,14 +1172,59 @@ export const uploadTaskMedia = async (
 
 export const uploadTaskMediaBatch = async (
   taskId: string,
-  files: File[],
+  files: File[] | LocalMediaFile[],
   kind: TaskMediaUploadKind = 'main',
-) =>
-  mapInBatches(
-    files,
-    file => uploadTaskMedia(taskId, file, kind),
+  callbacks?: MediaUploadCallbacks,
+) => {
+  type UploadResult =
+    | { ok: true; localId: string; data: UploadMediaResponse }
+    | { ok: false; localId: string; error: Error }
+
+  const normalizedFiles = files as Array<File | LocalMediaFile>
+
+  const results = await mapInBatches<File | LocalMediaFile, UploadResult>(
+    normalizedFiles,
+    async (item, index) => {
+      const isLocal = !(item instanceof File)
+      const file = isLocal ? item.file : item
+      const localId = isLocal ? item.localId : `file-${index}`
+
+      callbacks?.onFileStart?.(localId)
+
+      try {
+        const data = await uploadTaskMedia(taskId, file, kind, {
+          alreadyPrepared: isLocal ? item.prepared : false,
+          onProgress: progress =>
+            callbacks?.onFileProgress?.(localId, progress),
+        })
+        callbacks?.onFileSuccess?.(localId)
+        return { ok: true, localId, data }
+      } catch (error) {
+        const err =
+          error instanceof Error
+            ? error
+            : new Error('Не удалось загрузить файл')
+        callbacks?.onFileError?.(localId, err)
+        return { ok: false, localId, error: err }
+      }
+    },
     MEDIA_UPLOAD_CONCURRENCY,
   )
+
+  const uploads = results
+    .filter((result): result is Extract<UploadResult, { ok: true }> => result.ok)
+    .map(result => result.data)
+
+  const failures = results.filter(
+    (result): result is Extract<UploadResult, { ok: false }> => !result.ok,
+  )
+
+  if (!uploads.length && failures.length) {
+    throw failures[0].error
+  }
+
+  return uploads
+}
 
 export const uploadTaskCommentMedia = async (taskId: string, file: File) => {
   const prepared = await prepareFileForUpload(file)
@@ -1018,16 +1264,18 @@ export const useUploadTaskMediaMutation = () => {
       taskId,
       files,
       kind = 'main',
+      callbacks,
     }: {
       taskId: string
-      files: File[]
+      files: File[] | LocalMediaFile[]
       kind?: TaskMediaUploadKind
-    }) => uploadTaskMediaBatch(taskId, files, kind),
+      callbacks?: MediaUploadCallbacks
+    }) => uploadTaskMediaBatch(taskId, files, kind, callbacks),
     onSuccess: (uploads, { taskId, kind }) => {
       mergeUploadedMediaIntoTaskCache(queryClient, taskId, uploads, kind ?? 'main')
 
-      const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(taskId))
-      const postId = cachedTask?.postId
+      const cachedTask = findTaskInCache(queryClient, taskId)
+      const postId = cachedTask?.postId || cachedTask?.post?.id
 
       void queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
 
@@ -1035,6 +1283,8 @@ export const useUploadTaskMediaMutation = () => {
         void queryClient.invalidateQueries({
           queryKey: postTasksQueryPrefix(postId),
         })
+      } else {
+        void queryClient.invalidateQueries({ queryKey: postTasksQueryRoot })
       }
 
       void queryClient.invalidateQueries({ queryKey: taskKeys.all })

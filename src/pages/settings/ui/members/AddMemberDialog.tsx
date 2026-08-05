@@ -120,8 +120,6 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
                 }}
               >
                 <MenuItem value={MemberRole.ADMIN}>Администратор</MenuItem>
-                <MenuItem value={MemberRole.EDITOR}>Редактор</MenuItem>
-                <MenuItem value={MemberRole.VIEWER}>Наблюдатель</MenuItem>
               </RHFInput>
 
               <Stack
@@ -133,22 +131,6 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
                   color="info"
                 >
                   Администратор имеет полный доступ к рабочему пространству.
-                </Typography>
-
-                <Typography
-                  variant="body2"
-                  color="info"
-                >
-                  Редактор имеет доступ к рабочему пространству и
-                  редактированию, но не может добавлять или удалять участников.
-                </Typography>
-
-                <Typography
-                  variant="body2"
-                  color="info"
-                >
-                  Наблюдатель имеет доступ к рабочему пространству и может
-                  только просматривать информацию.
                 </Typography>
               </Stack>
 

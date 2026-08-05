@@ -5,7 +5,9 @@ import {
   type TaskActivity,
   type TaskActivityFeedItem,
   type TaskComment,
+  type TaskLastCommentPreview,
   type TaskWithCommentsItem,
+  type TaskWithCommentsRecipient,
 } from '@/entities';
 import { getTaskStatsCount, type TaskStats } from '@/entities';
 import { getUserName, type User } from '@/entities/user';
@@ -31,7 +33,8 @@ export type DashboardCommentItem = {
 
 export type DashboardTaskCommentsItem = {
   task: Task;
-  lastComment: TaskComment;
+  recipient: TaskWithCommentsRecipient | null;
+  lastComment: TaskLastCommentPreview;
   commentsCount: number;
   unreadCount: number;
 };
@@ -92,13 +95,13 @@ export const mapTaskWithCommentsItem = (
   item: TaskWithCommentsItem,
   taskMap: Map<string, Task>,
 ): DashboardTaskCommentsItem => {
-  const taskId = item.id || item.lastComment?.taskId || '';
+  const taskId = item.id || '';
   const mappedTask =
     taskMap.get(taskId) ??
     ({
       id: taskId,
       title: item.title ?? '',
-      ownerId: item.ownerId,
+      ownerId: item.ownerId ?? '',
       executorId: item.executorId ?? '',
       postId: item.postId ?? '',
       status: item.status ?? TASK_STATUS_ENUM.PREPARING,
@@ -108,6 +111,7 @@ export const mapTaskWithCommentsItem = (
 
   return {
     task: mappedTask,
+    recipient: item.recipient,
     lastComment: item.lastComment,
     commentsCount: item.commentsCount,
     unreadCount: item.unreadCount ?? 0,
@@ -154,19 +158,47 @@ const getTaskTitle = (task: Task) =>
 
 export const getTaskDisplayTitle = getTaskTitle;
 
-export const getCommentPreview = (comment: TaskComment) => {
-  if (hasCommentText(comment.content)) {
-    return truncateText(comment.content.trim());
+export const getCommentPreview = (
+  comment?:
+    | TaskComment
+    | TaskLastCommentPreview
+    | {
+        preview?: string
+        content?: string
+        media?: TaskComment['media']
+      }
+    | null,
+) => {
+  if (!comment) return 'Комментарий'
+
+  const previewText =
+    'preview' in comment && typeof comment.preview === 'string'
+      ? comment.preview.trim()
+      : ''
+
+  if (previewText) {
+    if (previewText === '[медиа]') return 'Вложение'
+    return truncateText(previewText)
   }
 
-  const mediaCount = comment.media?.length ?? 0;
+  const fullComment = comment as {
+    content?: string
+    media?: TaskComment['media']
+  }
+  const content = fullComment.content ?? ''
+
+  if (hasCommentText(content)) {
+    return truncateText(content.trim())
+  }
+
+  const mediaCount = fullComment.media?.length ?? 0
 
   if (mediaCount > 0) {
-    return mediaCount === 1 ? 'Вложение' : `Вложения · ${mediaCount}`;
+    return mediaCount === 1 ? 'Вложение' : `Вложения · ${mediaCount}`
   }
 
-  return 'Комментарий';
-};
+  return 'Комментарий'
+}
 
 export const getDashboardTaskOptions = (tasks: Task[]) => {
   const seen = new Set<string>();

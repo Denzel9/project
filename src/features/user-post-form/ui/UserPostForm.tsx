@@ -13,10 +13,20 @@ import {
   uploadPostMediaBatch,
   useDeleteMediaMutation,
   type Post,
-  type Photo,
 } from '@/entities';
+import { Gallery } from '@/features/application-form/ui/Gallery';
+import {
+  useRequireEmailConfirmed,
+  getEmailConfirmErrorMessage,
+} from '@/features/auth';
 import { ROUTES, RHFInput } from '@/shared';
-import { useRequireEmailConfirmed, getEmailConfirmErrorMessage } from '@/features/auth';
+import {
+  hasPreparingMedia,
+  patchPhotoByLocalId,
+  prepareLocalMediaFile,
+  revokeLocalPhotoUrl,
+  type LocalMediaFile,
+} from '@/shared/lib/media';
 
 import { useActions } from '../hooks/useActions';
 import {
@@ -31,10 +41,12 @@ import {
   type FormProductType,
 } from '../model/schema/schema';
 
-import Gallery from './Gallery';
 import { MainInfo } from './MainInfo';
 
-const isLocalPreview = (photo: Photo) => photo.url.startsWith('blob:');
+import type { Photo } from '@/entities/photo';
+
+const isLocalPreview = (photo: Photo) =>
+  Boolean(photo.localId) || photo.url.startsWith('blob:');
 
 type UserPostFormProps = {
   data?: Post;
@@ -49,7 +61,7 @@ export const UserPostForm = ({
 }: UserPostFormProps) => {
   const navigate = useNavigate();
 
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<LocalMediaFile[]>([]);
   const [images, setImages] = useState<Photo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -76,14 +88,21 @@ export const UserPostForm = ({
   });
 
   const handleDeletePhoto = async (key: string) => {
-    const photo = images.find(image => image.key === key);
+    const photo = images.find(
+      image => image.key === key || image.localId === key,
+    );
     if (!photo) return;
 
     if (isLocalPreview(photo)) {
-      setImages(prev => prev.filter(image => image.key !== key));
+      revokeLocalPhotoUrl(photo);
+      setImages(prev =>
+        prev.filter(
+          image => image.key !== photo.key && image.localId !== photo.localId,
+        ),
+      );
 
-      if (photo.filename) {
-        setFiles(prev => prev.filter(file => file.name !== photo.filename));
+      if (photo.localId) {
+        setFiles(prev => prev.filter(file => file.localId !== photo.localId));
       }
 
       return;
@@ -99,11 +118,102 @@ export const UserPostForm = ({
     }
   };
 
+  const handleRetryLocal = async (localId: string) => {
+    const item = files.find(file => file.localId === localId);
+    if (!item) return;
+
+    setImages(prev =>
+      patchPhotoByLocalId(prev, localId, {
+        uploadStatus: 'preparing',
+        uploadError: undefined,
+      }),
+    );
+
+    try {
+      const prepared = await prepareLocalMediaFile(item);
+      const previewUrl = URL.createObjectURL(prepared.file);
+
+      setFiles(prev =>
+        prev.map(file => (file.localId === localId ? prepared : file)),
+      );
+      setImages(prev =>
+        prev.map(image => {
+          if (image.localId !== localId) return image;
+          revokeLocalPhotoUrl(image);
+          return {
+            ...image,
+            url: previewUrl,
+            mimeType: prepared.file.type,
+            size: String(prepared.file.size),
+            uploadStatus: 'ready',
+            uploadProgress: 0,
+            uploadError: undefined,
+          };
+        }),
+      );
+    } catch (error) {
+      setImages(prev =>
+        patchPhotoByLocalId(prev, localId, {
+          uploadStatus: 'error',
+          uploadError:
+            error instanceof Error
+              ? error.message
+              : 'Не удалось подготовить файл',
+        }),
+      );
+    }
+  };
+
   const uploadFiles = async (postId: string) => {
     if (!files.length) return;
+    if (hasPreparingMedia(images)) {
+      throw new Error('Дождитесь сжатия файлов');
+    }
 
-    await uploadPostMediaBatch(postId, files);
-    setFiles([]);
+    const succeeded = new Set<string>();
+
+    await uploadPostMediaBatch(postId, files, {
+      onFileStart: localId => {
+        setImages(prev =>
+          patchPhotoByLocalId(prev, localId, {
+            uploadStatus: 'uploading',
+            uploadProgress: 0,
+          }),
+        );
+      },
+      onFileProgress: (localId, progress) => {
+        setImages(prev =>
+          patchPhotoByLocalId(prev, localId, { uploadProgress: progress }),
+        );
+      },
+      onFileSuccess: localId => {
+        succeeded.add(localId);
+      },
+      onFileError: (localId, error) => {
+        setImages(prev =>
+          patchPhotoByLocalId(prev, localId, {
+            uploadStatus: 'error',
+            uploadError: error.message,
+          }),
+        );
+      },
+    });
+
+    setFiles(prev => prev.filter(file => !succeeded.has(file.localId)));
+    setImages(prev => {
+      prev.forEach(photo => {
+        if (photo.localId && succeeded.has(photo.localId)) {
+          revokeLocalPhotoUrl(photo);
+        }
+      });
+      return prev.filter(
+        photo => !photo.localId || !succeeded.has(photo.localId),
+      );
+    });
+
+    if (succeeded.size < files.length) {
+      throw new Error('Некоторые файлы не загрузились');
+    }
   };
 
   const onSubmit = async (formData: FormProductType) => {
@@ -129,7 +239,7 @@ export const UserPostForm = ({
       navigate(ROUTES.PROFILE);
     } catch (error) {
       setSubmitError(
-        getEmailConfirmErrorMessage(error, 'Не удалось сохранить пост')
+        getEmailConfirmErrorMessage(error, 'Не удалось сохранить пост'),
       );
     } finally {
       setIsSubmitting(false);
@@ -177,6 +287,7 @@ export const UserPostForm = ({
           setFiles={setFiles}
           setImages={setImages}
           setDeletedFiles={handleDeletePhoto}
+          onRetryPrepare={handleRetryLocal}
         />
 
         <RHFInput
@@ -187,8 +298,7 @@ export const UserPostForm = ({
             rows: 5,
             fullWidth: true,
             multiline: true,
-            label: 'Описание',
-            sx: { mt: 4, width: { xs: '100%', md: '50%' } },
+            placeholder: 'Описание',
           }}
         />
 
@@ -196,28 +306,17 @@ export const UserPostForm = ({
           <Box sx={{ color: 'error.main', mt: 2 }}>{submitError}</Box>
         )}
 
-        <Box
-          sx={{
-            mt: 8,
-            gap: 2,
-            display: 'flex',
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={handleGoToPreview}
-            sx={{ display: { xs: 'none', lg: 'block' } }}
-          >
-            Назад
+        <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+          <Button variant="outlined" onClick={handleGoToPreview}>
+            Предпросмотр
           </Button>
-
           <Button
             type="submit"
-            color="success"
-            variant="outlined"
-            disabled={isSubmitting}
+            variant="contained"
+            loading={isSubmitting}
+            disabled={hasPreparingMedia(images)}
           >
-            {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+            Сохранить
           </Button>
         </Box>
       </form>

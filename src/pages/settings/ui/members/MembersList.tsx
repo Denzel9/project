@@ -118,7 +118,7 @@ export const MembersList = ({ members, onDelete }: MembersListProps) => {
                 >
                   {
                     MemberRoleLabels[
-                      member?.membershipRole || MemberRole.VIEWER
+                      member?.membershipRole || MemberRole.ADMIN
                     ]
                   }
                 </Typography>

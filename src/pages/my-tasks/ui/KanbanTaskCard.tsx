@@ -1,5 +1,5 @@
 import { Whatshot } from '@mui/icons-material';
-import { Avatar, Box, Chip, Stack, Typography } from '@mui/material';
+import { Avatar, Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useRef } from 'react';
@@ -17,8 +17,8 @@ import {
   type User,
 } from '@/entities';
 import { getTaskConfig, useAuthStore } from '@/features';
-import { ROUTES } from '@/shared';
 
+import { getTaskPath } from '../model/utils/utils';
 import { TaskActionsMenu } from './TaskActionsMenu';
 
 export const KANBAN_TASK_DRAG_TYPE = 'KANBAN_TASK';
@@ -81,7 +81,8 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
   const handleClick = () => {
     if (isDragging) return;
 
-    navigate(`${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`);
+
+    navigate(getTaskPath(task));
   };
 
   return (
@@ -89,7 +90,8 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
       ref={ref}
       onClick={handleClick}
       sx={{
-        p: 1.75,
+        p: 2,
+        overflow: 'hidden',
         bgcolor: 'white',
         borderRadius: '14px',
         border: '1px solid',
@@ -118,20 +120,24 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
           spacing={1}
           sx={{ alignItems: 'center' }}
         >
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-              lineHeight: 1.35,
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              mb: task.title ? 0.25 : 0,
-            }}
-          >
-            {task.post?.title ?? 'Без названия'}
-          </Typography>
+
+
+          {task.title && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                fontWeight: 600,
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {task.title}
+            </Typography>
+          )}
+
           {task.urgent && (
             <Whatshot sx={{ fontSize: 18, color: 'error.main' }} />
           )}
@@ -154,20 +160,19 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
         spacing={0.25}
         sx={{ alignItems: 'center', justifyContent: 'space-between' }}
       >
-        {task.title && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              display: 'block',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {task.title}
-          </Typography>
-        )}
+        <Typography
+          variant="caption"
+          sx={{
+            lineHeight: 1.35,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            mb: task.title ? 0.25 : 0,
+          }}
+        >
+          {task.post?.title ?? 'Без названия'}
+        </Typography>
 
         <Typography
           variant="caption"
@@ -215,22 +220,25 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
             </Typography>
 
             <UserDisplayName
-              user={contact.user}
               variant="body2"
+              withBadges={false}
+              user={contact.user}
             />
           </Box>
         </Stack>
 
         {task.finalDate && (
-          <Chip
-            size="small"
-            label={format(new Date(task.finalDate), 'dd.MM.yy')}
-            color={overdue ? 'error' : 'default'}
-            variant={overdue ? 'filled' : 'outlined'}
-            sx={{
-              opacity: 0.75,
-            }}
-          />
+          <Tooltip title={overdue ? 'Дедлайн просрочен' : 'Дедлайн'}>
+            <Chip
+              size="small"
+              label={format(new Date(task.finalDate), 'dd.MM.yy')}
+              color={overdue ? 'error' : 'default'}
+              variant={overdue ? 'filled' : 'outlined'}
+              sx={{
+                opacity: 0.75,
+              }}
+            />
+          </Tooltip>
         )}
       </Stack>
     </Box>

@@ -6,7 +6,11 @@ import { useMemo, useState, type ComponentProps } from 'react';
 import { useNavigate } from 'react-router';
 
 import { USER_ROLE } from '@/entities';
-import { useAuthStore } from '@/features';
+import {
+  getDashboardPeriodRange,
+  useAuthStore,
+  useMyTaskFilterStore,
+} from '@/features';
 import { DEFAULT_CALENDAR_FILTERS } from '@/pages/calendar/model/constants';
 import { useCalendarTasks } from '@/pages/calendar/model/useCalendarTasks';
 import {
@@ -22,6 +26,13 @@ export const DashboardCalendarPanel = () => {
   const navigate = useNavigate();
   const { role } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
+  const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
+  const assigneeAccountId = useMyTaskFilterStore(
+    state => state.assigneeAccountId
+  );
+  const postId = useMyTaskFilterStore(state => state.postId);
+  const executorId = useMyTaskFilterStore(state => state.executorId);
+  const period = useMyTaskFilterStore(state => state.period);
 
   const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [visibleMonth, setVisibleMonth] = useState<Dayjs>(() => dayjs());
@@ -35,13 +46,33 @@ export const DashboardCalendarPanel = () => {
     };
   }, [visibleMonth]);
 
-  const { tasks, isLoading } = useCalendarTasks({
+  const periodRange = useMemo(() => getDashboardPeriodRange(period), [period]);
+
+  const { tasks: rawTasks, isLoading } = useCalendarTasks({
     ...monthRange,
     eventType: DEFAULT_CALENDAR_FILTERS.eventType,
     urgentOnly: DEFAULT_CALENDAR_FILTERS.urgentOnly,
     companyId: DEFAULT_CALENDAR_FILTERS.companyId,
     isCompany,
+    onlyMyTasks,
+    assigneeAccountId,
+    postId,
+    executorId,
   });
+
+  const tasks = useMemo(() => {
+    if (!periodRange.dateFrom || !periodRange.dateTo) return rawTasks;
+
+    return rawTasks.filter(task => {
+      if (!task.finalDate) return false;
+
+      const deadline = task.finalDate.slice(0, 10);
+
+      return (
+        deadline >= periodRange.dateFrom! && deadline <= periodRange.dateTo!
+      );
+    });
+  }, [periodRange.dateFrom, periodRange.dateTo, rawTasks]);
 
   const events = useMemo(() => {
     const calendarEvents = buildCalendarEvents(

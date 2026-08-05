@@ -113,7 +113,7 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
             <Chip
               size="small"
               icon={<EventIcon sx={{ fontSize: '16px !important' }} />}
-              label={getEventLabel(type)}
+              label={getEventLabel(type, event.dateKey)}
               color={isDeadline ? 'primary' : 'default'}
               variant={isDeadline ? 'filled' : 'outlined'}
               sx={{ height: 24, '& .MuiChip-label': { px: 0.75 } }}

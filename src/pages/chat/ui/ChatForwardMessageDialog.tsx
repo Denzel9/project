@@ -8,7 +8,6 @@ import {
   Dialog,
   IconButton,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
@@ -17,50 +16,47 @@ import {
   sortConversationsByUnread,
   type ChatConversation,
 } from '@/entities/chat';
+import { ChatContactSearch } from '@/features/chat';
 
 type ChatForwardMessageDialogProps = {
   open: boolean;
   onClose: () => void;
   conversations: ChatConversation[];
   currentConversationId: string | null;
+  currentPeerId?: string | null;
   messagePreview?: string | null;
   isForwarding?: boolean;
   error?: string | null;
-  onForward: (targetConversationId: string) => Promise<boolean>;
+  onForward: (peerId: string) => Promise<boolean>;
 };
-// TODO: add redirect media files
+
 export const ChatForwardMessageDialog = ({
   open,
   onClose,
   conversations,
   currentConversationId,
+  currentPeerId = null,
   messagePreview = null,
   isForwarding = false,
   error = null,
   onForward,
 }: ChatForwardMessageDialogProps) => {
-  const [search, setSearch] = useState('');
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
+  const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
 
-  const availableConversations = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const availableConversations = useMemo(
+    () =>
+      sortConversationsByUnread(
+        conversations.filter(
+          conversation => conversation.id !== currentConversationId
+        )
+      ),
+    [conversations, currentConversationId]
+  );
 
-    return sortConversationsByUnread(
-      conversations.filter(conversation => {
-        if (conversation.id === currentConversationId) {
-          return false;
-        }
-
-        if (!query) {
-          return true;
-        }
-
-        return conversation.peer.displayName.toLowerCase().includes(query);
-      })
-    );
-  }, [conversations, currentConversationId, search]);
+  const excludeUserIds = useMemo(
+    () => (currentPeerId ? [currentPeerId] : []),
+    [currentPeerId]
+  );
 
   const previewText = messagePreview?.trim() ?? '';
 
@@ -69,21 +65,19 @@ export const ChatForwardMessageDialog = ({
       return;
     }
 
-    setSearch('');
-    setSelectedConversationId(null);
+    setSelectedPeerId(null);
     onClose();
   };
 
   const handleForward = async () => {
-    if (!selectedConversationId || isForwarding) {
+    if (!selectedPeerId || isForwarding) {
       return;
     }
 
-    const success = await onForward(selectedConversationId);
+    const success = await onForward(selectedPeerId);
 
     if (success) {
-      setSearch('');
-      setSelectedConversationId(null);
+      setSelectedPeerId(null);
       onClose();
     }
   };
@@ -134,14 +128,15 @@ export const ChatForwardMessageDialog = ({
         </Typography>
       )}
 
-      <TextField
-        label="Поиск чата"
-        fullWidth
-        value={search}
-        disabled={isForwarding}
-        onChange={event => setSearch(event.target.value)}
-        sx={{ mb: 2 }}
-      />
+      <Box sx={{ mb: 2 }}>
+        <ChatContactSearch
+          disabled={isForwarding}
+          excludeUserIds={excludeUserIds}
+          onSelect={user => {
+            setSelectedPeerId(user.id);
+          }}
+        />
+      </Box>
 
       <Box
         sx={{
@@ -164,7 +159,7 @@ export const ChatForwardMessageDialog = ({
         )}
 
         {availableConversations.map(conversation => {
-          const isSelected = selectedConversationId === conversation.id;
+          const isSelected = selectedPeerId === conversation.peer.id;
 
           return (
             <Stack
@@ -173,7 +168,7 @@ export const ChatForwardMessageDialog = ({
               spacing={1.5}
               onClick={() => {
                 if (!isForwarding) {
-                  setSelectedConversationId(conversation.id);
+                  setSelectedPeerId(conversation.peer.id);
                 }
               }}
               sx={{
@@ -235,7 +230,7 @@ export const ChatForwardMessageDialog = ({
         </Button>
         <Button
           variant="contained"
-          disabled={!selectedConversationId || isForwarding}
+          disabled={!selectedPeerId || isForwarding}
           onClick={() => void handleForward()}
           startIcon={
             isForwarding ? (

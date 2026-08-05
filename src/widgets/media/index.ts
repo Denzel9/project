@@ -1,7 +1,7 @@
-export { getMediaKind, isGalleryMedia, getFileNameFromKey } from './lib/getMediaKind';
-export { MediaItem } from './ui/MediaItem';
-export { Media } from './ui/Media';
-export type { MediaItemType } from './model/types';
-export { FullScreenGallery } from './ui/FullScreenGallery';
-export { FullScreenImageViewer } from './ui/FullScreenImageViewer';
-export { MediaPreview } from './ui/MediaPreview';
+export { getMediaKind, isGalleryMedia, getFileNameFromKey } from './lib/getMediaKind'
+export { MediaItem, type MediaObjectFit } from './ui/MediaItem'
+export { Media } from './ui/Media'
+export type { MediaItemType } from './model/types'
+export { FullScreenGallery } from './ui/FullScreenGallery'
+export { FullScreenImageViewer } from './ui/FullScreenImageViewer'
+export { MediaPreview } from './ui/MediaPreview'

@@ -5,6 +5,8 @@ import { lazy, Suspense, useRef } from 'react';
 import { useScrollToTop } from '@/shared';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
+import { ManagerShellRedirect } from './ManagerShellRedirect';
+
 import type { ReactNode } from 'react';
 
 const AuthModal = lazy(() =>
@@ -33,10 +35,11 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
     <Box
       sx={{
         display: 'flex',
-        gap: { xs: 0, md: 1 },
+        gap: { xs: 0, md: .5 },
         bgcolor: 'rgb(244, 244, 244)',
       }}
     >
+      <ManagerShellRedirect />
       <Box data-print-hide>
         <SideBar />
       </Box>

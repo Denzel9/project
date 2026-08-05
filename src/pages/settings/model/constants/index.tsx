@@ -6,6 +6,8 @@ import {
   SecurityOutlined,
   DashboardOutlined,
   PaymentOutlined,
+  AppsOutlined,
+  BadgeOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
@@ -22,9 +24,19 @@ export const SETTINGS_MENU_SECTIONS: SettingsMenuSection[] = [
         icon: <PersonOutlined fontSize="small" />,
       },
       {
+        label: 'Профили',
+        path: ROUTES.SETTINGS_PROFILES,
+        icon: <BadgeOutlined fontSize="small" />,
+      },
+      {
         label: 'Уведомления',
         path: ROUTES.SETTINGS_NOTIFICATION,
         icon: <NotificationsNoneOutlined fontSize="small" />,
+      },
+      {
+        label: 'Приложения',
+        path: ROUTES.SETTINGS_APPS,
+        icon: <AppsOutlined fontSize="small" />,
       },
       {
         label: 'Безопасность',

@@ -11,6 +11,7 @@ export const CALENDAR_CARD_SX: SxProps<Theme> = {
   borderRadius: '32px',
   border: '1px solid',
   borderColor: 'divider',
+  overflow: 'hidden',
 }
 
 export const DATE_CALENDAR_SX: SxProps<Theme> = {

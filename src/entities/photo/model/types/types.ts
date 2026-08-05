@@ -9,10 +9,22 @@ export type PhotoUploadParams = {
 
 export type PhotoUploadResponse = UploadMediaResponse
 
+export type MediaUploadStatus =
+  | 'preparing'
+  | 'ready'
+  | 'uploading'
+  | 'error'
+
 export type Photo = Omit<PostMedia, 'id'> & {
   id?: string
   filename?: string
   lastModified?: string
+  /** Stable client id for pending uploads (not server key). */
+  localId?: string
+  uploadStatus?: MediaUploadStatus
+  /** 0–100 while uploading */
+  uploadProgress?: number
+  uploadError?: string
 }
 
 export type GetPhotoUploadResponse = {

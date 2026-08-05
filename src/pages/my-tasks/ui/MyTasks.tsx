@@ -21,13 +21,15 @@ import {
   useMyTaskFilterStore,
   toMyTasksQueryParams,
   MyTaskFilter,
+  AddTaskDialog,
 } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
-import { TASK_TABLE_PAGE_SIZE } from '../model/constants';
-import { exportTasksReport } from '../model/exportTasksReport';
-import { fetchTasksForReport } from '../model/fetchTasksForReport';
+import { TASK_TABLE_PAGE_SIZE } from '../model/constants/constants';
+import { exportTasksReport } from '../model/utils/exportTasksReport';
+import { fetchTasksForReport } from '../model/utils/fetchTasksForReport';
+import { useTaskTableColumnFilters } from '../model/utils/useTaskTableColumnFilters';
 
 import { KanbanBoard, type KanbanBoardHandle } from './KanbanBoard';
 import { TaskItem } from './TaskItem';
@@ -35,7 +37,7 @@ import { TasksLoadMoreButton } from './TasksLoadMoreButton';
 import { TasksPrintHeader } from './TasksPrintHeader';
 import { TaskTable } from './TaskTable';
 
-import type { MyTasksLocationState } from '../model/navigation';
+import type { MyTasksLocationState } from '../model/types/navigation';
 
 type InitialPost = {
   id?: string;
@@ -45,15 +47,13 @@ type InitialPost = {
 export const MyTasks = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const applyDefaultFastFilter = useMyTaskFilterStore(
-    state => state.applyDefaultFastFilter,
-  );
   const pendingDashboardNavRef = useRef(false);
   const pendingKanbanScrollRef = useRef<TaskStatus | null>(null);
   const kanbanBoardRef = useRef<KanbanBoardHandle>(null);
   const [initialPosts, setInitialPosts] = useState<InitialPost[]>([]);
   const [isOpenPrimeRecommendation, setIsOpenPrimeRecommendation] =
     useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [reportTasks, setReportTasks] = useState<Task[] | null>(null);
@@ -70,8 +70,13 @@ export const MyTasks = () => {
     viewMode,
     updatedDate,
     extraFilter,
+    onlyMyTasks,
+    assigneeAccountId,
     setViewMode,
     setExecutorId,
+    setStatus,
+    setUpdatedDate,
+    setExtraFilter,
     setFastButtonValue,
     fastButtonValue,
     toggleKanbanColumn,
@@ -114,6 +119,29 @@ export const MyTasks = () => {
     return value;
   }, [location.search]);
 
+  const handleUrgentOnlyChange = useCallback(
+    (value: boolean) => setExtraFilter(value ? 'urgent' : null),
+    [setExtraFilter],
+  );
+
+  const {
+    columnFilters,
+    taskId: taskIdFilter,
+    deadlineDate: deadlineDateFilter,
+  } = useTaskTableColumnFilters({
+    isCompany,
+    status: { value: status, onChange: setStatus },
+    personId: {
+      value: executorIdFromUrl ?? executorId,
+      onChange: setExecutorId,
+    },
+    urgentOnly: {
+      value: extraFilter === 'urgent',
+      onChange: handleUrgentOnlyChange,
+    },
+    updatedDate: { value: updatedDate, onChange: setUpdatedDate },
+  });
+
   useEffect(() => {
     if (executorIdFromUrl) {
       setExecutorId(executorIdFromUrl);
@@ -124,11 +152,11 @@ export const MyTasks = () => {
     }
 
     const state = location.state as MyTasksLocationState | null;
-    const skipDefaultFastFilter = Boolean(
+    const fromDashboard = Boolean(
       state?.fromDashboard || state?.skipDefaultFastFilter,
     );
 
-    if (skipDefaultFastFilter) {
+    if (fromDashboard) {
       pendingDashboardNavRef.current = true;
 
       if (state?.scrollToKanbanColumn) {
@@ -141,12 +169,8 @@ export const MyTasks = () => {
 
     if (pendingDashboardNavRef.current) {
       pendingDashboardNavRef.current = false;
-      return;
     }
-
-    applyDefaultFastFilter();
   }, [
-    applyDefaultFastFilter,
     executorIdFromUrl,
     location.key,
     location.pathname,
@@ -164,9 +188,13 @@ export const MyTasks = () => {
       viewMode,
       updatedDate,
       extraFilter,
+      onlyMyTasks,
+      assigneeAccountId,
       fastButtonValue: executorIdFromUrl ? null : fastButtonValue,
       isCompany,
       q: searchQ,
+      taskId: taskIdFilter,
+      deadlineDate: deadlineDateFilter,
     }),
     [
       postId,
@@ -176,9 +204,13 @@ export const MyTasks = () => {
       viewMode,
       updatedDate,
       extraFilter,
+      onlyMyTasks,
+      assigneeAccountId,
       fastButtonValue,
       isCompany,
       searchQ,
+      taskIdFilter,
+      deadlineDateFilter,
     ],
   );
 
@@ -203,6 +235,8 @@ export const MyTasks = () => {
         extraFilter ?? '',
         updatedDate ?? '',
         searchQ ?? '',
+        taskIdFilter,
+        deadlineDateFilter ?? '',
       ].join('|'),
     [
       viewMode,
@@ -213,6 +247,8 @@ export const MyTasks = () => {
       extraFilter,
       updatedDate,
       searchQ,
+      taskIdFilter,
+      deadlineDateFilter,
     ],
   );
 
@@ -333,8 +369,12 @@ export const MyTasks = () => {
       updatedDate,
       fastButtonValue,
       extraFilter,
+      onlyMyTasks,
+      assigneeAccountId,
       isCompany,
       q: searchQ,
+      taskId: taskIdFilter,
+      deadlineDate: deadlineDateFilter,
     }),
     [
       postId,
@@ -344,8 +384,12 @@ export const MyTasks = () => {
       updatedDate,
       fastButtonValue,
       extraFilter,
+      onlyMyTasks,
+      assigneeAccountId,
       isCompany,
       searchQ,
+      taskIdFilter,
+      deadlineDateFilter,
     ],
   );
 
@@ -484,6 +528,11 @@ export const MyTasks = () => {
               description={
                 searchQ ? 'Попробуйте изменить запрос' : undefined
               }
+              {...(!searchQ &&
+                isCompany && {
+                buttonText: 'Добавить задачу',
+                buttonOnClick: () => setIsAddTaskOpen(true),
+              })}
             />
           </Box>
         )}
@@ -511,9 +560,9 @@ export const MyTasks = () => {
                 flex: 1,
                 ...(isFullHeightView
                   ? {
-                      flex: 1,
-                      minHeight: 0,
-                    }
+                    flex: 1,
+                    minHeight: 0,
+                  }
                   : {}),
               }}
             >
@@ -586,6 +635,7 @@ export const MyTasks = () => {
                         serverPagination
                         onPageChange={handleTablePageChange}
                         isCompany={isCompany}
+                        columnFilters={columnFilters}
                       />
                     </Box>
                   )}
@@ -660,6 +710,13 @@ export const MyTasks = () => {
             </Button>
           </Stack>
         </ConfirmDialog>
+
+        {isCompany && (
+          <AddTaskDialog
+            open={isAddTaskOpen}
+            onClose={() => setIsAddTaskOpen(false)}
+          />
+        )}
       </Box>
     </PageLayout>
   );

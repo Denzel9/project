@@ -8,11 +8,15 @@ export * from './hooks/useScrolltoTop';
 export * from './ui/markdown';
 export * from './ui/rhf'
 export * from './ui/location-autocomplete/LocationAutocomplete';
+export * from './ui/filter-autocomplete/FilterAutocomplete';
+
 export * from './api';
 export * from './lib/share/shareTargets';
 export * from './lib/maps/openYandexMaps';
+export * from './lib/formatActionActorLabel';
 export * from './hooks/useScroll';
 export * from './hooks/useInfiniteScroll';
 export * from './ui/date-picker/DateCalendarFilter';
 export * from './ui/date-picker/DatePicker';
 export * from './ui/messenger';
+export * from './ui/action-actor-caption/ActionActorCaption';

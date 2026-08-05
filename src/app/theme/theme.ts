@@ -30,6 +30,21 @@ export const theme = createTheme({
             primary: 'rgb(0, 0, 0)',
         },
     },
+    typography: {
+        fontFamily: '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif',
+        h1: { fontWeight: 700, letterSpacing: '-0.03em' },
+        h2: { fontWeight: 700, letterSpacing: '-0.025em' },
+        h3: { fontWeight: 700, letterSpacing: '-0.02em' },
+        h4: { fontWeight: 700, letterSpacing: '-0.02em' },
+        h5: { fontWeight: 700, letterSpacing: '-0.015em' },
+        h6: { fontWeight: 700, letterSpacing: '-0.01em' },
+        subtitle1: { fontWeight: 600 },
+        subtitle2: { fontWeight: 600 },
+        button: { fontWeight: 600, letterSpacing: '-0.01em' },
+        body1: { fontWeight: 500, letterSpacing: '-0.01em' },
+        body2: { fontWeight: 500, letterSpacing: '-0.005em' },
+        caption: { fontWeight: 500 },
+    },
     components: {
         MuiTextField: {
             styleOverrides: {
@@ -87,6 +102,29 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     textTransform: 'none',
+                },
+            },
+        },
+
+        MuiTooltip: {
+            styleOverrides: {
+                tooltip: {
+                    backgroundColor: '#fff',
+                    color: 'rgba(0, 0, 0, 0.87)',
+                    padding: '10px 14px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    borderRadius: '12px',
+                    border: `1px solid ${SECONDARY_COLOR}`,
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+                },
+                arrow: {
+                    color: '#fff',
+                    '&::before': {
+                        border: `1px solid ${SECONDARY_COLOR}`,
+                        backgroundColor: '#fff',
+                        boxSizing: 'border-box',
+                    },
                 },
             },
         },

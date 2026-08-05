@@ -1,14 +1,14 @@
-import { MoreVert } from '@mui/icons-material';
 import {
+  Avatar,
   Box,
   Button,
+  Chip,
   CircularProgress,
-  IconButton,
-  Menu,
-  MenuItem,
   Stack,
   Typography,
 } from '@mui/material';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -21,6 +21,10 @@ import {
   isTaskOwner,
   useTaskActivitiesQuery,
   useUpdateTaskMutation,
+  useConfirmTaskAnnulmentMutation,
+  useRejectTaskAnnulmentMutation,
+  useConfirmTaskDeadlineExtensionMutation,
+  useRejectTaskDeadlineExtensionMutation,
   type TaskStatus,
   type UpdateTaskDto,
   TASK_STATUS_ENUM,
@@ -39,14 +43,15 @@ import {
   type TaskFormType,
 } from '@/features';
 import { sendTaskTzToChat } from '@/features/chat';
-import { scrollMainToTop } from '@/shared';
-import { ConfirmDialog, useSnackbarStore, ContactCard } from '@/widgets';
+import { getActionActorParts, scrollMainToTop } from '@/shared';
+import { useSnackbarStore, ContactCard } from '@/widgets';
 
 import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
 
-import { Activity } from './Activity';
+import { Activity } from './activity/Activity';
+import { TaskComments } from './comment/TaskComments';
+import { SendTzPreviewDialog } from './SendTzPreviewDialog';
 import { TaskAlertBanner } from './TaskAlertBanner';
-import { TaskComments } from './TaskComments';
 import { TaskResultDropzone } from './TaskResultDropzone';
 import { TaskStatusStepper } from './TaskStatusStepper';
 
@@ -58,10 +63,7 @@ const finalStatuses = [
   TASK_STATUS_ENUM.COMPLETED,
 ];
 
-const CANCELLED_STATUSES = [
-  TASK_STATUS_ENUM.CANCELLED,
-  TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
-] as const;
+const CANCELLED_STATUSES = [TASK_STATUS_ENUM.ANNULLED] as const;
 
 type TaskItemProps = {
   task: Task;
@@ -77,17 +79,29 @@ export const TaskItem = ({
   isPostLoading = false,
 }: TaskItemProps) => {
   const currentUserId = useAuthStore(state => state.id);
+  const accountId = useAuthStore(state => state.accountId);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
   const { mutateAsync: updateTask, isPending: isUpdating } =
     useUpdateTaskMutation();
+  const { mutateAsync: confirmAnnulment, isPending: isConfirmingAnnulment } =
+    useConfirmTaskAnnulmentMutation();
+  const { mutateAsync: rejectAnnulment, isPending: isRejectingAnnulment } =
+    useRejectTaskAnnulmentMutation();
+  const {
+    mutateAsync: confirmDeadlineExtension,
+    isPending: isConfirmingDeadlineExtension,
+  } = useConfirmTaskDeadlineExtensionMutation();
+  const {
+    mutateAsync: rejectDeadlineExtension,
+    isPending: isRejectingDeadlineExtension,
+  } = useRejectTaskDeadlineExtensionMutation();
 
   const [isEdit, setIsEdit] = useState(false);
   const [status, setStatus] = useState<TaskStatus>('PREPARING');
-  const [isOpenCancelDialog, setIsOpenCancelDialog] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isSendingTz, setIsSendingTz] = useState(false);
+  const [isSendTzPreviewOpen, setIsSendTzPreviewOpen] = useState(false);
   const [hiddenCancelForTaskId, setHiddenCancelForTaskId] = useState<
     string | null
   >(null);
@@ -114,12 +128,13 @@ export const TaskItem = ({
 
   const canChangeStatus = task
     ? canEditTaskStatus(task, currentUserId) &&
-      status !== TASK_STATUS_ENUM.COMPLETED
+    status !== TASK_STATUS_ENUM.COMPLETED
     : false;
 
   const canEditMedia = task
     ? isTaskOwner(task, currentUserId) &&
-      !finalStatuses.includes(status as TASK_STATUS_ENUM)
+    !finalStatuses.includes(status as TASK_STATUS_ENUM) &&
+    status !== TASK_STATUS_ENUM.ANNULLED
     : false;
 
   const canEditReportMedia = isTaskExecutor(task, currentUserId);
@@ -132,6 +147,7 @@ export const TaskItem = ({
     handleSaveMedia,
     handleRemoveImage,
     handleCancel: handleCancelMedia,
+    handleRetryLocal,
     isPending: isMediaSaving,
   } = useTaskMediaSave({ task, canEditMedia, kind: 'main' });
 
@@ -143,6 +159,7 @@ export const TaskItem = ({
     handleSaveMedia: handleSaveReportMedia,
     handleRemoveImage: handleRemoveReportImage,
     handleCancel: handleCancelReportMedia,
+    handleRetryLocal: handleRetryReportLocal,
     isPending: isReportMediaSaving,
   } = useTaskMediaSave({
     task,
@@ -166,6 +183,27 @@ export const TaskItem = ({
   const { data: contact } = useGetUserByIdQuery(
     (isOwner ? task?.executorId : task?.ownerId) || ''
   );
+
+  const assignee = getActionActorParts({
+    actorDisplayName: task?.assigneeDisplayName,
+    actorKind: task?.assigneeKind,
+  });
+
+  const visibleAssignee =
+    assignee &&
+      task?.assigneeAccountId &&
+      task.assigneeAccountId !== accountId
+      ? assignee
+      : null;
+
+  const assigneeInitials = visibleAssignee?.name
+    ? visibleAssignee.name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part.charAt(0).toUpperCase())
+      .join('')
+    : '?';
 
   useEffect(() => {
     if (!task) return;
@@ -234,17 +272,6 @@ export const TaskItem = ({
     return handleUpdateTask(body);
   };
 
-  const handleCancelTask = async () => {
-    if (!task) return;
-
-    await handleUpdateTask({
-      status: TASK_STATUS_ENUM.CANCELLED,
-    });
-
-    setAnchorEl(null);
-    setIsOpenCancelDialog(false);
-  };
-
   const handleCancel = () => {
     handleCancelMedia();
   };
@@ -264,6 +291,7 @@ export const TaskItem = ({
         conversations,
         createConversation: body => createConversation(body),
       });
+      setIsSendTzPreviewOpen(false);
       setSnackbarOpen?.(true, 'ТЗ отправлено исполнителю');
     } catch {
       setSnackbarOpen?.(
@@ -283,11 +311,65 @@ export const TaskItem = ({
   const isOverdue = isTaskOverdue(task);
   const isCancelBannerHidden = hiddenCancelForTaskId === task.id;
   const isOverdueBannerHidden = hiddenOverdueForTaskId === task.id;
-  const isEnabledCancel = [
-    TASK_STATUS_ENUM.PREPARING,
-    TASK_STATUS_ENUM.PENDING_APPROVAL,
-    TASK_STATUS_ENUM.REVISION,
-  ].includes(status as TASK_STATUS_ENUM);
+  const pendingAnnulment =
+    task.annulment?.status === 'PENDING' ? task.annulment : null;
+  const canRespondToAnnulment =
+    Boolean(pendingAnnulment) &&
+    pendingAnnulment?.requestedById !== currentUserId &&
+    (task.ownerId === currentUserId || task.executorId === currentUserId);
+
+  const pendingDeadlineExtension =
+    task.deadlineExtension?.status === 'PENDING'
+      ? task.deadlineExtension
+      : null;
+  const canRespondToDeadlineExtension =
+    Boolean(pendingDeadlineExtension) &&
+    pendingDeadlineExtension?.requestedById !== currentUserId &&
+    (task.ownerId === currentUserId || task.executorId === currentUserId);
+
+  const handleConfirmAnnulment = async () => {
+    try {
+      await confirmAnnulment(task.id);
+      setSnackbarOpen?.(true, 'Задача аннулирована');
+    } catch {
+      setSnackbarOpen?.(
+        true,
+        'Не удалось подтвердить аннулирование',
+        'error'
+      );
+    }
+  };
+
+  const handleRejectAnnulment = async () => {
+    try {
+      await rejectAnnulment(task.id);
+      setSnackbarOpen?.(true, 'Запрос на аннулирование отклонён');
+    } catch {
+      setSnackbarOpen?.(true, 'Не удалось отклонить запрос', 'error');
+    }
+  };
+
+  const handleConfirmDeadlineExtension = async () => {
+    try {
+      await confirmDeadlineExtension(task.id);
+      setSnackbarOpen?.(true, 'Дедлайн перенесён');
+    } catch {
+      setSnackbarOpen?.(
+        true,
+        'Не удалось подтвердить перенос дедлайна',
+        'error'
+      );
+    }
+  };
+
+  const handleRejectDeadlineExtension = async () => {
+    try {
+      await rejectDeadlineExtension(task.id);
+      setSnackbarOpen?.(true, 'Запрос на перенос дедлайна отклонён');
+    } catch {
+      setSnackbarOpen?.(true, 'Не удалось отклонить запрос', 'error');
+    }
+  };
 
   return (
     <Box>
@@ -307,19 +389,135 @@ export const TaskItem = ({
         </Typography>
       )}
 
-      {status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR &&
-        !isCancelBannerHidden && (
-          <TaskAlertBanner
-            message="Задача отменена исполнителем"
-            onClose={() => setHiddenCancelForTaskId(task.id)}
-          />
-        )}
-
-      {status === TASK_STATUS_ENUM.CANCELLED && !isCancelBannerHidden && (
+      {status === TASK_STATUS_ENUM.ANNULLED && !isCancelBannerHidden && (
         <TaskAlertBanner
-          message="Задача отменена заказчиком"
+          message="Задача аннулирована"
           onClose={() => setHiddenCancelForTaskId(task.id)}
         />
+      )}
+
+      {pendingAnnulment && (
+        <Box
+          sx={{
+            mb: 2,
+            bgcolor: 'info.light',
+            p: { xs: 2, md: 3 },
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 500 }}
+          >
+            {canRespondToAnnulment
+              ? 'Запрошено аннулирование задачи'
+              : 'Ожидается подтверждение аннулирования'}
+          </Typography>
+          {pendingAnnulment.reason && (
+            <Typography
+              variant="body2"
+              sx={{ mt: 1 }}
+            >
+              Причина: {pendingAnnulment.reason}
+            </Typography>
+          )}
+          {canRespondToAnnulment && (
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mt: 2 }}
+            >
+              <Button
+                variant="outlined"
+                disabled={isRejectingAnnulment || isConfirmingAnnulment}
+                onClick={() => void handleRejectAnnulment()}
+              >
+                Отклонить
+              </Button>
+              <Button
+                variant="contained"
+                loading={isConfirmingAnnulment}
+                disabled={isRejectingAnnulment || isConfirmingAnnulment}
+                onClick={() => void handleConfirmAnnulment()}
+              >
+                Подтвердить
+              </Button>
+            </Stack>
+          )}
+        </Box>
+      )}
+
+      {pendingDeadlineExtension && (
+        <Box
+          sx={{
+            mb: 2,
+            bgcolor: 'info.light',
+            p: { xs: 2, md: 3 },
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 500, }}
+          >
+            {canRespondToDeadlineExtension
+              ? 'Запрошен перенос дедлайна'
+              : 'Ожидается подтверждение переноса дедлайна'}
+          </Typography>
+          {pendingDeadlineExtension.proposedFinalDate && (
+            <Typography
+              variant="body2"
+              sx={{ mt: 1, }}
+            >
+              Новая дата:{' '}
+              {format(
+                new Date(pendingDeadlineExtension.proposedFinalDate),
+                'dd.MM.yyyy',
+                { locale: ru }
+              )}
+            </Typography>
+          )}
+          {pendingDeadlineExtension.reason && (
+            <Typography
+              variant="body2"
+              sx={{ mt: 1, }}
+            >
+              Причина: {pendingDeadlineExtension.reason}
+            </Typography>
+          )}
+          {canRespondToDeadlineExtension && (
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mt: 2 }}
+            >
+              <Button
+                variant="outlined"
+                disabled={
+                  isRejectingDeadlineExtension || isConfirmingDeadlineExtension
+                }
+                onClick={() => void handleRejectDeadlineExtension()}
+              >
+                Отклонить
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                loading={isConfirmingDeadlineExtension}
+                disabled={
+                  isRejectingDeadlineExtension || isConfirmingDeadlineExtension
+                }
+                onClick={() => void handleConfirmDeadlineExtension()}
+              >
+                Подтвердить
+              </Button>
+            </Stack>
+          )}
+        </Box>
       )}
 
       {isOverdue && !isOverdueBannerHidden && (
@@ -332,14 +530,14 @@ export const TaskItem = ({
       {!isCancelled && <TaskStatusStepper status={status} />}
 
       {task && (
-        <Stack spacing={2}>
+        <Stack spacing={1}>
           <Stack
-            spacing={2}
-            direction={{ xs: 'column', lg: 'row' }}
+            spacing={1}
             sx={{ alignItems: 'flex-start' }}
+            direction={{ xs: 'column', lg: 'row' }}
           >
             <Stack
-              spacing={2}
+              spacing={1}
               sx={{ flex: 1, minWidth: 0, width: '100%' }}
             >
               {Boolean(
@@ -347,28 +545,29 @@ export const TaskItem = ({
                 reportImages.length ||
                 status === TASK_STATUS_ENUM.IN_PROGRESS
               ) && (
-                <TaskResultDropzone
-                  status={status}
-                  postId={task.postId ?? task.post?.id ?? post?.id}
-                  postTitle={post?.title ?? task.post?.title}
-                  files={reportFiles}
-                  images={reportImages}
-                  setFiles={setReportFiles}
-                  setImages={setReportImages}
-                  isSaving={isReportMediaSaving}
-                  canUpload={canEditReportMedia}
-                  onSave={handleSaveReportMedia}
-                  onCancel={handleCancelReportMedia}
-                  onRemoveUploaded={handleRemoveReportImage}
-                />
-              )}
+                  <TaskResultDropzone
+                    status={status}
+                    postId={task.postId ?? task.post?.id ?? post?.id}
+                    postTitle={post?.title ?? task.post?.title}
+                    files={reportFiles}
+                    images={reportImages}
+                    setFiles={setReportFiles}
+                    setImages={setReportImages}
+                    isSaving={isReportMediaSaving}
+                    canUpload={canEditReportMedia}
+                    onSave={handleSaveReportMedia}
+                    onCancel={handleCancelReportMedia}
+                    onRemoveUploaded={handleRemoveReportImage}
+                    onRetryLocal={handleRetryReportLocal}
+                  />
+                )}
 
               <Box
                 sx={{
                   bgcolor: 'white',
-                  p: { xs: 2.5, md: 3 },
-                  borderRadius: '32px',
                   border: '1px solid',
+                  borderRadius: '32px',
+                  p: { xs: 2.5, md: 3 },
                   borderColor: 'divider',
                 }}
               >
@@ -389,102 +588,63 @@ export const TaskItem = ({
 
                   {!isCancelled &&
                     status !== TASK_STATUS_ENUM.COMPLETED &&
-                    isOwner && (
-                      <Stack
-                        direction="row"
-                        spacing={1}
+                    isOwner &&
+                    Boolean(task.executorId) && (
+                      <Button
+                        color="primary"
+                        sx={{ px: 2 }}
+                        disabled={isEdit}
+                        onClick={() => setIsSendTzPreviewOpen(true)}
                       >
-                        {Boolean(task.executorId) && (
-                          <Button
-                            color="primary"
-                            sx={{ px: 2 }}
-                            disabled={isSendingTz}
-                            onClick={() => void handleSendTzToExecutor()}
-                            startIcon={
-                              isSendingTz ? (
-                                <CircularProgress
-                                  size={16}
-                                  color="inherit"
-                                />
-                              ) : undefined
-                            }
-                          >
-                            Отправить исполнителю
-                          </Button>
-                        )}
-                        <Box>
-                          <IconButton
-                            onClick={event =>
-                              setAnchorEl(anchorEl ? null : event.currentTarget)
-                            }
-                          >
-                            <MoreVert />
-                          </IconButton>
-                        </Box>
-
-                        <Menu
-                          anchorEl={anchorEl}
-                          open={Boolean(anchorEl)}
-                          onClose={() => {
-                            setAnchorEl(null);
-                            setIsOpenCancelDialog(false);
-                          }}
-                        >
-                          {isEnabledCancel && (
-                            <MenuItem
-                              onClick={() => setIsOpenCancelDialog(true)}
-                            >
-                              <Typography color="error">
-                                Отменить задачу
-                              </Typography>
-                            </MenuItem>
-                          )}
-                        </Menu>
-                      </Stack>
+                        Отправить исполнителю
+                      </Button>
                     )}
                 </Stack>
 
-                {(canEditMedia || images.length > 0 || files.length > 0) &&
-                  !isCancelled && (
-                    <Box sx={{ mb: 3 }}>
-                      <Gallery
-                        files={files}
-                        images={images}
-                        setFiles={setFiles}
-                        setImages={setImages}
-                        canUpload={canEditMedia}
-                        setDeletedFiles={handleRemoveImage}
-                        canDeleteImage={() => canEditMedia}
-                      />
+                {(Boolean(canEditMedia || images.length || files.length)) && (
+                  <Box sx={{ mb: 3 }}>
+                    {Boolean(images.length || files.length || isEdit) && <Gallery
+                      files={files}
+                      images={images}
+                      setFiles={setFiles}
+                      setImages={setImages}
+                      canUpload={canEditMedia && isEdit}
+                      setDeletedFiles={handleRemoveImage}
+                      canDeleteImage={() => canEditMedia && isEdit}
+                      onRetryPrepare={handleRetryLocal}
+                    />}
 
-                      {Boolean(files.length) && (
-                        <Stack
-                          spacing={2}
-                          direction="row"
-                          sx={{ mt: 2 }}
+                    {Boolean(files.length) && isEdit && (
+                      <Stack
+                        spacing={2}
+                        direction="row"
+                        sx={{ mt: 2 }}
+                      >
+                        <Button
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          onClick={handleCancel}
+                          disabled={isMediaSaving}
                         >
-                          <Button
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                            onClick={handleCancel}
-                            disabled={isMediaSaving}
-                          >
-                            Отменить
-                          </Button>
+                          Отменить
+                        </Button>
 
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            loading={isMediaSaving}
-                            onClick={handleSaveMedia}
-                          >
-                            Сохранить
-                          </Button>
-                        </Stack>
-                      )}
-                    </Box>
-                  )}
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          loading={isMediaSaving}
+                          disabled={images.some(
+                            image => image.uploadStatus === 'preparing',
+                          )}
+                          onClick={handleSaveMedia}
+                        >
+                          Сохранить
+                        </Button>
+                      </Stack>
+                    )}
+                  </Box>
+                )}
 
                 {isPostLoading && !post ? (
                   <Box
@@ -512,7 +672,7 @@ export const TaskItem = ({
             </Stack>
 
             <Stack
-              spacing={2}
+              spacing={1}
               sx={{
                 width: { xs: '100%', lg: '30%' },
                 flexShrink: 0,
@@ -520,12 +680,79 @@ export const TaskItem = ({
                 top: { lg: 16 },
               }}
             >
+              {visibleAssignee && (
+                <Box
+                  sx={{
+                    height: 'fit-content',
+                    bgcolor: 'white',
+                    borderRadius: '32px',
+                    p: { xs: 2.5, md: 3 },
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Chip
+                    size="small"
+                    label="Ответственный"
+                    sx={{
+                      mb: 2,
+                      fontWeight: 600,
+                      bgcolor: 'info.light',
+                      color: 'primary.main',
+                    }}
+                  />
+
+                  <Stack
+                    spacing={1.25}
+                    sx={{ alignItems: 'center', textAlign: 'center' }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 56,
+                        height: 56,
+                        fontWeight: 700,
+                        fontSize: 18,
+                        bgcolor:
+                          task.assigneeKind === 'MANAGER'
+                            ? 'primary.main'
+                            : 'info.main',
+                        color: 'common.white',
+                      }}
+                    >
+                      {assigneeInitials}
+                    </Avatar>
+
+                    {visibleAssignee.kindLabel && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          letterSpacing: 0.4,
+                          textTransform: 'uppercase',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {visibleAssignee.kindLabel}
+                      </Typography>
+                    )}
+
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600, lineHeight: 1.3 }}
+                    >
+                      {visibleAssignee.name}
+                    </Typography>
+                  </Stack>
+                </Box>
+              )}
+
               <ContactCard
                 withTitle
                 status={status}
                 taskId={task.id}
                 isMyPost={isOwner}
                 contact={contact?.data}
+                isExecutorApprove={task.isExecutorApprove}
               />
 
               <Activity
@@ -538,6 +765,8 @@ export const TaskItem = ({
                 isLoading={isLoadingActivities}
                 setActivityType={setActivityType}
                 onLoadMore={() => setActivityLimit(prev => prev + 20)}
+                annulments={task.annulments}
+                deadlineExtensions={task.deadlineExtensions}
               />
             </Stack>
           </Stack>
@@ -552,13 +781,12 @@ export const TaskItem = ({
         </Stack>
       )}
 
-      <ConfirmDialog
-        title="Отменить задачу"
-        isOpen={isOpenCancelDialog}
-        isPending={isUpdating}
-        onSuccess={handleCancelTask}
-        onClose={() => setIsOpenCancelDialog(false)}
-        description="Вы уверены, что хотите отменить задачу? Все данные будут удалены."
+      <SendTzPreviewDialog
+        open={isSendTzPreviewOpen}
+        task={task}
+        isSending={isSendingTz}
+        onClose={() => setIsSendTzPreviewOpen(false)}
+        onConfirm={() => void handleSendTzToExecutor()}
       />
     </Box>
   );

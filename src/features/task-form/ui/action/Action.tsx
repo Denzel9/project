@@ -128,8 +128,7 @@ export const Action = ({
   const { label, isDisabled, status: newStatus } = getSaveButtonConditions();
 
   const isSaveEnabled = ![
-    TASK_STATUS_ENUM.CANCELLED,
-    TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
+    TASK_STATUS_ENUM.ANNULLED,
     TASK_STATUS_ENUM.COMPLETED,
   ].includes(status as TASK_STATUS_ENUM);
 

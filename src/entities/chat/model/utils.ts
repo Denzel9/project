@@ -125,6 +125,10 @@ export const sortConversationsByUnread = (
   conversations: ChatConversation[],
 ): ChatConversation[] =>
   [...conversations].sort((a, b) => {
+    if (a.isPinned !== b.isPinned) {
+      return a.isPinned ? -1 : 1
+    }
+
     const aHasUnread = a.unreadCount > 0
     const bHasUnread = b.unreadCount > 0
 

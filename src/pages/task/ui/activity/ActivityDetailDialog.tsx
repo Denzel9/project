@@ -8,11 +8,12 @@ import {
 } from '@mui/material';
 
 import {
-  getTaskActivityActorLabel,
+  getTaskActivityActorParts,
   getTaskActivityDetail,
   TaskActivityType,
   type TaskActivity,
 } from '@/entities/task';
+import { ActionActorCaption } from '@/shared';
 
 import { ActivityFieldDiffView } from './ActivityFieldDiffView';
 import { ActivityMediaView } from './ActivityMediaView';
@@ -43,9 +44,13 @@ export const ActivityDetailDialog = ({
   const isOpen = Boolean(activity);
   const detail = activity ? getTaskActivityDetail(activity) : null;
 
-  const actorLabel = activity
-    ? getTaskActivityActorLabel(activity.actorId, { ownerId, executorId })
-    : '';
+  const actorParts = activity
+    ? getTaskActivityActorParts(
+      activity.actorId,
+      { ownerId, executorId },
+      activity
+    )
+    : null;
 
   return (
     <Dialog
@@ -110,12 +115,7 @@ export const ActivityDetailDialog = ({
             >
               ·
             </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              {actorLabel}
-            </Typography>
+            {actorParts ? <ActionActorCaption actor={activity} /> : null}
           </Stack>
         )}
 
@@ -145,6 +145,38 @@ export const ActivityDetailDialog = ({
               payload={activity.payload}
             />
           )}
+
+        {detail && activity && detail.variant === 'request' && (
+          <Stack
+            spacing={1.5}
+            sx={{ mt: 3 }}
+          >
+            {detail.reason && (
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  Причина
+                </Typography>
+                <Typography variant="body1">{detail.reason}</Typography>
+              </Box>
+            )}
+            {detail.proposedFinalDate && (
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  Новая дата
+                </Typography>
+                <Typography variant="body1">
+                  {detail.proposedFinalDate}
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        )}
       </Box>
     </Dialog>
   );

@@ -1,11 +1,12 @@
 import type { Photo } from "@/entities/photo";
 import type { TaskStatus } from "@/entities/task";
+import type { LocalMediaFile } from "@/shared/lib/media";
 
 export type TaskContextType = {
     status: TaskStatus;
 
-    reportFiles: File[];
+    reportFiles: LocalMediaFile[];
     reportImages: Photo[];
-    setReportFiles: (files: File[]) => void;
+    setReportFiles: (files: LocalMediaFile[]) => void;
     setReportImages: (images: Photo[]) => void;
 };

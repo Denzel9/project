@@ -2,7 +2,7 @@ import { Stack, Button, Typography } from '@mui/material';
 import axios from 'axios';
 import { useState } from 'react';
 
-import { TASK_STATUS_ENUM, type Task, type UpdateTaskDto } from '@/entities';
+import { type Task, type UpdateTaskDto } from '@/entities';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 type PendingInviteProps = {
@@ -39,7 +39,6 @@ export const PendingInvite = ({ taskId, updateTask }: PendingInviteProps) => {
       id: taskId,
       body: {
         isExecutorApprove: false,
-        status: TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
       },
     });
   };

@@ -204,6 +204,15 @@ export type PostList = {
   limit: number
 }
 
+export type PostOption = {
+  id: string
+  title: string
+}
+
+export type PostOptionsList = {
+  items: PostOption[]
+}
+
 export type PostOwner = {
   id: string
   avatar: string

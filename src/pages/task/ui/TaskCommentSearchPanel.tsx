@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 
 import { useSearchTaskCommentsQuery, type TaskComment } from '@/entities/task';
 
-import { TaskCommentItem } from './TaskCommentItem';
+import { TaskCommentItem } from './comment/TaskCommentItem';
 
 type TaskCommentSearchPanelProps = {
   open: boolean;

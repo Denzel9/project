@@ -1,20 +1,25 @@
 import {
+  Assignment,
+  AttachFile,
   ChevronLeft,
   ChatOutlined,
   Close,
   FilterList,
   OpenInNewOutlined,
+  Search,
 } from '@mui/icons-material';
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
   IconButton,
-  InputAdornment,
   MenuItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -23,39 +28,53 @@ import { useNavigate } from 'react-router';
 import {
   sortConversationsByUnread,
   useConversationsQuery,
-  type ChatConversation,
+  useSearchMessagesQuery,
+  type ChatMessage,
 } from '@/entities/chat';
+import { ChatContactSearch } from '@/features/chat';
 import { useAuthStore } from '@/features';
+import { extractChatTaskTzMessages } from '@/pages/chat/model/chatTaskTzMessages';
+import { useChatPeerTasks } from '@/pages/chat/model/hooks/useChatPeerTasks';
+import { ChatAttachmentsPanel } from '@/pages/chat/ui/ChatAttachmentsPanel';
 import { ChatInput } from '@/pages/chat/ui/ChatInput';
 import { ChatMessageBubble } from '@/pages/chat/ui/ChatMessageBubble';
+import { ChatSearchPanel } from '@/pages/chat/ui/ChatSearchPanel';
+import { ChatTaskTzPanel } from '@/pages/chat/ui/ChatTaskTzPanel';
 import { ConversationItem } from '@/pages/chat/ui/ConversationItem';
 import { EmptyBlock, ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 import { useDashboardChatThread } from '../model/useDashboardChatThread';
 
+import type { UserSearchItem } from '@/entities/user';
 import type { MessageSide } from '@/pages/chat/model/types';
 
 const DASHBOARD_CHATS_LIMIT = 8;
 
 const toMessageSide = (
   senderId: string,
-  currentUserId: string | null
+  currentUserId: string | null,
 ): MessageSide =>
   currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
 
 export const DashboardChatsPanel = () => {
   const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { id: currentUserId } = useAuthStore();
   const { setSnackbarOpen } = useSnackbarStore();
 
   const [peerId, setPeerId] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [appliedQuery, setAppliedQuery] = useState('');
   const [isOpenFilter, setIsOpenFilter] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
+  const [isThreadSearchOpen, setIsThreadSearchOpen] = useState(false);
+  const [threadSearchQuery, setThreadSearchQuery] = useState('');
+  const [debouncedThreadQuery, setDebouncedThreadQuery] = useState('');
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchItems, setSearchItems] = useState<ChatMessage[]>([]);
+  const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
+  const [isTaskTzOpen, setIsTaskTzOpen] = useState(false);
   const [peerOptions, setPeerOptions] = useState<
     { id: string; displayName: string }[]
   >([]);
@@ -63,14 +82,14 @@ export const DashboardChatsPanel = () => {
   const prevConversationIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
 
-  const hasActiveFilters = peerId !== 'all' || Boolean(appliedQuery);
+  const hasActiveFilters = peerId !== 'all';
+  const isDesktopSearch = isThreadSearchOpen && !isMobile;
 
   const conversationParams = useMemo(
     () => ({
-      ...(appliedQuery && { q: appliedQuery }),
       ...(peerId !== 'all' && { peerId }),
     }),
-    [appliedQuery, peerId]
+    [peerId],
   );
 
   const { data, isLoading, isError, refetch } =
@@ -97,7 +116,7 @@ export const DashboardChatsPanel = () => {
         });
 
         return Array.from(map.values()).sort((a, b) =>
-          a.displayName.localeCompare(b.displayName, 'ru')
+          a.displayName.localeCompare(b.displayName, 'ru'),
         );
       });
     }, 0);
@@ -111,33 +130,29 @@ export const DashboardChatsPanel = () => {
 
   const selectedPeerTitle = useMemo(
     () => peerOptions.find(peer => peer.id === peerId)?.displayName,
-    [peerId, peerOptions]
+    [peerId, peerOptions],
   );
 
   const selectedConversation = useMemo(
     () =>
       recentConversations.find(
-        conversation => conversation.id === selectedConversationId
+        conversation => conversation.id === selectedConversationId,
       ) ??
       data?.find(conversation => conversation.id === selectedConversationId) ??
       allConversations?.find(
-        conversation => conversation.id === selectedConversationId
+        conversation => conversation.id === selectedConversationId,
       ) ??
       null,
-    [recentConversations, data, allConversations, selectedConversationId]
+    [recentConversations, data, allConversations, selectedConversationId],
   );
 
   const emptyMessage = useMemo(() => {
-    if (appliedQuery) {
-      return `Нет чатов по запросу «${appliedQuery}»`;
-    }
-
     if (peerId !== 'all') {
       return 'Нет чатов с выбранным собеседником';
     }
 
     return 'Пока нет чатов';
-  }, [appliedQuery, peerId]);
+  }, [peerId]);
 
   const {
     messages,
@@ -153,6 +168,70 @@ export const DashboardChatsPanel = () => {
     isSending,
   } = useDashboardChatThread({ conversationId: selectedConversationId });
 
+  const { peerAssignedTasks } = useChatPeerTasks(
+    selectedConversation?.peer?.id,
+  );
+
+  const hasTaskTzMessages = useMemo(
+    () => extractChatTaskTzMessages(messages).length > 0,
+    [messages],
+  );
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedThreadQuery(threadSearchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [threadSearchQuery]);
+
+  useEffect(() => {
+    if (!isDesktopSearch) {
+      setTimeout(() => {
+        setDebouncedThreadQuery('');
+        setSearchPage(1);
+        setSearchItems([]);
+      }, 0);
+    }
+  }, [isDesktopSearch]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setSearchPage(1);
+      setSearchItems([]);
+    }, 0);
+  }, [debouncedThreadQuery, selectedConversationId]);
+
+  const canSearch =
+    isDesktopSearch &&
+    Boolean(selectedConversationId) &&
+    debouncedThreadQuery.length >= 2;
+
+  const {
+    data: searchData,
+    isLoading: isSearchLoading,
+    isFetching: isSearchFetching,
+    error: searchError,
+  } = useSearchMessagesQuery(canSearch ? selectedConversationId : null, {
+    q: debouncedThreadQuery,
+    page: searchPage,
+    limit: 20,
+  });
+
+  useEffect(() => {
+    if (!canSearch || !searchData) return;
+
+    setTimeout(() => {
+      setSearchItems(prev =>
+        searchPage === 1 ? searchData.items : [...prev, ...searchData.items],
+      );
+    }, 0);
+  }, [canSearch, searchData, searchPage]);
+
+  const searchHasMore = Boolean(
+    searchData && searchData.page * searchData.limit < searchData.total,
+  );
+
   const scrollMessagesToBottom = (behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current;
 
@@ -165,7 +244,7 @@ export const DashboardChatsPanel = () => {
   };
 
   useLayoutEffect(() => {
-    if (!selectedConversationId || isThreadLoading) return;
+    if (!selectedConversationId || isThreadLoading || isDesktopSearch) return;
 
     const conversationChanged =
       prevConversationIdRef.current !== selectedConversationId;
@@ -182,7 +261,7 @@ export const DashboardChatsPanel = () => {
     if (messagesAdded) {
       scrollMessagesToBottom('smooth');
     }
-  }, [selectedConversationId, isThreadLoading, messages]);
+  }, [selectedConversationId, isThreadLoading, messages, isDesktopSearch]);
 
   useEffect(() => {
     if (selectedConversationId) return;
@@ -192,25 +271,20 @@ export const DashboardChatsPanel = () => {
   }, [selectedConversationId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setAppliedQuery(searchQuery.trim());
-    }, 400);
-
-    return () => window.clearTimeout(timer);
-  }, [searchQuery]);
-
-  useEffect(() => {
     setTimeout(() => {
       setIsOpenFilter(false);
       setSelectedConversationId(null);
     }, 0);
-  }, [peerId, appliedQuery]);
+  }, [peerId]);
 
-  const openFullChat = (conversation: ChatConversation) => {
-    navigate(
-      `${ROUTES.CHAT}?recipientId=${encodeURIComponent(conversation.peer.id)}`
-    );
-  };
+  useEffect(() => {
+    setTimeout(() => {
+      setIsThreadSearchOpen(false);
+      setThreadSearchQuery('');
+      setIsAttachmentsOpen(false);
+      setIsTaskTzOpen(false);
+    }, 0);
+  }, [selectedConversationId]);
 
   const handleSend = async () => {
     const ok = await sendMessage();
@@ -222,8 +296,34 @@ export const DashboardChatsPanel = () => {
 
   const handleResetFilters = () => {
     setPeerId('all');
-    setSearchQuery('');
-    setAppliedQuery('');
+  };
+
+  const handleSelectContact = (user: UserSearchItem) => {
+    const existing =
+      data?.find(conversation => conversation.peer.id === user.id) ??
+      allConversations?.find(conversation => conversation.peer.id === user.id);
+
+    if (existing) {
+      setSelectedConversationId(existing.id);
+      setIsOpenFilter(false);
+      return;
+    }
+
+    navigate(`${ROUTES.CHAT}?recipientId=${user.id}`);
+  };
+
+  const handleBackToList = () => {
+    setSelectedConversationId(null);
+  };
+
+  const handleToggleThreadSearch = () => {
+    if (isThreadSearchOpen) {
+      setIsThreadSearchOpen(false);
+      setThreadSearchQuery('');
+      return;
+    }
+
+    setIsThreadSearchOpen(true);
   };
 
   return (
@@ -259,7 +359,7 @@ export const DashboardChatsPanel = () => {
             <IconButton
               size="small"
               aria-label="К списку чатов"
-              onClick={() => setSelectedConversationId(null)}
+              onClick={handleBackToList}
             >
               <ChevronLeft />
             </IconButton>
@@ -295,7 +395,7 @@ export const DashboardChatsPanel = () => {
         <Stack
           direction="row"
           spacing={0.25}
-          sx={{ flexShrink: 0 }}
+          sx={{ flexShrink: 0, alignItems: 'center' }}
         >
           {!selectedConversation && (
             <IconButton
@@ -308,19 +408,58 @@ export const DashboardChatsPanel = () => {
             </IconButton>
           )}
 
-          <IconButton
-            aria-label="Открыть чаты"
-            onClick={() => {
-              if (selectedConversation) {
-                openFullChat(selectedConversation);
-                return;
-              }
+          {selectedConversation && (
+            <>
+              {isThreadSearchOpen && !isMobile && (
+                <TextField
+                  autoFocus
+                  size="small"
+                  label="Поиск"
+                  value={threadSearchQuery}
+                  onChange={event => setThreadSearchQuery(event.target.value)}
+                  sx={{ width: 180 }}
+                />
+              )}
 
-              navigate(ROUTES.CHAT);
-            }}
-          >
-            <OpenInNewOutlined />
-          </IconButton>
+              <Tooltip title="Поиск по сообщениям">
+                <IconButton
+                  aria-label="Поиск по сообщениям"
+                  onClick={handleToggleThreadSearch}
+                >
+                  {isThreadSearchOpen ? <Close /> : <Search />}
+                </IconButton>
+              </Tooltip>
+
+              {hasTaskTzMessages && (
+                <Tooltip title="Технические задания">
+                  <IconButton
+                    aria-label="Технические задания"
+                    onClick={() => setIsTaskTzOpen(true)}
+                  >
+                    <Assignment />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              <Tooltip title="Вложения">
+                <IconButton
+                  aria-label="Вложения"
+                  onClick={() => setIsAttachmentsOpen(true)}
+                >
+                  <AttachFile />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+
+          {!selectedConversation && (
+            <IconButton
+              aria-label="Открыть чаты"
+              onClick={() => navigate(ROUTES.CHAT)}
+            >
+              <OpenInNewOutlined />
+            </IconButton>
+          )}
         </Stack>
       </Stack>
 
@@ -361,33 +500,12 @@ export const DashboardChatsPanel = () => {
               ))}
             </TextField>
 
-            <TextField
-              fullWidth
-              size="small"
-              label="Поиск по чатам"
-              value={searchQuery}
-              onChange={event => setSearchQuery(event.target.value)}
-              sx={{ minWidth: 0 }}
-              slotProps={{
-                input: {
-                  endAdornment: searchQuery ? (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        edge="end"
-                        aria-label="Очистить поиск"
-                        onClick={() => {
-                          setSearchQuery('');
-                          setAppliedQuery('');
-                        }}
-                      >
-                        <Close fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
-                },
-              }}
-            />
+            <Box sx={{ minWidth: 0, flex: 1, width: '100%' }}>
+              <ChatContactSearch
+                size="small"
+                onSelect={handleSelectContact}
+              />
+            </Box>
           </Stack>
 
           {hasActiveFilters && (
@@ -401,17 +519,6 @@ export const DashboardChatsPanel = () => {
                   size="small"
                   label={selectedPeerTitle}
                   onDelete={() => setPeerId('all')}
-                />
-              )}
-
-              {appliedQuery && (
-                <Chip
-                  size="small"
-                  label={`Поиск: ${appliedQuery}`}
-                  onDelete={() => {
-                    setSearchQuery('');
-                    setAppliedQuery('');
-                  }}
                 />
               )}
 
@@ -499,79 +606,215 @@ export const DashboardChatsPanel = () => {
               pr: 0.5,
             }}
           >
-            {isThreadLoading && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  py: 6,
-                }}
-              >
-                <CircularProgress size={28} />
-              </Box>
-            )}
+            {isDesktopSearch ? (
+              <>
+                {isSearchLoading && searchItems.length === 0 && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      py: 6,
+                    }}
+                  >
+                    <CircularProgress size={28} />
+                  </Box>
+                )}
 
-            {!isThreadLoading && isThreadError && (
-              <EmptyBlock
-                title="Не удалось загрузить сообщения"
-                description="Попробуйте ещё раз"
-                buttonText="Повторить"
-                navigate={() => void refetchThread()}
-              />
-            )}
+                {searchError && (
+                  <Typography
+                    variant="body2"
+                    color="error"
+                    sx={{ textAlign: 'center', py: 2 }}
+                  >
+                    Не удалось выполнить поиск
+                  </Typography>
+                )}
 
-            {!isThreadLoading && !isThreadError && messages.length === 0 && (
-              <Box
-                sx={{
-                  py: 4,
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  Напишите первое сообщение ниже
-                </Typography>
-              </Box>
-            )}
+                {!isSearchLoading &&
+                  !searchError &&
+                  debouncedThreadQuery.length >= 2 &&
+                  searchItems.length === 0 && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ textAlign: 'center', py: 4 }}
+                    >
+                      Ничего не найдено
+                    </Typography>
+                  )}
 
-            {!isThreadLoading &&
-              !isThreadError &&
-              messages.map(message => (
-                <Box
-                  key={message.id}
-                  sx={{ mb: 1 }}
-                >
-                  <ChatMessageBubble
-                    messageId={message.id}
-                    senderId={message.senderId}
-                    createdAt={message.createdAt}
-                    editedAt={message.editedAt}
-                    isRedirected={message.isRedirected}
-                    currentUserId={currentUserId}
-                    text={message.content}
-                    media={message.media}
-                    side={toMessageSide(message.senderId, currentUserId)}
-                    time={format(new Date(message.createdAt), 'HH:mm')}
-                    isRead={message.isRead}
+                {debouncedThreadQuery.length < 2 && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ textAlign: 'center', py: 4 }}
+                  >
+                    Введите минимум 2 символа для поиска
+                  </Typography>
+                )}
+
+                {searchItems.map(message => (
+                  <Box
+                    key={message.id}
+                    sx={{ mb: 1 }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 0.5, display: 'block' }}
+                    >
+                      {format(
+                        new Date(message.createdAt),
+                        'dd.MM.yyyy HH:mm',
+                      )}
+                    </Typography>
+                    <ChatMessageBubble
+                      messageId={message.id}
+                      senderId={message.senderId}
+                      createdAt={message.createdAt}
+                      editedAt={message.editedAt}
+                      isRedirected={message.isRedirected}
+                      currentUserId={currentUserId}
+                      text={message.content}
+                      media={message.media}
+                      highlight={debouncedThreadQuery}
+                      side={toMessageSide(message.senderId, currentUserId)}
+                      time={format(new Date(message.createdAt), 'HH:mm')}
+                      isRead={message.isRead}
+                    />
+                  </Box>
+                ))}
+
+                {searchHasMore && (
+                  <Box
+                    sx={{
+                      pt: 1,
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      disabled={isSearchFetching}
+                      onClick={() => setSearchPage(prev => prev + 1)}
+                    >
+                      {isSearchFetching ? 'Загрузка…' : 'Загрузить ещё'}
+                    </Button>
+                  </Box>
+                )}
+              </>
+            ) : (
+              <>
+                {isThreadLoading && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      py: 6,
+                    }}
+                  >
+                    <CircularProgress size={28} />
+                  </Box>
+                )}
+
+                {!isThreadLoading && isThreadError && (
+                  <EmptyBlock
+                    title="Не удалось загрузить сообщения"
+                    description="Попробуйте ещё раз"
+                    buttonText="Повторить"
+                    navigate={() => void refetchThread()}
                   />
-                </Box>
-              ))}
+                )}
+
+                {!isThreadLoading &&
+                  !isThreadError &&
+                  messages.length === 0 && (
+                    <Box
+                      sx={{
+                        py: 4,
+                        display: 'flex',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Напишите первое сообщение ниже
+                      </Typography>
+                    </Box>
+                  )}
+
+                {!isThreadLoading &&
+                  !isThreadError &&
+                  messages.map(message => (
+                    <Box
+                      key={message.id}
+                      sx={{ mb: 1 }}
+                    >
+                      <ChatMessageBubble
+                        messageId={message.id}
+                        senderId={message.senderId}
+                        createdAt={message.createdAt}
+                        editedAt={message.editedAt}
+                        isRedirected={message.isRedirected}
+                        currentUserId={currentUserId}
+                        text={message.content}
+                        media={message.media}
+                        side={toMessageSide(message.senderId, currentUserId)}
+                        time={format(new Date(message.createdAt), 'HH:mm')}
+                        isRead={message.isRead}
+                      />
+                    </Box>
+                  ))}
+              </>
+            )}
           </Box>
 
-          <ChatInput
-            value={draft}
-            onChange={setDraft}
-            onSend={() => void handleSend()}
-            pendingFiles={pendingFiles}
-            onAttachFiles={attachFiles}
-            onRemoveFile={removeFile}
-            isSending={isSending}
-            placeholder="Написать сообщение…"
-          />
+          {!isDesktopSearch && (
+            <ChatInput
+              value={draft}
+              onChange={setDraft}
+              onSend={() => void handleSend()}
+              pendingFiles={pendingFiles}
+              onAttachFiles={attachFiles}
+              onRemoveFile={removeFile}
+              isSending={isSending}
+              placeholder="Написать сообщение…"
+            />
+          )}
         </Stack>
+      )}
+
+      {selectedConversationId && (
+        <>
+          <ChatSearchPanel
+            open={isThreadSearchOpen && isMobile}
+            query={threadSearchQuery}
+            onQueryChange={setThreadSearchQuery}
+            currentUserId={currentUserId}
+            onClose={() => {
+              setIsThreadSearchOpen(false);
+              setThreadSearchQuery('');
+            }}
+            conversationId={selectedConversationId}
+          />
+
+          <ChatAttachmentsPanel
+            open={isAttachmentsOpen}
+            conversationId={selectedConversationId}
+            onClose={() => setIsAttachmentsOpen(false)}
+          />
+
+          <ChatTaskTzPanel
+            open={isTaskTzOpen}
+            messages={messages}
+            tasks={peerAssignedTasks}
+            currentUserId={currentUserId}
+            onClose={() => setIsTaskTzOpen(false)}
+          />
+        </>
       )}
     </Box>
   );

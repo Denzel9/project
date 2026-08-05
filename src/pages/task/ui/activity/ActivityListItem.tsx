@@ -1,5 +1,7 @@
 import {
   AddPhotoAlternateOutlined,
+  CancelOutlined,
+  CheckCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   SwapHorizOutlined,
@@ -9,17 +11,15 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 import {
-  getTaskActivityActorLabel,
   getTaskActivityMeta,
   getTaskActivitySummary,
   TaskActivityType,
   type TaskActivity,
 } from '@/entities/task';
+import { ActionActorCaption } from '@/shared';
 
 type ActivityListItemProps = {
   activity: TaskActivity;
-  ownerId: string;
-  executorId?: string | null;
   onClick: () => void;
 };
 
@@ -28,6 +28,8 @@ const ACTIVITY_ICONS = {
   [TaskActivityType.FIELD_UPDATED]: EditOutlined,
   [TaskActivityType.MEDIA_ADDED]: AddPhotoAlternateOutlined,
   [TaskActivityType.MEDIA_REMOVED]: DeleteOutlined,
+  [TaskActivityType.ANNULMENT_REQUESTED]: CancelOutlined,
+  [TaskActivityType.ANNULMENT_CONFIRMED]: CheckCircleOutlined,
 } as const;
 
 const formatFullDateTime = (createdAt: string) =>
@@ -41,16 +43,10 @@ const formatFullDateTime = (createdAt: string) =>
 
 export const ActivityListItem = ({
   activity,
-  ownerId,
-  executorId,
   onClick,
 }: ActivityListItemProps) => {
   const meta = getTaskActivityMeta(activity.type);
-  const Icon = ACTIVITY_ICONS[activity.type] ?? EditOutlined;
-  const actorLabel = getTaskActivityActorLabel(activity.actorId, {
-    ownerId,
-    executorId,
-  });
+  const Icon = ACTIVITY_ICONS[activity.type as keyof typeof ACTIVITY_ICONS] ?? EditOutlined;
 
   return (
     <Box
@@ -105,12 +101,10 @@ export const ActivityListItem = ({
               label={meta.label}
             />
 
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              {actorLabel}
-            </Typography>
+            <ActionActorCaption
+              direction="row"
+              spacing={0.5}
+            />
 
             <Tooltip title={formatFullDateTime(activity.createdAt)}>
               <Typography

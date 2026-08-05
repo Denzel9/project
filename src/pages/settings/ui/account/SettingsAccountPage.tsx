@@ -6,12 +6,14 @@ import { FormProvider, useForm } from 'react-hook-form';
 import {
   useGetUserByIdQuery,
   useUpdateUserMutation,
+  USER_ROLE,
   type CompanyProfile,
   type CreatorProfile,
   type Person,
   type User,
 } from '@/entities';
 import { useAuthStore } from '@/features';
+import { queryClient } from '@/shared/api';
 import { useSnackbarStore } from '@/widgets';
 
 import {
@@ -26,16 +28,15 @@ import {
 } from '../../model/schema/accountSchema';
 import { parseRequestCreatorData } from '../../model/utils';
 
+import { ManagerAccountSection } from './ManagerAccountSection';
 import { ProfileSection } from './ProfileSection';
 
 export const SettingsAccountPage = () => {
   const { setSnackbarOpen } = useSnackbarStore();
-
+  const { id, role } = useAuthStore();
   const { mutateAsync: updateUser } = useUpdateUserMutation();
-
-  const { id } = useAuthStore();
-
   const { data: user } = useGetUserByIdQuery(id);
+  const isManager = role === USER_ROLE.MANAGER;
 
   const methods = useForm<AccountSchemaFormType>({
     mode: 'onBlur',
@@ -45,40 +46,61 @@ export const SettingsAccountPage = () => {
 
   const { handleSubmit, setValue } = methods;
 
-  // TODO: need to refactor this
   useEffect(() => {
-    if (user) {
-      Object.keys(defaultAccountSchemaValues).forEach(key => {
-        if (CREATOR_PROFILE_KEYS.includes(key) && user?.data?.creatorProfile) {
-          setValue(
-            key as keyof AccountSchemaFormType,
-            user?.data?.creatorProfile?.[key as keyof CreatorProfile]
-          );
-        } else if (
-          COMPANY_PROFILE_KEYS.includes(key) &&
-          user.data?.companyProfile
-        ) {
-          setValue(
-            key as keyof AccountSchemaFormType,
-            user.data?.companyProfile?.[key as keyof CompanyProfile]
-          );
-        } else if (MY_PARAMETERS_KEYS.includes(key) && user.data?.person) {
-          setValue(
-            key as keyof AccountSchemaFormType,
-            user.data?.person?.[key as keyof Person]
-          );
-        } else {
-          setValue(
-            key as keyof AccountSchemaFormType,
-            user.data?.[key as keyof User & keyof AccountSchemaFormType]
-          );
-        }
-      });
+    if (!user) return;
+
+    if (isManager) {
+      setValue('name', user.data?.person?.name ?? '');
+      setValue('lastName', user.data?.person?.lastName ?? '');
+      setValue('avatar', user.data?.avatar ?? '');
+      return;
     }
-  }, [setValue, user]);
+
+    Object.keys(defaultAccountSchemaValues).forEach(key => {
+      if (CREATOR_PROFILE_KEYS.includes(key) && user?.data?.creatorProfile) {
+        setValue(
+          key as keyof AccountSchemaFormType,
+          user?.data?.creatorProfile?.[key as keyof CreatorProfile]
+        );
+      } else if (
+        COMPANY_PROFILE_KEYS.includes(key) &&
+        user.data?.companyProfile
+      ) {
+        setValue(
+          key as keyof AccountSchemaFormType,
+          user.data?.companyProfile?.[key as keyof CompanyProfile]
+        );
+      } else if (MY_PARAMETERS_KEYS.includes(key) && user.data?.person) {
+        setValue(
+          key as keyof AccountSchemaFormType,
+          (user.data.person[key as keyof Person] ??
+            null) as AccountSchemaFormType[keyof AccountSchemaFormType]
+        );
+      } else {
+        setValue(
+          key as keyof AccountSchemaFormType,
+          (user.data?.[key as keyof User] ??
+            null) as AccountSchemaFormType[keyof AccountSchemaFormType]
+        );
+      }
+    });
+  }, [setValue, user, isManager]);
 
   const onSubmit = async (data: AccountSchemaFormType) => {
     try {
+      if (isManager) {
+        await updateUser({
+          avatar: data.avatar || null,
+          person: {
+            name: data.name?.trim() || null,
+            lastName: data.lastName?.trim() || null,
+          } as never,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+        setSnackbarOpen?.(true, 'Данные успешно обновлены');
+        return;
+      }
+
       if (user?.data?.companyProfile) {
         const res = await updateUser(parseRequestCreatorData(data, user?.data));
         if (res.data) {
@@ -104,7 +126,11 @@ export const SettingsAccountPage = () => {
     >
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ProfileSection user={user?.data} />
+          {isManager ? (
+            <ManagerAccountSection user={user?.data} />
+          ) : (
+            <ProfileSection user={user?.data} />
+          )}
         </form>
       </FormProvider>
     </Stack>

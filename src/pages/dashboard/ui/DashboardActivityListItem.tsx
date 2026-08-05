@@ -1,5 +1,7 @@
 import {
   AddPhotoAlternateOutlined,
+  CancelOutlined,
+  CheckCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   SwapHorizOutlined,
@@ -10,11 +12,11 @@ import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
 import {
-  getTaskActivityActorLabel,
   getTaskActivityMeta,
   getTaskActivitySummary,
   TaskActivityType,
 } from '@/entities';
+import { ActionActorCaption } from '@/shared';
 
 import { getDashboardTaskPath, getTaskDisplayTitle } from '../model/utils';
 
@@ -30,6 +32,8 @@ const ACTIVITY_ICONS = {
   [TaskActivityType.FIELD_UPDATED]: EditOutlined,
   [TaskActivityType.MEDIA_ADDED]: AddPhotoAlternateOutlined,
   [TaskActivityType.MEDIA_REMOVED]: DeleteOutlined,
+  [TaskActivityType.ANNULMENT_REQUESTED]: CancelOutlined,
+  [TaskActivityType.ANNULMENT_CONFIRMED]: CheckCircleOutlined,
 } as const;
 
 const formatFullDateTime = (createdAt: string) =>
@@ -46,31 +50,22 @@ export const DashboardActivityListItem = ({
   onClick,
 }: DashboardActivityListItemProps) => {
   const { activity, task } = item;
-  // TODO специальный тип для изменения описания
   const meta = getTaskActivityMeta(activity.type);
-  const Icon = ACTIVITY_ICONS[activity.type] ?? EditOutlined;
+  const Icon = ACTIVITY_ICONS[activity.type as keyof typeof ACTIVITY_ICONS] ?? EditOutlined;
   const taskTitle = getTaskDisplayTitle(task);
   const taskPath = getDashboardTaskPath(task);
-  const actorLabel = getTaskActivityActorLabel(activity.actorId, {
-    ownerId: task.ownerId,
-    executorId: task.executorId,
-  });
 
   return (
     <Box
       onClick={onClick}
       sx={{
         px: 1.25,
-        py: 1,
+        py: 1.25,
         cursor: 'pointer',
-        borderRadius: '14px',
-        border: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        transition: 'background-color 0.2s ease, border-color 0.2s ease',
+        borderRadius: '10px',
+        transition: 'background-color 0.2s ease',
         '&:hover': {
           bgcolor: 'action.hover',
-          borderColor: 'primary.light',
         },
       }}
     >
@@ -151,18 +146,26 @@ export const DashboardActivityListItem = ({
             {getTaskActivitySummary(activity)}
           </Typography>
 
-          <Typography
-            variant="caption"
-            color="info"
-            sx={{
-              display: 'block',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: 'baseline', minWidth: 0 }}
           >
-            {meta.label} · {actorLabel}
-          </Typography>
+            <Typography
+              variant="caption"
+              color="info"
+              sx={{ flexShrink: 0 }}
+            >
+              {meta.label} ·
+            </Typography>
+            <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+              <ActionActorCaption
+                actor={activity}
+                direction="row"
+                spacing={0.5}
+              />
+            </Box>
+          </Stack>
         </Box>
       </Stack>
     </Box>

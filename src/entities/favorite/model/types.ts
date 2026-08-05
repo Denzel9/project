@@ -99,5 +99,5 @@ export const getFavoriteUserName = (user: FavoriteUserProfile) => {
     return user.companyName ?? 'Компания'
   }
 
-  return [user.name, user.lastName].filter(Boolean).join(' ') || 'Креатор'
+  return [user.name, user.lastName].filter(Boolean).join(' ') || 'Исполнитель'
 }

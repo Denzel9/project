@@ -6,6 +6,7 @@ import { BASE_COLOR } from '@/app/index';
 import LoginForm from './LoginForm';
 import RegistrationCompanyForm from './RegistrationCompanyForm';
 import RegistrationCreatorForm from './RegistrationCreatorForm';
+import RegistrationManagerForm from './RegistrationManagerForm';
 
 type AuthFormsProps = {
   onSuccess?: () => void;
@@ -13,12 +14,14 @@ type AuthFormsProps = {
   onError?: (isOpen: boolean, message: string) => void;
 };
 
+type RegisterKind = 'creator' | 'company' | 'manager';
+
 export const AuthForms = ({
   onSuccess,
   onError,
   onRecoveryPassword,
 }: AuthFormsProps) => {
-  const [isCreator, setIsCreator] = useState(true);
+  const [registerKind, setRegisterKind] = useState<RegisterKind>('creator');
   const [isLogin, setIsLogin] = useState(true);
 
   return (
@@ -26,16 +29,22 @@ export const AuthForms = ({
       {!isLogin && (
         <ButtonGroup fullWidth>
           <Button
-            onClick={() => setIsCreator(true)}
-            variant={isCreator ? 'contained' : 'outlined'}
+            onClick={() => setRegisterKind('creator')}
+            variant={registerKind === 'creator' ? 'contained' : 'outlined'}
           >
             Пользователь
           </Button>
           <Button
-            onClick={() => setIsCreator(false)}
-            variant={isCreator ? 'outlined' : 'contained'}
+            onClick={() => setRegisterKind('company')}
+            variant={registerKind === 'company' ? 'contained' : 'outlined'}
           >
             Компания
+          </Button>
+          <Button
+            onClick={() => setRegisterKind('manager')}
+            variant={registerKind === 'manager' ? 'contained' : 'outlined'}
+          >
+            Менеджер
           </Button>
         </ButtonGroup>
       )}
@@ -48,13 +57,20 @@ export const AuthForms = ({
         />
       ) : (
         <>
-          {isCreator ? (
+          {registerKind === 'creator' && (
             <RegistrationCreatorForm
               onError={onError}
               onSuccess={onSuccess}
             />
-          ) : (
+          )}
+          {registerKind === 'company' && (
             <RegistrationCompanyForm
+              onError={onError}
+              onSuccess={onSuccess}
+            />
+          )}
+          {registerKind === 'manager' && (
+            <RegistrationManagerForm
               onError={onError}
               onSuccess={onSuccess}
             />

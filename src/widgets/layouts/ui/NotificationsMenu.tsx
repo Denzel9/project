@@ -166,7 +166,7 @@ export const NotificationsMenu = () => {
             </MenuItem>
           ) : (
             notifications.map(item => {
-              const actorName = getNotificationActorName(item.actor);
+              const actorName = getNotificationActorName(item);
               const isUnread = isNotificationUnread(item);
 
               return (

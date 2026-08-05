@@ -18,7 +18,6 @@ export const DatePicker = ({ label, value, onChange }: DatePickerProps) => (
     }
     slotProps={{
       textField: {
-        size: 'small',
         fullWidth: true,
       },
       desktopPaper: {

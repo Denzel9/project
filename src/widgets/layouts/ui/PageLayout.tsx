@@ -30,7 +30,7 @@ export const PageLayout = ({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        gap: 2,
+        gap: 1,
         ...(isScreenHeight && {
           height: '100%',
           flex: 1,

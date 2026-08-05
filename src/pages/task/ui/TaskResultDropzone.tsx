@@ -5,12 +5,14 @@ import {
   CloudUploadOutlined,
   DeleteOutlined,
   PlayCircleOutlined,
+  RefreshOutlined,
   SaveOutlined,
 } from '@mui/icons-material';
 import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   IconButton,
   Stack,
   Typography,
@@ -23,13 +25,23 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type Dispatch,
   type DragEvent,
+  type SetStateAction,
 } from 'react';
 import { Link } from 'react-router';
 
 import { theme } from '@/app/index';
 import { TASK_STATUS_ENUM, type TaskStatus } from '@/entities/task';
 import { ROUTES } from '@/shared';
+import {
+  createLocalMediaPlaceholders,
+  hasPreparingMedia,
+  hasVideoMedia,
+  prepareLocalMediaFiles,
+  revokeLocalPhotoUrl,
+  type LocalMediaFile,
+} from '@/shared/lib/media';
 import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
@@ -44,7 +56,7 @@ import type { Photo } from '@/entities/photo';
 const ACCEPT = 'image/*,video/*';
 
 type TaskResultDropzoneProps = {
-  files: File[];
+  files: LocalMediaFile[];
   images: Photo[];
   postId?: string | null;
   postTitle?: string | null;
@@ -53,9 +65,10 @@ type TaskResultDropzoneProps = {
   status: TaskStatus;
   canUpload?: boolean;
   onCancel: () => void;
-  setFiles: (files: File[]) => void;
-  setImages: (images: Photo[]) => void;
+  setFiles: Dispatch<SetStateAction<LocalMediaFile[]>>;
+  setImages: Dispatch<SetStateAction<Photo[]>>;
   onRemoveUploaded: (key: string) => void;
+  onRetryLocal?: (localId: string) => void;
 };
 
 const formatFileSize = (size?: string) => {
@@ -120,6 +133,7 @@ export const TaskResultDropzone = ({
   canUpload = true,
   isSaving = false,
   onRemoveUploaded,
+  onRetryLocal,
 }: TaskResultDropzoneProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -135,9 +149,11 @@ export const TaskResultDropzone = ({
   const canEdit = canUpload && status === TASK_STATUS_ENUM.IN_PROGRESS;
   const hasMedia = images.length > 0;
   const hasPendingFiles = files.length > 0;
+  const isPreparing = hasPreparingMedia(images);
   const showDropzone = canEdit && (isAdding || !hasMedia || hasPendingFiles);
   const showEditControls = canEdit && hasMedia && !hasPendingFiles;
   const statusHint = getStatusHint(status, canUpload, hasMedia);
+  const showVideoHint = hasVideoMedia(files);
 
   const mediaCount = images.length;
 
@@ -145,33 +161,74 @@ export const TaskResultDropzone = ({
     (incoming: File[]) => {
       if (!incoming.length) return;
 
-      const newPhotos: Photo[] = incoming.map(file => ({
-        lastModified: '',
-        filename: file.name,
-        mimeType: file.type,
-        size: String(file.size),
-        key: URL.createObjectURL(file),
-        url: URL.createObjectURL(file),
-      }));
+      const { placeholders, localFiles } = createLocalMediaPlaceholders(
+        incoming,
+        files,
+      );
 
-      setFiles([...files, ...incoming]);
-      setImages([...images, ...newPhotos]);
+      if (!localFiles.length) return;
+
+      setFiles(prev => [...prev, ...localFiles]);
+      setImages(prev => [...prev, ...placeholders]);
       setIsAdding(true);
+
+      void prepareLocalMediaFiles(
+        localFiles,
+        (prepared, previewUrl) => {
+          setFiles(prev =>
+            prev.map(item =>
+              item.localId === prepared.localId ? prepared : item,
+            ),
+          );
+          setImages(prev =>
+            prev.map(image => {
+              if (image.localId !== prepared.localId) return image;
+              revokeLocalPhotoUrl(image);
+              return {
+                ...image,
+                url: previewUrl,
+                key: prepared.localId,
+                mimeType: prepared.file.type,
+                size: String(prepared.file.size),
+                filename: prepared.file.name,
+                uploadStatus: 'ready',
+                uploadProgress: 0,
+                uploadError: undefined,
+              };
+            }),
+          );
+        },
+        (localId, error) => {
+          setImages(prev =>
+            prev.map(image =>
+              image.localId === localId
+                ? {
+                    ...image,
+                    uploadStatus: 'error',
+                    uploadError: error.message,
+                  }
+                : image,
+            ),
+          );
+        },
+      );
     },
-    [files, images, setFiles, setImages]
+    [files, setFiles, setImages],
   );
 
   const handleRemovePending = useCallback(
     (key: string) => {
-      const photo = images.find(image => image.key === key);
+      const photo = images.find(
+        image => image.key === key || image.localId === key,
+      );
 
-      if (photo?.url.startsWith('blob:')) {
-        URL.revokeObjectURL(photo.url);
+      if (photo) {
+        revokeLocalPhotoUrl(photo);
       }
 
-      onRemoveUploaded(key);
+      onRemoveUploaded(photo?.localId ?? key);
     },
-    [images, onRemoveUploaded]
+    [images, onRemoveUploaded],
   );
 
   const handleOpenGallery = useCallback(
@@ -378,12 +435,16 @@ export const TaskResultDropzone = ({
             {images.map((image, index) => {
               const isVideo = image.mimeType.startsWith('video/');
               const canOpenGallery = isGalleryMedia(image.mimeType);
-              const isPending = image.url.startsWith('blob:');
-              const canRemove = canEdit && (isAdding || isPending) && !isSaving;
+              const isPending = Boolean(image.localId) || image.url.startsWith('blob:');
+              const canRemove =
+                canEdit &&
+                (isAdding || isPending) &&
+                !isSaving &&
+                image.uploadStatus !== 'uploading';
 
               return (
                 <Box
-                  key={image.key}
+                  key={image.localId ?? image.key}
                   sx={{
                     position: 'relative',
                     aspectRatio: '4 / 5',
@@ -412,7 +473,79 @@ export const TaskResultDropzone = ({
                     />
                   </Box>
 
-                  {isPending && (
+                  {image.uploadStatus === 'preparing' ||
+                  image.uploadStatus === 'uploading' ? (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 0.75,
+                        bgcolor: alpha('#000', 0.5),
+                        color: 'common.white',
+                      }}
+                    >
+                      <CircularProgress
+                        size={28}
+                        variant={
+                          image.uploadStatus === 'uploading' &&
+                          image.uploadProgress
+                            ? 'determinate'
+                            : 'indeterminate'
+                        }
+                        value={image.uploadProgress ?? 0}
+                        sx={{ color: 'common.white' }}
+                      />
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                        {image.uploadStatus === 'preparing'
+                          ? 'Сжатие…'
+                          : `${image.uploadProgress ?? 0}%`}
+                      </Typography>
+                    </Box>
+                  ) : null}
+
+                  {image.uploadStatus === 'error' ? (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 0.5,
+                        px: 1,
+                        bgcolor: alpha('#000', 0.55),
+                        color: 'common.white',
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ textAlign: 'center', lineHeight: 1.2 }}
+                      >
+                        {image.uploadError || 'Ошибка'}
+                      </Typography>
+                      {image.localId && onRetryLocal ? (
+                        <IconButton
+                          size="small"
+                          onClick={event => {
+                            event.stopPropagation();
+                            onRetryLocal(image.localId!);
+                          }}
+                          sx={{ color: 'common.white' }}
+                        >
+                          <RefreshOutlined fontSize="small" />
+                        </IconButton>
+                      ) : null}
+                    </Box>
+                  ) : null}
+
+                  {isPending && image.uploadStatus === 'ready' && (
                     <Chip
                       size="small"
                       label="Новый"
@@ -454,12 +587,13 @@ export const TaskResultDropzone = ({
                       aria-label="Удалить файл"
                       onClick={event => {
                         event.stopPropagation();
-                        handleRemovePending(image.key);
+                        handleRemovePending(image.localId ?? image.key);
                       }}
                       sx={{
                         position: 'absolute',
                         top: 6,
                         right: 6,
+                        zIndex: 2,
                         bgcolor: alpha('#fff', 0.92),
                         boxShadow: 1,
                         '&:hover': {
@@ -637,12 +771,17 @@ export const TaskResultDropzone = ({
                   variant="caption"
                   color="text.secondary"
                 >
+                  {showVideoHint
+                    ? 'Видео загружается без сжатия. '
+                    : ''}
                   {files
                     .slice(0, 2)
-                    .map(file => {
-                      const size = formatFileSize(String(file.size));
+                    .map(item => {
+                      const size = formatFileSize(String(item.file.size));
 
-                      return size ? `${file.name} · ${size}` : file.name;
+                      return size
+                        ? `${item.file.name} · ${size}`
+                        : item.file.name;
                     })
                     .join(', ')}
                   {files.length > 2 ? ` и ещё ${files.length - 2}` : ''}
@@ -669,6 +808,7 @@ export const TaskResultDropzone = ({
                   size="small"
                   variant="contained"
                   loading={isSaving}
+                  disabled={isPreparing}
                   startIcon={<SaveOutlined />}
                   onClick={handleSave}
                   sx={{ borderRadius: '12px' }}

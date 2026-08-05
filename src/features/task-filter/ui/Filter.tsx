@@ -1,20 +1,13 @@
 import {
   CalendarMonthOutlined,
   Close,
-  DownloadOutlined,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-  PrintOutlined,
   Search,
   ViewColumn,
   Whatshot,
 } from '@mui/icons-material';
 import {
-  Box,
   Button,
   Checkbox,
-  CircularProgress,
-  Collapse,
   Divider,
   FormControlLabel,
   IconButton,
@@ -35,28 +28,24 @@ import {
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities/partner';
-import { useScroll, DateCalendarFilter } from '@/shared';
+import { useScroll, DateCalendarFilter, FilterAutocomplete } from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
 
-import { AddTaskDialog } from './AddTaskDialog';
+import { AssigneeFilterMenu } from './components/AssigneeFilterMenu';
 import { FastButtonGroup } from './components/FastButtonGroup';
-import { FilterAutocomplete } from './components/FilterAutocomplete';
+import {
+  TaskFilterActionsMenu,
+  type TaskTableReportControls,
+} from './components/TaskFilterActionsMenu';
 import { TaskViewModeToggle } from './components/TaskViewModeToggle';
 
 import type { TaskStatusFilter } from '../model/utils';
 
 export type { TaskViewMode } from '../model/store';
 export type { FastButtonValueType } from '../model/utils';
-
-export type TaskTableReportControls = {
-  disabled: boolean;
-  isExporting: boolean;
-  isPrinting?: boolean;
-  onPrint: () => void;
-  onExport: () => void;
-};
+export type { TaskTableReportControls };
 
 export const MyTaskFilter = ({
   isCompany,
@@ -67,8 +56,6 @@ export const MyTaskFilter = ({
   initialPosts: { id?: string; title?: string }[];
   tableReport?: TaskTableReportControls;
 }) => {
-  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-  const [isBottomSectionOpen, setIsBottomSectionOpen] = useState(true);
   const { isScrolled, ref } = useScroll(150);
 
   const {
@@ -77,12 +64,16 @@ export const MyTaskFilter = ({
     status,
     viewMode,
     extraFilter,
+    onlyMyTasks,
+    assigneeAccountId,
     setStatus,
     setPostId,
     setExecutorId,
     updatedDate,
     setUpdatedDate,
     setExtraFilter,
+    setOnlyMyTasks,
+    setAssigneeAccountId,
     resetKanbanColumns,
     toggleKanbanColumn,
     visibleKanbanColumns,
@@ -141,12 +132,23 @@ export const MyTaskFilter = ({
 
   const hasActiveSelectFilters = useMemo(
     () =>
-      (viewMode !== 'kanban' && status !== 'all') ||
-      postId !== 'all' ||
-      executorId !== 'all' ||
+      (viewMode === 'grid' && status !== 'all') ||
+      (viewMode !== 'table' && postId !== 'all') ||
+      (viewMode !== 'table' && executorId !== 'all') ||
       extraFilter !== null ||
+      onlyMyTasks ||
+      assigneeAccountId !== 'all' ||
       updatedDate !== null,
-    [viewMode, status, postId, executorId, extraFilter, updatedDate]
+    [
+      viewMode,
+      status,
+      postId,
+      executorId,
+      extraFilter,
+      onlyMyTasks,
+      assigneeAccountId,
+      updatedDate,
+    ]
   );
 
   const handleResetSelectFilters = () => {
@@ -154,24 +156,23 @@ export const MyTaskFilter = ({
     setPostId('all');
     setExecutorId('all');
     setExtraFilter(null);
+    setOnlyMyTasks(false);
+    setAssigneeAccountId('all');
     setUpdatedDate(null);
   };
 
-  const toggleBottomSection = () => {
-    setIsBottomSectionOpen(prev => !prev);
-  };
+  const isTableMode = viewMode === 'table';
 
   return (
     <>
       <Stack
         ref={ref}
-        direction="column"
         spacing={2}
+        direction="column"
         className="print-no-print"
         sx={{
           p: 4,
-          pb: 1,
-          mb: 2,
+          mb: 1,
           bgcolor: 'white',
           borderRadius: '32px',
           border: '1px solid',
@@ -188,14 +189,16 @@ export const MyTaskFilter = ({
             justifyContent: 'space-between',
           }}
         >
-          <Stack
+          {['grid', 'kanban'].includes(viewMode) && <Stack
             direction="row"
-            spacing={1.5}
+            spacing={1}
             sx={{
               alignItems: 'center',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            {viewMode !== 'kanban' && (
+            {viewMode === 'grid' && (
               <TextField
                 select
                 label="Статус"
@@ -216,219 +219,160 @@ export const MyTaskFilter = ({
               </TextField>
             )}
 
-            <FilterAutocomplete
-              label="Пост"
-              value={postId}
-              options={postOptions}
-              onChange={setPostId}
-              sx={{ width: 250, flex: '0 0 250px' }}
-            />
+            {viewMode !== 'table' && (
+              <>
+                <FilterAutocomplete
+                  label="Пост"
+                  value={postId}
+                  onChange={setPostId}
+                  options={postOptions}
+                  sx={{ width: 250, flex: '0 0 250px' }}
+                />
 
-            <FilterAutocomplete
-              label={isCompany ? 'Исполнитель' : 'Компания'}
-              value={executorId}
-              options={partnerOptions}
-              loading={isPartnersLoading}
-              onChange={setExecutorId}
-              sx={{ width: 250, flex: '0 0 250px' }}
-            />
-
-            <Tooltip
-              title={updatedDate ? `Дата: ${updatedDate}` : 'Фильтр по дате'}
-            >
-              <IconButton
-                size="small"
-                color={updatedDate ? 'primary' : 'default'}
-                onClick={event => setAnchorEl(event.currentTarget)}
-              >
-                <CalendarMonthOutlined fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip
-              title={
-                isUrgentActive ? 'Показать все задачи' : 'Только срочные задачи'
-              }
-            >
-              <IconButton
-                size="small"
-                aria-pressed={isUrgentActive}
-                onClick={() => setExtraFilter(isUrgentActive ? null : 'urgent')}
-              >
-                <Whatshot color={isUrgentActive ? 'error' : 'action'} />
-              </IconButton>
-            </Tooltip>
+                <FilterAutocomplete
+                  value={executorId}
+                  options={partnerOptions}
+                  onChange={setExecutorId}
+                  loading={isPartnersLoading}
+                  sx={{ width: 250, flex: '0 0 250px' }}
+                  label={isCompany ? 'Исполнитель' : 'Компания'}
+                />
+              </>
+            )}
 
             {hasActiveSelectFilters && (
               <Button
                 size="small"
                 startIcon={<Close />}
                 onClick={handleResetSelectFilters}
-                sx={{ flexShrink: 0, whiteSpace: 'nowrap', px: 2 }}
+                sx={{ px: 2, py: 1 }}
               >
                 Сбросить
               </Button>
             )}
-          </Stack>
+          </Stack>}
 
           <Stack
+            spacing={1}
             direction="row"
-            spacing={2}
-            sx={{ alignItems: 'center' }}
+            sx={{ alignItems: 'center', justifyContent: isTableMode ? 'space-between' : 'flex-end', width: '100%' }}
           >
-            {isCompany && (
-              <Button
-                variant="outlined"
-                color="primary"
+            {(isSearchOpen || isTableMode) && (
+              <TextField
                 size="small"
-                onClick={() => setIsAddTaskOpen(true)}
+                label="Поиск"
+                variant="outlined"
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
                 sx={{
-                  px: 2,
-                  flexShrink: 0,
-                  display: { xs: 'none', sm: 'inline-flex' },
+                  width: { xs: 160, sm: 220, md: isTableMode ? 500 : 250 },
+                  transition: 'width .5s ease-in-out',
                 }}
-              >
-                Добавить задачу
-              </Button>
+              />
             )}
 
-            <Tooltip
-              title={isBottomSectionOpen ? 'Скрыть панель' : 'Показать панель'}
-            >
+            {!isTableMode && <Tooltip title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
               <IconButton
                 size="small"
-                color={isBottomSectionOpen ? 'primary' : 'default'}
-                onClick={toggleBottomSection}
+                color={isSearchOpen ? 'primary' : 'default'}
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
               >
-                {isBottomSectionOpen ? (
-                  <KeyboardArrowUp fontSize="small" />
+                {isSearchOpen ? (
+                  <Close fontSize="small" />
                 ) : (
-                  <KeyboardArrowDown fontSize="small" />
+                  <Search fontSize="small" />
                 )}
               </IconButton>
-            </Tooltip>
+            </Tooltip>}
+
+            <TaskFilterActionsMenu
+              isCompany={isCompany}
+              tableReport={tableReport}
+            />
           </Stack>
         </Stack>
 
-        <Collapse
-          in={isBottomSectionOpen}
-          sx={{ mt: '0px !important' }}
+        <Divider />
+
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <Divider sx={{ mt: 2 }} />
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              flex: 1,
+              alignItems: 'center',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
+            <FastButtonGroup isSearchOpen={false} />
+
+            <Tooltip
+              title={
+                updatedDate ? `Дата: ${updatedDate}` : 'Фильтр по дате создания'
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  color={updatedDate ? 'primary' : 'default'}
+                  onClick={event => setAnchorEl(event.currentTarget)}
+                >
+                  <CalendarMonthOutlined fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            <Tooltip
+              title={
+                isUrgentActive
+                  ? 'Показать все задачи'
+                  : 'Только срочные задачи'
+              }
+            >
+              <IconButton
+                size="small"
+                aria-pressed={isUrgentActive}
+                onClick={() =>
+                  setExtraFilter(isUrgentActive ? null : 'urgent')
+                }
+              >
+                <Whatshot color={isUrgentActive ? 'error' : 'action'} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
 
           <Stack
             direction="row"
-            sx={{
-              width: '100%',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 1,
-              height: '64px',
-            }}
+            spacing={0.5}
+            sx={{ alignItems: 'center', flexShrink: 0 }}
           >
-            <Box sx={{ flex: 1 }}>
-              <FastButtonGroup isSearchOpen={isSearchOpen} />
-            </Box>
 
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{ alignItems: 'center', minWidth: '150px' }}
-            >
-              {isSearchOpen && (
-                <TextField
-                  autoFocus
-                  size="small"
-                  label="Поиск"
-                  variant="outlined"
-                  value={searchQuery}
-                  onChange={event => setSearchQuery(event.target.value)}
-                  sx={{
-                    width: { xs: 160, sm: 220, md: 300 },
-                    transition: 'width .5s ease-in-out',
-                  }}
-                />
-              )}
+            <AssigneeFilterMenu isCompany={isCompany} />
 
-              <Tooltip title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
+            {viewMode === 'kanban' && (
+              <Tooltip title="Колонки Kanban">
                 <IconButton
                   size="small"
-                  color={isSearchOpen ? 'primary' : 'default'}
-                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                  color={columnsAnchorEl ? 'primary' : 'default'}
+                  onClick={event => setColumnsAnchorEl(event.currentTarget)}
                 >
-                  {isSearchOpen ? (
-                    <Close fontSize="small" />
-                  ) : (
-                    <Search fontSize="small" />
-                  )}
+                  <ViewColumn fontSize="small" />
                 </IconButton>
               </Tooltip>
+            )}
 
-              {tableReport && (
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                >
-                  <Tooltip title="Печать">
-                    <span>
-                      <IconButton
-                        size="small"
-                        disabled={
-                          tableReport.disabled || tableReport.isPrinting
-                        }
-                        onClick={tableReport.onPrint}
-                      >
-                        {tableReport.isPrinting ? (
-                          <CircularProgress
-                            size={16}
-                            color="inherit"
-                          />
-                        ) : (
-                          <PrintOutlined fontSize="small" />
-                        )}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-
-                  <Tooltip title="Экспорт CSV">
-                    <span>
-                      <IconButton
-                        size="small"
-                        disabled={
-                          tableReport.disabled || tableReport.isExporting
-                        }
-                        onClick={tableReport.onExport}
-                      >
-                        {tableReport.isExporting ? (
-                          <CircularProgress
-                            size={16}
-                            color="inherit"
-                          />
-                        ) : (
-                          <DownloadOutlined fontSize="small" />
-                        )}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                </Stack>
-              )}
-
-              {viewMode === 'kanban' && (
-                <Tooltip title="Колонки Kanban">
-                  <IconButton
-                    size="small"
-                    color={columnsAnchorEl ? 'primary' : 'default'}
-                    onClick={event => setColumnsAnchorEl(event.currentTarget)}
-                  >
-                    <ViewColumn fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              <TaskViewModeToggle />
-            </Stack>
+            <TaskViewModeToggle />
           </Stack>
-        </Collapse>
+        </Stack>
       </Stack>
 
       <Popover
@@ -495,11 +439,6 @@ export const MyTaskFilter = ({
           onClear={handleClearDate}
         />
       </Popover>
-
-      <AddTaskDialog
-        open={isAddTaskOpen}
-        onClose={() => setIsAddTaskOpen(false)}
-      />
     </>
   );
 };

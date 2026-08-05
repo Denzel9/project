@@ -1,36 +1,32 @@
-import { Description } from '@mui/icons-material';
-import { Box, Skeleton, Typography } from '@mui/material';
+import { Description } from '@mui/icons-material'
+import { Box, Skeleton, Typography } from '@mui/material'
 import {
   useEffect,
   useRef,
   useState,
   type CSSProperties,
   type ImgHTMLAttributes,
-} from 'react';
+} from 'react'
 
-import { getFileNameFromKey, getMediaKind } from '../lib/getMediaKind';
+import { getFileNameFromKey, getMediaKind } from '../lib/getMediaKind'
+
+export type MediaObjectFit = 'cover' | 'contain'
 
 type MediaItemProps = {
-  src: string;
-  alt?: string;
-  size?: number;
-  mimeType?: string;
-  fileName?: string;
-  isActive?: boolean;
-  onLoad?: () => void;
-  onError?: () => void;
-  errorMessage?: string;
-  withControls?: boolean;
-  loading?: ImgHTMLAttributes<HTMLImageElement>['loading'];
-};
-
-const mediaStyle = {
-  width: '100%',
-  height: '100%',
-  borderRadius: '16px',
-  transition: 'opacity 0.2s ease',
-  objectFit: 'cover' as CSSProperties['objectFit'],
-};
+  src: string
+  alt?: string
+  size?: number
+  mimeType?: string
+  fileName?: string
+  isActive?: boolean
+  onLoad?: () => void
+  onError?: () => void
+  errorMessage?: string
+  withControls?: boolean
+  /** cover — grids/thumbs; contain — main viewer / fullscreen */
+  fit?: MediaObjectFit
+  loading?: ImgHTMLAttributes<HTMLImageElement>['loading']
+}
 
 export const MediaItem = ({
   src,
@@ -42,68 +38,82 @@ export const MediaItem = ({
   loading = 'lazy',
   withControls = false,
   isActive = true,
+  fit = 'cover',
   errorMessage = 'Не удалось загрузить медиа',
 }: MediaItemProps) => {
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const onLoadRef = useRef(onLoad)
+  const onErrorRef = useRef(onError)
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  onLoadRef.current = onLoad
+  onErrorRef.current = onError
 
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
-    'loading'
-  );
+    'loading',
+  )
 
-  const kind = getMediaKind(src, mimeType);
+  const kind = getMediaKind(src, mimeType)
+  const objectFit: CSSProperties['objectFit'] =
+    withControls || fit === 'contain' ? 'contain' : 'cover'
+  const showBlurBackdrop = fit === 'contain' && kind === 'image'
+
+  const mediaStyle: CSSProperties = {
+    width: '100%',
+    height: '100%',
+    borderRadius: fit === 'contain' ? 0 : 16,
+    transition: 'opacity 0.2s ease',
+    objectFit,
+    position: 'relative',
+    zIndex: 1,
+  }
 
   const handleLoad = () => {
-    setStatus('loaded');
-    onLoad?.();
-  };
+    setStatus('loaded')
+    onLoadRef.current?.()
+  }
 
   const handleError = () => {
-    setStatus('error');
-    onError?.();
-  };
+    setStatus('error')
+    onErrorRef.current?.()
+  }
 
   useEffect(() => {
-    setTimeout(() => {
-      setStatus('loading');
-    }, 0);
-  }, [src, mimeType]);
+    if (kind === 'document') return
 
-  useEffect(() => {
-    if (kind === 'document') return;
+    setStatus('loading')
 
     if (kind === 'image') {
-      const img = imgRef.current;
+      const img = imgRef.current
 
       if (img?.complete && img.naturalWidth > 0) {
-        setStatus('loaded');
-        onLoad?.();
+        setStatus('loaded')
+        onLoadRef.current?.()
       }
 
-      return;
+      return
     }
 
-    const video = videoRef.current;
+    const video = videoRef.current
 
     if (video && video.readyState >= 2) {
-      setStatus('loaded');
-      onLoad?.();
+      setStatus('loaded')
+      onLoadRef.current?.()
     }
-  }, [src, mimeType, kind, onLoad]);
+  }, [src, mimeType, kind])
 
   useEffect(() => {
-    if (kind !== 'video') return;
+    if (kind !== 'video') return
 
-    const video = videoRef.current;
+    const video = videoRef.current
 
-    if (!video || isActive) return;
+    if (!video || isActive) return
 
-    video.pause();
-  }, [isActive, kind]);
+    video.pause()
+  }, [isActive, kind])
 
   if (kind === 'document') {
-    const displayName = fileName ?? getFileNameFromKey(src);
+    const displayName = fileName ?? getFileNameFromKey(src)
 
     return (
       <Box
@@ -133,7 +143,7 @@ export const MediaItem = ({
 
         <Typography variant="body2">{displayName}</Typography>
       </Box>
-    );
+    )
   }
 
   if (status === 'error') {
@@ -145,6 +155,8 @@ export const MediaItem = ({
           alignItems: 'center',
           bgcolor: 'action.hover',
           justifyContent: 'center',
+          width: '100%',
+          height: '100%',
         }}
       >
         <Typography
@@ -155,7 +167,7 @@ export const MediaItem = ({
           {errorMessage}
         </Typography>
       </Box>
-    );
+    )
   }
 
   return (
@@ -164,10 +176,30 @@ export const MediaItem = ({
         width: '100%',
         height: '100%',
         position: 'relative',
+        overflow: 'hidden',
         bgcolor:
-          kind === 'video' && withControls ? 'common.black' : 'transparent',
+          fit === 'contain' || (kind === 'video' && withControls)
+            ? 'common.black'
+            : 'transparent',
       }}
     >
+      {showBlurBackdrop && (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: '-12%',
+            backgroundImage: `url(${src})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'blur(28px)',
+            opacity: 0.45,
+            transform: 'scale(1.08)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       {status === 'loading' && (
         <Skeleton
           variant="rounded"
@@ -177,6 +209,7 @@ export const MediaItem = ({
             height: '100%',
             position: 'absolute',
             pointerEvents: 'none',
+            zIndex: 2,
           }}
         />
       )}
@@ -205,14 +238,9 @@ export const MediaItem = ({
           className="swiper-no-swiping"
           onClick={event => event.stopPropagation()}
           onPointerDown={event => event.stopPropagation()}
-          style={{
-            ...mediaStyle,
-            objectFit: withControls ? 'contain' : mediaStyle.objectFit,
-            position: 'relative',
-            zIndex: 1,
-          }}
+          style={mediaStyle}
         />
       )}
     </Box>
-  );
-};
+  )
+}

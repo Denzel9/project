@@ -14,10 +14,15 @@ export type ChatMessageMedia = {
   mimeType: string
 }
 
+export type ChatMessageActorKind = 'OWNER' | 'MANAGER'
+
 export type ChatMessage = {
   id: string
   conversationId: string
   senderId: string
+  actorAccountId?: string | null
+  actorDisplayName?: string | null
+  actorKind?: ChatMessageActorKind | null
   content: string
   media: ChatMessageMedia[]
   createdAt: string
@@ -31,7 +36,12 @@ export type ChatConversation = {
   peer: ChatPeer
   lastMessage: ChatMessage | null
   unreadCount: number
+  isPinned: boolean
   updatedAt: string
+}
+
+export type ChatUnreadCount = {
+  count: number
 }
 
 export type ChatMessagesReadEvent = {

@@ -2,55 +2,68 @@ import { useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 
 import {
-  usePostTasksQuery,
-  useTaskByIdQuery,
   TASK_STATUS_ENUM,
   type Task,
   usePostByIdQuery,
+  usePostTasksQuery,
 } from '@/entities';
 
-const CANCELLED_STATUSES = [
-  TASK_STATUS_ENUM.CANCELLED,
-  TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
-] as const;
+const CANCELLED_STATUSES = [TASK_STATUS_ENUM.ANNULLED] as const;
 
-const pickTaskFromList = (items: Task[], inviteId?: string | null) => {
-  if (inviteId) {
-    const byInvite = items.find(item => item.id === inviteId);
+export const getTaskUserKey = (task: Task) => task.executorId || 'unassigned';
 
-    if (byInvite) return byInvite;
+const matchesUserId = (task: Task, userId: string) =>
+  getTaskUserKey(task) === userId || task.executor?.id === userId;
+
+const pickFirstActive = (items: Task[]) =>
+  items.find(
+    item =>
+      !CANCELLED_STATUSES.includes(
+        item.status as (typeof CANCELLED_STATUSES)[number],
+      ),
+  ) ?? items[0];
+
+/**
+ * - только postId → первая активная задача
+ * - postId + userId → первая задача этого исполнителя
+ * - postId + userId + taskId → задача исполнителя с id === taskId
+ */
+const pickTaskFromList = (
+  items: Task[],
+  userId?: string | null,
+  taskId?: string | null,
+) => {
+  if (!items.length) return null;
+
+  let pool = items;
+
+  if (userId) {
+    const byUser = items.filter(item => matchesUserId(item, userId));
+
+    if (byUser.length) {
+      pool = byUser;
+    }
   }
 
-  return (
-    items.find(
-      item =>
-        !CANCELLED_STATUSES.includes(
-          item.status as (typeof CANCELLED_STATUSES)[number],
-        ),
-    ) ?? items[0]
-  );
+  if (taskId) {
+    return pool.find(item => item.id === taskId) ?? pickFirstActive(pool) ?? null;
+  }
+
+  return pickFirstActive(pool) ?? null;
 };
 
-const resolveFreshTask = (
-  task: Task,
-  taskById?: Task,
-  tasks?: Task[],
-) => {
-  const updated =
-    taskById?.id === task.id
-      ? taskById
-      : tasks?.find(item => item.id === task.id);
-
-  return updated ?? task;
-};
+const resolveFreshTask = (task: Task, tasks?: Task[]) =>
+  tasks?.find(item => item.id === task.id) ?? task;
 
 export const useTaskData = () => {
   const { id: postId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get('taskId');
-  const inviteId = searchParams.get('inviteId');
+  /** `inviteId` — совместимость со старыми ссылками */
+  const userId =
+    searchParams.get('userId') ?? searchParams.get('inviteId');
 
-  const routeKey = `${postId ?? ''}:${taskId ?? ''}:${inviteId ?? ''}`;
+  const routeKey = `${postId ?? ''}:${userId ?? ''}:${taskId ?? ''}`;
 
   const [overrideTask, setOverrideTask] = useState<Task | null>(null);
   const [routeKeySnapshot, setRouteKeySnapshot] = useState(routeKey);
@@ -64,35 +77,23 @@ export const useTaskData = () => {
     postId ?? null,
     {
       page: 1,
-      limit: 20,
+      limit: 100,
     },
-    Boolean(taskId),
   );
-
-  const { data: taskById, isLoading: isTaskLoading } = useTaskByIdQuery(
-    taskId ?? null,
-    Boolean(!taskId),
-  );
-
-
 
   const routeTask = useMemo(() => {
-    if (taskId) {
-      return taskById?.id === taskId ? taskById : null;
-    }
-
     if (!tasks?.items?.length) return null;
 
-    return pickTaskFromList(tasks.items, inviteId);
-  }, [taskId, taskById, tasks, inviteId]);
+    return pickTaskFromList(tasks.items, userId, taskId);
+  }, [tasks, userId, taskId]);
 
   const currentTask = useMemo(() => {
     const selected = overrideTask ?? routeTask;
 
     if (!selected) return null;
 
-    return resolveFreshTask(selected, taskById, tasks?.items);
-  }, [overrideTask, routeTask, taskById, tasks]);
+    return resolveFreshTask(selected, tasks?.items);
+  }, [overrideTask, routeTask, tasks]);
 
   const setCurrentTask = (task: Task | null) => {
     setOverrideTask(task);
@@ -102,15 +103,11 @@ export const useTaskData = () => {
     currentTask?.postId ?? currentTask?.post?.id ?? postId ?? null,
   );
 
-
-
-  const isLoading = isTasksLoading || isTaskLoading;
-
   return {
     id: postId,
     post,
     tasks,
-    isLoading,
+    isLoading: isTasksLoading,
     isPostLoading,
     currentTask,
     setCurrentTask,

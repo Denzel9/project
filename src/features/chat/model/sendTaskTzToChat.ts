@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 
 import {
+  copyTaskMediaToConversation,
   wrapChatTaskTzMessage,
   type ChatConversation,
   type CreateConversationDto,
@@ -143,6 +144,8 @@ type SendTaskTzToChatParams = {
     body: CreateConversationDto,
   ) => Promise<ChatConversation>
   task?: Task
+  /** Default true — attach MAIN task media via server copy */
+  attachMedia?: boolean
 }
 
 export const sendTaskTzToChat = async ({
@@ -151,10 +154,17 @@ export const sendTaskTzToChat = async ({
   conversations,
   createConversation,
   task,
+  attachMedia = true,
 }: SendTaskTzToChatParams): Promise<boolean> => {
   const fullTask = task?.id === taskId ? task : await fetchTaskById(taskId)
-  const markdown = formatTaskTzForChat(fullTask)
-  const content = wrapChatTaskTzMessage(fullTask.id, markdown)
+  // List payloads may omit media — refetch so attachments are included
+  const taskWithMedia =
+    attachMedia && fullTask.media === undefined
+      ? await fetchTaskById(taskId)
+      : fullTask
+
+  const markdown = formatTaskTzForChat(taskWithMedia)
+  const content = wrapChatTaskTzMessage(taskWithMedia.id, markdown)
 
   const existing = conversations?.find(
     conversation => conversation.peer.id === peerId,
@@ -162,11 +172,22 @@ export const sendTaskTzToChat = async ({
   const conversation =
     existing ?? (await createConversation({ recipientId: peerId }))
 
+  const shouldAttachMedia = attachMedia && Boolean(taskWithMedia.media?.length)
+
+  const media = shouldAttachMedia
+    ? await copyTaskMediaToConversation({
+        taskId: taskWithMedia.id,
+        conversationId: conversation.id,
+        kind: 'main',
+      })
+    : undefined
+
   chatSocket.connect()
   chatSocket.joinConversation(conversation.id)
   chatSocket.sendMessage({
     conversationId: conversation.id,
     content,
+    ...(media?.length ? { media } : {}),
   })
 
   return true

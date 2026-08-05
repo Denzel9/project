@@ -1,6 +1,7 @@
-import { Box, Typography } from '@mui/material';
+import { Box, type SxProps, type Theme, Typography } from '@mui/material';
 
 type FormBlockProps = {
+  sx?: SxProps<Theme>;
   gap?: number;
   children: React.ReactNode;
   isSingleColumn?: boolean;
@@ -16,13 +17,14 @@ export const FormBlockRowItem = ({
 };
 
 export const FormBlock = ({
+  sx,
   title,
   gap = 2,
   children,
   isSingleColumn = false,
 }: FormBlockProps) => {
   return (
-    <Box sx={{ mt: 6 }}>
+    <Box sx={{ mt: 6, ...sx }}>
       {title && typeof title === 'string' && (
         <Typography
           variant="h6"

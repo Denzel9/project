@@ -13,7 +13,7 @@ export const MembersHeader = ({ onAddClick }: MembersHeaderProps) => {
     >
       <Stack spacing={0.5}>
         <Typography
-          variant="h5"
+          variant="h6"
           sx={{ fontWeight: 600 }}
         >
           Участники

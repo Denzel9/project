@@ -7,6 +7,7 @@ import { downloadCsv } from '@/shared/lib/export'
 import {
   getPublicationExecutorName,
   getPublicationPlatforms,
+  getPublicationPostTitle,
   getPublicationPreviewMedia,
   getPublicationTitle,
 } from './utils'
@@ -30,6 +31,7 @@ const buildExportFilename = () => {
 export const exportPublicationsReport = (publications: Publication[]) => {
   const headers = [
     'Название',
+    'Пост',
     'Площадки',
     'Исполнитель',
     'Создано',
@@ -44,6 +46,7 @@ export const exportPublicationsReport = (publications: Publication[]) => {
 
     return [
       getPublicationTitle(publication),
+      getPublicationPostTitle(publication),
       platforms.length
         ? platforms.map(getPlatformLabel).join(', ')
         : '—',

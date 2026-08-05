@@ -26,6 +26,7 @@ export const toMyApplicationsParams = (
   filters: {
     status: ApplicationStatusFilter;
     updatedDate: string | null;
+    q?: string;
   },
   pagination?: { page?: number; limit?: number },
 ): ApplicationListParams => ({
@@ -33,16 +34,19 @@ export const toMyApplicationsParams = (
   limit: pagination?.limit ?? 20,
   ...(filters.status !== 'all' && { status: filters.status }),
   ...(filters.updatedDate && { createdDate: filters.updatedDate }),
+  ...(filters.q?.trim() && { q: filters.q.trim() }),
 });
 
 export const hasActiveMyResponseFilters = (filters: {
   status: ApplicationStatusFilter;
   updatedDate: string | null;
   companyId: CompanyFilter;
+  q?: string;
 }) =>
   filters.status !== 'all' ||
   Boolean(filters.updatedDate) ||
-  filters.companyId !== 'all';
+  filters.companyId !== 'all' ||
+  Boolean(filters.q?.trim());
 
 export const countApplicationsByStatus = (applications: Application[]) => {
   const counts: Record<'all' | ApplicationStatus, number> = {

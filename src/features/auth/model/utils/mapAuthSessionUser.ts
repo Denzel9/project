@@ -1,9 +1,15 @@
 import type { AuthSessionUser, PrimeStatus } from '../types/types'
 
 export const mapAuthSessionUser = (
-  user: Partial<AuthSessionUser> & { id: string; role: string; membershipRole: string }
+  user: Partial<AuthSessionUser> & {
+    id: string
+    accountId: string
+    role: string
+    membershipRole: string
+  },
 ): AuthSessionUser => ({
   id: user.id,
+  accountId: user.accountId,
   role: user.role,
   membershipRole: user.membershipRole,
   isVerified: user.isVerified,

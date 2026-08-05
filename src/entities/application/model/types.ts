@@ -44,6 +44,12 @@ export type Application = {
   updatedAt: string
   post?: ApplicationPostSummary
   applicant?: ApplicationApplicant
+  createdActorAccountId?: string | null
+  createdActorDisplayName?: string | null
+  createdActorKind?: 'OWNER' | 'MANAGER' | null
+  lastActorAccountId?: string | null
+  lastActorDisplayName?: string | null
+  lastActorKind?: 'OWNER' | 'MANAGER' | null
 }
 
 export type ApplicationList = {
@@ -51,6 +57,11 @@ export type ApplicationList = {
   total: number
   page: number
   limit: number
+}
+
+export type ApplicationStats = {
+  incomingNew: number
+  mineActive: number
 }
 
 export type CreateApplicationDto = {

@@ -34,7 +34,6 @@ const mergeUniqueComments = (
 type UseDashboardTaskCommentsThreadParams = {
   taskId: string | null
   task: Task
-  lastComment?: TaskComment
   expanded: boolean
   limit?: number
 }
@@ -42,7 +41,6 @@ type UseDashboardTaskCommentsThreadParams = {
 export const useDashboardTaskCommentsThread = ({
   taskId,
   task,
-  lastComment,
   expanded,
   limit = DASHBOARD_COMMENTS_THREAD_LIMIT,
 }: UseDashboardTaskCommentsThreadParams) => {
@@ -66,7 +64,6 @@ export const useDashboardTaskCommentsThread = ({
     expanded && taskId && !allComments?.length ? taskId : null,
     limit,
     expanded && Boolean(taskId) && !allComments?.length,
-    lastComment?.id,
   )
 
   useEffect(() => {
@@ -93,14 +90,8 @@ export const useDashboardTaskCommentsThread = ({
       return allComments
     }
 
-    const fromApi = mergeUniqueComments(olderComments, tailComments)
-
-    if (fromApi.length > 0) {
-      return fromApi
-    }
-
-    return lastComment ? [lastComment] : []
-  }, [allComments, olderComments, tailComments, lastComment])
+    return mergeUniqueComments(olderComments, tailComments)
+  }, [allComments, olderComments, tailComments])
 
   const items = useMemo(
     (): DashboardCommentItem[] =>

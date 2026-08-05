@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import {
+  mapAuthSessionUser,
   useAuthStore,
   useConfirmEmailMutation,
   useRefreshTokenMutation,
@@ -41,17 +42,7 @@ export const ConfirmEmailPage = () => {
           try {
             const refreshed = await refreshToken();
             if (refreshed?.data?.user) {
-              setAuth({
-                id: refreshed.data.user.id,
-                role: refreshed.data.user.role,
-                membershipRole: refreshed.data.user.membershipRole,
-                isPrime: Boolean(refreshed.data.user.isPrime),
-                primeStatus: refreshed.data.user.primeStatus ?? 'NONE',
-                primeExpiresAt: refreshed.data.user.primeExpiresAt ?? null,
-                isEmailConfirmed: Boolean(
-                  refreshed.data.user.isEmailConfirmed
-                ),
-              });
+              setAuth(mapAuthSessionUser(refreshed.data.user));
             } else {
               useAuthStore.setState({ isEmailConfirmed: true });
             }

@@ -4,6 +4,7 @@ import { type AuthSessionUser, type AuthSliceState } from '../types/types'
 
 const emptyAuth = {
   id: null as string | null,
+  accountId: null as string | null,
   role: null as string | null,
   membershipRole: null as string | null,
   isPrime: false,
@@ -19,6 +20,7 @@ export const useAuthStore = create<AuthSliceState>(set => ({
   setAuth: (user: AuthSessionUser) =>
     set({
       id: user.id,
+      accountId: user.accountId,
       role: user.role,
       membershipRole: user.membershipRole,
       isPrime: Boolean(user.isPrime),

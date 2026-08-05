@@ -66,6 +66,7 @@ export const getPublicationPostOptions = (publications: Publication[]) => {
 
     map.set(
       publication.postId,
+      publication.post?.title?.trim() ||
       publication.title?.trim() ||
       `Объявление ${publication.postId.slice(0, 8)}`,
     )
@@ -78,6 +79,13 @@ export const getPublicationPostOptions = (publications: Publication[]) => {
 
 export const getPublicationTitle = (publication: Publication) =>
   publication.title?.trim() || 'Публикация'
+
+export const getPublicationPostTitle = (publication: Publication) =>
+  publication.post?.title?.trim() ||
+  `Объявление ${publication.postId.slice(0, 8)}`
+
+export const getPublicationPostPath = (publication: Publication) =>
+  `${ROUTES.POST}/${publication.postId}`
 
 export const getPublicationPlatforms = (publication: Publication) => [
   ...new Set(
@@ -122,6 +130,13 @@ export const sortPublications = (
         return (
           getPublicationTitle(left).localeCompare(getPublicationTitle(right), 'ru') *
           direction
+        )
+      case 'post':
+        return (
+          getPublicationPostTitle(left).localeCompare(
+            getPublicationPostTitle(right),
+            'ru',
+          ) * direction
         )
       case 'platform': {
         const leftPlatform = getPublicationPlatforms(left)

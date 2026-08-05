@@ -24,7 +24,29 @@ export type User = {
   updatedAt: string;
 };
 
+export type UserSearchItem = {
+  id: string
+  role: 'CREATOR' | 'COMPANY'
+  avatar: string | null
+  displayName: string
+}
+
+export type UserSearchList = {
+  items: UserSearchItem[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type SearchUsersParams = {
+  q: string
+  page?: number
+  limit?: number
+}
+
 export type Person = {
+  name?: string | null;
+  lastName?: string | null;
   height: string | null;
   weight: string | null;
   size: string | null;

@@ -16,7 +16,7 @@ import type { Application } from '@/entities/application'
 import type { Photo } from '@/entities/photo'
 
 export const getPostTypeLabel = (type: PostType): string =>
-  type === 'COMPANY' ? 'Компания' : 'Креатор'
+  type === 'COMPANY' ? 'Компания' : 'Исполнитель'
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
   INSTAGRAM: 'Instagram',
@@ -25,6 +25,15 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   TELEGRAM: 'Telegram',
   VK: 'ВКонтакте',
   OTHER: 'Другое',
+}
+
+export const PLATFORM_COLORS: Record<Platform, string> = {
+  INSTAGRAM: '#E1306C',
+  TIKTOK: '#FE2C55',
+  YOUTUBE: '#FF0000',
+  TELEGRAM: '#229ED9',
+  VK: '#0077FF',
+  OTHER: '#757575',
 }
 
 export const PLACEMENT_FORMAT_LABELS: Record<PlacementFormat, string> = {
@@ -58,6 +67,20 @@ export const PAYMENT_TERMS_LABELS: Record<PaymentTerms, string> = {
 
 export const getPlatformLabel = (platform: Platform): string =>
   PLATFORM_LABELS[platform] ?? platform
+
+export const getPlatformColor = (platform: Platform): string =>
+  PLATFORM_COLORS[platform] ?? PLATFORM_COLORS.OTHER
+
+export const getPlatformChipSx = (platform: Platform) => {
+  const color = getPlatformColor(platform)
+
+  return {
+    color,
+    bgcolor: `${color}14`,
+    borderColor: color,
+    fontWeight: 600,
+  }
+}
 
 export const getPlacementFormatLabel = (format: PlacementFormat): string =>
   PLACEMENT_FORMAT_LABELS[format] ?? format

@@ -1,4 +1,5 @@
-import { Box, Stack, useMediaQuery } from '@mui/material';
+import { KeyboardArrowUp } from '@mui/icons-material';
+import { Box, Fade, IconButton, Stack, useMediaQuery } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useMyApplicationsMapForPosts } from '@/entities/application';
@@ -13,7 +14,7 @@ import {
   useMainFilterStore,
   hasActivePostFilters,
 } from '@/features/main-filter';
-import { EmptyBlock, InfiniteScrollSentinel } from '@/shared';
+import { EmptyBlock, InfiniteScrollSentinel, scrollMainToTop, useScroll } from '@/shared';
 import {
   ACTION_BUTTONS_KEYS,
   PostItem,
@@ -32,6 +33,7 @@ const searchMessageBoxSx = {
 
 export const HomePage = () => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+  const { isScrolled, ref: scrollProbeRef } = useScroll(320);
 
   const {
     filters,
@@ -216,6 +218,8 @@ export const HomePage = () => {
 
   return (
     <PageLayout>
+      <Box ref={scrollProbeRef} />
+
       <Box
         sx={{
           top: 0,
@@ -238,6 +242,28 @@ export const HomePage = () => {
       >
         {canSearch ? renderSearchContent() : renderFeedContent()}
       </Box>
+
+      <Fade in={isScrolled}>
+        <IconButton
+          aria-label="Наверх"
+          onClick={() => scrollMainToTop('smooth')}
+          sx={{
+            position: 'fixed',
+            right: { xs: 16, md: 28 },
+            bottom: { xs: 24, md: 32 },
+            zIndex: 1200,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: 2,
+            '&:hover': {
+              bgcolor: 'grey.100',
+            },
+          }}
+        >
+          <KeyboardArrowUp />
+        </IconButton>
+      </Fade>
     </PageLayout>
   );
 };

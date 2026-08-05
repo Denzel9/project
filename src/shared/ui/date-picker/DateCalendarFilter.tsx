@@ -18,6 +18,11 @@ export const DateCalendarFilter = ({
       value={value ? dayjs(value) : null}
       onChange={onChange}
       views={['year', 'month', 'day']}
+      sx={{
+        '& .MuiPickersCalendarHeader-label': {
+          textTransform: 'capitalize',
+        }
+      }}
     />
     {value && (
       <Button

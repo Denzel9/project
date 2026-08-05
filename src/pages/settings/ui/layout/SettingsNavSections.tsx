@@ -9,7 +9,9 @@ import {
 import { useMemo } from 'react';
 import { NavLink } from 'react-router';
 
+import { USER_ROLE } from '@/entities';
 import { useAuthStore } from '@/features/auth';
+import { ROUTES } from '@/shared/config/routes';
 
 import { SETTINGS_MENU_SECTIONS } from '../../model/constants';
 
@@ -26,14 +28,35 @@ export const SettingsNavSections = ({
 }: SettingsNavSectionsProps) => {
   const isDrawer = variant === 'drawer';
   const isPrime = useAuthStore(state => state.isPrime);
+  const role = useAuthStore(state => state.role);
+  const isManager = role === USER_ROLE.MANAGER;
 
-  const sections = useMemo(
-    () =>
-      isPrime
-        ? SETTINGS_MENU_SECTIONS
-        : SETTINGS_MENU_SECTIONS.filter(section => section.title !== 'CRM'),
-    [isPrime]
-  );
+  const sections = useMemo(() => {
+    let next = SETTINGS_MENU_SECTIONS;
+
+    if (!isPrime) {
+      next = next.filter(section => section.title !== 'CRM');
+    }
+
+    return next
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => {
+          if (item.path === ROUTES.SETTINGS_PROFILES && !isManager) {
+            return false;
+          }
+          if (
+            isManager &&
+            (item.path === ROUTES.SETTINGS_MEMBERS ||
+              item.path === ROUTES.SETTINGS_BILLING)
+          ) {
+            return false;
+          }
+          return true;
+        }),
+      }))
+      .filter(section => section.items.length > 0);
+  }, [isPrime, isManager]);
 
   return (
     <>

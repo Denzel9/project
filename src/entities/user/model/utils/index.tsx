@@ -39,9 +39,15 @@ export const validateContactValue = (
   }
 };
 
-// TODO: Refactor user: Partial<User> | undefined
 export const getUserName = (user: Partial<User> | undefined | null) => {
   if (!user) return '';
+
+  if (user.role === 'MANAGER') {
+    const fullName =
+      `${user.person?.name ?? ''} ${user.person?.lastName ?? ''}`.trim();
+    if (fullName) return fullName;
+    return user.email ?? 'Менеджер';
+  }
 
   if (Object.keys(user?.companyProfile ?? {}).length) {
     return user?.companyProfile?.companyName;

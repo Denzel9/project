@@ -1,16 +1,22 @@
-import styled from '@emotion/styled';
+import styled from '@emotion/styled'
+import { useRef, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 
-import type { Photo } from '@/entities/photo';
-import { filterValidMediaFiles, MEDIA_POST_ACCEPT } from '@/shared/lib/media';
-
-import type { ChangeEvent } from 'react';
+import type { Photo } from '@/entities/photo'
+import {
+  createLocalMediaPlaceholders,
+  prepareLocalMediaFiles,
+  revokeLocalPhotoUrl,
+  type LocalMediaFile,
+  MEDIA_POST_ACCEPT,
+} from '@/shared/lib/media'
 
 interface UploadButtonProps {
-  files: File[];
-  images?: Photo[];
-  setFiles: (files: File[]) => void;
-  onChange?: (images: Photo[]) => void;
-  onValidationError?: (message: string) => void;
+  files: LocalMediaFile[]
+  images?: Photo[]
+  setFiles: Dispatch<SetStateAction<LocalMediaFile[]>>
+  onChange?: Dispatch<SetStateAction<Photo[]>>
+  onValidationError?: (message: string) => void
+  maxCount?: number
 }
 
 const VisuallyHiddenInput = styled('input')({
@@ -23,71 +29,92 @@ const VisuallyHiddenInput = styled('input')({
   whiteSpace: 'nowrap',
   clip: 'rect(0 0 0 0)',
   clipPath: 'inset(50%)',
-});
+})
 
 export const UploadButton = ({
   onChange,
-  images,
+  images = [],
   files,
   setFiles,
   onValidationError,
+  maxCount = 10,
 }: UploadButtonProps) => {
-  const filesName = files?.map(file => file.name);
-
-  const handleAddedIsSameFile = () => {
-    // dispatch(
-    //   openSnackbar({
-    //     isOpen: true,
-    //     state: 'error',
-    //     message: 'Это фото уже было добавлено ранее',
-    //   })
-    // );
-  };
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(event.target.files ?? []);
+    const selectedFiles = Array.from(event.target.files ?? [])
+    event.target.value = ''
 
-    if (!selectedFiles.length) return;
+    if (!selectedFiles.length) return
 
-    const firstFile = selectedFiles[0];
+    const { placeholders, localFiles } = createLocalMediaPlaceholders(
+      selectedFiles,
+      files,
+      {
+        maxCount,
+        currentCount: images.length,
+        onValidationError,
+      },
+    )
 
-    if (filesName.includes(firstFile.name)) {
-      handleAddedIsSameFile();
-      return;
-    }
+    if (!localFiles.length) return
 
-    const { valid, errors } = filterValidMediaFiles(selectedFiles);
+    setFiles(prev => [...prev, ...localFiles])
+    onChange?.(prev => [...prev, ...placeholders])
 
-    if (errors.length) {
-      onValidationError?.(errors[0]);
-    }
+    void prepareLocalMediaFiles(
+      localFiles,
+      (prepared, previewUrl) => {
+        setFiles(prev =>
+          prev.map(item =>
+            item.localId === prepared.localId ? prepared : item,
+          ),
+        )
 
-    if (!valid.length) return;
+        onChange?.(prev =>
+          prev.map(image => {
+            if (image.localId !== prepared.localId) return image
 
-    const newFiles: Photo[] = valid.map(file => {
-      const previewUrl = URL.createObjectURL(file);
+            revokeLocalPhotoUrl(image)
 
-      return {
-        lastModified: '',
-        filename: file.name,
-        mimeType: file.type,
-        size: String(file.size),
-        key: previewUrl,
-        url: previewUrl,
-      };
-    });
-
-    setFiles([...files, ...valid]);
-    onChange?.([...(images || []), ...newFiles]);
-  };
+            return {
+              ...image,
+              url: previewUrl,
+              key: prepared.localId,
+              mimeType: prepared.file.type,
+              size: String(prepared.file.size),
+              filename: prepared.file.name,
+              uploadStatus: 'ready',
+              uploadProgress: 0,
+              uploadError: undefined,
+            }
+          }),
+        )
+      },
+      (localId, error) => {
+        onChange?.(prev =>
+          prev.map(image =>
+            image.localId === localId
+              ? {
+                  ...image,
+                  uploadStatus: 'error',
+                  uploadError: error.message,
+                }
+              : image,
+          ),
+        )
+      },
+    )
+  }
 
   return (
     <VisuallyHiddenInput
+      ref={inputRef}
       max={6}
       multiple
       type="file"
       accept={MEDIA_POST_ACCEPT}
       onChange={handleFileChange}
     />
-  );
-};
+  )
+}

@@ -13,11 +13,13 @@ import {
   type CooperationDetails,
   type UploadMediaResponse,
 } from '@/entities/post'
+import { getActionActorParts } from '@/shared/lib/formatActionActorLabel'
 
 import {
   TaskActivityType,
   TASK_ACTIVITY_LABELS,
   TASK_STATUS_ENUM,
+  type CreateTaskDto,
   type Task,
   type TaskActivity,
   type TaskActivityPayload,
@@ -46,9 +48,8 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   CHECKING: 'На проверке',
   IN_PROGRESS: 'В работе',
   REVISION: 'На доработке',
-  CANCELLED: 'Отменена заказчиком',
   PENDING_APPROVAL: 'На согласовании',
-  CANCELLED_EXECUTOR: 'Отменена исполнителем',
+  ANNULLED: 'Аннулирована',
 }
 
 export const TASK_ROLE_LABELS = {
@@ -58,8 +59,7 @@ export const TASK_ROLE_LABELS = {
 
 export const isTaskTerminal = (task: Task) =>
   task.status === TASK_STATUS_ENUM.COMPLETED ||
-  task.status === TASK_STATUS_ENUM.CANCELLED ||
-  task.status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR
+  task.status === TASK_STATUS_ENUM.ANNULLED
 
 export const isTaskOverdue = (task: Task) =>
   Boolean(task.finalDate) &&
@@ -105,21 +105,59 @@ export const getTaskActivityMeta = (
       return { label: TASK_ACTIVITY_LABELS[type], color: 'success' }
     case TaskActivityType.MEDIA_REMOVED:
       return { label: TASK_ACTIVITY_LABELS[type], color: 'error' }
+    case TaskActivityType.ANNULMENT_REQUESTED:
+    case TaskActivityType.DEADLINE_EXTENSION_REQUESTED:
+      return { label: TASK_ACTIVITY_LABELS[type], color: 'warning' }
+    case TaskActivityType.ANNULMENT_CONFIRMED:
+    case TaskActivityType.DEADLINE_EXTENSION_CONFIRMED:
+      return { label: TASK_ACTIVITY_LABELS[type], color: 'success' }
+    case TaskActivityType.ANNULMENT_REJECTED:
+    case TaskActivityType.DEADLINE_EXTENSION_REJECTED:
+      return { label: TASK_ACTIVITY_LABELS[type], color: 'error' }
     default:
       return { label: 'Изменение', color: 'default' }
   }
 }
 
+export const getTaskActivityActorParts = (
+  actorId: string,
+  context: { ownerId: string; executorId?: string | null },
+  actor?: {
+    actorDisplayName?: string | null
+    actorKind?: 'OWNER' | 'MANAGER' | null
+  } | null,
+): { kindLabel: string; name: string } => {
+  if (actor?.actorDisplayName?.trim() || actor?.actorKind) {
+    const parts = getActionActorParts({
+      actorDisplayName: actor.actorDisplayName,
+      actorKind: actor.actorKind,
+    })
+    if (parts) return parts
+  }
+
+  if (actorId === context.ownerId) {
+    return { kindLabel: '', name: TASK_ROLE_LABELS.owner }
+  }
+  if (context.executorId && actorId === context.executorId) {
+    return { kindLabel: '', name: TASK_ROLE_LABELS.executor }
+  }
+
+  return { kindLabel: '', name: 'Участник' }
+}
+
 export const getTaskActivityActorLabel = (
   actorId: string,
   context: { ownerId: string; executorId?: string | null },
+  actor?: {
+    actorDisplayName?: string | null
+    actorKind?: 'OWNER' | 'MANAGER' | null
+  } | null,
 ) => {
-  if (actorId === context.ownerId) return TASK_ROLE_LABELS.owner
-  if (context.executorId && actorId === context.executorId) {
-    return TASK_ROLE_LABELS.executor
+  const parts = getTaskActivityActorParts(actorId, context, actor)
+  if (parts.kindLabel && parts.name) {
+    return `${parts.kindLabel} · ${parts.name}`
   }
-
-  return 'Участник'
+  return parts.name || parts.kindLabel
 }
 
 const truncateSummary = (text: string, maxLength = 80) => {
@@ -308,7 +346,7 @@ const formatActivityValue = (
   return String(value)
 }
 
-export type TaskActivityDetailVariant = 'status' | 'field' | 'media'
+export type TaskActivityDetailVariant = 'status' | 'field' | 'media' | 'request'
 
 export type TaskActivityDetail = {
   title: string
@@ -318,7 +356,18 @@ export type TaskActivityDetail = {
   to: string
   showDiff: boolean
   variant: TaskActivityDetailVariant
+  reason?: string
+  proposedFinalDate?: string
 }
+
+const REQUEST_ACTIVITY_TYPES = new Set<TaskActivityType>([
+  TaskActivityType.ANNULMENT_REQUESTED,
+  TaskActivityType.ANNULMENT_CONFIRMED,
+  TaskActivityType.ANNULMENT_REJECTED,
+  TaskActivityType.DEADLINE_EXTENSION_REQUESTED,
+  TaskActivityType.DEADLINE_EXTENSION_CONFIRMED,
+  TaskActivityType.DEADLINE_EXTENSION_REJECTED,
+])
 
 export const getTaskActivitySummary = (activity: TaskActivity) => {
   if (activity.type === TaskActivityType.STATUS_CHANGED) {
@@ -329,6 +378,23 @@ export const getTaskActivitySummary = (activity: TaskActivity) => {
 
   if ([TaskActivityType.MEDIA_ADDED, TaskActivityType.MEDIA_REMOVED].includes(activity.type)) {
     return
+  }
+
+  if (REQUEST_ACTIVITY_TYPES.has(activity.type)) {
+    const reason =
+      typeof activity.payload.reason === 'string'
+        ? activity.payload.reason.trim()
+        : ''
+    if (reason) return truncateSummary(reason)
+
+    if (
+      typeof activity.payload.proposedFinalDate === 'string' &&
+      activity.payload.proposedFinalDate
+    ) {
+      return `До ${formatActivityValue('finalDate', activity.payload.proposedFinalDate)}`
+    }
+
+    return TASK_ACTIVITY_LABELS[activity.type]
   }
 
   if (activity.type === TaskActivityType.FIELD_UPDATED && activity.payload.field) {
@@ -386,6 +452,25 @@ export const getTaskActivityDetail = (
     }
   }
 
+  if (REQUEST_ACTIVITY_TYPES.has(activity.type)) {
+    const reason =
+      typeof activity.payload.reason === 'string' ? activity.payload.reason : ''
+    const proposedFinalDate =
+      typeof activity.payload.proposedFinalDate === 'string'
+        ? formatActivityValue('finalDate', activity.payload.proposedFinalDate)
+        : undefined
+
+    return {
+      title: TASK_ACTIVITY_LABELS[activity.type],
+      from: reason || '—',
+      to: proposedFinalDate ?? '—',
+      showDiff: false,
+      variant: 'request',
+      reason: reason || undefined,
+      proposedFinalDate,
+    }
+  }
+
   if (activity.type === TaskActivityType.FIELD_UPDATED && activity.payload.field) {
     const field = activity.payload.field
     const fieldLabel = getTaskFieldLabel(field)
@@ -422,6 +507,19 @@ export const isTaskExecutor = (
   task: Pick<Task, 'executorId'>,
   userId: string | null,
 ) => Boolean(userId && task.executorId === userId)
+
+export const isTaskAwaitingUserAction = (
+  task: Task,
+  userId: string | null,
+) => {
+  if (!userId || isTaskTerminal(task)) return false
+
+  if (isTaskOwner(task, userId) && task.isCompanyAction && task.isExecutorApprove) return true
+
+  if (isTaskExecutor(task, userId) && !task.isCompanyAction && task.isExecutorApprove) return true
+
+  return false
+}
 
 export const canEditTaskFields = (task: Task, userId: string | null) =>
   isTaskOwner(task, userId)
@@ -510,6 +608,9 @@ export const normalizeTaskComment = (
   updatedAt: comment.updatedAt,
   editedAt: comment.editedAt ?? null,
   isRead: comment.isRead ?? false,
+  actorAccountId: comment.actorAccountId ?? null,
+  actorDisplayName: comment.actorDisplayName ?? null,
+  actorKind: comment.actorKind ?? null,
 })
 
 export const toTaskCommentMedia = (
@@ -523,12 +624,12 @@ export const toTaskCommentMedia = (
 
 export const getTaskStatusColor = (
   status: TaskStatus,
-): 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' => {
+  isActive?: boolean,
+): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' => {
   switch (status) {
     case TASK_STATUS_ENUM.COMPLETED:
       return 'success'
-    case TASK_STATUS_ENUM.CANCELLED:
-    case TASK_STATUS_ENUM.CANCELLED_EXECUTOR:
+    case TASK_STATUS_ENUM.ANNULLED:
       return 'error'
     case TASK_STATUS_ENUM.REVISION:
       return 'warning'
@@ -536,7 +637,7 @@ export const getTaskStatusColor = (
     case TASK_STATUS_ENUM.CHECKING:
       return 'info'
     default:
-      return 'primary'
+      return isActive ? 'secondary' : 'primary'
   }
 }
 
@@ -547,24 +648,59 @@ export const normalizeTaskWithCommentsItem = (
   raw: TaskWithCommentsRawItem,
 ): TaskWithCommentsItem => {
   const embedded = raw.task
-  const id =
-    raw.id ??
-    raw.taskId ??
-    embedded?.id ??
-    raw.lastComment?.taskId ??
-    ''
+  const id = raw.id ?? raw.taskId ?? embedded?.id ?? ''
+
+  const lastCommentPreview =
+    typeof raw.lastComment?.preview === 'string'
+      ? raw.lastComment.preview
+      : (raw.lastComment?.content ?? '')
+
+  const recipient =
+    raw.recipient &&
+      typeof raw.recipient.id === 'string' &&
+      typeof raw.recipient.displayName === 'string'
+      ? {
+        id: raw.recipient.id,
+        displayName: raw.recipient.displayName,
+        avatar: raw.recipient.avatar ?? null,
+      }
+      : null
 
   return {
     id,
     title: raw.title ?? embedded?.title ?? null,
-    ownerId: raw.ownerId ?? embedded?.ownerId ?? '',
+    ownerId: raw.ownerId ?? embedded?.ownerId,
     executorId: raw.executorId ?? embedded?.executorId ?? null,
     postId: raw.postId ?? embedded?.postId,
     status: raw.status ?? embedded?.status,
     isExecutorApprove: raw.isExecutorApprove ?? embedded?.isExecutorApprove,
     post: raw.post ?? embedded?.post,
-    lastComment: normalizeTaskComment(raw.lastComment),
+    recipient,
+    lastComment: {
+      preview: lastCommentPreview,
+      createdAt: raw.lastComment?.createdAt ?? '',
+      authorId: raw.lastComment?.authorId ?? '',
+    },
     commentsCount: raw.commentsCount,
     unreadCount: raw.unreadCount ?? 0,
   }
 }
+
+export const buildCreateTaskPayload = (
+  task: Task,
+  postId: string,
+): CreateTaskDto => ({
+  postId,
+  ...(task.executorId ? { executorId: task.executorId } : {}),
+  description: task.description,
+  finalDate: task.finalDate,
+  photoCount: task.photoCount,
+  videoCount: task.videoCount,
+  deliverables: task.deliverables,
+  cooperationDetails: task.cooperationDetails,
+  bloggerRequirements: task.bloggerRequirements,
+  brief: task.brief,
+  media: task.media,
+  urgent: task.urgent,
+  title: task.title,
+})

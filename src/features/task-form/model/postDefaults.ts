@@ -20,6 +20,17 @@ const VIDEO_FORMATS = new Set<PostDeliverable['format']>([
 
 const isEmpty = (value?: string | null) => !value?.trim()
 
+/** DB/API default is `"0"` — treat as unset for the form UI. */
+export const normalizeMediaCount = (value?: string | null) => {
+  if (!value?.trim()) return ''
+
+  const count = Number(value)
+
+  if (!Number.isFinite(count) || count <= 0) return ''
+
+  return String(count)
+}
+
 export const countMediaFromDeliverables = (
   deliverables?: PostDeliverable[],
 ): { photoCount: string; videoCount: string } => {
@@ -61,8 +72,8 @@ export const mapPostToTaskDefaults = (post: Post): TaskFormType => {
 export const mapTaskToTaskForm = (task: Task): TaskFormType => ({
   title: task.title ?? '',
   description: task.description ?? '',
-  photoCount: task.photoCount ?? '',
-  videoCount: task.videoCount ?? '',
+  photoCount: normalizeMediaCount(task.photoCount),
+  videoCount: normalizeMediaCount(task.videoCount),
   finalDate: task.finalDate ?? null,
   ...mapBriefToTaskForm(task.brief),
   deliverables: mapDeliverablesToForm(task.deliverables ?? undefined),
@@ -77,8 +88,10 @@ export const hasUnsavedPostDefaults = (task: Task, post: Post): boolean => {
   return (
     (isEmpty(task.title) && !isEmpty(defaults.title)) ||
     (!hasTaskFormTzContent(current) && hasTaskFormTzContent(defaults)) ||
-    (isEmpty(task.photoCount) && !isEmpty(defaults.photoCount)) ||
-    (isEmpty(task.videoCount) && !isEmpty(defaults.videoCount)) ||
+    (isEmpty(normalizeMediaCount(task.photoCount)) &&
+      !isEmpty(defaults.photoCount)) ||
+    (isEmpty(normalizeMediaCount(task.videoCount)) &&
+      !isEmpty(defaults.videoCount)) ||
     (!task.finalDate && Boolean(defaults.finalDate))
   )
 }

@@ -18,7 +18,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { UserDisplayName } from '@/entities/user';
-import { ROUTES } from '@/shared';
+import { EmptyBlock, ROUTES } from '@/shared';
 
 import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
 import {
@@ -124,7 +124,19 @@ export const ApplicationCompaniesTable = ({
   };
 
   if (!items.length && paginationCount === 0) {
-    return <PartnersEmpty message={emptyMessage} />;
+    return (
+      <Box
+        sx={{
+          ...partnersTableShellSx,
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 3,
+          py: 8,
+        }}
+      >
+        <EmptyBlock title={emptyMessage} />
+      </Box>
+    );
   }
 
   return (
@@ -300,24 +312,3 @@ export const ApplicationCompaniesTable = ({
     </Box>
   );
 };
-
-const PartnersEmpty = ({ message }: { message: string }) => (
-  <Stack
-    sx={{
-      py: 8,
-      px: 3,
-      alignItems: 'center',
-      textAlign: 'center',
-      bgcolor: 'white',
-      borderRadius: { xs: '16px', md: '32px' },
-      border: theme => `1px solid ${theme.palette.divider}`,
-    }}
-  >
-    <Typography
-      variant="body2"
-      color="text.secondary"
-    >
-      {message}
-    </Typography>
-  </Stack>
-);

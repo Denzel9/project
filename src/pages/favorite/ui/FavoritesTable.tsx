@@ -382,7 +382,7 @@ export const FavoritesTable = ({
                       hideSortIcon={forPrint}
                       sx={forPrint ? { pointerEvents: 'none' } : undefined}
                     >
-                      {favoriteType === 'COMPANY' ? 'Компания' : 'Креатор'}
+                      {favoriteType === 'COMPANY' ? 'Компания' : 'Исполнитель'}
                     </TableSortLabel>
                   </TableCell>
                   <TableCell

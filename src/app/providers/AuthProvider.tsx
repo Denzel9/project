@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import { prefetchUserConfig } from '@/entities/user-config';
-import { useAuthStore, useRefreshTokenMutation } from '@/features/auth';
+import { mapAuthSessionUser, useAuthStore, useRefreshTokenMutation } from '@/features/auth';
 import { queryClient } from '@/shared/api';
 import { ROUTES } from '@/shared/config/routes';
 
@@ -44,15 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await refreshToken();
 
         if (res?.data?.user) {
-          setAuth({
-            id: res.data.user.id,
-            role: res.data.user.role,
-            membershipRole: res.data.user.membershipRole,
-            isPrime: Boolean(res.data.user.isPrime),
-            primeStatus: res.data.user.primeStatus ?? 'NONE',
-            primeExpiresAt: res.data.user.primeExpiresAt ?? null,
-            isEmailConfirmed: Boolean(res.data.user.isEmailConfirmed),
-          });
+          setAuth(mapAuthSessionUser(res.data.user));
 
           try {
             await prefetchUserConfig(queryClient);

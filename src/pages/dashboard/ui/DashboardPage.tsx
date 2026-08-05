@@ -12,6 +12,7 @@ import {
 } from '@/entities';
 import {
   getDashboardCardOptions,
+  getDashboardPeriodRange,
   getFastButtonLabel,
   useAuthStore,
   useMyTaskFilterStore,
@@ -28,9 +29,10 @@ import { DashboardCalendarPanel } from './DashboardCalendarPanel';
 import { DashboardCard } from './DashboardCard';
 import { DashboardChatsPanel } from './DashboardChatsPanel';
 import { DashboardCommentsPanel } from './DashboardCommentsPanel';
+import { DashboardFiltersBar } from './DashboardFiltersBar';
 import { DashboardUpcomingTasksTable } from './DashboardUpcomingTasksTable';
 
-import type { MyTasksLocationState } from '@/pages/my-tasks/model/navigation';
+import type { MyTasksLocationState } from '@/pages/my-tasks/model/types/navigation';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -41,10 +43,22 @@ export const DashboardPage = () => {
   );
   const setStatus = useMyTaskFilterStore(state => state.setStatus);
   const viewMode = useMyTaskFilterStore(state => state.viewMode);
+  const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
+  const assigneeAccountId = useMyTaskFilterStore(
+    state => state.assigneeAccountId
+  );
+  const postId = useMyTaskFilterStore(state => state.postId);
+  const executorId = useMyTaskFilterStore(state => state.executorId);
+  const period = useMyTaskFilterStore(state => state.period);
   const ensureKanbanColumnVisible = useMyTaskFilterStore(
     state => state.ensureKanbanColumnVisible
   );
   const isCompany = role === USER_ROLE.COMPANY;
+
+  const periodRange = useMemo(
+    () => getDashboardPeriodRange(period),
+    [period]
+  );
 
   const { data: userConfig } = useUserConfigQuery({ enabled: isAuth });
 
@@ -106,14 +120,14 @@ export const DashboardPage = () => {
       return { tasksSide: null, calendarSide: null };
     }
 
-    // Оба сайдбара: tasks|activity, calendar|chats
+    // Оба сайдбара: tasks|chats, calendar|activity
     if (showActivity && showChats) {
       return {
-        tasksSide: showTasks ? ('activity' as const) : null,
+        tasksSide: showTasks ? ('chats' as const) : null,
         calendarSide: showCalendar
           ? showTasks
-            ? ('chats' as const)
-            : ('activity' as const)
+            ? ('activity' as const)
+            : ('chats' as const)
           : null,
       };
     }
@@ -134,7 +148,15 @@ export const DashboardPage = () => {
     isLoading: isStatsLoading,
     isError: isStatsError,
     refetch: refetchStats,
-  } = useTaskStatsQuery();
+  } = useTaskStatsQuery({
+    ...(onlyMyTasks && { assigneeMine: true }),
+    ...(assigneeAccountId !== 'all' &&
+      !onlyMyTasks && { assigneeAccountId }),
+    ...(postId !== 'all' && { postId }),
+    ...(executorId !== 'all' &&
+      (isCompany ? { executorId } : { ownerId: executorId })),
+    ...periodRange,
+  });
 
   const handleUpcomingTasksErrorChange = useCallback((isError: boolean) => {
     setIsUpcomingTasksError(isError);
@@ -185,11 +207,13 @@ export const DashboardPage = () => {
         >
           <EmptyBlock
             buttonText="Повторить"
-            title="Не удалось загрузить данные дашборда"
             buttonOnClick={handleRefetch}
+            title="Не удалось загрузить данные дашборда"
           />
         </Box>
       )}
+
+      <DashboardFiltersBar isCompany={isCompany} />
 
       {cardOptions.length > 0 && (
         <Grid

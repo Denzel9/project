@@ -20,3 +20,21 @@ export {
   prepareFileForUpload,
   prepareFilesForUpload,
 } from './prepareFileForUpload'
+export {
+  createLocalMediaPlaceholders,
+  createLocalPhoto,
+  getFileIdentity,
+  hasFailedMedia,
+  hasPreparingMedia,
+  hasVideoMedia,
+  isDuplicateMediaFile,
+  patchPhotoByLocalId,
+  prepareLocalMediaFile,
+  prepareLocalMediaFiles,
+  revokeLocalPhotoUrl,
+  toUploadFiles,
+  type LocalMediaFile,
+  type MediaUploadCallbacks,
+  type MediaUploadProgressEvent,
+  type MediaUploadStatus,
+} from './localMedia'

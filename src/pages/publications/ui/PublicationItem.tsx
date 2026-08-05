@@ -1,10 +1,10 @@
 import { OpenInNewOutlined, ScheduleOutlined } from '@mui/icons-material';
-import { Box, Button, Chip, Divider, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, Stack, Typography } from '@mui/material';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
-import { getPlatformLabel } from '@/entities/post';
+import { getPlatformChipSx, getPlatformLabel } from '@/entities/post';
 import {
   executorToUserPartial,
   UserDisplayName,
@@ -15,6 +15,8 @@ import { Media } from '@/widgets';
 import {
   getPublicationGalleryMediaItems,
   getPublicationPlatforms,
+  getPublicationPostPath,
+  getPublicationPostTitle,
   getPublicationTaskPath,
   getPublicationTitle,
 } from '../model/utils';
@@ -27,6 +29,8 @@ type PublicationItemProps = {
 
 export const PublicationItem = ({ publication }: PublicationItemProps) => {
   const title = getPublicationTitle(publication);
+  const postTitle = getPublicationPostTitle(publication);
+  const postPath = getPublicationPostPath(publication);
   const taskPath = getPublicationTaskPath(publication);
   const mediaItems = getPublicationGalleryMediaItems(publication);
   const participantUser = publication.executor
@@ -44,7 +48,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
         bgcolor: 'white',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '24px',
+        borderRadius: '32px',
         overflow: 'hidden',
       }}
     >
@@ -52,7 +56,6 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
         <Box
           sx={{
             aspectRatio: '16 / 10',
-            bgcolor: 'grey.100',
             overflow: 'hidden',
             '& > .MuiStack-root': {
               height: '100%',
@@ -92,11 +95,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
           spacing={1.5}
           sx={{ flex: 1, minHeight: 0 }}
         >
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
-          >
+          <Stack spacing={0}>
             <Typography
               variant="subtitle1"
               sx={{
@@ -108,6 +107,23 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               }}
             >
               {title}
+            </Typography>
+
+            <Typography
+              component={Link}
+              to={postPath}
+              variant="body2"
+              onClick={event => event.stopPropagation()}
+              sx={{
+                color: 'info.main',
+                textDecoration: 'none',
+                transition: 'color 0.2s ease-in-out',
+                '&:hover': {
+                  color: 'primary.main',
+                },
+              }}
+            >
+              {postTitle}
             </Typography>
           </Stack>
 
@@ -127,63 +143,73 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
             </Typography>
           )}
 
-          <Box
+          <Stack
+            direction="row"
+            spacing={1}
             sx={{
-              px: 1.5,
-              py: 1.25,
-              borderRadius: '14px',
-              bgcolor: 'grey.50',
-              border: '1px solid',
-              borderColor: 'divider',
+              alignItems: 'center',
+              flexWrap: 'wrap',
             }}
           >
-            <Stack spacing={1}>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{ alignItems: 'center' }}
-              >
-                <ScheduleOutlined
-                  sx={{ fontSize: 18, color: 'text.secondary' }}
-                />
-                <Typography variant="body2">
-                  {formatDistanceToNow(new Date(publication.publishedAt), {
-                    addSuffix: true,
-                    locale: ru,
-                  })}
-                </Typography>
-              </Stack>
-
-              <Stack
-                direction="row"
-                spacing={0.5}
-                sx={{ alignItems: 'center', flexWrap: 'wrap' }}
-              >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  Участник:
-                </Typography>
-                <UserDisplayName
-                  user={participantUser}
-                  variant="body2"
-                />
-              </Stack>
-            </Stack>
-          </Box>
-
-          {platformChips.length > 0 && (
-            <Tooltip
-              title={platformChips.map(getPlatformLabel).join(', ')}
-            >
+            {platformChips.map(platform => (
               <Chip
+                key={platform}
                 size="small"
-                label={platformChips.length}
+                variant="outlined"
+                label={getPlatformLabel(platform)}
+                sx={getPlatformChipSx(platform)}
               />
-            </Tooltip>
-          )}
+            ))}
+          </Stack>
+
         </Stack>
+
+
+        <Box
+          sx={{
+            px: 1.5,
+            py: 1.25,
+            borderRadius: '14px',
+            bgcolor: 'grey.50',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center' }}
+            >
+              <ScheduleOutlined
+                sx={{ fontSize: 18, color: 'text.secondary' }}
+              />
+              <Typography variant="body2">
+                {formatDistanceToNow(new Date(publication.publishedAt), {
+                  addSuffix: true,
+                  locale: ru,
+                })}
+              </Typography>
+            </Stack>
+
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Участник:
+              </Typography>
+              <UserDisplayName
+                user={participantUser}
+                variant="body2"
+              />
+            </Stack>
+          </Stack>
+        </Box>
 
         <Box sx={{ flexShrink: 0, pt: 1.5 }}>
           <Divider sx={{ mb: 1.5 }} />

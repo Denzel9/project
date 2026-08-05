@@ -11,12 +11,14 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
+  copyTaskMediaToConversation,
   wrapChatTaskTzMessage,
   getMessagePreview,
   useSearchMessagesQuery,
   type ChatMessage,
 } from '@/entities/chat';
 import { fetchTaskById, type Task } from '@/entities/task';
+import { type UserSearchItem } from '@/entities/user';
 import { useMessenger, formatTaskTzForChat } from '@/features/chat';
 import { ROUTES } from '@/shared';
 import { PageLayout, useSnackbarStore } from '@/widgets';
@@ -24,10 +26,10 @@ import { PageLayout, useSnackbarStore } from '@/widgets';
 import { extractChatTaskTzMessages } from '../model/chatTaskTzMessages';
 import { useChatPeerTasks } from '../model/hooks/useChatPeerTasks';
 
-import { ChatForwardMessageDialog } from './ChatForwardMessageDialog';
 import { ChatAddTaskDialog } from './ChatAddTaskDialog';
 import { ChatAttachmentsPanel } from './ChatAttachmentsPanel';
 import { ChatConversation } from './ChatConversation';
+import { ChatForwardMessageDialog } from './ChatForwardMessageDialog';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatPhotoReportPanel } from './ChatPhotoReportPanel';
@@ -92,6 +94,7 @@ export const ChatPage = () => {
     selectedConversationId,
     clearError,
     retryError,
+    openDraftChat,
   } = useMessenger();
 
   const isDesktopSearch = isSearchOpen && !isMobile;
@@ -177,12 +180,15 @@ export const ChatPage = () => {
   );
 
   useEffect(() => {
-    if (recipientIdParam && selectedConversationId) {
+    if (
+      (recipientIdParam && selectedConversationId) ||
+      (selectedConversation && !selectedConversationId)
+    ) {
       setTimeout(() => {
         setMobileShowChat(true);
       }, 0);
     }
-  }, [recipientIdParam, selectedConversationId]);
+  }, [recipientIdParam, selectedConversation, selectedConversationId]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -192,7 +198,7 @@ export const ChatPage = () => {
       setIsSearchOpen(false);
       setSearchQuery('');
     }, 0);
-  }, [selectedConversationId]);
+  }, [selectedConversationId, selectedConversation?.peer?.id]);
 
   const handleAddTask = useCallback(
     async (task: Task) => {
@@ -207,7 +213,19 @@ export const ChatPage = () => {
         const fullTask = await fetchTaskById(task.id);
         const markdown = formatTaskTzForChat(fullTask);
         const message = wrapChatTaskTzMessage(fullTask.id, markdown);
-        const sent = await sendTextMessage(message);
+
+        const media =
+          fullTask.media?.length && selectedConversationId
+            ? await copyTaskMediaToConversation({
+                taskId: fullTask.id,
+                conversationId: selectedConversationId,
+                kind: 'main',
+              })
+            : undefined;
+
+        const sent = await sendTextMessage(message, {
+          ...(media?.length ? { media } : {}),
+        });
 
         if (sent) {
           setIsAddTaskOpen(false);
@@ -217,12 +235,12 @@ export const ChatPage = () => {
           );
         }
       } catch {
-        setAddTaskError('Не удалось загрузить задачу');
+        setAddTaskError('Не удалось загрузить задачу или медиа');
       } finally {
         setAddingTaskId(null);
       }
     },
-    [addingTaskId, sendTextMessage],
+    [addingTaskId, selectedConversationId, sendTextMessage],
   );
 
   const handleSelectConversation = (conversationId: string) => {
@@ -232,6 +250,30 @@ export const ChatPage = () => {
       setMobileShowChat(true);
     }
   };
+
+  const handleStartChat = useCallback(
+    (user: UserSearchItem) => {
+      const existing = conversations.find(
+        conversation => conversation.peer.id === user.id
+      );
+
+      if (existing) {
+        selectConversation(existing.id);
+      } else {
+        openDraftChat({
+          id: user.id,
+          role: user.role,
+          avatar: user.avatar,
+          displayName: user.displayName,
+        });
+      }
+
+      if (isMobile) {
+        setMobileShowChat(true);
+      }
+    },
+    [conversations, isMobile, openDraftChat, selectConversation]
+  );
 
   const handleBackToContacts = () => {
     setMobileShowChat(false);
@@ -248,10 +290,10 @@ export const ChatPage = () => {
 
   const forwardMessagePreview = forwardingMessage
     ? getMessagePreview(
-        forwardingMessage.content,
-        forwardingMessage.media ?? [],
-        forwardingMessage.isRedirected,
-      )
+      forwardingMessage.content,
+      forwardingMessage.media ?? [],
+      forwardingMessage.isRedirected,
+    )
     : null;
 
   const handleForwardMessage = useCallback((messageId: string) => {
@@ -260,13 +302,13 @@ export const ChatPage = () => {
   }, []);
 
   const handleConfirmForward = useCallback(
-    async (targetConversationId: string) => {
+    async (peerId: string) => {
       if (!forwardMessageId) {
         return false;
       }
 
       setForwardError(null);
-      const result = await forwardMessage(forwardMessageId, targetConversationId);
+      const result = await forwardMessage(forwardMessageId, peerId);
 
       if (!result.success) {
         setForwardError(result.error ?? 'Не удалось переслать сообщение');
@@ -283,11 +325,26 @@ export const ChatPage = () => {
   const showContacts = !isMobile || !mobileShowChat;
   const showChatPanel = !isMobile || mobileShowChat;
 
+  const contactsConversations = useMemo(() => {
+    if (
+      !selectedConversation ||
+      selectedConversationId ||
+      conversations.some(
+        conversation => conversation.peer.id === selectedConversation.peer.id
+      )
+    ) {
+      return conversations;
+    }
+
+    return [selectedConversation, ...conversations];
+  }, [conversations, selectedConversation, selectedConversationId]);
+
   const isInitialLoading = isLoading && conversations.length === 0;
   const isEmpty =
     !isLoading &&
     !recipientIdParam &&
     !isOpeningConversation &&
+    !selectedConversation &&
     !conversations.length;
 
   if (isInitialLoading) {
@@ -357,7 +414,7 @@ export const ChatPage = () => {
     <PageLayout isScreenHeight>
       <Stack
         direction="row"
-        spacing={2}
+        spacing={1}
         sx={{
           width: '100%',
           height: '100%',
@@ -366,21 +423,22 @@ export const ChatPage = () => {
       >
         {showContacts && (
           <Contacts
-            conversations={conversations}
+            conversations={contactsConversations}
             selectedId={selectedConversationId}
+            selectedPeerId={selectedConversation?.peer.id ?? null}
             onSelect={handleSelectConversation}
+            onStartChat={handleStartChat}
             isLoading={isLoading && conversations.length === 0}
           />
         )}
 
         {showChatPanel && (
           <Stack
+            spacing={1}
+            direction="column"
             sx={{
-              gap: 2,
               flex: 1,
               minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
               width: { xs: '100%', md: '70%' },
             }}
           >
@@ -462,9 +520,12 @@ export const ChatPage = () => {
                     >
                       {format(new Date(message.createdAt), 'dd.MM.yyyy HH:mm')}
                     </Typography>
+
                     <ChatMessageBubble
                       messageId={message.id}
                       senderId={message.senderId}
+                      actorDisplayName={message.actorDisplayName}
+                      actorKind={message.actorKind}
                       createdAt={message.createdAt}
                       currentUserId={currentUserId}
                       text={message.content}
@@ -564,6 +625,7 @@ export const ChatPage = () => {
             open={Boolean(forwardMessageId)}
             conversations={conversations}
             currentConversationId={selectedConversationId}
+            currentPeerId={selectedConversation?.peer?.id}
             messagePreview={forwardMessagePreview}
             isForwarding={
               isForwardingMessage && forwardingMessageId === forwardMessageId

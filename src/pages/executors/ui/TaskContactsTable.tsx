@@ -16,7 +16,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { UserDisplayName } from '@/entities/user';
-import { ROUTES } from '@/shared';
+import { EmptyBlock, ROUTES } from '@/shared';
 
 import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
 import { formatRelativeTime, sortTaskContactRows } from '../model/utils';
@@ -127,11 +127,35 @@ export const TaskContactsTable = ({
   };
 
   if (!items.length && !isServerPagination) {
-    return <PartnersEmpty message={emptyMessage} />;
+    return (
+      <Box
+        sx={{
+          ...partnersTableShellSx,
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 3,
+          py: 8,
+        }}
+      >
+        <EmptyBlock title={emptyMessage} />
+      </Box>
+    );
   }
 
   if (!items.length && isServerPagination && paginationCount === 0) {
-    return <PartnersEmpty message={emptyMessage} />;
+    return (
+      <Box
+        sx={{
+          ...partnersTableShellSx,
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 3,
+          py: 8,
+        }}
+      >
+        <EmptyBlock title={emptyMessage} description='Появятся после отклика на ваше объявление' />
+      </Box>
+    );
   }
 
   return (
@@ -194,7 +218,7 @@ export const TaskContactsTable = ({
                   }
                   onClick={() => handleSort('lastInteractionAt')}
                 >
-                  Последнее
+                  Последнее взаимодействие
                 </TableSortLabel>
               </TableCell>
 
@@ -245,19 +269,19 @@ export const TaskContactsTable = ({
                   onClick={
                     onInteractionsClick
                       ? event => {
-                          event.stopPropagation();
-                          onInteractionsClick(item);
-                        }
+                        event.stopPropagation();
+                        onInteractionsClick(item);
+                      }
                       : undefined
                   }
                   sx={
                     onInteractionsClick
                       ? {
-                          cursor: 'pointer',
-                          color: 'primary.main',
-                          fontWeight: 600,
-                          '&:hover': { textDecoration: 'underline' },
-                        }
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        fontWeight: 600,
+                        '&:hover': { textDecoration: 'underline' },
+                      }
                       : undefined
                   }
                 >
@@ -278,19 +302,19 @@ export const TaskContactsTable = ({
                   onClick={
                     onPublicationsClick
                       ? event => {
-                          event.stopPropagation();
-                          onPublicationsClick(item);
-                        }
+                        event.stopPropagation();
+                        onPublicationsClick(item);
+                      }
                       : undefined
                   }
                   sx={
                     onPublicationsClick
                       ? {
-                          cursor: 'pointer',
-                          color: 'primary.main',
-                          fontWeight: 600,
-                          '&:hover': { textDecoration: 'underline' },
-                        }
+                        cursor: 'pointer',
+                        color: 'primary.main',
+                        fontWeight: 600,
+                        '&:hover': { textDecoration: 'underline' },
+                      }
                       : undefined
                   }
                 >
@@ -352,24 +376,3 @@ export const TaskContactsTable = ({
     </Box>
   );
 };
-
-const PartnersEmpty = ({ message }: { message: string }) => (
-  <Stack
-    sx={{
-      py: 8,
-      px: 3,
-      alignItems: 'center',
-      textAlign: 'center',
-      bgcolor: 'white',
-      borderRadius: { xs: '16px', md: '32px' },
-      border: theme => `1px solid ${theme.palette.divider}`,
-    }}
-  >
-    <Typography
-      variant="body2"
-      color="text.secondary"
-    >
-      {message}
-    </Typography>
-  </Stack>
-);

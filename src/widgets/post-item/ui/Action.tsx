@@ -9,7 +9,8 @@ import {
   useWithdrawApplicationMutation,
   type ApplicationStatus,
 } from '@/entities/application';
-import { useRequireEmailConfirmed } from '@/features/auth';
+import { USER_ROLE } from '@/entities/user';
+import { useAuthStore, useRequireEmailConfirmed } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 import { FavoriteButton } from '@/widgets';
 
@@ -38,6 +39,8 @@ export const Action = ({
   isApplied: isAppliedProp = false,
 }: ActionProps) => {
   const navigate = useNavigate();
+  const role = useAuthStore(state => state.role);
+  const isManager = role === USER_ROLE.MANAGER;
 
   const [isApplied, setIsApplied] = useState(isAppliedProp);
   const [currentApplicationId, setCurrentApplicationId] =
@@ -111,7 +114,18 @@ export const Action = ({
     navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
   };
 
-  const mainButton = isCompany ? (
+  const mainButton = isManager ? (
+    <Button
+      size="small"
+      variant="outlined"
+      onClick={() => {
+        if (!requireEmailConfirmed()) return;
+        navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
+      }}
+    >
+      Написать
+    </Button>
+  ) : isCompany ? (
     <Button
       variant="contained"
       disabled={isApplicationPending}
@@ -160,7 +174,7 @@ export const Action = ({
             </Button>
           )}
 
-          {!canWithdraw && isCompany && (
+          {!canWithdraw && isCompany && !isManager && (
             <Tooltip title="Повторный отклик недоступен. Вы можете написать заказчику в чат">
               <Button
                 variant="contained"

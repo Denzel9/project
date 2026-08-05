@@ -2,6 +2,7 @@ import { Close } from '@mui/icons-material';
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   IconButton,
   Stack,
@@ -24,6 +25,7 @@ export const ApplyDialog = ({
   onSubmit,
 }: ApplyDialogProps) => {
   const [message, setMessage] = useState('');
+  const [isAttachedStatistic, setIsAttachedStatistic] = useState(false);
 
   const handleClose = () => {
     setMessage('');
@@ -90,6 +92,16 @@ export const ApplyDialog = ({
           sx={{ mt: 3 }}
           onChange={e => setMessage(e.target.value)}
         />
+
+        <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: 'center' }}>
+          <Checkbox
+            checked={isAttachedStatistic}
+            onChange={() => setIsAttachedStatistic(!isAttachedStatistic)}
+          />
+          <Typography variant="body2">
+            Прикрепить статистику
+          </Typography>
+        </Stack>
 
         <Stack
           direction="row"

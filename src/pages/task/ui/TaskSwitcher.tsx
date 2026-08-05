@@ -1,4 +1,4 @@
-import { ListAlt, MoreVert } from '@mui/icons-material';
+import { Add, Circle, ListAlt } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -9,7 +9,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState, type MouseEvent } from 'react';
 
 import {
   TASK_STATUS_ENUM,
@@ -17,20 +17,26 @@ import {
   getTaskStatusColor,
   executorToUserPartial,
   getUserName,
+  isTaskAwaitingUserAction,
+  useCreateTaskMutation,
   UserDisplayName,
   type Task,
 } from '@/entities';
+import { useAuthStore, useRequireEmailConfirmed } from '@/features';
+import { useSnackbarStore } from '@/widgets';
 
+import { CreateTaskDialog } from './CreateTaskDialog';
 import { TaskListDialog } from './TaskListDialog';
+import { TaskSwitcherMoreMenu } from './TaskSwitcherMoreMenu';
 
 type TaskSwitcherProps = {
+  postId?: string | null;
   groupedTasks: Record<string, Task[]>;
   currentTask?: Task | null;
   cancelledTasks: Task[];
   onSelectTask: (taskId: string) => void;
   onSelectExecutor: (executorKey: string) => void;
-  onOpenCancelledMenu: (event: React.MouseEvent<HTMLElement>) => void;
-  onOpenMoreMenu: (event: React.MouseEvent<HTMLElement>) => void;
+  onTaskCreated?: (task: Task) => void;
 };
 
 const getExecutorKey = (task: Task) => task.executorId || 'unassigned';
@@ -53,26 +59,87 @@ const getExecutorInitials = (task: Task) => {
 };
 
 export const TaskSwitcher = ({
+  postId,
   groupedTasks,
   currentTask,
   cancelledTasks,
   onSelectTask,
   onSelectExecutor,
-  onOpenCancelledMenu,
-  onOpenMoreMenu,
+  onTaskCreated,
 }: TaskSwitcherProps) => {
   const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+  const [isCancelledListOpen, setIsCancelledListOpen] = useState(false);
+  const [createDialogExecutorKey, setCreateDialogExecutorKey] = useState<
+    string | null
+  >(null);
 
-  const selectedExecutorKey = currentTask ? getExecutorKey(currentTask) : '';
+  const { setSnackbarOpen } = useSnackbarStore();
+  const currentUserId = useAuthStore(state => state.id);
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
+  const { mutateAsync: createTask, isPending: isCreating } =
+    useCreateTaskMutation();
+
+  const isCancelledSelected =
+    currentTask?.status === TASK_STATUS_ENUM.ANNULLED;
+  const selectedExecutorKey =
+    currentTask && !isCancelledSelected
+      ? getExecutorKey(currentTask)
+      : '';
   const executorTasks = selectedExecutorKey
     ? (groupedTasks[selectedExecutorKey] ?? [])
     : [];
+
+  const executorOptions = useMemo(
+    () =>
+      Object.entries(groupedTasks).map(([executorKey, tasks]) => ({
+        id: executorKey,
+        label: getExecutorName(tasks[0]),
+      })),
+    [groupedTasks]
+  );
+
+  const handleOpenCreateDialog = (
+    event: MouseEvent,
+    executorKey: string
+  ) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    if (!postId || isCreating) return;
+    if (!requireEmailConfirmed()) return;
+
+    setCreateDialogExecutorKey(executorKey);
+  };
+
+  const handleCreateTask = async ({
+    title,
+    executorId,
+  }: {
+    title: string;
+    executorId: string | null;
+  }) => {
+    if (!postId) return;
+
+    try {
+      const task = await createTask({
+        postId,
+        ...(title && { title }),
+        ...(executorId && { executorId }),
+      });
+
+      setSnackbarOpen(true, 'Задача успешно создана');
+      setCreateDialogExecutorKey(null);
+      onTaskCreated?.(task);
+    } catch {
+      setSnackbarOpen(true, 'Не удалось создать задачу');
+    }
+  };
 
   return (
     <Box
       sx={{
         py: 1.5,
-        mb: 2,
+        mb: 1,
         bgcolor: 'white',
         border: '1px solid',
         borderRadius: '32px',
@@ -122,8 +189,8 @@ export const TaskSwitcher = ({
                 }
                 label={
                   <Stack
+                    spacing={1}
                     direction="row"
-                    spacing={0.75}
                     sx={{ alignItems: 'center' }}
                   >
                     <UserDisplayName
@@ -131,28 +198,51 @@ export const TaskSwitcher = ({
                       withBadges={false}
                       user={executorToUserPartial(representative.executor)}
                     />
-                    <Box
-                      sx={{
-                        minWidth: 20,
-                        height: 20,
-                        px: 0.75,
-                        display: 'inline-flex',
-                        borderRadius: '10px',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: isSelected ? 'primary.dark' : 'action.hover',
-                        color: isSelected ? 'white' : 'text.secondary',
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {tasks.length}
-                    </Box>
+
+                    <Tooltip title='Количество активных задач'>
+                      <Box
+                        sx={{
+                          px: 0.75,
+                          height: 20,
+                          minWidth: 20,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          borderRadius: '10px',
+                          alignItems: 'center',
+                          display: 'inline-flex',
+                          justifyContent: 'center',
+                          color: isSelected ? 'white' : 'text.secondary',
+                          bgcolor: isSelected ? 'primary.dark' : 'action.hover',
+                        }}
+                      >
+                        {tasks.length}
+                      </Box>
+                    </Tooltip>
+
+                    <Tooltip title="Добавить задачу">
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={isCreating || !postId}
+                          aria-label="Добавить задачу"
+                          onClick={event =>
+                            handleOpenCreateDialog(event, executorKey)
+                          }
+                          onMouseDown={event => event.stopPropagation()}
+                          sx={{
+                            p: 0.25,
+                            color: isSelected ? 'inherit' : 'text.secondary',
+                          }}
+                        >
+                          <Add fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                   </Stack>
                 }
                 sx={{
-                  height: 40,
                   px: 0.5,
+                  height: 40,
                   flexShrink: 0,
                   '& .MuiChip-icon': { ml: 0.5 },
                 }}
@@ -174,30 +264,23 @@ export const TaskSwitcher = ({
                 clickable
                 color="error"
                 size="small"
-                variant={
-                  currentTask?.status === TASK_STATUS_ENUM.CANCELLED ||
-                  currentTask?.status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR
-                    ? 'filled'
-                    : 'outlined'
-                }
+                variant={isCancelledSelected ? 'filled' : 'outlined'}
                 label={`Отменённые ${cancelledTasks.length}`}
-                onClick={onOpenCancelledMenu}
+                onClick={() => setIsCancelledListOpen(true)}
               />
             </Tooltip>
           </>
         )}
 
-        <IconButton
-          size="small"
-          onClick={onOpenMoreMenu}
-        >
-          <MoreVert />
-        </IconButton>
+        <TaskSwitcherMoreMenu
+          task={currentTask}
+          onTaskCreated={onTaskCreated}
+        />
       </Stack>
 
-      {Boolean(executorTasks.length) && <Divider sx={{ my: 1.5 }} />}
+      {Boolean(executorTasks.length > 1) && <Divider sx={{ my: 1.5 }} />}
 
-      {Boolean(executorTasks.length) && (
+      {Boolean(executorTasks.length > 1) && (
         <Stack
           direction="row"
           spacing={1}
@@ -214,18 +297,22 @@ export const TaskSwitcher = ({
             >
               {executorTasks.map(task => {
                 const isActive = currentTask?.id === task.id;
+                const isAwaitAction = isTaskAwaitingUserAction(
+                  task,
+                  currentUserId
+                );
 
                 return (
                   <Chip
-                    key={task.id}
                     clickable
+                    key={task.id}
                     color={isActive ? 'primary' : 'default'}
                     variant={isActive ? 'filled' : 'outlined'}
                     onClick={() => onSelectTask(task.id)}
                     label={
                       <Stack
                         direction="row"
-                        spacing={0.75}
+                        spacing={1}
                         sx={{ alignItems: 'center' }}
                       >
                         <Typography
@@ -233,15 +320,12 @@ export const TaskSwitcher = ({
                           sx={{
                             maxWidth: { xs: 140, sm: 220 },
                             fontWeight: isActive ? 600 : 400,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
                           }}
                         >
                           {task.title || 'Без названия'}
                         </Typography>
                         <Chip
-                          color={getTaskStatusColor(task.status)}
+                          color={getTaskStatusColor(task.status, isActive)}
                           label={TASK_STATUS_LABELS[task.status]}
                           sx={{
                             height: 22,
@@ -251,6 +335,13 @@ export const TaskSwitcher = ({
                             },
                           }}
                         />
+                        {isAwaitAction && (
+                          <Tooltip title="Ожидает вашего действия">
+                            <Circle
+                              sx={{ color: 'warning.main', fontSize: 12 }}
+                            />
+                          </Tooltip>
+                        )}
                       </Stack>
                     }
                     sx={{ height: 32, maxWidth: '100%' }}
@@ -273,10 +364,28 @@ export const TaskSwitcher = ({
 
       <TaskListDialog
         open={isTaskListOpen}
-        onClose={() => setIsTaskListOpen(false)}
         tasks={executorTasks}
-        currentTaskId={currentTask?.id}
         onSelectTask={onSelectTask}
+        currentTaskId={currentTask?.id}
+        onClose={() => setIsTaskListOpen(false)}
+      />
+
+      <TaskListDialog
+        open={isCancelledListOpen}
+        title="Отменённые задачи"
+        tasks={cancelledTasks}
+        onSelectTask={onSelectTask}
+        currentTaskId={currentTask?.id}
+        onClose={() => setIsCancelledListOpen(false)}
+      />
+
+      <CreateTaskDialog
+        open={Boolean(createDialogExecutorKey)}
+        isPending={isCreating}
+        initialExecutorId={createDialogExecutorKey ?? undefined}
+        executorOptions={executorOptions}
+        onClose={() => setCreateDialogExecutorKey(null)}
+        onConfirm={handleCreateTask}
       />
     </Box>
   );

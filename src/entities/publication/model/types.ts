@@ -20,6 +20,10 @@ export type Publication = {
   id: string
   taskId: string
   postId: string
+  post?: {
+    id: string
+    title: string | null
+  } | null
   title: string | null
   description: string
   externalUrl?: string | null
@@ -49,6 +53,7 @@ export type PublicationListParams = {
   taskId?: string
   executorId?: string
   q?: string
+  executorQ?: string
   page?: number
   limit?: number
 }

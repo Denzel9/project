@@ -6,17 +6,14 @@ import {
   Stack,
   TextField,
   Tooltip,
-  useMediaQuery,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { APPLICATION_STATUS_LABELS } from '@/entities';
-import { FilterAutocomplete } from '@/features';
-import { useScroll } from '@/shared';
+import { FilterAutocomplete, useScroll } from '@/shared';
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
-import { ApplicationSearchPanel } from './ApplicationSearchPanel';
 import { MyResponsesViewModeToggle } from './MyResponsesViewModeToggle';
 
 import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils';
@@ -63,7 +60,6 @@ const MyResponsesFilter = ({
   onViewModeChange,
   tableReport,
 }: MyResponsesFilterProps) => {
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { isScrolled, ref } = useScroll(150);
 
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -158,7 +154,7 @@ const MyResponsesFilter = ({
           spacing={1}
           sx={{ alignItems: 'center', flexShrink: 0 }}
         >
-          {isSearchOpen && !isMobile && (
+          {isSearchOpen && (
             <TextField
               autoFocus
               label="Поиск"
@@ -166,7 +162,7 @@ const MyResponsesFilter = ({
               variant="outlined"
               value={searchQuery}
               onChange={event => onSearchQueryChange(event.target.value)}
-              sx={{ width: 300 }}
+              sx={{ width: { xs: 160, sm: 220, md: 300 } }}
             />
           )}
 
@@ -218,16 +214,6 @@ const MyResponsesFilter = ({
           />
         </Stack>
       </Stack>
-
-      <ApplicationSearchPanel
-        open={isSearchOpen && isMobile}
-        query={searchQuery}
-        onQueryChange={onSearchQueryChange}
-        onClose={() => {
-          onSearchOpenChange(false);
-          onSearchQueryChange('');
-        }}
-      />
 
       <Popover
         anchorEl={anchorEl}

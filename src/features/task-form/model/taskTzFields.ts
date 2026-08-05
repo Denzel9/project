@@ -44,21 +44,6 @@ export type TaskTzGroup = {
 
 export const TASK_TZ_GROUPS: TaskTzGroup[] = [
   {
-    title: 'Контент',
-    header: 'Контент',
-    type: 'deliverables',
-  },
-  {
-    title: 'Можно / нельзя',
-    header: 'Можно / нельзя',
-    scalarFields: [{ key: 'dosAndDonts', label: 'Можно / нельзя', multiline: true }],
-  },
-  {
-    title: 'Призыв к действию',
-    header: 'Призыв к действию',
-    scalarFields: [{ key: 'cta', label: 'Призыв к действию' }],
-  },
-  {
     title: 'Хештеги',
     header: 'Хештеги',
     listFields: [{ key: 'hashtagItems', label: 'Хештеги', itemLabel: 'Хештег' }],
@@ -73,6 +58,22 @@ export const TASK_TZ_GROUPS: TaskTzGroup[] = [
     header: 'Референсы',
     listFields: [{ key: 'referenceItems', label: 'Референсы', itemLabel: 'Ссылка' }],
   },
+  {
+    title: 'Контент',
+    header: 'Контент',
+    type: 'deliverables',
+  },
+  {
+    title: 'Можно / нельзя',
+    header: 'Можно / нельзя',
+    scalarFields: [{ key: 'dosAndDonts', label: 'Можно / нельзя', multiline: true }],
+  },
+  {
+    title: 'Призыв к действию',
+    header: 'Призыв к действию',
+    scalarFields: [{ key: 'cta', label: 'Призыв к действию' }],
+  },
+
   {
     title: 'Гайдлайны',
     header: 'Гайдлайны',

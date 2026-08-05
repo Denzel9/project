@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 
 type RequirementCardProps = {
   icon: 'photo' | 'video' | 'deadline';
-  label: string;
+  label?: string;
   value?: string | null;
   placeholder: string;
   emptyReadOnlyLabel?: string;

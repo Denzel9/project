@@ -44,12 +44,12 @@ import {
   hasCommentText,
   toGalleryItems,
 } from '@/pages/task/model/lib/commentMedia';
+import { TaskCommentAttachmentsPanel } from '@/pages/task/ui/comment/TaskCommentAttachmentsPanel';
+import { TaskCommentComposer } from '@/pages/task/ui/comment/TaskCommentComposer';
+import { TaskCommentItem } from '@/pages/task/ui/comment/TaskCommentItem';
+import { UnreadCommentsDivider } from '@/pages/task/ui/comment/UnreadCommentsDivider';
 import { DeleteCommentDialog } from '@/pages/task/ui/DeleteCommentDialog';
-import { TaskCommentAttachmentsPanel } from '@/pages/task/ui/TaskCommentAttachmentsPanel';
-import { TaskCommentComposer } from '@/pages/task/ui/TaskCommentComposer';
-import { TaskCommentItem } from '@/pages/task/ui/TaskCommentItem';
 import { TaskCommentSearchPanel } from '@/pages/task/ui/TaskCommentSearchPanel';
-import { UnreadCommentsDivider } from '@/pages/task/ui/UnreadCommentsDivider';
 import { FullScreenGallery } from '@/widgets';
 
 import { DASHBOARD_COMMENT_CARD_COLLAPSE_MS } from '../model/constants';
@@ -190,7 +190,6 @@ export const DashboardCommentGroupCard = ({
   } = useDashboardTaskCommentsThread({
     taskId: isThreadOpen ? taskId : null,
     task: item.task,
-    lastComment: item.lastComment,
     expanded: isThreadOpen,
   });
 
@@ -405,28 +404,28 @@ export const DashboardCommentGroupCard = ({
         flexDirection: 'column',
         ...(embedded
           ? {
+            flex: 1,
+            minHeight: 0,
+            border: 'none',
+            bgcolor: 'transparent',
+          }
+          : {
+            borderRadius: '20px',
+            border: '1px solid',
+            borderColor: expanded ? 'primary.light' : 'divider',
+            bgcolor: 'background.paper',
+            boxShadow: expanded
+              ? theme => `0 8px 24px ${theme.palette.primary.main}12`
+              : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            transition: theme.transitions.create(
+              ['box-shadow', 'border-color', 'flex'],
+              { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS }
+            ),
+            ...(fillHeight && {
               flex: 1,
               minHeight: 0,
-              border: 'none',
-              bgcolor: 'transparent',
-            }
-          : {
-              borderRadius: '20px',
-              border: '1px solid',
-              borderColor: expanded ? 'primary.light' : 'divider',
-              bgcolor: 'background.paper',
-              boxShadow: expanded
-                ? theme => `0 8px 24px ${theme.palette.primary.main}12`
-                : '0 1px 2px rgba(15, 23, 42, 0.04)',
-              transition: theme.transitions.create(
-                ['box-shadow', 'border-color', 'flex'],
-                { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS }
-              ),
-              ...(fillHeight && {
-                flex: 1,
-                minHeight: 0,
-              }),
             }),
+          }),
       }}
     >
       {!embedded && (

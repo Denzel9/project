@@ -4,7 +4,6 @@ import {
   Button,
   CircularProgress,
   Stack,
-  Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -14,7 +13,12 @@ import {
   usePublicationsQuery,
   type Publication,
 } from '@/entities/publication';
-import { EmptyBlock, InfiniteScrollSentinel, ROUTES } from '@/shared';
+import {
+  EmptyBlock,
+  InfiniteScrollSentinel,
+  ROUTES,
+  type FilterAutocompleteOption,
+} from '@/shared';
 import { PageLayout } from '@/widgets';
 
 import {
@@ -40,6 +44,9 @@ import { PublicationsPrintHeader } from './PublicationsPrintHeader';
 import { PublicationTable } from './PublicationTable';
 
 import type { PublicationViewMode } from '../model/types';
+
+const FILTER_SEARCH_MIN = 2;
+const FILTER_SEARCH_LIMIT = 20;
 
 const getInitialViewMode = (): PublicationViewMode => {
   if (typeof window === 'undefined') return 'grid';
@@ -73,6 +80,12 @@ export const PublicationsPage = () => {
   const [executorId, setExecutorId] = useState<PublicationExecutorFilter>(
     deepLinkFilters.executorId ?? 'all'
   );
+  const [postSearchQuery, setPostSearchQuery] = useState('');
+  const [executorSearchQuery, setExecutorSearchQuery] = useState('');
+  const [selectedPostOption, setSelectedPostOption] =
+    useState<FilterAutocompleteOption | null>(null);
+  const [selectedExecutorOption, setSelectedExecutorOption] =
+    useState<FilterAutocompleteOption | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [reportPublications, setReportPublications] = useState<
@@ -84,6 +97,12 @@ export const PublicationsPage = () => {
     if (deepLinkFilters.postId) {
       setTimeout(() => {
         setPostId(deepLinkFilters.postId ?? 'all');
+        if (deepLinkFilters.postId && deepLinkPostTitle) {
+          setSelectedPostOption({
+            id: deepLinkFilters.postId,
+            label: deepLinkPostTitle,
+          });
+        }
       }, 0);
     }
 
@@ -93,7 +112,7 @@ export const PublicationsPage = () => {
         setViewMode('table');
       }, 0);
     }
-  }, [deepLinkFilters.executorId, deepLinkFilters.postId]);
+  }, [deepLinkFilters.executorId, deepLinkFilters.postId, deepLinkPostTitle]);
 
   const isTableView = viewMode === 'table';
   const useServerTablePagination = isTableView;
@@ -161,6 +180,30 @@ export const PublicationsPage = () => {
     enabled: useServerTablePagination,
   });
 
+  const canSearchPosts = postSearchQuery.trim().length >= FILTER_SEARCH_MIN;
+  const canSearchExecutors =
+    executorSearchQuery.trim().length >= FILTER_SEARCH_MIN;
+
+  const { data: postSearchData, isFetching: isPostSearchFetching } =
+    usePublicationsQuery(
+      {
+        q: postSearchQuery.trim(),
+        page: 1,
+        limit: FILTER_SEARCH_LIMIT,
+      },
+      { enabled: canSearchPosts },
+    );
+
+  const { data: executorSearchData, isFetching: isExecutorSearchFetching } =
+    usePublicationsQuery(
+      {
+        executorQ: executorSearchQuery.trim(),
+        page: 1,
+        limit: FILTER_SEARCH_LIMIT,
+      },
+      { enabled: canSearchExecutors },
+    );
+
   const infinitePublications = useMemo(
     () => infiniteData?.pages.flatMap(page => page.items) ?? [],
     [infiniteData]
@@ -177,40 +220,54 @@ export const PublicationsPage = () => {
   const visiblePublications = rawPublications;
 
   const postOptions = useMemo(() => {
-    const options = getPublicationPostOptions(rawPublications).map(
+    if (!canSearchPosts) return [];
+
+    return getPublicationPostOptions(postSearchData?.items ?? []).map(
       ([id, label]) => ({
         id,
         label,
-      })
+      }),
     );
-
-    if (postId !== 'all' && !options.some(option => option.id === postId)) {
-      options.unshift({
-        id: postId,
-        label: deepLinkPostTitle || `Объявление ${postId.slice(0, 8)}`,
-      });
-    }
-
-    return options;
-  }, [deepLinkPostTitle, postId, rawPublications]);
+  }, [canSearchPosts, postSearchData?.items]);
 
   const executorOptions = useMemo(() => {
-    const options = getPublicationExecutorOptions(rawPublications).map(
+    if (!canSearchExecutors) return [];
+
+    return getPublicationExecutorOptions(executorSearchData?.items ?? []).map(
       ([id, label]) => ({
         id,
         label,
-      })
+      }),
     );
+  }, [canSearchExecutors, executorSearchData?.items]);
 
-    if (
-      executorId !== 'all' &&
-      !options.some(option => option.id === executorId)
-    ) {
-      options.unshift({ id: executorId, label: 'Выбранный участник' });
+  const handlePostChange = (value: PublicationPostFilter) => {
+    setPostId(value);
+
+    if (value === 'all') {
+      setSelectedPostOption(null);
+      return;
     }
 
-    return options;
-  }, [executorId, rawPublications]);
+    const fromSearch = postOptions.find(option => option.id === value);
+    setSelectedPostOption(current =>
+      fromSearch ?? (current?.id === value ? current : null),
+    );
+  };
+
+  const handleExecutorChange = (value: PublicationExecutorFilter) => {
+    setExecutorId(value);
+
+    if (value === 'all') {
+      setSelectedExecutorOption(null);
+      return;
+    }
+
+    const fromSearch = executorOptions.find(option => option.id === value);
+    setSelectedExecutorOption(current =>
+      fromSearch ?? (current?.id === value ? current : null),
+    );
+  };
 
   const hasActiveFilters = hasActivePublicationFilters({
     q,
@@ -334,9 +391,8 @@ export const PublicationsPage = () => {
 
   return (
     <PageLayout
-      withFooter={!isTableView}
-      isScreenHeight={isTableView}
       printHide={isTableView}
+
     >
       <Box
         className={isTableView ? 'print-root' : undefined}
@@ -359,8 +415,8 @@ export const PublicationsPage = () => {
             sx={{
               top: 0,
               zIndex: 1000,
-              position: 'sticky',
               flexShrink: 0,
+              position: 'sticky',
             }}
           >
             <PublicationsFilter
@@ -370,10 +426,18 @@ export const PublicationsPage = () => {
               viewMode={viewMode}
               postOptions={postOptions}
               executorOptions={executorOptions}
+              selectedPostOption={selectedPostOption}
+              selectedExecutorOption={selectedExecutorOption}
+              isPostSearchLoading={canSearchPosts && isPostSearchFetching}
+              isExecutorSearchLoading={
+                canSearchExecutors && isExecutorSearchFetching
+              }
               tableReport={tableReport}
               onQueryChange={setQ}
-              onPostChange={setPostId}
-              onExecutorChange={setExecutorId}
+              onPostChange={handlePostChange}
+              onExecutorChange={handleExecutorChange}
+              onPostSearch={setPostSearchQuery}
+              onExecutorSearch={setExecutorSearchQuery}
               onViewModeChange={setViewMode}
             />
           </Box>
@@ -392,13 +456,13 @@ export const PublicationsPage = () => {
         {isError && (
           <Box
             sx={{
+              py: 6,
               display: 'flex',
               justifyContent: 'center',
               bgcolor: 'white',
               borderRadius: '32px',
               border: '1px solid',
               borderColor: 'divider',
-              py: 6,
             }}
           >
             <EmptyBlock
@@ -412,39 +476,32 @@ export const PublicationsPage = () => {
         {isEmpty && (
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              bgcolor: 'white',
-              borderRadius: '32px',
-              border: '1px dashed',
-              borderColor: 'divider',
               py: 8,
               px: 3,
+              flex: 1,
+              height: '100%',
+              display: 'flex',
+              bgcolor: 'white',
+              borderRadius: '32px',
+              border: '1px solid',
+              borderColor: 'divider',
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
           >
             <Stack
               spacing={2}
               sx={{ alignItems: 'center', maxWidth: 420 }}
             >
-              <PublicOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />
-              <Typography
-                variant="h6"
-                color="text.secondary"
-                sx={{ textAlign: 'center' }}
-              >
-                {hasActiveFilters
+              <EmptyBlock
+                title={hasActiveFilters
                   ? 'По выбранным фильтрам ничего не найдено'
                   : 'Публикаций пока нет'}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: 'center' }}
-              >
-                {hasActiveFilters
+                description={hasActiveFilters
                   ? 'Попробуйте изменить фильтры или сбросить их'
                   : 'Публикации появляются автоматически после завершения задач'}
-              </Typography>
+                icon={<PublicOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />}
+              />
               <Button
                 variant="contained"
                 onClick={() =>

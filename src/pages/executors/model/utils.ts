@@ -38,7 +38,7 @@ export const formatDateTime = (
 export const getPartnersPageConfig = (role: string | null): PartnersPageConfig => {
   if (role === USER_ROLE.CREATOR) {
     return {
-      title: 'Заказчики',
+      title: 'Компании',
       defaultTab: 'customers',
       tabs: [
         { id: 'customers', label: 'Заказчики' },
@@ -48,7 +48,7 @@ export const getPartnersPageConfig = (role: string | null): PartnersPageConfig =
   }
 
   return {
-    title: 'Пользователи',
+    title: 'Исполнители',
     defaultTab: 'executors',
     tabs: [
       { id: 'executors', label: 'Исполнители' },
@@ -123,4 +123,8 @@ export const sortApplicationCompanyRows = (
         return 0;
     }
   });
+};
+
+export const openInNewTab = (path: string) => {
+  window.open(path, '_blank', 'noopener,noreferrer');
 };

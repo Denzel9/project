@@ -16,6 +16,7 @@ import { RHFInput } from '@/shared/ui/rhf';
 
 import {
   defaultRegistrationCreatorValues,
+  mapAuthSessionUser,
   registrationCreatorSchema,
   type RegistrationCreatorFormType,
   type RegistrationCreatorRequest,
@@ -64,15 +65,7 @@ const RegistrationCreatorForm = ({
       const data = await registrationCreator(payload);
 
       if (data?.data?.user) {
-        setAuth({
-          id: data.data.user.id,
-          role: data.data.user.role,
-          membershipRole: data.data.user.membershipRole,
-          isPrime: Boolean(data.data.user.isPrime),
-          primeStatus: data.data.user.primeStatus ?? 'NONE',
-          primeExpiresAt: data.data.user.primeExpiresAt ?? null,
-          isEmailConfirmed: Boolean(data.data.user.isEmailConfirmed),
-        });
+        setAuth(mapAuthSessionUser(data.data.user));
 
         try {
           await prefetchUserConfig(queryClient);
@@ -88,7 +81,7 @@ const RegistrationCreatorForm = ({
       }
     } catch (e) {
       if (axios.isAxiosError(e)) {
-        onError?.(true, e.response?.data.message);
+        onError?.(true, e.response?.data.message || 'Произошла ошибка');
       }
     }
   };

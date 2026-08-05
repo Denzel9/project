@@ -31,10 +31,10 @@ import {
   type FavoriteGroupFilter,
 } from '../model/utils';
 
-import { FavoriteUserItemCard } from './FavoriteUserItemCard';
-import FavoriteFilter from './Filter';
 import { FavoritesPrintHeader } from './FavoritesPrintHeader';
 import { FavoritesTable } from './FavoritesTable';
+import { FavoriteUserItemCard } from './FavoriteUserItemCard';
+import FavoriteFilter from './Filter';
 
 import type { FavoriteViewMode } from '../model/types';
 
@@ -186,7 +186,7 @@ export const FavoritePage = () => {
     favoriteType === 'POST'
       ? 'Избранные посты'
       : favoriteType === 'CREATOR'
-        ? 'Избранные креаторы'
+        ? 'Избранные исполнители'
         : 'Избранные компании';
 
   const printItems = reportItems ?? favorites;
@@ -196,7 +196,7 @@ export const FavoritePage = () => {
     : favoriteType === 'POST'
       ? 'В избранном пока нет постов'
       : favoriteType === 'CREATOR'
-        ? 'В избранном пока нет креаторов'
+        ? 'В избранном пока нет исполнителей'
         : 'В избранном пока нет компаний';
 
   const reportOptions = useMemo(
@@ -289,35 +289,35 @@ export const FavoritePage = () => {
     >
       {Boolean(
         favorites.length ||
-          !isFilterEmpty ||
-          favoriteType !== 'POST' ||
-          isSearchOpen ||
-          isTableView
+        !isFilterEmpty ||
+        favoriteType !== 'POST' ||
+        isSearchOpen ||
+        isTableView
       ) && (
-        <Box
-          className="print-no-print"
-          sx={{
-            top: 0,
-            zIndex: 1000,
-            position: 'sticky',
-            flexShrink: 0,
-          }}
-        >
-          <FavoriteFilter
-            value={groupFilter}
-            onChange={setGroupFilter}
-            favoriteType={favoriteType}
-            onTypeChange={setFavoriteType}
-            searchQuery={searchQuery}
-            isSearchOpen={isSearchOpen}
-            onSearchQueryChange={setSearchQuery}
-            onSearchOpenChange={setIsSearchOpen}
-            viewMode={viewMode}
-            onViewModeChange={handleViewModeChange}
-            tableReport={tableReport}
-          />
-        </Box>
-      )}
+          <Box
+            className="print-no-print"
+            sx={{
+              top: 0,
+              zIndex: 1000,
+              position: 'sticky',
+              flexShrink: 0,
+            }}
+          >
+            <FavoriteFilter
+              value={groupFilter}
+              onChange={setGroupFilter}
+              favoriteType={favoriteType}
+              onTypeChange={setFavoriteType}
+              searchQuery={searchQuery}
+              isSearchOpen={isSearchOpen}
+              onSearchQueryChange={setSearchQuery}
+              onSearchOpenChange={setIsSearchOpen}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
+              tableReport={tableReport}
+            />
+          </Box>
+        )}
 
       <Box
         sx={{

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import {
   USER_ROLE,
+  getPartnerName,
   mapApplicationCompanyToRow,
   mapPartnerUserToRow,
   normalizePartnerApplicationCompany,
@@ -12,15 +13,20 @@ import {
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities';
-import { FilterAutocomplete, useAuthStore } from '@/features';
-import { ROUTES } from '@/shared';
+import { useAuthStore } from '@/features';
+import {
+  FilterAutocomplete,
+  ROUTES,
+  type FilterAutocompleteOption,
+} from '@/shared';
 import { PageLayout } from '@/widgets';
 
-import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
+import { CONTACT_LABELS, EMPTY_MESSAGES, PARTNERS_TABLE_PAGE_SIZE, USER_SEARCH_LIMIT, USER_SEARCH_MIN } from '../model/constants';
 import { exportPartnersReport } from '../model/exportPartnersReport';
 import {
   DEFAULT_APPLICANT_STATUSES,
   getPartnersPageConfig,
+  openInNewTab,
 } from '../model/utils';
 
 import { ApplicationCompaniesTable } from './ApplicationCompaniesTable';
@@ -32,23 +38,6 @@ import { TaskContactsTable } from './TaskContactsTable';
 
 import type { PartnersTabId, TaskContactRow } from '../model/types';
 
-const openInNewTab = (path: string) => {
-  window.open(path, '_blank', 'noopener,noreferrer');
-};
-
-const EMPTY_MESSAGES: Record<PartnersTabId, string> = {
-  executors: 'Пока нет исполнителей',
-  applicants: 'Пока нет кандидатов',
-  customers: 'Пока нет заказчиков',
-  companies: 'Пока нет компаний по вашим откликам',
-};
-
-const CONTACT_LABELS: Partial<Record<PartnersTabId, string>> = {
-  executors: 'Исполнитель',
-  applicants: 'Кандидат',
-  customers: 'Заказчик',
-};
-
 export const ExecutorsPage = () => {
   const { role } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
@@ -56,27 +45,23 @@ export const ExecutorsPage = () => {
 
   const pageConfig = useMemo(() => getPartnersPageConfig(role), [role]);
   const [activeTab, setActiveTab] = useState<PartnersTabId>(
-    pageConfig.defaultTab
+    pageConfig.defaultTab,
   );
   const [userFilterId, setUserFilterId] = useState('all');
+  const [selectedUserOption, setSelectedUserOption] =
+    useState<FilterAutocompleteOption | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   const [page, setPage] = useState(0);
 
   const userIdParam = userFilterId === 'all' ? undefined : userFilterId;
+  const canSearchUsers = userSearchQuery.trim().length >= USER_SEARCH_MIN;
 
-  const handleTabChange = (tab: PartnersTabId) => {
-    setActiveTab(tab);
-    setUserFilterId('all');
-    setPage(0);
+  const userSearchParams = {
+    q: userSearchQuery.trim(),
+    sort: 'name' as const,
+    page: 1,
+    limit: USER_SEARCH_LIMIT,
   };
-
-  const handleUserFilterChange = (value: string) => {
-    setUserFilterId(value);
-    setPage(0);
-  };
-
-  const handlePageChange = useCallback((_event: unknown, nextPage: number) => {
-    setPage(nextPage);
-  }, []);
 
   const paginationParams = {
     page: page + 1,
@@ -89,7 +74,7 @@ export const ExecutorsPage = () => {
       sort: 'name',
       ...paginationParams,
     },
-    { enabled: isCompany && activeTab === 'executors' }
+    { enabled: isCompany && activeTab === 'executors' },
   );
 
   const applicantsQuery = usePartnerApplicantsQuery(
@@ -97,7 +82,7 @@ export const ExecutorsPage = () => {
       statuses: [...DEFAULT_APPLICANT_STATUSES],
       ...paginationParams,
     },
-    { enabled: isCompany && activeTab === 'applicants' }
+    { enabled: isCompany && activeTab === 'applicants' },
   );
 
   const customersQuery = usePartnerCustomersQuery(
@@ -105,7 +90,7 @@ export const ExecutorsPage = () => {
       sort: 'name',
       ...paginationParams,
     },
-    { enabled: !isCompany && activeTab === 'customers' }
+    { enabled: !isCompany && activeTab === 'customers' },
   );
 
   const companiesQuery = usePartnerApplicationCompaniesQuery(
@@ -113,8 +98,88 @@ export const ExecutorsPage = () => {
       sort: 'recent',
       ...paginationParams,
     },
-    { enabled: !isCompany && activeTab === 'companies' }
+    { enabled: !isCompany && activeTab === 'companies' },
   );
+
+  const searchExecutorsQuery = usePartnerExecutorsQuery(userSearchParams, {
+    enabled: isCompany && activeTab === 'executors' && canSearchUsers,
+  });
+
+  const searchApplicantsQuery = usePartnerApplicantsQuery(
+    {
+      ...userSearchParams,
+      statuses: [...DEFAULT_APPLICANT_STATUSES],
+    },
+    { enabled: isCompany && activeTab === 'applicants' && canSearchUsers },
+  );
+
+  const searchCustomersQuery = usePartnerCustomersQuery(userSearchParams, {
+    enabled: !isCompany && activeTab === 'customers' && canSearchUsers,
+  });
+
+  const searchCompaniesQuery = usePartnerApplicationCompaniesQuery(
+    userSearchParams,
+    { enabled: !isCompany && activeTab === 'companies' && canSearchUsers },
+  );
+
+  const userSearchOptions = useMemo(() => {
+    if (!canSearchUsers) return [];
+
+    if (activeTab === 'companies') {
+      return (searchCompaniesQuery.data?.items ?? [])
+        .map(normalizePartnerApplicationCompany)
+        .map(item => ({
+          id: item.id,
+          label: getPartnerName(item),
+        }));
+    }
+
+    const items =
+      activeTab === 'executors'
+        ? (searchExecutorsQuery.data?.items ?? [])
+        : activeTab === 'applicants'
+          ? (searchApplicantsQuery.data?.items ?? [])
+          : (searchCustomersQuery.data?.items ?? []);
+
+    return items.map(normalizePartnerUser).map(item => ({
+      id: item.id,
+      label: getPartnerName(item),
+    }));
+  }, [
+    activeTab,
+    canSearchUsers,
+    searchApplicantsQuery.data?.items,
+    searchCompaniesQuery.data?.items,
+    searchCustomersQuery.data?.items,
+    searchExecutorsQuery.data?.items,
+  ]);
+
+  const handleTabChange = (tab: PartnersTabId) => {
+    setActiveTab(tab);
+    setUserFilterId('all');
+    setSelectedUserOption(null);
+    setUserSearchQuery('');
+    setPage(0);
+  };
+
+  const handleUserFilterChange = (nextId: string) => {
+    setUserFilterId(nextId);
+    setPage(0);
+
+    if (nextId === 'all') {
+      setSelectedUserOption(null);
+      return;
+    }
+
+    const fromSearch = userSearchOptions.find(option => option.id === nextId);
+    setSelectedUserOption(current =>
+      fromSearch ?? (current?.id === nextId ? current : null),
+    );
+  };
+
+  const handlePageChange = useCallback((_event: unknown, nextPage: number) => {
+    setPage(nextPage);
+  }, []);
 
   const activeQuery = useMemo(() => {
     switch (activeTab) {
@@ -137,9 +202,30 @@ export const ExecutorsPage = () => {
     executorsQuery,
   ]);
 
+  const activeSearchQuery = useMemo(() => {
+    switch (activeTab) {
+      case 'executors':
+        return searchExecutorsQuery;
+      case 'applicants':
+        return searchApplicantsQuery;
+      case 'customers':
+        return searchCustomersQuery;
+      case 'companies':
+        return searchCompaniesQuery;
+      default:
+        return searchExecutorsQuery;
+    }
+  }, [
+    activeTab,
+    searchApplicantsQuery,
+    searchCompaniesQuery,
+    searchCustomersQuery,
+    searchExecutorsQuery,
+  ]);
+
   const activeTabLabel = useMemo(
     () => pageConfig.tabs.find(tab => tab.id === activeTab)?.label ?? activeTab,
-    [activeTab, pageConfig.tabs]
+    [activeTab, pageConfig.tabs],
   );
 
   const activeTotal = activeQuery.data?.total ?? 0;
@@ -151,7 +237,7 @@ export const ExecutorsPage = () => {
       (executorsQuery.data?.items ?? [])
         .map(normalizePartnerUser)
         .map(mapPartnerUserToRow),
-    [executorsQuery.data?.items]
+    [executorsQuery.data?.items],
   );
 
   const applicantRows = useMemo(
@@ -159,7 +245,7 @@ export const ExecutorsPage = () => {
       (applicantsQuery.data?.items ?? [])
         .map(normalizePartnerUser)
         .map(mapPartnerUserToRow),
-    [applicantsQuery.data?.items]
+    [applicantsQuery.data?.items],
   );
 
   const customerRows = useMemo(
@@ -167,7 +253,7 @@ export const ExecutorsPage = () => {
       (customersQuery.data?.items ?? [])
         .map(normalizePartnerUser)
         .map(mapPartnerUserToRow),
-    [customersQuery.data?.items]
+    [customersQuery.data?.items],
   );
 
   const companyRows = useMemo(
@@ -175,40 +261,8 @@ export const ExecutorsPage = () => {
       (companiesQuery.data?.items ?? [])
         .map(normalizePartnerApplicationCompany)
         .map(mapApplicationCompanyToRow),
-    [companiesQuery.data?.items]
+    [companiesQuery.data?.items],
   );
-
-  const userOptions = useMemo(() => {
-    const rows =
-      activeTab === 'executors'
-        ? executorRows
-        : activeTab === 'applicants'
-          ? applicantRows
-          : activeTab === 'customers'
-            ? customerRows
-            : companyRows;
-
-    const options = rows.map(row => ({
-      id: row.id,
-      label: row.name,
-    }));
-
-    if (
-      userFilterId !== 'all' &&
-      !options.some(option => option.id === userFilterId)
-    ) {
-      options.unshift({ id: userFilterId, label: 'Выбранный пользователь' });
-    }
-
-    return options;
-  }, [
-    activeTab,
-    applicantRows,
-    companyRows,
-    customerRows,
-    executorRows,
-    userFilterId,
-  ]);
 
   const userFilterLabel = useMemo(() => {
     switch (activeTab) {
@@ -243,22 +297,22 @@ export const ExecutorsPage = () => {
 
   const handleInteractionsClick = useCallback((item: TaskContactRow) => {
     openInNewTab(
-      `${ROUTES.MY_TASKS}?executorId=${encodeURIComponent(item.id)}`
+      `${ROUTES.MY_TASKS}?executorId=${encodeURIComponent(item.id)}`,
     );
   }, []);
 
   const handleApplicantInteractionsClick = useCallback(
     (item: TaskContactRow) => {
       openInNewTab(
-        `${ROUTES.MANAGE_POSTS}?userId=${encodeURIComponent(item.id)}`
+        `${ROUTES.MANAGE_POSTS}?userId=${encodeURIComponent(item.id)}`,
       );
     },
-    []
+    [],
   );
 
   const handlePublicationsClick = useCallback((item: TaskContactRow) => {
     openInNewTab(
-      `${ROUTES.PUBLICATIONS}?executorId=${encodeURIComponent(item.id)}`
+      `${ROUTES.PUBLICATIONS}?executorId=${encodeURIComponent(item.id)}`,
     );
   }, []);
 
@@ -387,9 +441,13 @@ export const ExecutorsPage = () => {
             />
 
             <FilterAutocomplete
-              label={userFilterLabel}
               value={userFilterId}
-              options={userOptions}
+              options={userSearchOptions}
+              selectedOption={selectedUserOption}
+              label={userFilterLabel}
+              loading={canSearchUsers && activeSearchQuery.isFetching}
+              minInputLength={USER_SEARCH_MIN}
+              onSearch={setUserSearchQuery}
               onChange={handleUserFilterChange}
               sx={{ width: 280, flex: '0 0 280px' }}
             />

@@ -1,7 +1,8 @@
 import { InboxOutlined } from '@mui/icons-material';
-import { Stack, Typography, Button } from '@mui/material';
+import { Stack, Typography, Button, type SxProps, type Theme } from '@mui/material';
 
 type EmptyBlockProps = {
+  sx?: SxProps<Theme>;
   title?: string;
   description?: string;
   buttonText?: string;
@@ -9,9 +10,11 @@ type EmptyBlockProps = {
   hasActiveFilters?: boolean;
   resetFilters?: () => void;
   navigate?: () => void;
+  icon?: React.ReactNode;
 };
 
 export const EmptyBlock = ({
+  sx,
   title = 'Тут пока ничего нет',
   description,
   buttonText = 'На главную',
@@ -19,6 +22,7 @@ export const EmptyBlock = ({
   hasActiveFilters = false,
   resetFilters,
   navigate,
+  icon = <InboxOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />,
 }: EmptyBlockProps) => {
   const showDescription = Boolean(
     hasActiveFilters || (description !== undefined && description !== '')
@@ -30,24 +34,26 @@ export const EmptyBlock = ({
 
   return (
     <Stack
-      spacing={2}
+      spacing={1}
       sx={{
         alignItems: 'center',
         justifyContent: 'center',
+        ...sx,
       }}
     >
-      <InboxOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />
+      {icon}
       <Typography
-        variant="h6"
-        color="text.secondary"
+        variant="body1"
+        color="info"
         sx={{ textAlign: 'center' }}
       >
         {hasActiveFilters ? 'По выбранным фильтрам ничего не найдено' : title}
       </Typography>
+
       {showDescription && (
         <Typography
-          variant="body2"
-          color="text.secondary"
+          variant='caption'
+          color="info"
           sx={{ textAlign: 'center' }}
         >
           {hasActiveFilters
@@ -55,6 +61,7 @@ export const EmptyBlock = ({
             : description}
         </Typography>
       )}
+
       {showButton && (
         <Button
           variant="contained"

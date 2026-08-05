@@ -21,17 +21,34 @@ export const TaskTzGroupCard = ({
   values,
 }: TaskTzGroupCardProps) => {
   const hasValue = groupHasValue(group, values);
+  const isListOnlyGroup =
+    Boolean(group.listFields?.length) &&
+    !group.scalarFields?.length &&
+    group.type !== 'deliverables';
 
   if (!isEdit && !hasValue) {
     return null;
   }
 
+  if (isListOnlyGroup) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <Stack spacing={isEdit ? 2 : 1.5}>
+          {group.listFields?.map(field => (
+            <ListField
+              field={field}
+              key={field.key}
+              isEdit={isEdit}
+              title={group.title}
+            />
+          ))}
+        </Stack>
+      </Box>
+    );
+  }
+
   return (
-    <Box
-      sx={{
-        py: 2,
-      }}
-    >
+    <Box sx={{ py: 2 }}>
       <Typography
         variant="subtitle2"
         sx={{ fontWeight: 600, mb: 1 }}

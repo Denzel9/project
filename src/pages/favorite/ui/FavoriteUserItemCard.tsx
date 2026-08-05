@@ -82,7 +82,7 @@ export const FavoriteUserItemCard = ({
           <Chip
             size="small"
             icon={isCompany ? <BusinessOutlined /> : <PersonOutlined />}
-            label={isCompany ? 'Компания' : 'Креатор'}
+            label={isCompany ? 'Компания' : 'Исполнитель'}
             variant="outlined"
           />
         </Stack>

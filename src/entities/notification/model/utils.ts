@@ -1,4 +1,5 @@
 import { ROUTES } from '@/shared/config/routes'
+import { getActionActorDisplayName } from '@/shared/lib/formatActionActorLabel'
 
 import { NOTIFICATION_TYPE } from './types'
 
@@ -13,9 +14,25 @@ export const isNotificationUnread = (notification: Notification) =>
   !notification.readAt
 
 export const getNotificationActorName = (
-  actor: NotificationActor | null | undefined,
-) => {
-  if (!actor) return ''
+  notificationOrActor:
+    | Notification
+    | NotificationActor
+    | null
+    | undefined,
+): string => {
+  if (!notificationOrActor) return ''
+
+  if (
+    'actorDisplayName' in notificationOrActor ||
+    'type' in notificationOrActor
+  ) {
+    const notification = notificationOrActor as Notification
+    const fromSnapshot = getActionActorDisplayName(notification)
+    if (fromSnapshot) return fromSnapshot
+    return getNotificationActorName(notification.actor)
+  }
+
+  const actor = notificationOrActor as NotificationActor
 
   if (actor.role === 'COMPANY') {
     return actor.companyName ?? ''

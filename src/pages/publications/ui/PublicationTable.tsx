@@ -39,6 +39,8 @@ import {
 import {
   getPublicationGalleryMediaItems,
   getPublicationPlatforms,
+  getPublicationPostPath,
+  getPublicationPostTitle,
   getPublicationPreviewMedia,
   getPublicationTaskPath,
   getPublicationTitle,
@@ -140,7 +142,7 @@ export const PublicationTable = ({
     !forPrint &&
     (serverPagination
       ? paginationCount > rowsPerPage ||
-        sortedPublications.length >= rowsPerPage
+      sortedPublications.length >= rowsPerPage
       : paginationCount > rowsPerPage);
 
   const scrollTableToTop = () => {
@@ -177,7 +179,10 @@ export const PublicationTable = ({
       setInternalPage(0);
     }
     setSortOrder(
-      field === 'title' || field === 'platform' || field === 'executor'
+      field === 'title' ||
+        field === 'post' ||
+        field === 'platform' ||
+        field === 'executor'
         ? 'asc'
         : 'desc'
     );
@@ -234,14 +239,14 @@ export const PublicationTable = ({
             scrollbarGutter: 'stable',
             ...(forPrint
               ? {
-                  height: 'auto',
-                  maxHeight: 'none',
-                  overflow: 'visible',
-                }
+                height: 'auto',
+                maxHeight: 'none',
+                overflow: 'visible',
+              }
               : {
-                  flex: 1,
-                  minHeight: 0,
-                }),
+                flex: 1,
+                minHeight: 0,
+              }),
           }}
         >
           <Table
@@ -250,6 +255,7 @@ export const PublicationTable = ({
           >
             <colgroup>
               <col style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.title }} />
+              <col style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.post }} />
               <col
                 style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.platform }}
               />
@@ -281,6 +287,21 @@ export const PublicationTable = ({
                     sx={forPrint ? { pointerEvents: 'none' } : undefined}
                   >
                     Название
+                  </TableSortLabel>
+                </TableCell>
+
+                <TableCell
+                  sortDirection={getSortDirection('post')}
+                  sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.post)}
+                >
+                  <TableSortLabel
+                    active={sortField === 'post'}
+                    direction={sortField === 'post' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('post')}
+                    hideSortIcon={forPrint}
+                    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                  >
+                    Пост
                   </TableSortLabel>
                 </TableCell>
 
@@ -383,6 +404,31 @@ export const PublicationTable = ({
                     </TableCell>
 
                     <TableCell
+                      sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.post)}
+                      onClick={
+                        forPrint
+                          ? undefined
+                          : event => {
+                            event.stopPropagation();
+                            navigate(getPublicationPostPath(publication));
+                          }
+                      }
+                    >
+                      <Typography
+                        variant="body2"
+                        color={forPrint ? 'text.primary' : 'info.main'}
+                        sx={{
+                          transition: 'color 0.2s ease-in-out',
+                          ...(forPrint
+                            ? undefined
+                            : { '&:hover': { color: 'primary.main' } }),
+                        }}
+                      >
+                        {getPublicationPostTitle(publication)}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell
                       sx={columnCellSx(
                         PUBLICATION_TABLE_COLUMN_WIDTHS.platform
                       )}
@@ -446,6 +492,7 @@ export const PublicationTable = ({
                         <UserDisplayName
                           user={participantUser}
                           variant="body2"
+                          withBadges={false}
                         />
                       </Stack>
                     </TableCell>
@@ -462,17 +509,17 @@ export const PublicationTable = ({
                       >
                         {forPrint
                           ? format(
-                              new Date(publication.createdAt),
-                              'dd.MM.yyyy HH:mm',
-                              { locale: ru }
-                            )
+                            new Date(publication.createdAt),
+                            'dd.MM.yyyy HH:mm',
+                            { locale: ru }
+                          )
                           : formatDistanceToNow(
-                              new Date(publication.createdAt),
-                              {
-                                addSuffix: true,
-                                locale: ru,
-                              }
-                            )}
+                            new Date(publication.createdAt),
+                            {
+                              addSuffix: true,
+                              locale: ru,
+                            }
+                          )}
                       </Typography>
                       {!forPrint && (
                         <Typography

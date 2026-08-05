@@ -1,26 +1,27 @@
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import { useCallback, useEffect, useState } from 'react';
-import { Mousewheel, Navigation, Pagination, Thumbs } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
+import { useCallback, useEffect, useState } from 'react'
+import { Mousewheel, Navigation, Pagination, Thumbs } from 'swiper/modules'
+import { Swiper, SwiperSlide } from 'swiper/react'
 
-import '../model/styles/style.css';
-import { getMediaKind } from '../lib/getMediaKind';
+import '../model/styles/style.css'
+import { getMediaKind } from '../lib/getMediaKind'
 
-import { MediaItem } from './MediaItem';
+import { MediaItem } from './MediaItem'
 
-import type { MediaItemType } from '../model/types';
-import type { Swiper as SwiperType } from 'swiper/types';
+import type { MediaItemType } from '../model/types'
+import type { Swiper as SwiperType } from 'swiper/types'
 
 type BigMediaProps = {
-  isDialog?: boolean;
-  isGalleryOpen?: boolean;
-  initialSlide?: number;
-  items: MediaItemType[];
-  handleClickOpen: () => void;
-  thumbsSwiper: SwiperType | null;
-};
+  isDialog?: boolean
+  isGalleryOpen?: boolean
+  initialSlide?: number
+  items: MediaItemType[]
+  handleClickOpen: () => void
+  thumbsSwiper: SwiperType | null
+  onActiveIndexChange?: (index: number) => void
+}
 
 export const BigMedia = ({
   items,
@@ -29,41 +30,43 @@ export const BigMedia = ({
   thumbsSwiper,
   handleClickOpen,
   initialSlide = 0,
+  onActiveIndexChange,
 }: BigMediaProps) => {
-  const loadingKey = `${items.map(item => item.url).join(',')}-${initialSlide}`;
-  const [readyKey, setReadyKey] = useState<string | null>(null);
-  const [activeIndex, setActiveIndex] = useState(initialSlide);
-  const isLoading = items.length > 0 && readyKey !== loadingKey;
+  const loadingKey = `${items.map(item => item.url).join(',')}-${initialSlide}`
+  const [readyKey, setReadyKey] = useState<string | null>(null)
+  const [activeIndex, setActiveIndex] = useState(initialSlide)
+  const isLoading = items.length > 0 && readyKey !== loadingKey
 
   useEffect(() => {
     setTimeout(() => {
-      setActiveIndex(initialSlide);
-    }, 0);
-  }, [initialSlide, items]);
+      setActiveIndex(initialSlide)
+      onActiveIndexChange?.(initialSlide)
+    }, 0)
+  }, [initialSlide, items, onActiveIndexChange])
 
   const handleImageReady = useCallback(
     (index: number) => {
       if (index === initialSlide) {
-        setReadyKey(loadingKey);
+        setReadyKey(loadingKey)
       }
     },
-    [initialSlide, loadingKey]
-  );
+    [initialSlide, loadingKey],
+  )
 
   const handleClick = () => {
     if (isDialog) {
-      const item = items[activeIndex];
+      const item = items[activeIndex]
 
       if (item && getMediaKind(item.url, item.mimeType) === 'video') {
-        return;
+        return
       }
 
-      handleClickOpen();
-      return;
+      handleClickOpen()
+      return
     }
 
-    handleClickOpen();
-  };
+    handleClickOpen()
+  }
 
   return (
     <Swiper
@@ -75,22 +78,27 @@ export const BigMedia = ({
       lazyPreloadPrevNext={2}
       initialSlide={initialSlide}
       preventClicksPropagation={false}
-      thumbs={{ swiper: thumbsSwiper }}
+      thumbs={{
+        swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null,
+      }}
       pagination={{
         clickable: true,
-        enabled: !isLoading,
+        enabled: !isLoading && items.length > 1,
       }}
-      navigation={!isLoading}
+      navigation={!isLoading && items.length > 1}
       modules={[Thumbs, Pagination, Navigation, Mousewheel]}
       style={{
         height: '100%',
         width: '100%',
       }}
       onClick={handleClick}
-      onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
+      onSlideChange={swiper => {
+        setActiveIndex(swiper.realIndex)
+        onActiveIndexChange?.(swiper.realIndex)
+      }}
     >
-      {items?.map((item, index) => {
-        const isVideo = getMediaKind(item.url, item.mimeType) === 'video';
+      {items.map((item, index) => {
+        const isVideo = getMediaKind(item.url, item.mimeType) === 'video'
 
         return (
           <SwiperSlide
@@ -99,7 +107,7 @@ export const BigMedia = ({
               width: '100%',
               height: '100%',
               overflow: 'hidden',
-              borderRadius: '32px',
+              borderRadius: '24px',
               position: 'relative',
             }}
           >
@@ -107,6 +115,7 @@ export const BigMedia = ({
               src={item.url}
               mimeType={item.mimeType}
               alt={`Media ${index + 1}`}
+              fit="contain"
               onLoad={() => handleImageReady(index)}
               onError={() => handleImageReady(index)}
               key={`${item.url}-${item.mimeType ?? ''}`}
@@ -115,8 +124,8 @@ export const BigMedia = ({
               isActive={isGalleryOpen && (!isDialog || activeIndex === index)}
             />
           </SwiperSlide>
-        );
+        )
       })}
     </Swiper>
-  );
-};
+  )
+}

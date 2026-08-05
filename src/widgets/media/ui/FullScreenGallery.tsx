@@ -1,101 +1,136 @@
-import { Close } from '@mui/icons-material';
-import { Dialog, IconButton, Stack, Box } from '@mui/material';
-import { useState } from 'react';
+import { Close } from '@mui/icons-material'
+import { Box, Dialog, IconButton, Stack, useMediaQuery } from '@mui/material'
+import { useState } from 'react'
 
-import { BigMedia } from './BigMedia';
-import { Trumbnail } from './Trumbnail';
+import { BigMedia } from './BigMedia'
+import { Trumbnail } from './Trumbnail'
 
-import type { MediaItemType } from '../model/types';
-import type { Swiper as SwiperType } from 'swiper/types';
+import type { MediaItemType } from '../model/types'
+import type { Swiper as SwiperType } from 'swiper/types'
 
 type FullScreenGalleryProps = {
-  isOpen: boolean;
-  isMobile: boolean;
-  onClose: () => void;
-  initialSlide?: number;
-  items: MediaItemType[];
-};
+  isOpen: boolean
+  onClose: () => void
+  items: MediaItemType[]
+  initialSlide?: number
+  /** @deprecated derived internally; kept for call-site compatibility */
+  isMobile?: boolean
+}
 
 export const FullScreenGallery = ({
   items,
   isOpen,
   onClose,
-  isMobile,
-  initialSlide,
+  initialSlide = 0,
 }: FullScreenGalleryProps) => {
-  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'))
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null)
+  const [activeIndex, setActiveIndex] = useState(initialSlide)
 
   const handleClose = () => {
-    setThumbsSwiper(null);
-    onClose();
-  };
+    setThumbsSwiper(null)
+    onClose()
+  }
+
+  if (!items.length) {
+    return null
+  }
 
   return (
     <Dialog
       open={isOpen}
       onClose={handleClose}
+      maxWidth={false}
+      slotProps={{
+        transition: {
+          onExited: () => setThumbsSwiper(null),
+        },
+      }}
       sx={{
         '& .MuiDialog-paper': {
           outline: 'none',
-          overflow: 'visible',
+          overflow: 'hidden',
           position: 'relative',
-          height: { xs: '50%', md: '100%' },
-          borderRadius: { xs: '32px', md: '32px' },
-          maxWidth: { xs: '100%', md: '60%' },
-          maxHeight: { xs: '100%', md: '90%' },
+          m: { xs: 1, md: 3 },
+          width: { xs: '100%', md: 'min(920px, 92vw)' },
+          height: { xs: 'min(70vh, 560px)', md: 'min(88vh, 720px)' },
+          maxWidth: '100%',
+          borderRadius: { xs: '24px', md: '28px' },
+          bgcolor: 'common.white',
+          boxShadow: '0 24px 80px rgba(15, 23, 42, 0.28)',
         },
       }}
     >
       <IconButton
+        aria-label="Закрыть"
         onClick={handleClose}
-        color="primary"
         sx={{
-          top: 0,
-          right: -70,
           position: 'absolute',
-          bgcolor: 'secondary.main',
-          display: { xs: 'none', md: 'block' },
-          ':hover': {
-            bgcolor: 'secondary.light',
+          top: { xs: 8, md: 12 },
+          right: { xs: 8, md: 12 },
+          zIndex: 3,
+          width: 36,
+          height: 36,
+          bgcolor: 'rgba(0, 0, 0, 0.45)',
+          color: 'common.white',
+          '&:hover': {
+            bgcolor: 'rgba(0, 0, 0, 0.6)',
           },
         }}
       >
-        <Close />
+        <Close sx={{ fontSize: 20 }} />
       </IconButton>
 
       <Stack
-        direction="row"
-        spacing={isMobile ? 0 : 2}
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={{ xs: 1, md: 2 }}
         sx={{
           width: '100%',
           height: '100%',
-          overflow: 'scroll',
-          justifyContent: 'space-between',
+          p: { xs: 1, md: 2 },
+          pt: { xs: 5, md: 2 },
+          boxSizing: 'border-box',
         }}
       >
+        {!isMobile && items.length > 1 && (
+          <Box
+            sx={{
+              width: 100,
+              flexShrink: 0,
+              height: '100%',
+              minHeight: 0,
+            }}
+          >
+            <Trumbnail
+              isFullscreen
+              items={items}
+              activeIndex={activeIndex}
+              setThumbsSwiper={setThumbsSwiper}
+            />
+          </Box>
+        )}
+
         <Box
           sx={{
-            pl: { xs: 0, md: 4 },
-            pt: { xs: 0, md: 4 },
-            display: { xs: 'none', md: 'block' },
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            borderRadius: '20px',
+            overflow: 'hidden',
+            bgcolor: 'grey.900',
           }}
         >
-          <Trumbnail
-            isFullscreen
+          <BigMedia
+            isDialog
+            isGalleryOpen={isOpen}
             items={items}
-            setThumbsSwiper={setThumbsSwiper}
+            initialSlide={initialSlide}
+            thumbsSwiper={thumbsSwiper}
+            handleClickOpen={handleClose}
+            onActiveIndexChange={setActiveIndex}
           />
         </Box>
-
-        <BigMedia
-          isDialog
-          isGalleryOpen={isOpen}
-          items={items}
-          initialSlide={initialSlide}
-          thumbsSwiper={thumbsSwiper}
-          handleClickOpen={handleClose}
-        />
       </Stack>
     </Dialog>
-  );
-};
+  )
+}

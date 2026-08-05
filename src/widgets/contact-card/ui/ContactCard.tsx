@@ -42,6 +42,7 @@ type ContactCardProps = {
   isMyPost?: boolean;
   withTitle?: boolean;
   status?: TaskStatus;
+  isExecutorApprove?: boolean | null;
 };
 
 const cardSx = {
@@ -60,6 +61,7 @@ export const ContactCard = ({
   contact,
   withTitle = false,
   isMyPost = false,
+  isExecutorApprove,
 }: ContactCardProps) => {
   const [isOpenAddExecutorDialog, setIsOpenAddExecutorDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -68,13 +70,12 @@ export const ContactCard = ({
   const navigate = useNavigate();
 
   const roleLabel = isMyPost ? 'Исполнитель' : 'Заказчик';
-
-  //
+  const isAwaitingExecutorApproval = isExecutorApprove === null && isMyPost;
 
   if (!contact) {
     return (
       <Box sx={cardSx}>
-        {status !== TASK_STATUS_ENUM.CANCELLED ? (
+        {status !== TASK_STATUS_ENUM.ANNULLED ? (
           <Stack
             spacing={2}
             sx={{ alignItems: 'center', textAlign: 'center', py: 1 }}
@@ -216,6 +217,25 @@ export const ContactCard = ({
           />
         </Box>
       </Stack>
+
+      {isAwaitingExecutorApproval && (
+        <Box
+          sx={{
+            mb: 2.5,
+            p: 1.5,
+            borderRadius: '16px',
+            bgcolor: 'info.light',
+            textAlign: 'center',
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: 'primary.main', fontWeight: 500 }}
+          >
+            Ожидается подтверждение от исполнителя
+          </Typography>
+        </Box>
+      )}
 
       <Stack spacing={1}>
         {contact.phone && (

@@ -3,7 +3,6 @@ import { Box, IconButton, Link, Stack, Typography } from '@mui/material'
 import { type ReactNode } from 'react'
 import { Link as RouterLink } from 'react-router'
 
-import { BASE_COLOR } from '@/app/index'
 import { ROUTES } from '@/shared'
 
 type LegalDocumentLayoutProps = {
@@ -65,13 +64,7 @@ export const LegalDocumentLayout = ({
             variant="h6"
             sx={{ fontWeight: 700, letterSpacing: '0.04em' }}
           >
-            NIKS
-            <Box
-              component="span"
-              sx={{ color: BASE_COLOR }}
-            >
-              SENSES
-            </Box>
+            NIKSSENSES
           </Typography>
         </Link>
       </Stack>
@@ -179,14 +172,7 @@ export const LegalDocumentLayout = ({
         variant="body2"
         color="text.secondary"
       >
-        NIKS
-        <Box
-          component="span"
-          sx={{ color: BASE_COLOR }}
-        >
-          SENSES
-        </Box>{' '}
-        © 2026
+        NIKSSENSES © 2026
       </Typography>
     </Box>
   </Box>

@@ -3,10 +3,13 @@ export const PUBLICATION_TABLE_PAGE_SIZE = 20
 export const PUBLICATION_VIEW_MODE_KEY = 'publications-view-mode'
 
 export const PUBLICATION_TABLE_COLUMN_WIDTHS = {
-  title: '24%',
-  platform: '12%',
-  executor: '20%',
-  publishedAt: '16%',
+  title: '15%',
+  post: '15%',
+  platform: '10%',
+  executor: '16%',
+  publishedAt: '10%',
   actions: '10%',
   media: 88,
 } as const
+
+export const SEARCH_MIN = 2;

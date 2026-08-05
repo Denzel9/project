@@ -1,8 +1,12 @@
 import { Whatshot } from '@mui/icons-material';
 import {
+  Autocomplete,
   Avatar,
   Box,
+  Button,
   Chip,
+  Collapse,
+  IconButton,
   Stack,
   Table,
   TableBody,
@@ -11,86 +15,332 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  TableSortLabel,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isToday } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 
-import { TASK_STATUS_LABELS, isTaskOverdue, type Task } from '@/entities';
-import { UserDisplayName, type User } from '@/entities/user';
-import { getTaskConfig } from '@/features';
-import { scrollMainToTop } from '@/shared';
+import {
+  TASK_STATUS_LABELS,
+  isTaskOverdue,
+  useTasksQuery,
+  type TaskStatus,
+} from '@/entities';
+import {
+  UserDisplayName,
+  executorToUserPartial,
+  getUserName,
+  type User,
+} from '@/entities/user';
+import {
+  AddTaskDialog,
+  getDashboardPeriodRange,
+  getTaskConfig,
+  toDashboardTasksQueryParams,
+  useMyTaskFilterStore,
+} from '@/features';
+import { EmptyBlock, scrollMainToTop } from '@/shared';
 
 import {
   TASK_TABLE_PAGE_SIZE,
   TASK_TABLE_COLUMN_WIDTHS,
-} from '../model/constants';
-import { getTaskPath, getTaskTitle, sortTasks } from '../model/utils';
+  COLUMN_FILTER_SEARCH_DEBOUNCE_MS,
+  COLUMN_FILTER_SEARCH_MIN,
+} from '../model/constants/constants';
+import {
+  columnCellSx as getColumnCellSx,
+  filterCellSx as getFilterCellSx,
+  headerCellSx as getHeaderCellSx,
+} from '../model/styles';
+import { FILTER_AUTOCOMPLETE_SLOT_PROPS } from '../model/utils/taskTableColumnStyles';
+import { getTaskPath, getTaskTitle, sortTasks } from '../model/utils/utils';
 
+import { ColumnDateFilter } from './ColumnDateFilter';
+import { ColumnFilterButton } from './ColumnFilterButton';
 import { TaskActionsMenu } from './TaskActionsMenu';
+import { TaskTableHeaderWithFilter } from './TaskTableHeaderWithFilter';
 
-import type { TaskSortField, TaskSortOrder } from '../model/types';
-
-type TaskTableProps = {
-  tasks: Task[];
-  total?: number;
-  page?: number;
-  embedded?: boolean;
-  forPrint?: boolean;
-  isCompany?: boolean;
-  paginated?: boolean;
-  serverPagination?: boolean;
-  rowsPerPage?: number;
-  onPageChange?: (event: unknown, nextPage: number) => void;
-};
+import type { TaskTableCellOptions } from '../model/styles';
+import type {
+  FilterOption,
+  TaskSortField,
+  TaskSortOrder,
+  TaskTableProps,
+} from '../model/types/types';
 
 export const TaskTable = ({
   tasks,
   total,
   isCompany,
   onPageChange,
+  columnFilters,
   embedded = false,
   paginated = true,
   serverPagination = false,
   forPrint = false,
+  querySource,
+  emptyText,
   page: controlledPage,
   rowsPerPage = TASK_TABLE_PAGE_SIZE,
+  onListStateChange,
 }: TaskTableProps) => {
   const navigate = useNavigate();
+  const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
+  const assigneeAccountId = useMyTaskFilterStore(
+    state => state.assigneeAccountId
+  );
+  const postId = useMyTaskFilterStore(state => state.postId);
+  const executorId = useMyTaskFilterStore(state => state.executorId);
+  const period = useMyTaskFilterStore(state => state.period);
+  const periodRange = useMemo(
+    () => getDashboardPeriodRange(period),
+    [period]
+  );
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const headerRowRef = useRef<HTMLTableRowElement>(null);
+  const isSelfFetching = querySource === 'dashboard' && !forPrint;
 
   const [internalPage, setInternalPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<TaskSortOrder>('desc');
   const [sortField, setSortField] = useState<TaskSortField>('updatedAt');
+  const [isFilterRowOpen, setIsFilterRowOpen] = useState(false);
+  const [headerRowHeight, setHeaderRowHeight] = useState(56);
+  const [taskFilterInput, setTaskFilterInput] = useState('');
+  const [personFilterInput, setPersonFilterInput] = useState('');
+  const [debouncedTaskQuery, setDebouncedTaskQuery] = useState('');
+  const [debouncedPersonQuery, setDebouncedPersonQuery] = useState('');
+  const [isTaskFilterMenuOpen, setIsTaskFilterMenuOpen] = useState(false);
+  const [isPersonFilterMenuOpen, setIsPersonFilterMenuOpen] = useState(false);
+  const [selectedTaskOption, setSelectedTaskOption] =
+    useState<FilterOption | null>(null);
+  const [selectedPersonOption, setSelectedPersonOption] =
+    useState<FilterOption | null>(null);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
-  const isControlledPagination =
-    controlledPage !== undefined && onPageChange !== undefined;
-
-  const page = isControlledPagination ? controlledPage : internalPage;
-
-  const sortedTasks = useMemo(
-    () => sortTasks(tasks, sortField, sortOrder),
-    [tasks, sortField, sortOrder]
+  const filterKey = useMemo(
+    () =>
+      [
+        columnFilters?.status,
+        columnFilters?.taskId,
+        columnFilters?.personId,
+        columnFilters?.urgentOnly,
+        columnFilters?.updatedDate,
+        columnFilters?.deadlineDate,
+        onlyMyTasks,
+        assigneeAccountId,
+        postId,
+        executorId,
+        period,
+        isCompany,
+      ].join('|'),
+    [
+      columnFilters?.status,
+      columnFilters?.taskId,
+      columnFilters?.personId,
+      columnFilters?.urgentOnly,
+      columnFilters?.updatedDate,
+      columnFilters?.deadlineDate,
+      onlyMyTasks,
+      assigneeAccountId,
+      postId,
+      executorId,
+      period,
+      isCompany,
+    ],
   );
 
-  const paginationCount = serverPagination
-    ? (total ?? sortedTasks.length)
+  const [selfPageState, setSelfPageState] = useState({ filterKey, page: 0 });
+  const selfPage =
+    selfPageState.filterKey === filterKey ? selfPageState.page : 0;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedTaskQuery(taskFilterInput.trim());
+    }, COLUMN_FILTER_SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [taskFilterInput]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedPersonQuery(personFilterInput.trim());
+    }, COLUMN_FILTER_SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [personFilterInput]);
+
+  const canSearchTasks =
+    Boolean(columnFilters) &&
+    !forPrint &&
+    columnFilters?.taskId === 'all' &&
+    debouncedTaskQuery.length >= COLUMN_FILTER_SEARCH_MIN;
+
+  const canSearchPersons =
+    Boolean(columnFilters) &&
+    !forPrint &&
+    columnFilters?.personId === 'all' &&
+    debouncedPersonQuery.length >= COLUMN_FILTER_SEARCH_MIN;
+
+  const listQueryParams = useMemo(() => {
+    if (!isSelfFetching || !columnFilters) return undefined;
+
+    return toDashboardTasksQueryParams(
+      {
+        isCompany: Boolean(isCompany),
+        ...(columnFilters.status !== 'all' && { status: columnFilters.status }),
+        ...(columnFilters.taskId !== 'all' && { taskId: columnFilters.taskId }),
+        ...(columnFilters.personId !== 'all' && {
+          personId: columnFilters.personId,
+        }),
+        urgentOnly: columnFilters.urgentOnly,
+        ...(columnFilters.updatedDate && {
+          updatedDate: columnFilters.updatedDate,
+        }),
+        ...(columnFilters.deadlineDate && {
+          deadlineDate: columnFilters.deadlineDate,
+        }),
+        ...(canSearchTasks && { q: debouncedTaskQuery }),
+        ...(canSearchPersons && { personQ: debouncedPersonQuery }),
+        onlyMyTasks,
+        assigneeAccountId,
+        postId,
+        executorId,
+        ...periodRange,
+      },
+      {
+        page: selfPage + 1,
+        limit: rowsPerPage,
+      },
+    );
+  }, [
+    isSelfFetching,
+    columnFilters,
+    isCompany,
+    selfPage,
+    rowsPerPage,
+    canSearchTasks,
+    canSearchPersons,
+    debouncedTaskQuery,
+    debouncedPersonQuery,
+    onlyMyTasks,
+    assigneeAccountId,
+    postId,
+    executorId,
+    periodRange,
+  ]);
+
+  const autocompleteQueryParams = useMemo(() => {
+    if (isSelfFetching || !columnFilters || forPrint) return undefined;
+    if (!canSearchTasks && !canSearchPersons) return undefined;
+
+    return {
+      page: 1,
+      limit: 20,
+      role: isCompany ? ('owner' as const) : ('executor' as const),
+      ...(canSearchTasks && { q: debouncedTaskQuery }),
+      ...(canSearchPersons && {
+        personQ: debouncedPersonQuery,
+        personField: isCompany
+          ? ('executor' as const)
+          : ('owner' as const),
+      }),
+    };
+  }, [
+    isSelfFetching,
+    columnFilters,
+    forPrint,
+    canSearchTasks,
+    canSearchPersons,
+    isCompany,
+    debouncedTaskQuery,
+    debouncedPersonQuery,
+  ]);
+
+  const {
+    data: listData,
+    isLoading: isListLoading,
+    isFetching: isListFetching,
+    isError: isListError,
+  } = useTasksQuery(listQueryParams, { enabled: Boolean(listQueryParams) });
+
+  const { data: autocompleteData, isFetching: isAutocompleteFetching } =
+    useTasksQuery(autocompleteQueryParams, {
+      enabled: Boolean(autocompleteQueryParams),
+    });
+
+  const isTaskSearching =
+    canSearchTasks &&
+    (isSelfFetching ? isListFetching : isAutocompleteFetching);
+  const isPersonSearching =
+    canSearchPersons &&
+    (isSelfFetching ? isListFetching : isAutocompleteFetching);
+
+  const filterOptionsSource = isSelfFetching
+    ? listData?.items
+    : autocompleteData?.items;
+
+  const resolvedTasks = useMemo(
+    () => (isSelfFetching ? (listData?.items ?? []) : (tasks ?? [])),
+    [isSelfFetching, listData?.items, tasks],
+  );
+  const resolvedTotal = isSelfFetching
+    ? (listData?.total ?? 0)
+    : (total ?? 0);
+  const useServerPagination = isSelfFetching || serverPagination;
+
+  const isControlledPagination =
+    !isSelfFetching &&
+    controlledPage !== undefined &&
+    onPageChange !== undefined;
+
+  const page = isSelfFetching
+    ? selfPage
+    : isControlledPagination
+      ? controlledPage
+      : internalPage;
+
+  useEffect(() => {
+    if (!isSelfFetching) return;
+
+    onListStateChange?.({
+      total: resolvedTotal,
+      isLoading: isListLoading,
+      isError: isListError,
+      isEmpty: !isListLoading && resolvedTasks.length === 0,
+    });
+  }, [
+    isSelfFetching,
+    resolvedTotal,
+    isListLoading,
+    isListError,
+    resolvedTasks.length,
+    onListStateChange,
+  ]);
+
+  const sortedTasks = useMemo(
+    () => sortTasks(resolvedTasks, sortField, sortOrder),
+    [resolvedTasks, sortField, sortOrder],
+  );
+
+  const paginationCount = useServerPagination
+    ? (resolvedTotal ?? sortedTasks.length)
     : sortedTasks.length;
 
   const pageCount = Math.max(1, Math.ceil(paginationCount / rowsPerPage));
   const currentPage = Math.min(page, pageCount - 1);
 
   const visibleTasks = useMemo(() => {
-    if (!paginated || serverPagination) return sortedTasks;
+    if (!paginated || useServerPagination) return sortedTasks;
 
     const start = currentPage * rowsPerPage;
 
     return sortedTasks.slice(start, start + rowsPerPage);
-  }, [sortedTasks, paginated, serverPagination, currentPage, rowsPerPage]);
+  }, [sortedTasks, paginated, useServerPagination, currentPage, rowsPerPage]);
 
   const showPagination =
     paginated && paginationCount > rowsPerPage && !forPrint;
@@ -104,6 +354,12 @@ export const TaskTable = ({
   };
 
   const handlePageChange = (event: unknown, nextPage: number) => {
+    if (isSelfFetching) {
+      setSelfPageState({ filterKey, page: nextPage });
+      scrollTableToTop();
+      return;
+    }
+
     if (isControlledPagination) {
       onPageChange(event, nextPage);
       scrollTableToTop();
@@ -121,7 +377,9 @@ export const TaskTable = ({
     }
 
     setSortField(field);
-    if (isControlledPagination) {
+    if (isSelfFetching) {
+      setSelfPageState({ filterKey, page: 0 });
+    } else if (isControlledPagination) {
       onPageChange?.(null, 0);
     } else {
       setInternalPage(0);
@@ -129,20 +387,157 @@ export const TaskTable = ({
     setSortOrder(
       field === 'title' || field === 'customer' || field === 'status'
         ? 'asc'
-        : 'desc'
+        : 'desc',
     );
   };
 
   const getSortDirection = (field: TaskSortField) =>
     sortField === field ? sortOrder : false;
 
-  const columnCellSx = (width: string | number) => ({
-    p: 3,
-    width,
-    maxWidth: width,
-    overflow: 'hidden',
-    boxSizing: 'border-box',
-  });
+  const showColumnFilters = Boolean(columnFilters) && !forPrint;
+  const showActions = !forPrint && querySource !== 'dashboard';
+
+  useLayoutEffect(() => {
+    const row = headerRowRef.current;
+
+    if (!row || forPrint) return;
+
+    const updateHeight = () => {
+      setHeaderRowHeight(row.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(row);
+
+    return () => observer.disconnect();
+  }, [forPrint, showColumnFilters, showActions, isCompany]);
+  const statusFilterOptions = useMemo(
+    () =>
+      Object.entries(TASK_STATUS_LABELS).map(([id, label]) => ({ id, label })),
+    [],
+  );
+
+  const taskFilterOptions = useMemo(() => {
+    if (!canSearchTasks) return [] as FilterOption[];
+
+    return (filterOptionsSource ?? []).map(task => ({
+      id: task.id,
+      label: getTaskTitle(task),
+    }));
+  }, [canSearchTasks, filterOptionsSource]);
+
+  const personFilterOptions = useMemo(() => {
+    if (!canSearchPersons) return [] as FilterOption[];
+
+    const seen = new Set<string>();
+
+    return (filterOptionsSource ?? []).flatMap(task => {
+      if (isCompany) {
+        const id = task.executorId;
+        if (!id || seen.has(id) || !task.executor) return [];
+
+        const label = (
+          getUserName(executorToUserPartial(task.executor)) ?? ''
+        ).trim();
+        if (!label) return [];
+
+        seen.add(id);
+        return [{ id, label }];
+      }
+
+      const id = task.ownerId;
+      if (!id || seen.has(id) || !task.owner) return [];
+
+      const label = (
+        task.owner.companyProfile?.companyName?.trim() ||
+        getUserName(task.owner as Partial<User>) ||
+        ''
+      ).trim();
+      if (!label) return [];
+
+      seen.add(id);
+      return [{ id, label }];
+    });
+  }, [canSearchPersons, isCompany, filterOptionsSource]);
+
+  const taskFilterValue =
+    columnFilters?.taskId === 'all' || !columnFilters
+      ? null
+      : (taskFilterOptions.find(option => option.id === columnFilters.taskId) ??
+        selectedTaskOption);
+
+  const personFilterValue =
+    columnFilters?.personId === 'all' || !columnFilters
+      ? null
+      : (personFilterOptions.find(
+        option => option.id === columnFilters.personId,
+      ) ?? selectedPersonOption);
+
+  const toggleFilterRow = () => {
+    setIsFilterRowOpen(current => !current);
+  };
+
+  const edgePadding = showActions ? '32px' : undefined;
+  const compactSidePadding = showColumnFilters ? 1.5 : 3;
+
+  const columnCellSx = (
+    width: string | number,
+    options?: TaskTableCellOptions,
+  ) =>
+    getColumnCellSx(
+      width,
+      isSelfFetching,
+      showColumnFilters,
+      compactSidePadding,
+      edgePadding,
+      options,
+    );
+
+  const headerCellSx = (
+    width: string | number,
+    options?: TaskTableCellOptions,
+  ) =>
+    getHeaderCellSx(
+      width,
+      isSelfFetching,
+      showColumnFilters,
+      compactSidePadding,
+      edgePadding,
+      options,
+    );
+
+  const filterCellSx = (
+    width: string | number,
+    options?: TaskTableCellOptions,
+  ) =>
+    getFilterCellSx(
+      width,
+      edgePadding,
+      isFilterRowOpen,
+      headerRowHeight,
+      options,
+    );
+
+  const renderFilterCellContent = (content: ReactNode) => (
+    <Collapse
+      in={isFilterRowOpen}
+      timeout={220}
+      unmountOnExit={false}
+    >
+      <Box sx={{ py: 1.25 }}>{content}</Box>
+    </Collapse>
+  );
+
+  if (isSelfFetching && visibleTasks.length === 0 && emptyText) {
+    return <Stack sx={{ height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+      <EmptyBlock
+        title={emptyText}
+        description={emptyText}
+      />
+    </Stack>
+  }
 
   return (
     <Box
@@ -151,31 +546,31 @@ export const TaskTable = ({
         width: '100%',
         ...(forPrint
           ? {
-              height: 'auto',
-              bgcolor: 'white',
-              display: 'block',
-              overflow: 'visible',
-            }
+            height: 'auto',
+            bgcolor: 'white',
+            display: 'block',
+            overflow: 'visible',
+          }
           : embedded
             ? {
-                flex: 1,
-                minHeight: 0,
-                height: '100%',
-                display: 'flex',
-                bgcolor: 'transparent',
-                flexDirection: 'column',
-              }
+              flex: 1,
+              minHeight: 0,
+              height: '100%',
+              display: 'flex',
+              bgcolor: 'transparent',
+              flexDirection: 'column',
+            }
             : {
-                flex: 1,
-                minHeight: 0,
-                height: '100%',
-                display: 'flex',
-                bgcolor: 'white',
-                overflow: 'hidden',
-                flexDirection: 'column',
-                borderRadius: { xs: '16px', md: '32px' },
-                border: theme => `1px solid ${theme.palette.secondary.main}`,
-              }),
+              flex: 1,
+              minHeight: 0,
+              height: '100%',
+              display: 'flex',
+              bgcolor: 'white',
+              overflow: 'hidden',
+              flexDirection: 'column',
+              borderRadius: { xs: '16px', md: '32px' },
+              border: theme => `1px solid ${theme.palette.secondary.main}`,
+            }),
       }}
     >
       <TableContainer
@@ -186,20 +581,20 @@ export const TaskTable = ({
           scrollbarGutter: 'stable',
           ...(forPrint
             ? {
-                height: 'auto',
-                maxHeight: 'none',
-                overflow: 'visible',
-              }
+              height: 'auto',
+              maxHeight: 'none',
+              overflow: 'visible',
+            }
             : embedded
               ? {
-                  flex: 1,
-                  minHeight: 0,
-                  overflow: 'auto',
-                }
+                flex: 1,
+                minHeight: 0,
+                overflow: 'auto',
+              }
               : {
-                  flex: 1,
-                  minHeight: 0,
-                }),
+                flex: 1,
+                minHeight: 0,
+              }),
         }}
       >
         <Table
@@ -212,86 +607,408 @@ export const TaskTable = ({
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.customer }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.updatedAt }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.finalDate }} />
-            {!forPrint && (
+            {showActions && (
               <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.actions }} />
             )}
           </colgroup>
 
           <TableHead>
-            <TableRow>
+            <TableRow ref={headerRowRef}>
               <TableCell
                 sortDirection={getSortDirection('title')}
-                sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.title)}
+                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.title, {
+                  first: true,
+                })}
               >
-                <TableSortLabel
-                  active={sortField === 'title'}
-                  direction={sortField === 'title' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('title')}
-                >
-                  Название
-                </TableSortLabel>
+                <TaskTableHeaderWithFilter
+                  field="title"
+                  label="Название"
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  forPrint={forPrint}
+                  onSort={handleSort}
+                  filter={
+                    showColumnFilters && columnFilters ? (
+                      <Stack
+                        direction="row"
+                        spacing={0}
+                        sx={{ alignItems: 'center' }}
+                      >
+                        <ColumnFilterButton
+                          title="Задача"
+                          open={isFilterRowOpen}
+                          active={columnFilters.taskId !== 'all'}
+                          onClick={toggleFilterRow}
+                        />
+                        <Tooltip
+                          title={
+                            columnFilters.urgentOnly
+                              ? 'Показать все задачи'
+                              : 'Только срочные задачи'
+                          }
+                        >
+                          <IconButton
+                            size="small"
+                            aria-label="Только срочные"
+                            aria-pressed={columnFilters.urgentOnly}
+                            onClick={event => {
+                              event.stopPropagation();
+                              columnFilters.onUrgentOnlyChange(
+                                !columnFilters.urgentOnly,
+                              );
+                            }}
+                            sx={{ p: 0.5 }}
+                          >
+                            <Whatshot
+                              color={
+                                columnFilters.urgentOnly ? 'error' : 'action'
+                              }
+                              sx={{ fontSize: 16 }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ) : undefined
+                  }
+                />
               </TableCell>
 
               <TableCell
                 sortDirection={getSortDirection('status')}
-                sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.status)}
+                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.status)}
               >
-                <TableSortLabel
-                  active={sortField === 'status'}
-                  onClick={() => handleSort('status')}
-                  direction={sortField === 'status' ? sortOrder : 'asc'}
-                >
-                  Статус
-                </TableSortLabel>
+                <TaskTableHeaderWithFilter
+                  field="status"
+                  label="Статус"
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  forPrint={forPrint}
+                  onSort={handleSort}
+                  filter={
+                    showColumnFilters && columnFilters ? (
+                      <ColumnFilterButton
+                        title="Статус"
+                        open={isFilterRowOpen}
+                        active={columnFilters.status !== 'all'}
+                        onClick={toggleFilterRow}
+                      />
+                    ) : undefined
+                  }
+                />
               </TableCell>
 
               <TableCell
                 sortDirection={getSortDirection('customer')}
-                sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.customer)}
+                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.customer)}
               >
-                <TableSortLabel
-                  active={sortField === 'customer'}
-                  direction={sortField === 'customer' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('customer')}
-                >
-                  {isCompany ? 'Исполнитель' : 'Заказчик'}
-                </TableSortLabel>
+                <TaskTableHeaderWithFilter
+                  field="customer"
+                  label={isCompany ? 'Исполнитель' : 'Заказчик'}
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  forPrint={forPrint}
+                  onSort={handleSort}
+                  filter={
+                    showColumnFilters && columnFilters ? (
+                      <ColumnFilterButton
+                        title={columnFilters.personLabel}
+                        open={isFilterRowOpen}
+                        active={columnFilters.personId !== 'all'}
+                        onClick={toggleFilterRow}
+                      />
+                    ) : undefined
+                  }
+                />
               </TableCell>
 
               <TableCell
                 sortDirection={getSortDirection('updatedAt')}
-                sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}
+                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}
               >
-                <TableSortLabel
-                  active={sortField === 'updatedAt'}
-                  direction={sortField === 'updatedAt' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('updatedAt')}
-                >
-                  Обновлено
-                </TableSortLabel>
+                <TaskTableHeaderWithFilter
+                  field="updatedAt"
+                  label="Обновлено"
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  forPrint={forPrint}
+                  onSort={handleSort}
+                  filter={
+                    showColumnFilters && columnFilters ? (
+                      <ColumnFilterButton
+                        title="Обновлено"
+                        open={isFilterRowOpen}
+                        active={Boolean(columnFilters.updatedDate)}
+                        onClick={toggleFilterRow}
+                      />
+                    ) : undefined
+                  }
+                />
               </TableCell>
 
               <TableCell
                 sortDirection={getSortDirection('finalDate')}
-                sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
+                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
               >
-                <TableSortLabel
-                  active={sortField === 'finalDate'}
-                  direction={sortField === 'finalDate' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('finalDate')}
-                  hideSortIcon={forPrint}
-                  sx={forPrint ? { pointerEvents: 'none' } : undefined}
-                >
-                  Дедлайн
-                </TableSortLabel>
+                <TaskTableHeaderWithFilter
+                  field="finalDate"
+                  label="Дедлайн"
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  forPrint={forPrint}
+                  onSort={handleSort}
+                  filter={
+                    showColumnFilters && columnFilters ? (
+                      <ColumnFilterButton
+                        title="Дедлайн"
+                        open={isFilterRowOpen}
+                        active={Boolean(columnFilters.deadlineDate)}
+                        onClick={toggleFilterRow}
+                      />
+                    ) : undefined
+                  }
+                />
               </TableCell>
 
-              {!forPrint && (
+              {showActions && (
                 <TableCell
-                  sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.actions)}
-                />
+                  sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.actions, {
+                    actions: true,
+                  })}
+                >
+                  {isCompany && (
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      onClick={() => setIsAddTaskOpen(true)}
+                      sx={{
+                        px: 1.5,
+                        whiteSpace: 'nowrap',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      Добавить задачу
+                    </Button>
+                  )}
+                </TableCell>
               )}
             </TableRow>
+
+            {showColumnFilters && columnFilters && (
+              <TableRow>
+                <TableCell
+                  sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.title, {
+                    first: true,
+                  })}
+                >
+                  {renderFilterCellContent(
+                    <Box onClick={event => event.stopPropagation()}>
+                      <Autocomplete
+                        size="small"
+                        fullWidth
+                        loading={isTaskSearching}
+                        options={taskFilterOptions}
+                        filterOptions={options => options}
+                        slotProps={FILTER_AUTOCOMPLETE_SLOT_PROPS}
+                        open={isTaskFilterMenuOpen}
+                        onOpen={() => {
+                          if (
+                            taskFilterInput.trim().length >=
+                            COLUMN_FILTER_SEARCH_MIN
+                          ) {
+                            setIsTaskFilterMenuOpen(true);
+                          }
+                        }}
+                        onClose={() => setIsTaskFilterMenuOpen(false)}
+                        inputValue={taskFilterInput}
+                        onInputChange={(_, value, reason) => {
+                          if (reason === 'reset') return;
+
+                          setTaskFilterInput(value);
+                          if (reason === 'input') {
+                            if (columnFilters.taskId !== 'all') {
+                              setSelectedTaskOption(null);
+                              columnFilters.onTaskIdChange('all');
+                            }
+                            setIsTaskFilterMenuOpen(
+                              value.trim().length >= COLUMN_FILTER_SEARCH_MIN,
+                            );
+                            return;
+                          }
+                          if (reason === 'clear') {
+                            setSelectedTaskOption(null);
+                            setIsTaskFilterMenuOpen(false);
+                            columnFilters.onTaskIdChange('all');
+                          }
+                        }}
+                        noOptionsText={
+                          isTaskSearching ? 'Поиск…' : 'Ничего не найдено'
+                        }
+                        value={taskFilterValue}
+                        onChange={(_, option) => {
+                          setSelectedTaskOption(option);
+                          setTaskFilterInput(option?.label ?? '');
+                          setIsTaskFilterMenuOpen(false);
+                          columnFilters.onTaskIdChange(option?.id ?? 'all');
+                        }}
+                        getOptionLabel={option => option.label}
+                        isOptionEqualToValue={(option, current) =>
+                          option.id === current.id
+                        }
+                        clearOnEscape
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            size="small"
+                            variant="standard"
+                            placeholder="Все задачи"
+                          />
+                        )}
+                      />
+                    </Box>,
+                  )}
+                </TableCell>
+
+                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.status)}>
+                  {renderFilterCellContent(
+                    <Box onClick={event => event.stopPropagation()}>
+                      <Autocomplete
+                        size="small"
+                        fullWidth
+                        options={statusFilterOptions}
+                        slotProps={FILTER_AUTOCOMPLETE_SLOT_PROPS}
+                        value={
+                          columnFilters.status === 'all'
+                            ? null
+                            : (statusFilterOptions.find(
+                              option => option.id === columnFilters.status,
+                            ) ?? null)
+                        }
+                        onChange={(_, option) =>
+                          columnFilters.onStatusChange(
+                            (option?.id as TaskStatus | undefined) ?? 'all',
+                          )
+                        }
+                        getOptionLabel={option => option.label}
+                        isOptionEqualToValue={(option, current) =>
+                          option.id === current.id
+                        }
+                        clearOnEscape
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            size="small"
+                            variant="standard"
+                            placeholder="Все статусы"
+                          />
+                        )}
+                      />
+                    </Box>,
+                  )}
+                </TableCell>
+
+                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.customer)}>
+                  {renderFilterCellContent(
+                    <Box onClick={event => event.stopPropagation()}>
+                      <Autocomplete
+                        size="small"
+                        fullWidth
+                        loading={isPersonSearching}
+                        options={personFilterOptions}
+                        filterOptions={options => options}
+                        slotProps={FILTER_AUTOCOMPLETE_SLOT_PROPS}
+                        open={isPersonFilterMenuOpen}
+                        onOpen={() => {
+                          if (
+                            personFilterInput.trim().length >=
+                            COLUMN_FILTER_SEARCH_MIN
+                          ) {
+                            setIsPersonFilterMenuOpen(true);
+                          }
+                        }}
+                        onClose={() => setIsPersonFilterMenuOpen(false)}
+                        inputValue={personFilterInput}
+                        onInputChange={(_, value, reason) => {
+                          if (reason === 'reset') return;
+
+                          setPersonFilterInput(value);
+                          if (reason === 'input') {
+                            if (columnFilters.personId !== 'all') {
+                              setSelectedPersonOption(null);
+                              columnFilters.onPersonIdChange('all');
+                            }
+                            setIsPersonFilterMenuOpen(
+                              value.trim().length >= COLUMN_FILTER_SEARCH_MIN,
+                            );
+                            return;
+                          }
+                          if (reason === 'clear') {
+                            setSelectedPersonOption(null);
+                            setIsPersonFilterMenuOpen(false);
+                            columnFilters.onPersonIdChange('all');
+                          }
+                        }}
+                        noOptionsText={
+                          isPersonSearching ? 'Поиск…' : 'Ничего не найдено'
+                        }
+                        value={personFilterValue}
+                        onChange={(_, option) => {
+                          setSelectedPersonOption(option);
+                          setPersonFilterInput(option?.label ?? '');
+                          setIsPersonFilterMenuOpen(false);
+                          columnFilters.onPersonIdChange(option?.id ?? 'all');
+                        }}
+                        getOptionLabel={option => option.label}
+                        isOptionEqualToValue={(option, current) =>
+                          option.id === current.id
+                        }
+                        clearOnEscape
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            size="small"
+                            variant="standard"
+                            placeholder={`Все ${isCompany ? 'исполнители' : 'заказчики'}`}
+                          />
+                        )}
+                      />
+                    </Box>,
+                  )}
+                </TableCell>
+
+                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}>
+                  {renderFilterCellContent(
+                    <ColumnDateFilter
+                      value={columnFilters.updatedDate}
+                      placeholder="Все даты"
+                      todayLabel="Обновлено сегодня"
+                      onChange={columnFilters.onUpdatedDateChange}
+                    />,
+                  )}
+                </TableCell>
+
+                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}>
+                  {renderFilterCellContent(
+                    <ColumnDateFilter
+                      value={columnFilters.deadlineDate}
+                      placeholder="Все даты"
+                      todayLabel="Дедлайн сегодня"
+                      onChange={columnFilters.onDeadlineDateChange}
+                    />,
+                  )}
+                </TableCell>
+
+                {showActions && (
+                  <TableCell
+                    sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.actions, {
+                      actions: true,
+                    })}
+                  >
+                    {renderFilterCellContent(null)}
+                  </TableCell>
+                )}
+              </TableRow>
+            )}
           </TableHead>
 
           <TableBody>
@@ -314,25 +1031,40 @@ export const TaskTable = ({
                     }),
                   }}
                 >
-                  <TableCell sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.title)}>
+                  <TableCell sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.title, { first: true })}>
                     <Stack
-                      spacing={1}
+                      spacing={0.25}
                       direction="row"
                       sx={{ alignItems: 'center', minWidth: 0 }}
                     >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 600,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {getTaskTitle(task)}
-
-                        {forPrint && task.urgent ? ' (срочная)' : ''}
-                      </Typography>
+                      <Stack spacing={0} sx={{ minWidth: 0, flex: 1 }}>
+                        {querySource !== 'dashboard' && task.post?.title && (
+                          <Typography
+                            variant="caption"
+                            color="info"
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {task.post.title}
+                          </Typography>
+                        )}
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {getTaskTitle(task)}
+                          {forPrint && task.urgent ? ' (срочная)' : ''}
+                        </Typography>
+                      </Stack>
                       {!forPrint && task.urgent && <Whatshot color="error" />}
                     </Stack>
                   </TableCell>
@@ -362,13 +1094,14 @@ export const TaskTable = ({
                     >
                       {!forPrint && (
                         <Avatar
-                          src={task.owner?.avatar ?? ''}
+                          src={task.executor?.avatar ?? ''}
                           sx={{ width: 28, height: 28 }}
                         />
                       )}
                       <UserDisplayName
-                        user={task.owner as User}
+                        user={executorToUserPartial(task.executor)}
                         variant="body2"
+                        withBadges={false}
                       />
                     </Stack>
                   </TableCell>
@@ -383,12 +1116,12 @@ export const TaskTable = ({
                     >
                       {forPrint
                         ? format(new Date(task.updatedAt), 'dd.MM.yyyy HH:mm', {
-                            locale: ru,
-                          })
+                          locale: ru,
+                        })
                         : formatDistanceToNow(new Date(task.updatedAt), {
-                            addSuffix: true,
-                            locale: ru,
-                          })}
+                          addSuffix: true,
+                          locale: ru,
+                        })}
                     </Typography>
                   </TableCell>
 
@@ -405,7 +1138,11 @@ export const TaskTable = ({
                       ) : (
                         <Chip
                           size="small"
-                          label={format(new Date(task.finalDate), 'dd.MM.yyyy')}
+                          label={
+                            isToday(new Date(task.finalDate))
+                              ? 'Дедлайн сегодня'
+                              : format(new Date(task.finalDate), 'dd.MM.yyyy')
+                          }
                           color={overdue ? 'error' : 'default'}
                           variant={overdue ? 'filled' : 'outlined'}
                           sx={{ height: 24, fontSize: '0.7rem' }}
@@ -421,9 +1158,11 @@ export const TaskTable = ({
                     )}
                   </TableCell>
 
-                  {!forPrint && (
+                  {showActions && (
                     <TableCell
-                      sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.actions)}
+                      sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.actions, {
+                        actions: true,
+                      })}
                       onClick={event => event.stopPropagation()}
                       onMouseDown={event => event.stopPropagation()}
                     >
@@ -440,6 +1179,8 @@ export const TaskTable = ({
         </Table>
       </TableContainer>
 
+
+
       {showPagination && (
         <TablePagination
           component="div"
@@ -455,7 +1196,15 @@ export const TaskTable = ({
             flexShrink: 0,
             borderTop: '1px solid',
             borderColor: 'divider',
+            pr: querySource === 'dashboard' ? undefined : '32px !important',
           }}
+        />
+      )}
+
+      {showActions && isCompany && (
+        <AddTaskDialog
+          open={isAddTaskOpen}
+          onClose={() => setIsAddTaskOpen(false)}
         />
       )}
     </Box>

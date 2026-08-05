@@ -12,7 +12,8 @@ import {
   type User,
 } from '@/entities/user';
 import { getTaskConfig } from '@/features';
-import { ROUTES } from '@/shared';
+
+import { getTaskPath } from '../model/utils/utils';
 
 import { TaskActionsMenu } from './TaskActionsMenu';
 
@@ -52,7 +53,7 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
   return (
     <Box
       component={Link}
-      to={`${ROUTES.TASK}/${task.post?.id}`}
+      to={getTaskPath(task)}
       sx={{
         p: 2,
         height: '100%',
@@ -182,8 +183,9 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
               {contact.label}
             </Typography>
             <UserDisplayName
-              user={contact.user}
               variant="body2"
+              withBadges={false}
+              user={contact.user}
             />
           </Box>
         </Stack>

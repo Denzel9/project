@@ -75,9 +75,9 @@ export const RHFInput = <
           children={children}
           error={Boolean(fieldState.error)}
           onChange={e => handleChange(e, field)}
-          disabled={field.disabled || props.disabled}
-          helperText={fieldState.error?.message || props.helperText}
-          sx={{ pointerEvents: props?.disabled ? 'none' : 'auto', ...props.sx }}
+          disabled={field?.disabled || props?.disabled}
+          helperText={fieldState.error?.message || props?.helperText}
+          sx={{ pointerEvents: props?.disabled ? 'none' : 'auto', ...props?.sx }}
         />
       )}
     />

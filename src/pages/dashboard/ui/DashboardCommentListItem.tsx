@@ -5,6 +5,7 @@ import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
 import { canManageComment } from '@/entities/task';
+import { ActionActorCaption } from '@/shared';
 import { MediaItem } from '@/widgets/media';
 
 import {
@@ -150,6 +151,14 @@ export const DashboardCommentListItem = ({
           },
         }}
       >
+        {comment.actorDisplayName || comment.actorKind ? (
+          <Box sx={{ mb: 0.5 }}>
+            <ActionActorCaption
+              actor={comment}
+            />
+          </Box>
+        ) : null}
+
         <Stack
           direction="row"
           spacing={0.75}

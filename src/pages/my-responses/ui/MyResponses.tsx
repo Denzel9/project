@@ -1,12 +1,5 @@
 import { ReplyAllOutlined } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Stack,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -14,7 +7,6 @@ import {
   useMyApplicationsCompanyOptionsQuery,
   useMyApplicationsInfiniteQuery,
   useMyApplicationsQuery,
-  useSearchMyApplicationsQuery,
   useWithdrawApplicationMutation,
   type Application,
 } from '@/entities/application';
@@ -37,7 +29,6 @@ import {
   type CompanyFilter,
 } from '../model/utils';
 
-import { ApplicationSearchResultItem } from './ApplicationSearchResultItem';
 import MyResponsesFilter from './Filter';
 import { MyResponseItem } from './MyResponseItem';
 import { MyResponseItemSkeletonList } from './MyResponseItemSkeleton';
@@ -45,16 +36,6 @@ import { MyResponsesPrintHeader } from './MyResponsesPrintHeader';
 import { MyResponsesTable } from './MyResponsesTable';
 
 import type { MyResponseViewMode } from '../model/types';
-
-const searchMessageBoxSx = {
-  display: 'flex',
-  justifyContent: 'center',
-  bgcolor: 'white',
-  borderRadius: '32px',
-  border: '1px solid',
-  borderColor: 'divider',
-  py: 6,
-} as const;
 
 const getInitialViewMode = (): MyResponseViewMode => {
   const saved = localStorage.getItem(MY_RESPONSE_VIEW_MODE_KEY);
@@ -65,7 +46,6 @@ const getInitialViewMode = (): MyResponseViewMode => {
 };
 
 export const MyResponses = () => {
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const [status, setStatus] = useState<ApplicationStatusFilter>('all');
   const [updatedDate, setUpdatedDate] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<CompanyFilter>('all');
@@ -73,9 +53,8 @@ export const MyResponses = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchItems, setSearchItems] = useState<Application[]>([]);
-  const [viewMode, setViewMode] = useState<MyResponseViewMode>(getInitialViewMode);
+  const [viewMode, setViewMode] =
+    useState<MyResponseViewMode>(getInitialViewMode);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [pendingPrint, setPendingPrint] = useState(false);
@@ -85,7 +64,6 @@ export const MyResponses = () => {
 
   const navigate = useNavigate();
 
-  const isDesktopSearch = isSearchOpen && !isMobile;
   const isTableView = viewMode === 'table';
   const useServerTablePagination = isTableView && companyId === 'all';
 
@@ -103,32 +81,24 @@ export const MyResponses = () => {
   }, [searchQuery]);
 
   useEffect(() => {
-    if (!isDesktopSearch) {
+    if (!isSearchOpen) {
       setTimeout(() => {
         setDebouncedQuery('');
-        setSearchPage(1);
-        setSearchItems([]);
       }, 0);
     }
-  }, [isDesktopSearch]);
+  }, [isSearchOpen]);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setSearchPage(1);
-      setSearchItems([]);
-    }, 0);
-  }, [debouncedQuery]);
-
-  const canSearch = isDesktopSearch && debouncedQuery.length >= 2;
+  const searchQ =
+    isSearchOpen && debouncedQuery.length >= 2 ? debouncedQuery : undefined;
 
   const listParams = useMemo(
-    () => toMyApplicationsParams({ status, updatedDate }),
-    [status, updatedDate]
+    () => toMyApplicationsParams({ status, updatedDate, q: searchQ }),
+    [status, updatedDate, searchQ]
   );
 
   const paginationResetKey = useMemo(
-    () => [viewMode, status, updatedDate, companyId].join('|'),
-    [viewMode, status, updatedDate, companyId]
+    () => [viewMode, status, updatedDate, companyId, searchQ ?? ''].join('|'),
+    [viewMode, status, updatedDate, companyId, searchQ]
   );
 
   const [tablePageState, setTablePageState] = useState({
@@ -148,7 +118,7 @@ export const MyResponses = () => {
     fetchNextPage,
     isFetchingNextPage,
   } = useMyApplicationsInfiniteQuery(listParams, {
-    enabled: !canSearch && (!isTableView || companyId !== 'all'),
+    enabled: !isTableView || companyId !== 'all',
   });
 
   const {
@@ -158,32 +128,11 @@ export const MyResponses = () => {
     refetch: refetchTable,
   } = useMyApplicationsQuery(
     toMyApplicationsParams(
-      { status, updatedDate },
+      { status, updatedDate, q: searchQ },
       { page: tablePage + 1, limit: MY_RESPONSE_TABLE_PAGE_SIZE }
     ),
-    { enabled: !canSearch && useServerTablePagination }
+    { enabled: useServerTablePagination }
   );
-
-  const {
-    data: searchData,
-    isLoading: isSearchLoading,
-    isFetching: isSearchFetching,
-    error: searchError,
-  } = useSearchMyApplicationsQuery({
-    q: canSearch ? debouncedQuery : '',
-    page: searchPage,
-    limit: 20,
-  });
-
-  useEffect(() => {
-    if (!canSearch || !searchData) return;
-
-    setTimeout(() => {
-      setSearchItems(prev =>
-        searchPage === 1 ? searchData.items : [...prev, ...searchData.items]
-      );
-    }, 0);
-  }, [canSearch, searchData, searchPage]);
 
   const { data: companyOptions = [] } = useMyApplicationsCompanyOptionsQuery();
   const { data: executorTasksByPostMap } = useExecutorTasksByPostMap();
@@ -230,9 +179,11 @@ export const MyResponses = () => {
     status,
     updatedDate,
     companyId,
+    q: searchQ,
   });
 
-  const isFilterEmpty = !updatedDate && status === 'all' && companyId === 'all';
+  const isFilterEmpty =
+    !updatedDate && status === 'all' && companyId === 'all' && !searchQ;
 
   const feedIsLoading = useServerTablePagination ? isTableLoading : isLoading;
   const feedIsError = useServerTablePagination ? isTableError : isError;
@@ -251,17 +202,14 @@ export const MyResponses = () => {
   const tableReportDisabled = feedIsLoading || isEmpty;
   const printApplications = reportApplications ?? visibleApplications;
 
-  const searchHasMore = Boolean(
-    searchData && searchData.page * searchData.limit < searchData.total
-  );
-
   const reportOptions = useMemo(
     () => ({
       status,
       updatedDate,
       companyId,
+      q: searchQ,
     }),
-    [status, updatedDate, companyId]
+    [status, updatedDate, companyId, searchQ]
   );
 
   useEffect(() => {
@@ -339,7 +287,6 @@ export const MyResponses = () => {
       infiniteVisibleApplications.length > 0 ||
       !hasNextPage ||
       isFetchingNextPage ||
-      canSearch ||
       useServerTablePagination
     ) {
       return;
@@ -352,7 +299,6 @@ export const MyResponses = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-    canSearch,
     useServerTablePagination,
   ]);
 
@@ -361,8 +307,7 @@ export const MyResponses = () => {
       !isTableView ||
       companyId === 'all' ||
       !hasNextPage ||
-      isFetchingNextPage ||
-      canSearch
+      isFetchingNextPage
     ) {
       return;
     }
@@ -374,13 +319,14 @@ export const MyResponses = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-    canSearch,
   ]);
 
   const handleResetFilters = () => {
     setStatus('all');
     setUpdatedDate(null);
     setCompanyId('all');
+    setSearchQuery('');
+    setIsSearchOpen(false);
   };
 
   const handleWithdraw = (applicationId: string) => {
@@ -390,71 +336,57 @@ export const MyResponses = () => {
     });
   };
 
-  const handleOpenSearchResult = (postId: string) => {
-    navigate(`${ROUTES.POST}/${postId}`);
-  };
-
   const handleTablePageChange = (_: unknown, nextPage: number) => {
     setTablePageState({ filterKey: paginationResetKey, page: nextPage });
   };
 
-  const renderSearchContent = () => {
-    if (isSearchLoading && searchItems.length === 0) {
-      return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress />
-        </Box>
-      );
-    }
+  const emptyTitle = searchQ
+    ? 'Ничего не найдено'
+    : hasActiveFilters
+      ? 'По выбранным фильтрам ничего не найдено'
+      : 'У вас пока нет откликов';
 
-    if (searchError) {
-      return (
-        <Box sx={searchMessageBoxSx}>
-          <EmptyBlock title="Не удалось выполнить поиск" />
-        </Box>
-      );
-    }
+  const emptyDescription = searchQ
+    ? 'Попробуйте изменить запрос'
+    : hasActiveFilters
+      ? 'Попробуйте изменить фильтры или сбросить их'
+      : 'Откликайтесь на объявления на главной — они появятся здесь';
 
-    if (!searchItems.length) {
-      return (
-        <Box sx={searchMessageBoxSx}>
-          <EmptyBlock
-            title="Ничего не найдено"
-            description="Попробуйте изменить запрос"
+  return (
+    <PageLayout
+      withFooter={!isTableView}
+      isScreenHeight={isTableView}
+      printHide={isTableView}
+    >
+      {showFilter && (
+        <Box
+          className="print-no-print"
+          sx={{
+            top: 0,
+            zIndex: 1000,
+            position: 'sticky',
+            flexShrink: 0,
+          }}
+        >
+          <MyResponsesFilter
+            status={status}
+            companyId={companyId}
+            updatedDate={updatedDate}
+            companyOptions={companyOptions}
+            onStatusChange={setStatus}
+            onCompanyChange={setCompanyId}
+            onUpdatedDateChange={setUpdatedDate}
+            searchQuery={searchQuery}
+            isSearchOpen={isSearchOpen}
+            onSearchQueryChange={setSearchQuery}
+            onSearchOpenChange={setIsSearchOpen}
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+            tableReport={tableReport}
           />
         </Box>
-      );
-    }
+      )}
 
-    return (
-      <Stack
-        spacing={1.5}
-        sx={{ width: '100%' }}
-      >
-        {searchItems.map(application => (
-          <ApplicationSearchResultItem
-            key={application.id}
-            application={application}
-            highlightQuery={debouncedQuery}
-            onOpen={handleOpenSearchResult}
-          />
-        ))}
-
-        {searchHasMore && (
-          <Button
-            variant="outlined"
-            disabled={isSearchFetching}
-            onClick={() => setSearchPage(prev => prev + 1)}
-          >
-            {isSearchFetching ? 'Загрузка…' : 'Загрузить ещё'}
-          </Button>
-        )}
-      </Stack>
-    );
-  };
-
-  const renderFeedContent = () => (
-    <>
       {isInitialLoading && !isTableView && (
         <MyResponseItemSkeletonList count={6} />
       )}
@@ -516,18 +448,14 @@ export const MyResponses = () => {
               color="text.secondary"
               sx={{ textAlign: 'center' }}
             >
-              {hasActiveFilters
-                ? 'По выбранным фильтрам ничего не найдено'
-                : 'У вас пока нет откликов'}
+              {emptyTitle}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ textAlign: 'center' }}
             >
-              {hasActiveFilters
-                ? 'Попробуйте изменить фильтры или сбросить их'
-                : 'Откликайтесь на объявления на главной — они появятся здесь'}
+              {emptyDescription}
             </Typography>
             <Button
               variant="contained"
@@ -545,102 +473,102 @@ export const MyResponses = () => {
         !feedIsError &&
         (visibleApplications.length > 0 ||
           Boolean(reportApplications?.length)) && (
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            flex: isTableView ? 1 : undefined,
-            minHeight: isTableView ? 0 : undefined,
-          }}
-        >
-          {!isTableView && (
-            <Box
-              sx={{
-                gap: 1.5,
-                width: '100%',
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, minmax(0, 1fr))',
-                  lg: 'repeat(3, minmax(0, 1fr))',
-                },
-              }}
-            >
-              {visibleApplications.map(application => {
-                const postId = application.post?.id ?? '';
-                const task = postId
-                  ? executorTasksByPostMap?.get(postId)
-                  : undefined;
-
-                return (
-                  <MyResponseItem
-                    key={application.id}
-                    application={application}
-                    withdrawingId={withdrawingId}
-                    onWithdraw={handleWithdraw}
-                    isFavorite={favoritePostIds.has(postId)}
-                    taskId={task?.id ?? null}
-                  />
-                );
-              })}
-            </Box>
-          )}
-
-          {(isTableView || reportApplications) && (
-            <>
-              <MyResponsesPrintHeader total={printApplications.length} />
-
-              {isTableView && (
-                <Box
-                  className="print-no-print"
-                  sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    width: '100%',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <MyResponsesTable
-                    page={tablePage}
-                    applications={visibleApplications}
-                    total={
-                      useServerTablePagination
-                        ? (tableData?.total ?? 0)
-                        : visibleApplications.length
-                    }
-                    serverPagination={useServerTablePagination}
-                    withdrawingId={withdrawingId}
-                    taskByPostId={executorTasksByPostMap}
-                    onWithdraw={handleWithdraw}
-                    onPageChange={handleTablePageChange}
-                  />
-                </Box>
-              )}
-
+          <Box
+            sx={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              flex: isTableView ? 1 : undefined,
+              minHeight: isTableView ? 0 : undefined,
+            }}
+          >
+            {!isTableView && (
               <Box
-                className="print-only"
                 sx={{
-                  display: 'none',
-                  '@media print': {
-                    display: 'flex',
-                    width: '100%',
+                  gap: 1.5,
+                  width: '100%',
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                    lg: 'repeat(3, minmax(0, 1fr))',
                   },
                 }}
               >
-                <MyResponsesTable
-                  applications={printApplications}
-                  paginated={false}
-                  forPrint
-                  onWithdraw={handleWithdraw}
-                />
+                {visibleApplications.map(application => {
+                  const postId = application.post?.id ?? '';
+                  const task = postId
+                    ? executorTasksByPostMap?.get(postId)
+                    : undefined;
+
+                  return (
+                    <MyResponseItem
+                      key={application.id}
+                      application={application}
+                      withdrawingId={withdrawingId}
+                      onWithdraw={handleWithdraw}
+                      isFavorite={favoritePostIds.has(postId)}
+                      taskId={task?.id ?? null}
+                    />
+                  );
+                })}
               </Box>
-            </>
-          )}
-        </Box>
-      )}
+            )}
+
+            {(isTableView || reportApplications) && (
+              <>
+                <MyResponsesPrintHeader total={printApplications.length} />
+
+                {isTableView && (
+                  <Box
+                    className="print-no-print"
+                    sx={{
+                      flex: 1,
+                      minHeight: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      width: '100%',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <MyResponsesTable
+                      page={tablePage}
+                      applications={visibleApplications}
+                      total={
+                        useServerTablePagination
+                          ? (tableData?.total ?? 0)
+                          : visibleApplications.length
+                      }
+                      serverPagination={useServerTablePagination}
+                      withdrawingId={withdrawingId}
+                      taskByPostId={executorTasksByPostMap}
+                      onWithdraw={handleWithdraw}
+                      onPageChange={handleTablePageChange}
+                    />
+                  </Box>
+                )}
+
+                <Box
+                  className="print-only"
+                  sx={{
+                    display: 'none',
+                    '@media print': {
+                      display: 'flex',
+                      width: '100%',
+                    },
+                  }}
+                >
+                  <MyResponsesTable
+                    applications={printApplications}
+                    paginated={false}
+                    forPrint
+                    onWithdraw={handleWithdraw}
+                  />
+                </Box>
+              </>
+            )}
+          </Box>
+        )}
 
       {!isTableView &&
         !isInitialLoading &&
@@ -652,45 +580,6 @@ export const MyResponses = () => {
             onLoadMore={() => void fetchNextPage()}
           />
         )}
-    </>
-  );
-
-  return (
-    <PageLayout
-      withFooter={!isTableView || canSearch}
-      isScreenHeight={isTableView && !canSearch}
-      printHide={isTableView && !canSearch}
-    >
-      {showFilter && (
-        <Box
-          className="print-no-print"
-          sx={{
-            top: 0,
-            zIndex: 1000,
-            position: 'sticky',
-            flexShrink: 0,
-          }}
-        >
-          <MyResponsesFilter
-            status={status}
-            companyId={companyId}
-            updatedDate={updatedDate}
-            companyOptions={companyOptions}
-            onStatusChange={setStatus}
-            onCompanyChange={setCompanyId}
-            onUpdatedDateChange={setUpdatedDate}
-            searchQuery={searchQuery}
-            isSearchOpen={isSearchOpen}
-            onSearchQueryChange={setSearchQuery}
-            onSearchOpenChange={setIsSearchOpen}
-            viewMode={viewMode}
-            onViewModeChange={handleViewModeChange}
-            tableReport={tableReport}
-          />
-        </Box>
-      )}
-
-      {canSearch ? renderSearchContent() : renderFeedContent()}
     </PageLayout>
   );
 };

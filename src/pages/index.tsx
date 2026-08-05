@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { Routes, Route, Outlet, Navigate } from 'react-router';
+import { Routes, Route, Outlet } from 'react-router';
 
 import { MainLayout, ProtectedRoute } from '@/widgets';
 
@@ -20,6 +20,9 @@ const SettingsLayout = lazy(
 const SettingsNotificationPage = lazy(
   () => import('./settings/ui/notification/SettingsNotificationPage')
 );
+const SettingsAppsPage = lazy(
+  () => import('./settings/ui/apps/SettingsAppsPage')
+);
 
 const SettingsGeneralPage = lazy(
   () => import('./settings/ui/general/SettingsGeneralPage')
@@ -27,8 +30,14 @@ const SettingsGeneralPage = lazy(
 const SettingsMembersPage = lazy(
   () => import('./settings/ui/members/SettingsMembersPage')
 );
+const SettingsProfilesPage = lazy(
+  () => import('./settings/ui/profiles/SettingsProfilesPage')
+);
 const SettingsBillingPage = lazy(
   () => import('./settings/ui/billing/SettingsBillingPage')
+);
+const SettingsIndexRedirect = lazy(
+  () => import('./settings/ui/layout/SettingsIndexRedirect')
 );
 const InvitePage = lazy(() => import('./invite'));
 const SettingsAccountPage = lazy(
@@ -40,7 +49,7 @@ const SettingsCrmDashboardPage = lazy(
 );
 const MyTasksPage = lazy(() => import('./my-tasks'));
 const TaskPage = lazy(() => import('./task'));
-const MyPostPage = lazy(() => import('./my-posts'));
+const CompanyPostResponses = lazy(() => import('./company-post-respones'));
 const DashboardPage = lazy(() => import('./dashboard'));
 const CalendarPage = lazy(() => import('./calendar'));
 const ExecutorsPage = lazy(() => import('./executors'));
@@ -102,7 +111,7 @@ export const Router = () => {
 
             <Route
               path={`${ROUTES.MANAGE_POSTS}`}
-              element={<MyPostPage />}
+              element={<CompanyPostResponses />}
             />
 
             <Route
@@ -111,16 +120,16 @@ export const Router = () => {
             >
               <Route
                 index
-                element={
-                  <Navigate
-                    to={ROUTES.SETTINGS_ACCOUNT}
-                    replace
-                  />
-                }
+                element={<SettingsIndexRedirect />}
               />
               <Route
                 path="account"
                 element={<SettingsAccountPage />}
+              />
+
+              <Route
+                path="profiles"
+                element={<SettingsProfilesPage />}
               />
 
               <Route
@@ -131,6 +140,11 @@ export const Router = () => {
               <Route
                 path="notification"
                 element={<SettingsNotificationPage />}
+              />
+
+              <Route
+                path="apps"
+                element={<SettingsAppsPage />}
               />
 
               <Route

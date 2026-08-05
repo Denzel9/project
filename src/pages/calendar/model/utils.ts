@@ -1,6 +1,8 @@
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
+import { DEFAULT_CALENDAR_FILTERS } from './constants'
+
 import type {
   CalendarEventTypeFilter,
   CalendarFiltersState,
@@ -53,8 +55,18 @@ export const getDateCategory = (dateKey: string): DateCategory => {
   return 'today'
 }
 
-export const getEventLabel = (type: CalendarEventType) =>
-  type === 'deadline' ? 'Дедлайн' : 'Создана'
+export const getEventLabel = (
+  type: CalendarEventType,
+  dateKey?: string,
+) => {
+  const isToday = dateKey === dayjs().format('YYYY-MM-DD')
+
+  if (type === 'deadline') {
+    return isToday ? 'Дедлайн сегодня' : 'Дедлайн в этот день'
+  }
+
+  return isToday ? 'Создана сегодня' : 'Создана'
+}
 
 export const isCalendarTaskOverdue = (task: TaskCalendarItem) =>
   Boolean(task.finalDate) &&
@@ -244,16 +256,20 @@ const pluralRu = (count: number, one: string, few: string, many: string) => {
   return many
 }
 
-export const getCalendarDayTooltip = (stats: CalendarDayStats) => {
+export const getCalendarDayTooltip = (
+  stats: CalendarDayStats,
+  options?: { isToday?: boolean },
+) => {
   if (stats.total === 0) {
     return 'Нет событий'
   }
 
   const parts: string[] = []
+  const deadlineSuffix = options?.isToday ? ' сегодня' : ' в этот день'
 
   if (stats.deadlines > 0) {
     parts.push(
-      `${stats.deadlines} ${pluralRu(stats.deadlines, 'дедлайн', 'дедлайна', 'дедлайнов')}`,
+      `${stats.deadlines} ${pluralRu(stats.deadlines, 'дедлайн', 'дедлайна', 'дедлайнов')}${deadlineSuffix}`,
     )
   }
 
@@ -310,3 +326,10 @@ export const getCalendarDaySx = (
         : undefined,
   }
 }
+
+export const hasActiveCalendarFilters = (value: CalendarFiltersState) =>
+  value.eventType !== DEFAULT_CALENDAR_FILTERS.eventType ||
+  value.urgentOnly !== DEFAULT_CALENDAR_FILTERS.urgentOnly ||
+  value.companyId !== DEFAULT_CALENDAR_FILTERS.companyId ||
+  value.platform !== DEFAULT_CALENDAR_FILTERS.platform ||
+  value.placementFormat !== DEFAULT_CALENDAR_FILTERS.placementFormat;

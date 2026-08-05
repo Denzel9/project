@@ -24,6 +24,7 @@ export const ROUTES = {
     SETTINGS_MEMBERS: "/settings/members",
     SETTINGS_BILLING: "/settings/billing",
     SETTINGS_ACCOUNT: "/settings/account",
+    SETTINGS_PROFILES: "/settings/profiles",
     SETTINGS_SECURITY: "/settings/security",
     MANAGE_APPLICATION: "/manage-application",
     SETTINGS_NOTIFICATION: "/settings/notification",

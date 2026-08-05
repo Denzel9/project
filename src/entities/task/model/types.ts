@@ -18,9 +18,8 @@ export type TaskStatus =
   | 'IN_PROGRESS'
   | 'REVISION'
   | 'COMPLETED'
-  | 'CANCELLED'
   | 'CHECKING'
-  | 'CANCELLED_EXECUTOR'
+  | 'ANNULLED'
 
 export enum TASK_STATUS_ENUM {
   PREPARING = 'PREPARING',
@@ -29,8 +28,47 @@ export enum TASK_STATUS_ENUM {
   REVISION = 'REVISION',
   COMPLETED = 'COMPLETED',
   CHECKING = 'CHECKING',
-  CANCELLED = 'CANCELLED',
-  CANCELLED_EXECUTOR = 'CANCELLED_EXECUTOR',
+  ANNULLED = 'ANNULLED',
+}
+
+export type TaskAnnulmentInitiator = 'CUSTOMER' | 'EXECUTOR' | 'MUTUAL'
+
+export type TaskAnnulmentStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED'
+
+export type TaskAnnulment = {
+  id: string
+  reason: string
+  initiator: TaskAnnulmentInitiator
+  requestedAt: string
+  requestedById: string
+  status: TaskAnnulmentStatus
+  confirmedAt: string | null
+  confirmedById: string | null
+}
+
+export type RequestTaskAnnulmentDto = {
+  reason: string
+  initiator: TaskAnnulmentInitiator
+}
+
+export type TaskDeadlineExtensionStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED'
+
+export type TaskDeadlineExtension = {
+  id: string
+  reason: string
+  initiator: TaskAnnulmentInitiator
+  proposedFinalDate: string
+  requestedAt: string
+  requestedById: string
+  status: TaskDeadlineExtensionStatus
+  confirmedAt: string | null
+  confirmedById: string | null
+}
+
+export type RequestTaskDeadlineExtensionDto = {
+  reason: string
+  initiator: TaskAnnulmentInitiator
+  proposedFinalDate: string
 }
 
 export type TaskRole = 'owner' | 'executor'
@@ -53,6 +91,9 @@ export type TaskComment = {
   updatedAt: string
   editedAt: string | null
   isRead: boolean
+  actorAccountId?: string | null
+  actorDisplayName?: string | null
+  actorKind?: 'OWNER' | 'MANAGER' | null
 }
 
 export type TaskMediaKind = 'MAIN' | 'REPORT'
@@ -75,6 +116,12 @@ export type TaskApplication = {
   status: ApplicationStatus
   createdAt: string
   updatedAt: string
+  createdActorAccountId?: string | null
+  createdActorDisplayName?: string | null
+  createdActorKind?: 'OWNER' | 'MANAGER' | null
+  lastActorAccountId?: string | null
+  lastActorDisplayName?: string | null
+  lastActorKind?: 'OWNER' | 'MANAGER' | null
 }
 
 export type TaskPublication = {
@@ -137,6 +184,14 @@ export type Task = {
   cooperationDetails?: CooperationDetails | null
   brief?: PostBrief | null
   deliverables?: PostDeliverable[] | null
+  annulment?: TaskAnnulment | null
+  annulments?: TaskAnnulment[]
+  deadlineExtension?: TaskDeadlineExtension | null
+  deadlineExtensions?: TaskDeadlineExtension[]
+  /** Account ответственного (кто создал задачу / принял отклик) */
+  assigneeAccountId?: string | null
+  assigneeDisplayName?: string | null
+  assigneeKind?: 'OWNER' | 'MANAGER' | null
   media: TaskMedia[]
   reportMedia?: TaskMedia[]
   activities?: TaskActivity[]
@@ -173,13 +228,24 @@ export type TaskListParams = {
   unassigned?: boolean
   overdue?: boolean
   createdDate?: string
+  updatedDate?: string
+  deadlineDate?: string
   dateFrom?: string
   dateTo?: string
+  /** Minutes, same as `Date#getTimezoneOffset()` */
+  tzOffset?: number
   dateField?: TaskCalendarDateField
   urgent?: boolean
   ownerId?: string
   executorId?: string
+  taskId?: string
   q?: string
+  personQ?: string
+  personField?: 'executor' | 'owner'
+  /** Только задачи, где текущий аккаунт — ответственный */
+  assigneeMine?: boolean
+  /** Фильтр по конкретному ответственному (accountId) */
+  assigneeAccountId?: string
 }
 
 export type TaskStats = {
@@ -195,6 +261,13 @@ export type TaskStats = {
 export type TaskStatsParams = {
   role?: TaskRole
   postId?: string
+  executorId?: string
+  ownerId?: string
+  dateFrom?: string
+  dateTo?: string
+  dateField?: TaskCalendarDateField
+  assigneeMine?: boolean
+  assigneeAccountId?: string
 }
 
 export type SearchTasksParams = {
@@ -247,9 +320,12 @@ export type TaskCalendarParams = {
   urgent?: boolean
   ownerId?: string
   executorId?: string
+  postId?: string
   role?: TaskRole
   page?: number
   limit?: number
+  assigneeMine?: boolean
+  assigneeAccountId?: string
 }
 
 export type TaskCommentListParams = {
@@ -287,22 +363,44 @@ export type TaskWithCommentsParams = {
   q?: string
 }
 
+export type TaskLastCommentPreview = {
+  preview: string
+  createdAt: string
+  authorId: string
+}
+
+export type TaskWithCommentsRecipient = {
+  id: string
+  displayName: string
+  avatar: string | null
+}
+
 export type TaskWithCommentsItem = {
   id: string
   title?: string | null
-  ownerId: string
+  ownerId?: string
   executorId?: string | null
   postId?: string
   status?: TaskStatus
   isExecutorApprove?: boolean | null
   post?: Pick<Post, 'id' | 'title'>
-  lastComment: TaskComment
+  recipient: TaskWithCommentsRecipient | null
+  lastComment: TaskLastCommentPreview
   commentsCount: number
   unreadCount: number
 }
 
-export type TaskWithCommentsRawItem = TaskWithCommentsItem & {
+export type TaskWithCommentsRawItem = Omit<TaskWithCommentsItem, 'id' | 'lastComment' | 'recipient'> & {
+  id?: string
   taskId?: string
+  recipient?: TaskWithCommentsRecipient | null
+  lastComment: TaskLastCommentPreview & {
+    /** @deprecated полный комментарий больше не отдаётся в with-comments */
+    id?: string
+    taskId?: string
+    content?: string
+    media?: TaskCommentMedia[]
+  }
   task?: {
     id?: string
     title?: string | null
@@ -362,6 +460,10 @@ export type TaskActivityPayload = {
   size?: string
   mediaId?: string
   mimeType?: string
+  requestId?: string
+  reason?: string
+  initiator?: string
+  proposedFinalDate?: string
 }
 
 
@@ -372,6 +474,9 @@ export type TaskActivity = {
   createdAt: string
   type: TaskActivityType
   payload: TaskActivityPayload
+  actorAccountId?: string | null
+  actorDisplayName?: string | null
+  actorKind?: 'OWNER' | 'MANAGER' | null
 }
 
 export type TaskActivityList = {
@@ -417,6 +522,12 @@ export enum TaskActivityType {
   FIELD_UPDATED = 'FIELD_UPDATED',
   MEDIA_REMOVED = 'MEDIA_REMOVED',
   STATUS_CHANGED = 'STATUS_CHANGED',
+  ANNULMENT_REQUESTED = 'ANNULMENT_REQUESTED',
+  ANNULMENT_CONFIRMED = 'ANNULMENT_CONFIRMED',
+  ANNULMENT_REJECTED = 'ANNULMENT_REJECTED',
+  DEADLINE_EXTENSION_REQUESTED = 'DEADLINE_EXTENSION_REQUESTED',
+  DEADLINE_EXTENSION_CONFIRMED = 'DEADLINE_EXTENSION_CONFIRMED',
+  DEADLINE_EXTENSION_REJECTED = 'DEADLINE_EXTENSION_REJECTED',
 }
 
 export const TASK_ACTIVITY_LABELS: Record<TaskActivityType, string> = {
@@ -424,6 +535,12 @@ export const TASK_ACTIVITY_LABELS: Record<TaskActivityType, string> = {
   [TaskActivityType.FIELD_UPDATED]: 'Изменено поле',
   [TaskActivityType.MEDIA_ADDED]: 'Загружено медиа',
   [TaskActivityType.MEDIA_REMOVED]: 'Удалено медиа',
+  [TaskActivityType.ANNULMENT_REQUESTED]: 'Запрос аннулирования',
+  [TaskActivityType.ANNULMENT_CONFIRMED]: 'Аннулирование подтверждено',
+  [TaskActivityType.ANNULMENT_REJECTED]: 'Аннулирование отклонено',
+  [TaskActivityType.DEADLINE_EXTENSION_REQUESTED]: 'Запрос переноса дедлайна',
+  [TaskActivityType.DEADLINE_EXTENSION_CONFIRMED]: 'Перенос дедлайна подтверждён',
+  [TaskActivityType.DEADLINE_EXTENSION_REJECTED]: 'Перенос дедлайна отклонён',
 } as const
 
 export type UpdateTaskDto = {
@@ -434,6 +551,7 @@ export type UpdateTaskDto = {
   photoCount?: string
   videoCount?: string
   urgent?: boolean
+  postId?: string
   executorId?: string | null
   isExecutorApprove?: boolean | null
   isCompanyAction?: boolean

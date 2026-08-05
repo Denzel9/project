@@ -1,0 +1,290 @@
+import { CalendarMonthOutlined, DownloadOutlined, PrintOutlined, Tune } from '@mui/icons-material';
+import {
+  CircularProgress,
+  Drawer,
+  IconButton,
+  MenuItem,
+  Popover,
+  Stack,
+  TextField,
+  Tooltip,
+} from '@mui/material';
+import { type Dayjs } from 'dayjs';
+import { useMemo, useState } from 'react';
+
+import {
+  APPLICATION_STATUS_LABELS,
+  getPartnerName,
+  mapPartnerUserToRow,
+  normalizePartnerUser,
+  usePartnerApplicantsQuery,
+} from '@/entities';
+import { FilterAutocomplete, useScroll } from '@/shared';
+import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
+
+import { useMyPostFilterStore } from '../model/store';
+
+import { MyPostSideBarFilter } from './MyPostSideBarFilter';
+import { MyPostViewModeToggle } from './MyPostViewModeToggle';
+
+import type { ApplicationTableReportControls } from '../model/types';
+import type { ApplicationStatusFilter } from '../model/utils';
+
+type MyPostFilterProps = {
+  tableReport?: ApplicationTableReportControls;
+};
+
+const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
+  const { isScrolled, ref } = useScroll(150);
+
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+  const {
+    postId,
+    setPostId,
+    userId,
+    setUserId,
+    posts,
+    status,
+    setStatus,
+    q,
+    updatedDate,
+    setUpdatedDate,
+    viewMode,
+    isOpenFilter,
+    setIsOpenFilter,
+  } = useMyPostFilterStore();
+
+  const { data: applicantsData, isLoading: isApplicantsLoading } =
+    usePartnerApplicantsQuery({ sort: 'name' });
+
+  const postOptions = useMemo(() => {
+    const map = new Map<string, string>();
+
+    posts?.items.forEach(application => {
+      const id = application.post?.id;
+      const title = application.post?.title;
+
+      if (id && title) {
+        map.set(id, title);
+      }
+    });
+
+    return Array.from(map.entries()).map(([id, title]) => ({
+      id,
+      label: title,
+    }));
+  }, [posts]);
+
+  const userOptions = useMemo(() => {
+    const fromApi = (applicantsData?.items ?? [])
+      .map(normalizePartnerUser)
+      .map(mapPartnerUserToRow)
+      .map(item => ({ id: item.id, label: item.name }));
+
+    if (fromApi.length) return fromApi;
+
+    const map = new Map<string, string>();
+
+    posts?.items.forEach(application => {
+      const applicant = application.applicant;
+
+      if (!applicant?.id) return;
+
+      map.set(applicant.id, getPartnerName(applicant));
+    });
+
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [applicantsData?.items, posts]);
+
+  const hasActiveSidebarFilters =
+    status !== 'all' ||
+    postId !== 'all' ||
+    userId !== 'all' ||
+    Boolean(q.trim());
+
+  const handleDateChange = (date: Dayjs | null) => {
+    setUpdatedDate(date ? date.format('YYYY-MM-DD') : null);
+    setAnchorEl(null);
+  };
+
+  const handleClearDate = () => {
+    setUpdatedDate(null);
+    setAnchorEl(null);
+  };
+
+  return (
+    <>
+      <Stack
+        ref={ref}
+        direction="row"
+        sx={{
+          px: 2,
+          pb: 2,
+          alignItems: 'center',
+          pt: isScrolled ? 4 : 1,
+          transition: 'all 0.3s ease',
+          justifyContent: 'space-between',
+          bgcolor: isScrolled ? 'white' : 'transparent',
+          borderBottomLeftRadius: isScrolled ? '32px' : '0',
+          borderBottomRightRadius: isScrolled ? '32px' : '0',
+          boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            mr: 2,
+            alignItems: 'center',
+          }}
+        >
+          <TextField
+            select
+            fullWidth
+            label="Статус"
+            value={status}
+            size="small"
+            onChange={event =>
+              setStatus(event.target.value as ApplicationStatusFilter)
+            }
+            sx={{ flex: 1, minWidth: 0, maxWidth: 250 }}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
+              <MenuItem
+                key={value}
+                value={value}
+              >
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <FilterAutocomplete
+            label="Объявление"
+            value={postId}
+            options={postOptions}
+            onChange={setPostId}
+            sx={{ flex: 1, maxWidth: 250, minWidth: 250 }}
+          />
+
+          <FilterAutocomplete
+            label="Пользователь"
+            value={userId}
+            options={userOptions}
+            loading={isApplicantsLoading}
+            onChange={setUserId}
+            sx={{ flex: 1, maxWidth: 250, minWidth: 250 }}
+          />
+
+          <IconButton
+            color={updatedDate ? 'primary' : 'default'}
+            onClick={event => setAnchorEl(event.currentTarget)}
+          >
+            <CalendarMonthOutlined />
+          </IconButton>
+        </Stack>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'center' }}
+        >
+          {/* <IconButton onClick={() => setIsSearchOpen(true)}>
+            <Search />
+          </IconButton> */}
+          <IconButton
+            onClick={() => setIsOpenFilter(!isOpenFilter)}
+            sx={{
+              display: { xs: 'block', md: 'none' },
+            }}
+            color={
+              isOpenFilter || hasActiveSidebarFilters ? 'primary' : 'default'
+            }
+          >
+            <Tune />
+          </IconButton>
+
+          {viewMode === 'table' && tableReport && (
+            <>
+              <Tooltip title="Печать">
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isPrinting}
+                  onClick={tableReport.onPrint}
+                >
+                  {tableReport.isPrinting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <PrintOutlined fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Экспорт CSV">
+                <IconButton
+                  size="small"
+                  disabled={tableReport.disabled || tableReport.isExporting}
+                  onClick={tableReport.onExport}
+                >
+                  {tableReport.isExporting ? (
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                  ) : (
+                    <DownloadOutlined fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+
+          <MyPostViewModeToggle />
+        </Stack>
+      </Stack>
+
+      <Popover
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        sx={{
+          '& .MuiPopover-paper': {
+            borderRadius: '32px',
+          },
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        <DateCalendarFilter
+          value={updatedDate}
+          onChange={handleDateChange}
+          onClear={handleClearDate}
+        />
+      </Popover>
+
+      <Drawer
+        anchor="right"
+        open={isOpenFilter}
+        onClose={() => setIsOpenFilter(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            p: { xs: 2, md: 4 },
+            width: { xs: '100%', sm: '80%', md: '25%' },
+            display: { xs: 'block', md: 'none' },
+          },
+        }}
+      >
+        <MyPostSideBarFilter />
+      </Drawer>
+    </>
+  );
+};
+
+export default MyPostFilter;

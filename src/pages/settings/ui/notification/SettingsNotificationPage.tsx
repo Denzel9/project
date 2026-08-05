@@ -15,6 +15,7 @@ import {
   NOTIFICATION_TYPE,
   type NotificationType,
 } from '@/entities/notification';
+import { USER_ROLE } from '@/entities/user';
 import {
   useUpdateUserConfigMutation,
   useUserConfigQuery,
@@ -29,8 +30,14 @@ import {
 } from '../../model/constants/notificationSettings';
 import { SettingsRow } from '../SettingsRow';
 
-const CHAT_EMAIL_HINT =
-  'Письма по чату только если вы offline; не чаще раза в 10 мин.';
+const CHAT_CHANNEL_HINT =
+  'Сообщения по чату только если вы offline; не чаще раза в 10 мин.';
+
+const MANAGER_HIDDEN_NOTIFICATION_GROUPS = new Set([
+  'applications',
+  'tasks',
+  'publications',
+]);
 
 const areSameTypes = (left: NotificationType[], right: NotificationType[]) => {
   if (left.length !== right.length) return false;
@@ -45,9 +52,10 @@ type ChannelSectionProps = {
   description: string;
   selectedTypes: NotificationType[];
   savedTypes: NotificationType[];
+  groups: typeof NOTIFICATION_SETTINGS_GROUPS;
   isEditing: boolean;
   isPending: boolean;
-  showChatEmailHint?: boolean;
+  showChatHint?: boolean;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onToggle: (type: NotificationType, checked: boolean) => void;
@@ -61,9 +69,10 @@ const ChannelSection = ({
   description,
   selectedTypes,
   savedTypes,
+  groups,
   isEditing,
   isPending,
-  showChatEmailHint = false,
+  showChatHint = false,
   onStartEdit,
   onCancelEdit,
   onToggle,
@@ -72,7 +81,14 @@ const ChannelSection = ({
   onSave,
 }: ChannelSectionProps) => {
   const selectedSet = useMemo(() => new Set(selectedTypes), [selectedTypes]);
-  const isDirty = !areSameTypes(selectedTypes, savedTypes);
+  const visibleTypeSet = useMemo(
+    () => new Set(groups.flatMap(group => group.types)),
+    [groups]
+  );
+  const isDirty = !areSameTypes(
+    selectedTypes.filter(type => visibleTypeSet.has(type)),
+    savedTypes.filter(type => visibleTypeSet.has(type))
+  );
 
   return (
     <Stack spacing={2}>
@@ -98,7 +114,7 @@ const ChannelSection = ({
           spacing={3}
           sx={{ pt: 1 }}
         >
-          {NOTIFICATION_SETTINGS_GROUPS.map(group => (
+          {groups.map(group => (
             <Stack
               key={group.id}
               spacing={1.5}
@@ -113,15 +129,14 @@ const ChannelSection = ({
 
               <Stack spacing={1}>
                 {group.types.map(type => {
-                  const isChatEmail =
-                    showChatEmailHint &&
-                    type === NOTIFICATION_TYPE.CHAT_MESSAGE;
+                  const isChatHint =
+                    showChatHint && type === NOTIFICATION_TYPE.CHAT_MESSAGE;
 
                   return (
                     <FormControlLabel
                       key={type}
                       sx={{
-                        alignItems: isChatEmail ? 'flex-start' : 'center',
+                        alignItems: isChatHint ? 'flex-start' : 'center',
                       }}
                       control={
                         <Checkbox
@@ -130,11 +145,11 @@ const ChannelSection = ({
                           onChange={event =>
                             onToggle(type, event.target.checked)
                           }
-                          sx={isChatEmail ? { pt: 0.5 } : undefined}
+                          sx={isChatHint ? { pt: 0.5 } : undefined}
                         />
                       }
                       label={
-                        isChatEmail ? (
+                        isChatHint ? (
                           <Stack spacing={0.25}>
                             <Typography variant="body2">
                               {getNotificationTypeLabel(type)}
@@ -143,7 +158,7 @@ const ChannelSection = ({
                               variant="caption"
                               color="text.secondary"
                             >
-                              {CHAT_EMAIL_HINT}
+                              {CHAT_CHANNEL_HINT}
                             </Typography>
                           </Stack>
                         ) : (
@@ -209,9 +224,43 @@ const ChannelSection = ({
   );
 };
 
+type ChannelKey = 'inApp' | 'email' | 'telegram' | 'max';
+
 export const SettingsNotificationPage = () => {
-  const { isAuth } = useAuthStore();
+  const { isAuth, role } = useAuthStore();
   const { setSnackbarOpen } = useSnackbarStore();
+  const isManager = role === USER_ROLE.MANAGER;
+
+  const visibleGroups = useMemo(
+    () =>
+      isManager
+        ? NOTIFICATION_SETTINGS_GROUPS.filter(
+          group => !MANAGER_HIDDEN_NOTIFICATION_GROUPS.has(group.id)
+        )
+        : NOTIFICATION_SETTINGS_GROUPS,
+    [isManager]
+  );
+
+  const visibleTypes = useMemo(
+    () => visibleGroups.flatMap(group => group.types),
+    [visibleGroups]
+  );
+
+  const hiddenTypes = useMemo(() => {
+    if (!isManager) return [] as NotificationType[];
+    const visibleSet = new Set(visibleTypes);
+    return ALL_NOTIFICATION_TYPES.filter(type => !visibleSet.has(type));
+  }, [isManager, visibleTypes]);
+
+  const mergeWithHidden = (
+    selected: NotificationType[],
+    saved: NotificationType[]
+  ) => {
+    if (!isManager) return selected;
+    const preserved = saved.filter(type => hiddenTypes.includes(type));
+    const nextVisible = selected.filter(type => visibleTypes.includes(type));
+    return [...new Set([...preserved, ...nextVisible])];
+  };
 
   const { data, isLoading, isError, refetch } = useUserConfigQuery({
     enabled: isAuth,
@@ -220,10 +269,11 @@ export const SettingsNotificationPage = () => {
   const { mutateAsync: updateConfig, isPending } =
     useUpdateUserConfigMutation();
 
-  const [isEditingInApp, setIsEditingInApp] = useState(false);
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<ChannelKey | null>(null);
   const [inAppTypes, setInAppTypes] = useState<NotificationType[]>([]);
   const [emailTypes, setEmailTypes] = useState<NotificationType[]>([]);
+  const [telegramTypes, setTelegramTypes] = useState<NotificationType[]>([]);
+  const [maxTypes, setMaxTypes] = useState<NotificationType[]>([]);
 
   useEffect(() => {
     if (!data) return;
@@ -231,6 +281,8 @@ export const SettingsNotificationPage = () => {
     setTimeout(() => {
       setInAppTypes(data.inAppNotificationTypes ?? []);
       setEmailTypes(data.emailNotificationTypes ?? []);
+      setTelegramTypes(data.telegramNotificationTypes ?? []);
+      setMaxTypes(data.maxNotificationTypes ?? []);
     }, 0);
   }, [data]);
 
@@ -248,30 +300,39 @@ export const SettingsNotificationPage = () => {
     });
   };
 
-  const handleSaveInApp = async () => {
+  const handleSave = async (
+    channel: ChannelKey,
+    types: NotificationType[],
+    close: () => void
+  ) => {
     try {
-      const next = await updateConfig({
-        inAppNotificationTypes: inAppTypes,
-      });
+      const saved =
+        channel === 'inApp'
+          ? (data?.inAppNotificationTypes ?? [])
+          : channel === 'email'
+            ? (data?.emailNotificationTypes ?? [])
+            : channel === 'telegram'
+              ? (data?.telegramNotificationTypes ?? [])
+              : (data?.maxNotificationTypes ?? []);
+
+      const mergedTypes = mergeWithHidden(types, saved);
+
+      const payload =
+        channel === 'inApp'
+          ? { inAppNotificationTypes: mergedTypes }
+          : channel === 'email'
+            ? { emailNotificationTypes: mergedTypes }
+            : channel === 'telegram'
+              ? { telegramNotificationTypes: mergedTypes }
+              : { maxNotificationTypes: mergedTypes };
+
+      const next = await updateConfig(payload);
 
       setInAppTypes(next.inAppNotificationTypes ?? []);
       setEmailTypes(next.emailNotificationTypes ?? []);
-      setIsEditingInApp(false);
-      setSnackbarOpen(true, 'Настройки уведомлений сохранены');
-    } catch {
-      setSnackbarOpen(true, 'Не удалось сохранить настройки');
-    }
-  };
-
-  const handleSaveEmail = async () => {
-    try {
-      const next = await updateConfig({
-        emailNotificationTypes: emailTypes,
-      });
-
-      setInAppTypes(next.inAppNotificationTypes ?? []);
-      setEmailTypes(next.emailNotificationTypes ?? []);
-      setIsEditingEmail(false);
+      setTelegramTypes(next.telegramNotificationTypes ?? []);
+      setMaxTypes(next.maxNotificationTypes ?? []);
+      close();
       setSnackbarOpen(true, 'Настройки уведомлений сохранены');
     } catch {
       setSnackbarOpen(true, 'Не удалось сохранить настройки');
@@ -312,20 +373,23 @@ export const SettingsNotificationPage = () => {
         description="Показываются в колокольчике в шапке и приходят в реальном времени, пока вы в системе."
         selectedTypes={inAppTypes}
         savedTypes={data.inAppNotificationTypes ?? []}
-        isEditing={isEditingInApp}
+        groups={visibleGroups}
+        isEditing={editingChannel === 'inApp'}
         isPending={isPending}
         onStartEdit={() => {
           setInAppTypes(data.inAppNotificationTypes ?? []);
-          setIsEditingInApp(true);
+          setEditingChannel('inApp');
         }}
         onCancelEdit={() => {
           setInAppTypes(data.inAppNotificationTypes ?? []);
-          setIsEditingInApp(false);
+          setEditingChannel(null);
         }}
         onToggle={(type, checked) => toggleInList(setInAppTypes, type, checked)}
-        onEnableAll={() => setInAppTypes([...ALL_NOTIFICATION_TYPES])}
+        onEnableAll={() => setInAppTypes([...visibleTypes])}
         onDisableAll={() => setInAppTypes([])}
-        onSave={() => void handleSaveInApp()}
+        onSave={() =>
+          void handleSave('inApp', inAppTypes, () => setEditingChannel(null))
+        }
       />
 
       <ChannelSection
@@ -333,21 +397,78 @@ export const SettingsNotificationPage = () => {
         description="Письма о новых откликах, задачах, сообщениях в чате и изменениях доступа."
         selectedTypes={emailTypes}
         savedTypes={data.emailNotificationTypes ?? []}
-        isEditing={isEditingEmail}
+        groups={visibleGroups}
+        isEditing={editingChannel === 'email'}
         isPending={isPending}
-        showChatEmailHint
+        showChatHint
         onStartEdit={() => {
           setEmailTypes(data.emailNotificationTypes ?? []);
-          setIsEditingEmail(true);
+          setEditingChannel('email');
         }}
         onCancelEdit={() => {
           setEmailTypes(data.emailNotificationTypes ?? []);
-          setIsEditingEmail(false);
+          setEditingChannel(null);
         }}
         onToggle={(type, checked) => toggleInList(setEmailTypes, type, checked)}
-        onEnableAll={() => setEmailTypes([...ALL_NOTIFICATION_TYPES])}
+        onEnableAll={() => setEmailTypes([...visibleTypes])}
         onDisableAll={() => setEmailTypes([])}
-        onSave={() => void handleSaveEmail()}
+        onSave={() =>
+          void handleSave('email', emailTypes, () => setEditingChannel(null))
+        }
+      />
+
+      <ChannelSection
+        title="Telegram"
+        description="Сообщения бота после подключения в разделе «Приложения»."
+        selectedTypes={telegramTypes}
+        savedTypes={data.telegramNotificationTypes ?? []}
+        groups={visibleGroups}
+        isEditing={editingChannel === 'telegram'}
+        isPending={isPending}
+        showChatHint
+        onStartEdit={() => {
+          setTelegramTypes(data.telegramNotificationTypes ?? []);
+          setEditingChannel('telegram');
+        }}
+        onCancelEdit={() => {
+          setTelegramTypes(data.telegramNotificationTypes ?? []);
+          setEditingChannel(null);
+        }}
+        onToggle={(type, checked) =>
+          toggleInList(setTelegramTypes, type, checked)
+        }
+        onEnableAll={() => setTelegramTypes([...visibleTypes])}
+        onDisableAll={() => setTelegramTypes([])}
+        onSave={() =>
+          void handleSave('telegram', telegramTypes, () =>
+            setEditingChannel(null)
+          )
+        }
+      />
+
+      <ChannelSection
+        title="MAX"
+        description="Сообщения бота MAX после подключения в разделе «Приложения»."
+        selectedTypes={maxTypes}
+        savedTypes={data.maxNotificationTypes ?? []}
+        groups={visibleGroups}
+        isEditing={editingChannel === 'max'}
+        isPending={isPending}
+        showChatHint
+        onStartEdit={() => {
+          setMaxTypes(data.maxNotificationTypes ?? []);
+          setEditingChannel('max');
+        }}
+        onCancelEdit={() => {
+          setMaxTypes(data.maxNotificationTypes ?? []);
+          setEditingChannel(null);
+        }}
+        onToggle={(type, checked) => toggleInList(setMaxTypes, type, checked)}
+        onEnableAll={() => setMaxTypes([...visibleTypes])}
+        onDisableAll={() => setMaxTypes([])}
+        onSave={() =>
+          void handleSave('max', maxTypes, () => setEditingChannel(null))
+        }
       />
     </Stack>
   );

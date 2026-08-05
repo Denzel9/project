@@ -29,7 +29,7 @@ export const CalendarMonthPanel = ({
   isLoading = false,
   withLegend = true,
 }: CalendarMonthPanelProps) => (
-  <Stack spacing={2}>
+  <Stack spacing={1}>
     <Box sx={CALENDAR_CARD_SX}>
       <DateCalendar
         value={selectedDate}
@@ -40,7 +40,12 @@ export const CalendarMonthPanel = ({
         }}
         onMonthChange={onMonthChange}
         slots={{ day: daySlot }}
-        sx={DATE_CALENDAR_SX}
+        sx={{
+          ...DATE_CALENDAR_SX,
+          '& .MuiPickersCalendarHeader-label': {
+            textTransform: 'capitalize',
+          }
+        }}
       />
 
       {withLegend && <CalendarLegend />}
@@ -76,7 +81,7 @@ export const CalendarMonthPanel = ({
             />
             <Chip
               size="small"
-              label={`Дедлайны: ${monthStats?.deadlines}`}
+              label={`Дедлайны в этом месяце: ${monthStats?.deadlines}`}
               color="primary"
               variant="outlined"
             />

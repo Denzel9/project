@@ -1,4 +1,4 @@
-import { KeyboardArrowDown } from '@mui/icons-material';
+import { ChatOutlined, KeyboardArrowDown } from '@mui/icons-material';
 import {
   Box,
   CircularProgress,
@@ -9,8 +9,10 @@ import {
 import { format } from 'date-fns';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { ChatInput } from './ChatInput';
+import { EmptyBlock } from '@/shared';
+
 import { ChatErrorBanner } from './ChatErrorBanner';
+import { ChatInput } from './ChatInput';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { UnreadMessagesDivider } from './UnreadMessagesDivider';
 
@@ -113,7 +115,9 @@ export const ChatConversation = ({
 
   useEffect(() => {
     if (!peer) {
-      setShowScrollToBottom(false);
+      setTimeout(() => {
+        setShowScrollToBottom(false);
+      }, 0);
       return;
     }
 
@@ -263,7 +267,8 @@ export const ChatConversation = ({
           <Box
             ref={messagesContentRef}
             sx={{
-              gap: 1.75,
+              height: '100%',
+              gap: 1.25,
               px: { xs: 1.5, md: 2 },
               py: { xs: 1.5, md: 2 },
               display: 'flex',
@@ -277,13 +282,7 @@ export const ChatConversation = ({
             )}
 
             {!isLoading && messages.length === 0 && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: 'center', py: 2 }}
-              >
-                Начните переписку
-              </Typography>
+              <EmptyBlock sx={{ height: '100%', flex: 1 }} title="Сообщений пока нет" description="Отправьте первое сообщение" icon={<ChatOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />} />
             )}
 
             {messages.map(message => (
@@ -300,6 +299,8 @@ export const ChatConversation = ({
                   text={message.content}
                   media={message.media}
                   senderId={message.senderId}
+                  actorDisplayName={message.actorDisplayName}
+                  actorKind={message.actorKind}
                   createdAt={message.createdAt}
                   editedAt={message.editedAt}
                   isRedirected={message.isRedirected}

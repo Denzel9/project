@@ -1,43 +1,41 @@
-import { Box, CircularProgress, Stack, TextField } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { Box, CircularProgress, Stack } from '@mui/material';
+import { useMemo } from 'react';
 
-import { sortConversationsByUnread } from '@/entities/chat';
+import {
+  sortConversationsByUnread,
+  type ChatConversation,
+} from '@/entities/chat';
+import { type UserSearchItem } from '@/entities/user';
+import { ChatContactSearch } from '@/features/chat';
 
 import { ConversationItem } from './ConversationItem';
-
-import type { ChatConversation } from '@/entities/chat';
 
 type ContactsProps = {
   conversations: ChatConversation[];
   selectedId: string | null;
+  selectedPeerId?: string | null;
   isLoading: boolean;
   onSelect: (conversationId: string) => void;
+  onStartChat: (user: UserSearchItem) => void | Promise<void>;
 };
 
 export const Contacts = ({
   conversations,
   selectedId,
+  selectedPeerId = null,
   isLoading,
   onSelect,
+  onStartChat,
 }: ContactsProps) => {
-  const [search, setSearch] = useState('');
-
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const list = !query
-      ? conversations
-      : conversations.filter(c =>
-          c.peer.displayName.toLowerCase().includes(query),
-        );
-
-    return sortConversationsByUnread(list);
-  }, [conversations, search]);
+  const sortedConversations = useMemo(
+    () => sortConversationsByUnread(conversations),
+    [conversations]
+  );
 
   return (
     <Box
       sx={{
         p: { xs: 2, md: 4 },
-        mt: 2,
         width: { xs: '100%', md: '30%' },
         bgcolor: 'white',
         border: '1px solid',
@@ -48,23 +46,18 @@ export const Contacts = ({
         minHeight: 0,
       }}
     >
-      <TextField
-        label="Поиск"
-        fullWidth
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
+      <ChatContactSearch onSelect={onStartChat} />
 
       <Stack
         sx={{
-          mt: 4,
+          mt: 2,
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
           scrollbarWidth: 'none',
         }}
-        direction="column"
         spacing={1}
+        direction="column"
       >
         {isLoading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -72,14 +65,25 @@ export const Contacts = ({
           </Box>
         )}
 
-        {filtered.map(conversation => (
-          <ConversationItem
-            key={conversation.id}
-            conversation={conversation}
-            isSelected={conversation.id === selectedId}
-            onSelect={() => onSelect(conversation.id)}
-          />
-        ))}
+        {sortedConversations.map(conversation => {
+          const isDraft = !conversation.id;
+          const isSelected = isDraft
+            ? conversation.peer.id === selectedPeerId
+            : conversation.id === selectedId;
+
+          return (
+            <ConversationItem
+              key={conversation.id || `draft-${conversation.peer.id}`}
+              conversation={conversation}
+              onSelect={() => {
+                if (conversation.id) {
+                  onSelect(conversation.id);
+                }
+              }}
+              isSelected={isSelected}
+            />
+          );
+        })}
       </Stack>
     </Box>
   );

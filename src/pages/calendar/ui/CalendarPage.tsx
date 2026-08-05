@@ -3,6 +3,7 @@ import { PickerDay } from '@mui/x-date-pickers/PickerDay';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState, type ComponentProps } from 'react';
 
+import { useMyTaskFilterStore } from '@/features';
 import { PageLayout } from '@/widgets';
 
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
@@ -29,6 +30,10 @@ export const CalendarPage = () => {
   const [filters, setFilters] = useState<CalendarFiltersState>(
     DEFAULT_CALENDAR_FILTERS
   );
+  const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
+  const assigneeAccountId = useMyTaskFilterStore(
+    state => state.assigneeAccountId
+  );
 
   const { companyOptions, isCompany, isLoadingCompanies } =
     useCalendarFilterOptions();
@@ -48,6 +53,8 @@ export const CalendarPage = () => {
     urgentOnly: filters.urgentOnly,
     companyId: filters.companyId,
     isCompany,
+    onlyMyTasks,
+    assigneeAccountId,
   });
 
   const postMetaMap = useMemo(
@@ -121,7 +128,7 @@ export const CalendarPage = () => {
 
       <Grid
         container
-        spacing={2}
+        spacing={1}
         sx={{ alignItems: 'stretch' }}
       >
         <Grid

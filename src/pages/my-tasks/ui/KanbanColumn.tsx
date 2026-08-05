@@ -14,8 +14,8 @@ import { useDrop } from 'react-dnd';
 import { TASK_STATUS_ENUM, type Task, type TaskStatus } from '@/entities';
 import { InfiniteScrollSentinel } from '@/shared';
 
-import { KANBAN_COLUMN_PAGE_SIZE } from '../model/constants';
-import { useTasksLoadMore } from '../model/useTasksLoadMore';
+import { KANBAN_COLUMN_PAGE_SIZE } from '../model/constants/constants';
+import { useTasksLoadMore } from '../model/utils/useTasksLoadMore';
 
 import {
   KanbanTaskCard,
@@ -60,11 +60,6 @@ export const KanbanColumn = ({
     if (
       item?.status === TASK_STATUS_ENUM.PREPARING &&
       column?.status === TASK_STATUS_ENUM.PENDING_APPROVAL
-    ) {
-      return true;
-    } else if (
-      item?.status === TASK_STATUS_ENUM.PREPARING &&
-      column?.status === TASK_STATUS_ENUM.CANCELLED
     ) {
       return true;
     } else if (

@@ -23,7 +23,10 @@ import {
   validateChatMediaFile,
   type ChatConversation,
   type ChatMessage,
+  type ChatMessageMedia,
+  type ChatPeer,
 } from '@/entities/chat'
+import { getUserName, useGetUserByIdQuery } from '@/entities/user'
 import { useAuthStore } from '@/features/auth'
 import chatSocket from '@/shared/api/socket'
 import { ROUTES } from '@/shared/config/routes'
@@ -73,9 +76,9 @@ const getForwardMessageError = (error: unknown) =>
 const getEditMessageError = (error: unknown) => {
   const status =
     typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as { response?: { status?: number } }).response?.status ===
+      error !== null &&
+      'response' in error &&
+      typeof (error as { response?: { status?: number } }).response?.status ===
       'number'
       ? (error as { response: { status: number } }).response.status
       : null
@@ -107,6 +110,7 @@ export const useMessenger = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null)
+  const [pendingPeer, setPendingPeer] = useState<ChatPeer | null>(null)
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([])
   const [socketError, setSocketError] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -153,10 +157,31 @@ export const useMessenger = () => {
   const deleteMessageMutation = useDeleteMessageMutation()
   const editMessageMutation = useEditMessageMutation()
 
-  const selectedConversation = useMemo(
-    () => conversations.find(c => c.id === selectedConversationId) ?? null,
-    [conversations, selectedConversationId],
+  const recipientUserQuery = useGetUserByIdQuery(
+    recipientIdParam &&
+      !conversations.some(c => c.peer.id === recipientIdParam)
+      ? recipientIdParam
+      : null,
   )
+
+  const selectedConversation = useMemo((): ChatConversation | null => {
+    if (selectedConversationId) {
+      return conversations.find(c => c.id === selectedConversationId) ?? null
+    }
+
+    if (pendingPeer) {
+      return {
+        id: '',
+        peer: pendingPeer,
+        lastMessage: null,
+        unreadCount: 0,
+        isPinned: false,
+        updatedAt: new Date().toISOString(),
+      }
+    }
+
+    return null
+  }, [conversations, pendingPeer, selectedConversationId])
 
   const messages = useMemo(
     () => mergeMessages(historyMessages, liveMessages),
@@ -171,6 +196,7 @@ export const useMessenger = () => {
 
       openingUnreadCountRef.current = conversation?.unreadCount ?? 0
       setUnreadDividerMessageId(null)
+      setPendingPeer(null)
       setSelectedConversationId(conversationId)
       setLiveMessages([])
       setPendingFiles([])
@@ -180,6 +206,52 @@ export const useMessenger = () => {
     },
     [queryClient],
   )
+
+  const openDraftChat = useCallback((peer: ChatPeer) => {
+    openingUnreadCountRef.current = 0
+    setUnreadDividerMessageId(null)
+    setSelectedConversationId(null)
+    setPendingPeer(peer)
+    setLiveMessages([])
+    setPendingFiles([])
+    setDraft('')
+    setSocketError(null)
+    setIsErrorDismissed(false)
+  }, [])
+
+  const ensureConversationId = useCallback(async () => {
+    if (selectedConversationId) {
+      return selectedConversationId
+    }
+
+    if (!pendingPeer) {
+      return null
+    }
+
+    const conversation = await createConversation.mutateAsync({
+      recipientId: pendingPeer.id,
+    })
+
+    queryClient.setQueryData<ChatConversation[]>(
+      chatKeys.conversations(),
+      old => {
+        if (!old) {
+          return [conversation]
+        }
+
+        if (old.some(item => item.id === conversation.id)) {
+          return old
+        }
+
+        return [conversation, ...old]
+      },
+    )
+
+    setPendingPeer(null)
+    setSelectedConversationId(conversation.id)
+    chatSocket.joinConversation(conversation.id)
+    return conversation.id
+  }, [createConversation, pendingPeer, queryClient, selectedConversationId])
 
   useEffect(() => {
     if (!selectedConversationId || messagesLoading || !currentUserId) {
@@ -309,8 +381,8 @@ export const useMessenger = () => {
       setLiveMessages(prev =>
         prev.map(message =>
           message.conversationId === event.conversationId &&
-          message.senderId === userId &&
-          new Date(message.createdAt).getTime() <= readAtTime
+            message.senderId === userId &&
+            new Date(message.createdAt).getTime() <= readAtTime
             ? { ...message, isRead: true }
             : message,
         ),
@@ -400,6 +472,7 @@ export const useMessenger = () => {
     if (
       isDesktop &&
       !selectedConversationId &&
+      !pendingPeer &&
       conversations.length > 0 &&
       !recipientIdParam
     ) {
@@ -410,6 +483,7 @@ export const useMessenger = () => {
   }, [
     isDesktop,
     conversations,
+    pendingPeer,
     recipientIdParam,
     selectConversation,
     selectedConversationId,
@@ -420,36 +494,60 @@ export const useMessenger = () => {
       return
     }
 
-    if (conversationsLoading || createConversation.isPending) {
+    if (conversationsLoading) {
+      return
+    }
+
+    const existing = conversations.find(c => c.peer.id === recipientIdParam)
+
+    if (existing) {
+      handledRecipientRef.current = recipientIdParam
+      setTimeout(() => {
+        selectConversation(existing.id)
+      }, 0)
+      navigate(ROUTES.CHAT, { replace: true })
+      return
+    }
+
+    if (recipientUserQuery.isLoading || recipientUserQuery.isFetching) {
       return
     }
 
     handledRecipientRef.current = recipientIdParam
 
-    const existing = conversations.find(c => c.peer.id === recipientIdParam)
+    const response = recipientUserQuery.data
+    const user =
+      response && typeof response === 'object' && 'data' in response
+        ? response.data
+        : response
 
-    const openConversation = async () => {
-      try {
-        const conversation =
-          existing ??
-          (await createConversation.mutateAsync({
-            recipientId: recipientIdParam,
-          }))
-
-        selectConversation(conversation.id)
-        navigate(ROUTES.CHAT, { replace: true })
-      } catch (error) {
-        setSocketError(getErrorMessage(error) ?? 'Не удалось открыть диалог')
-      }
+    if (!user?.id) {
+      setTimeout(() => {
+        setSocketError('Не удалось открыть диалог')
+      }, 0)
+      navigate(ROUTES.CHAT, { replace: true })
+      return
     }
 
-    void openConversation()
+    const role = user.role === 'COMPANY' ? 'COMPANY' : 'CREATOR'
+    setTimeout(() => {
+      openDraftChat({
+        id: user.id,
+        role,
+        avatar: user.avatar ?? null,
+        displayName: getUserName(user) || 'Пользователь',
+      })
+      navigate(ROUTES.CHAT, { replace: true })
+    }, 0)
   }, [
     recipientIdParam,
     conversations,
     conversationsLoading,
-    createConversation,
+    recipientUserQuery.isLoading,
+    recipientUserQuery.isFetching,
+    recipientUserQuery.data,
     selectConversation,
+    openDraftChat,
     navigate,
   ])
 
@@ -478,10 +576,17 @@ export const useMessenger = () => {
   }, [])
 
   const sendTextMessage = useCallback(
-    async (content: string) => {
+    async (
+      content: string,
+      options?: { media?: ChatMessageMedia[] },
+    ) => {
       const trimmed = content.trim()
+      const media = options?.media
 
-      if (!trimmed || !selectedConversationId) {
+      if (
+        (!trimmed && !media?.length) ||
+        (!selectedConversationId && !pendingPeer)
+      ) {
         return false
       }
 
@@ -489,10 +594,16 @@ export const useMessenger = () => {
         setIsSendingMedia(true)
         setSocketError(null)
 
+        const conversationId = await ensureConversationId()
+        if (!conversationId) {
+          return false
+        }
+
         chatSocket.connect()
         chatSocket.sendMessage({
-          conversationId: selectedConversationId,
-          content: trimmed,
+          conversationId,
+          content: trimmed || undefined,
+          ...(media?.length ? { media } : {}),
         })
 
         return true
@@ -505,7 +616,7 @@ export const useMessenger = () => {
         setIsSendingMedia(false)
       }
     },
-    [selectedConversationId],
+    [ensureConversationId, pendingPeer, selectedConversationId],
   )
 
   const sendMessage = useCallback(async () => {
@@ -513,7 +624,7 @@ export const useMessenger = () => {
     const hasContent = Boolean(content)
     const hasFiles = pendingFiles.length > 0
 
-    if ((!hasContent && !hasFiles) || !selectedConversationId) {
+    if ((!hasContent && !hasFiles) || (!selectedConversationId && !pendingPeer)) {
       return
     }
 
@@ -527,15 +638,17 @@ export const useMessenger = () => {
       setIsSendingMedia(true)
       setSocketError(null)
 
+      const conversationId = await ensureConversationId()
+      if (!conversationId) {
+        return
+      }
+
       const media = hasFiles
-        ? await uploadConversationMediaBatch(
-          selectedConversationId,
-          pendingFiles,
-        )
+        ? await uploadConversationMediaBatch(conversationId, pendingFiles)
         : undefined
 
       chatSocket.sendMessage({
-        conversationId: selectedConversationId,
+        conversationId,
         content: hasContent ? content : undefined,
         media,
       })
@@ -549,8 +662,10 @@ export const useMessenger = () => {
     }
   }, [
     draft,
+    ensureConversationId,
     isSocketConnected,
     pendingFiles,
+    pendingPeer,
     selectedConversationId,
   ])
 
@@ -611,7 +726,7 @@ export const useMessenger = () => {
   )
 
   const forwardMessage = useCallback(
-    async (messageId: string, targetConversationId: string) => {
+    async (messageId: string, targetPeerId: string) => {
       if (!selectedConversationId) {
         return { success: false, error: 'Чат не выбран' }
       }
@@ -644,6 +759,22 @@ export const useMessenger = () => {
         setForwardingMessageId(messageId)
         setSocketError(null)
 
+        const existing = conversations.find(
+          conversation => conversation.peer.id === targetPeerId,
+        )
+        const targetConversationId =
+          existing?.id ??
+          (
+            await createConversation.mutateAsync({
+              recipientId: targetPeerId,
+            })
+          ).id
+
+        if (targetConversationId === selectedConversationId) {
+          return { success: false, error: 'Нельзя переслать в этот же чат' }
+        }
+
+        chatSocket.joinConversation(targetConversationId)
         chatSocket.sendMessage({
           conversationId: targetConversationId,
           ...(hasContent ? { content } : {}),
@@ -662,7 +793,13 @@ export const useMessenger = () => {
         setForwardingMessageId(null)
       }
     },
-    [isSocketConnected, messages, selectedConversationId],
+    [
+      conversations,
+      createConversation,
+      isSocketConnected,
+      messages,
+      selectedConversationId,
+    ],
   )
 
   const retryConnection = useCallback(() => {
@@ -687,9 +824,12 @@ export const useMessenger = () => {
 
   const isOpeningConversation =
     Boolean(recipientIdParam) &&
-    (createConversation.isPending ||
-      conversationsLoading ||
-      (!selectedConversationId && !socketError))
+    !pendingPeer &&
+    !selectedConversationId &&
+    !socketError &&
+    (conversationsLoading ||
+      recipientUserQuery.isLoading ||
+      recipientUserQuery.isFetching)
 
   const isLoading =
     conversationsLoading ||
@@ -710,7 +850,9 @@ export const useMessenger = () => {
     prevRawErrorRef.current = rawError
 
     if (rawError) {
-      setIsErrorDismissed(false)
+      setTimeout(() => {
+        setIsErrorDismissed(false)
+      }, 0)
     }
   }, [rawError])
 
@@ -721,6 +863,7 @@ export const useMessenger = () => {
     selectedConversation,
     selectedConversationId,
     selectConversation,
+    openDraftChat,
     messages,
     unreadDividerMessageId,
     currentUserId,

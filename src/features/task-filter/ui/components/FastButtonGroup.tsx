@@ -67,7 +67,6 @@ export const FastButtonGroup = ({
 
   const handleFastButtonClick = (value: FastButtonValueType) => {
     setFastButtonValue(fastButtonValue === value ? null : value);
-    // setMenuAnchorEl(null);
   };
 
   const getCount = (value: FastButtonValueType) =>

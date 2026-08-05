@@ -3,7 +3,7 @@ import { IconButton, Popover, Stack } from '@mui/material';
 import { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { FilterAutocomplete } from '@/features';
+import { FilterAutocomplete } from '@/shared';
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import {

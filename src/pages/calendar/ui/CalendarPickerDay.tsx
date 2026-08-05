@@ -31,7 +31,9 @@ export const CalendarPickerDay = ({
   const stats = getCalendarDayStats(events, dateKey);
   const category = getDateCategory(dateKey);
   const hasEvents = stats.total > 0;
-  const tooltip = getCalendarDayTooltip(stats);
+  const tooltip = getCalendarDayTooltip(stats, {
+    isToday: category === 'today',
+  });
 
   const markerColor = stats.overdue
     ? 'error.main'

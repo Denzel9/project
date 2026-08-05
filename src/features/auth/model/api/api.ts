@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
 
-import type { AuthResponse, LoginRequest, RecoveryPasswordRequest, RegistrationCompanyRequest, RegistrationCreatorRequest, ResetPasswordRequest } from '../types/types'
+import type { AuthResponse, LoginRequest, RecoveryPasswordRequest, RegistrationCompanyRequest, RegistrationCreatorRequest, RegistrationManagerRequest, ResetPasswordRequest } from '../types/types'
 
 export const useLoginMutation = () =>
   useMutation({
@@ -17,6 +17,12 @@ export const useRegistrationCompanyMutation = () =>
 export const useRegistrationUserMutation = () =>
   useMutation({
     mutationFn: async (body: RegistrationCreatorRequest) => await mainAxios.post<AuthResponse>('auth/register/creator', body),
+  })
+
+export const useRegistrationManagerMutation = () =>
+  useMutation({
+    mutationFn: async (body: RegistrationManagerRequest) =>
+      await mainAxios.post<AuthResponse>('auth/register/manager', body),
   })
 
 export const useRefreshTokenMutation = () =>

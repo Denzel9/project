@@ -26,7 +26,8 @@ import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useTasksWithCommentsInfiniteQuery, type Task } from '@/entities';
-import { TaskCommentComposer } from '@/pages/task/ui/TaskCommentComposer';
+import { TaskCommentComposer } from '@/pages/task/ui/comment/TaskCommentComposer';
+import { EmptyBlock } from '@/shared';
 
 import { DASHBOARD_COMMENTS_ITEMS_LIMIT } from '../model/constants';
 import {
@@ -76,14 +77,14 @@ export const DashboardCommentsPanel = () => {
     const map = new Map<string, Task>();
 
     rawItems.forEach(item => {
-      const id = item.id || item.lastComment?.taskId;
+      const id = item.id;
 
       if (!id || map.has(id)) return;
 
       map.set(id, {
         id,
         title: item.title ?? '',
-        ownerId: item.ownerId,
+        ownerId: item.ownerId ?? '',
         executorId: item.executorId ?? '',
         postId: item.postId ?? '',
         status: item.status,
@@ -99,14 +100,14 @@ export const DashboardCommentsPanel = () => {
     const map = new Map<string, Task>();
 
     optionsRawItems.forEach(item => {
-      const id = item.id || item.lastComment?.taskId;
+      const id = item.id;
 
       if (!id || map.has(id)) return;
 
       map.set(id, {
         id,
         title: item.title ?? '',
-        ownerId: item.ownerId,
+        ownerId: item.ownerId ?? '',
         executorId: item.executorId ?? '',
         postId: item.postId ?? '',
         status: item.status,
@@ -141,20 +142,18 @@ export const DashboardCommentsPanel = () => {
 
     if (fromMap) return fromMap;
 
-    const optionItem = optionsRawItems.find(
-      item => (item.id || item.lastComment?.taskId) === taskId
-    );
+    const optionItem = optionsRawItems.find(item => item.id === taskId);
 
     if (!optionItem) return undefined;
 
-    const id = optionItem.id || optionItem.lastComment?.taskId;
+    const id = optionItem.id;
 
     if (!id) return undefined;
 
     return {
       id,
       title: optionItem.title ?? '',
-      ownerId: optionItem.ownerId,
+      ownerId: optionItem.ownerId ?? '',
       executorId: optionItem.executorId ?? '',
       postId: optionItem.postId ?? '',
       status: optionItem.status,
@@ -498,17 +497,12 @@ export const DashboardCommentsPanel = () => {
           {!isLoading && items.length === 0 && (
             <Stack
               spacing={1}
-              sx={{ py: 5, alignItems: 'center', textAlign: 'center' }}
+              sx={{ height: '100%', alignItems: 'center', justifyContent: 'center' }}
             >
-              <ChatBubbleOutlined
-                sx={{ fontSize: 44, color: 'text.disabled' }}
+              <EmptyBlock
+                title={emptyMessage}
+                icon={<ChatBubbleOutlined sx={{ fontSize: 44, color: 'text.disabled' }} />}
               />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-              >
-                {emptyMessage}
-              </Typography>
               {hasActiveFilters && (
                 <Button
                   size="small"
@@ -599,16 +593,42 @@ export const DashboardCommentsPanel = () => {
                     </Typography>
                   </Stack>
 
-                  {timeLabel && (
-                    <Typography
-                      variant="body2"
+                  {(timeLabel || item.recipient?.displayName) && (
+                    <Stack
+                      direction="column"
+                      spacing={0.5}
                       sx={{
                         flexShrink: 0,
-                        fontWeight: hasUnread ? 600 : 400,
+                        maxWidth: '40%',
+                        textAlign: 'right',
                       }}
                     >
-                      {timeLabel}
-                    </Typography>
+                      {timeLabel && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: hasUnread ? 600 : 400,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {timeLabel}
+                        </Typography>
+                      )}
+
+                      {item.recipient?.displayName && (
+                        <Typography
+                          variant="body2"
+                          color="info.main"
+                          noWrap
+                          sx={{
+                            fontWeight: hasUnread ? 600 : 400,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {item.recipient.displayName}
+                        </Typography>
+                      )}
+                    </Stack>
                   )}
                 </Stack>
               );

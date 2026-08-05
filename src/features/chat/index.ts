@@ -7,3 +7,4 @@ export {
   formatPostLinkForChat,
   sendPostLinkToChat,
 } from './model/sendPostLinkToChat'
+export { ChatContactSearch } from './ui/ChatContactSearch'

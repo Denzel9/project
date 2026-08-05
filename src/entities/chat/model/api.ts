@@ -12,7 +12,7 @@ import {
   prepareFileForUpload,
 } from '@/shared/lib/media'
 
-import { toChatMessageMedia } from './utils'
+import { toChatMessageMedia, sortConversationsByUnread } from './utils'
 
 import type {
   AttachmentsParams,
@@ -20,6 +20,7 @@ import type {
   ChatConversation,
   ChatMessage,
   ChatMessageMedia,
+  ChatUnreadCount,
   ConversationsParams,
   CreateConversationDto,
   PaginatedResponse,
@@ -42,6 +43,7 @@ export {
 
 export const chatKeys = {
   all: ['chat'] as const,
+  unreadCount: () => [...chatKeys.all, 'unreadCount'] as const,
   conversationsRoot: () => [...chatKeys.all, 'conversations'] as const,
   conversations: (params?: ConversationsParams) =>
     [...chatKeys.conversationsRoot(), params ?? {}] as const,
@@ -84,6 +86,44 @@ const updateConversationsCache = (
   client.setQueriesData<ChatConversation[]>(conversationsQueryFilter, updater)
 }
 
+const getConversationUnreadFromCache = (
+  client: QueryClient,
+  conversationId: string,
+): number | null => {
+  const entries = client.getQueriesData<ChatConversation[]>(
+    conversationsQueryFilter,
+  )
+
+  for (const [, conversations] of entries) {
+    const found = conversations?.find(item => item.id === conversationId)
+    if (found) {
+      return found.unreadCount ?? 0
+    }
+  }
+
+  return null
+}
+
+export const setChatUnreadCountInCache = (
+  client: QueryClient,
+  count: number,
+) => {
+  client.setQueryData<ChatUnreadCount>(chatKeys.unreadCount(), {
+    count: Math.max(0, count),
+  })
+}
+
+const adjustChatUnreadCountInCache = (client: QueryClient, delta: number) => {
+  const current = client.getQueryData<ChatUnreadCount>(chatKeys.unreadCount())
+
+  if (!current) {
+    void client.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+    return
+  }
+
+  setChatUnreadCountInCache(client, current.count + delta)
+}
+
 const sortMessages = (messages: ChatMessage[]) =>
   [...messages].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
@@ -95,11 +135,15 @@ const normalizeMessage = (message: ChatMessage): ChatMessage => ({
   isRead: message.isRead ?? false,
   editedAt: message.editedAt ?? null,
   isRedirected: message.isRedirected ?? false,
+  actorAccountId: message.actorAccountId ?? null,
+  actorDisplayName: message.actorDisplayName ?? null,
+  actorKind: message.actorKind ?? null,
 })
 
 const normalizeConversation = (conversation: ChatConversation): ChatConversation => ({
   ...conversation,
   unreadCount: conversation.unreadCount ?? 0,
+  isPinned: conversation.isPinned ?? false,
   lastMessage: conversation.lastMessage
     ? normalizeMessage(conversation.lastMessage)
     : null,
@@ -137,6 +181,8 @@ export const setConversationUnreadCount = (
   conversationId: string,
   unreadCount: number,
 ) => {
+  const previous = getConversationUnreadFromCache(client, conversationId)
+
   updateConversationsCache(client, old =>
     old?.map(conversation =>
       conversation.id === conversationId
@@ -144,6 +190,13 @@ export const setConversationUnreadCount = (
         : conversation,
     ),
   )
+
+  if (previous === null) {
+    void client.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+    return
+  }
+
+  adjustChatUnreadCountInCache(client, unreadCount - previous)
 }
 
 export const incrementConversationUnreadCount = (
@@ -160,6 +213,8 @@ export const incrementConversationUnreadCount = (
         : conversation,
     ),
   )
+
+  adjustChatUnreadCountInCache(client, 1)
 }
 
 export const updateConversationLastMessage = (
@@ -228,6 +283,8 @@ export const markConversationReadInCache = (
   conversationId: string,
   currentUserId: string,
 ) => {
+  const previous = getConversationUnreadFromCache(client, conversationId) ?? 0
+
   client.setQueriesData<ChatMessage[]>(
     messagesQueryFilter(conversationId),
     old =>
@@ -256,6 +313,10 @@ export const markConversationReadInCache = (
       }
     }),
   )
+
+  if (previous > 0) {
+    adjustChatUnreadCountInCache(client, -previous)
+  }
 }
 
 export const removeMessageFromCache = (
@@ -364,6 +425,18 @@ export const useConversationsQuery = (
   })
 }
 
+export const useChatUnreadCountQuery = (options?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: chatKeys.unreadCount(),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<ChatUnreadCount>(
+        '/chat/unread-count',
+      )
+      return data
+    },
+    enabled: options?.enabled ?? true,
+  })
+
 export const useMessagesQuery = (
   conversationId: string | null,
   options?: { cursor?: string; limit?: number; markRead?: boolean },
@@ -403,6 +476,7 @@ export const useMarkConversationReadMutation = () => {
     },
     onSuccess: (_data, conversationId) => {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversationsRoot() })
+      queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
       queryClient.invalidateQueries({
         queryKey: chatKeys.messages(conversationId),
       })
@@ -465,6 +539,62 @@ export const useCreateConversationMutation = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chatKeys.conversationsRoot() })
+      queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+    },
+  })
+}
+
+export const usePinConversationMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      isPinned,
+    }: {
+      conversationId: string
+      isPinned: boolean
+    }) => {
+      const { data } = await mainAxios.patch<ChatConversation>(
+        `/chat/conversations/${conversationId}`,
+        { isPinned },
+      )
+      return normalizeConversation(data)
+    },
+    onMutate: async ({ conversationId, isPinned }) => {
+      await queryClient.cancelQueries({ queryKey: chatKeys.conversationsRoot() })
+
+      const previous = queryClient.getQueriesData<ChatConversation[]>(
+        conversationsQueryFilter,
+      )
+
+      updateConversationsCache(queryClient, old => {
+        if (!old) return old
+
+        return sortConversationsByUnread(
+          old.map(item =>
+            item.id === conversationId ? { ...item, isPinned } : item,
+          ),
+        )
+      })
+
+      return { previous }
+    },
+    onError: (_error, _variables, context) => {
+      context?.previous?.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data)
+      })
+    },
+    onSuccess: conversation => {
+      updateConversationsCache(queryClient, old => {
+        if (!old) return [conversation]
+
+        return sortConversationsByUnread(
+          old.map(item =>
+            item.id === conversation.id ? conversation : item,
+          ),
+        )
+      })
     },
   })
 }
@@ -503,6 +633,33 @@ export const uploadConversationMediaBatch = async (
   )
 
   return uploads.map(toChatMessageMedia)
+}
+
+export type CopyTaskMediaToConversationParams = {
+  taskId: string
+  conversationId: string
+  kind?: 'main' | 'report'
+  mediaIds?: string[]
+}
+
+/** Server-side S3 copy: tasks/{taskId}/… → chats/{conversationId}/… */
+export const copyTaskMediaToConversation = async ({
+  taskId,
+  conversationId,
+  kind = 'main',
+  mediaIds,
+}: CopyTaskMediaToConversationParams): Promise<ChatMessageMedia[]> => {
+  const { data } = await mainAxios.post<UploadMediaResponse[]>(
+    '/media/copy-to-conversation',
+    {
+      taskId,
+      conversationId,
+      kind,
+      ...(mediaIds?.length ? { mediaIds } : {}),
+    },
+  )
+
+  return data.map(toChatMessageMedia)
 }
 
 export const useSearchMessagesQuery = (

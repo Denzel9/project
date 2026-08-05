@@ -196,6 +196,8 @@ export const ChatSearchPanel = ({
             <ChatMessageBubble
               messageId={message.id}
               senderId={message.senderId}
+              actorDisplayName={message.actorDisplayName}
+              actorKind={message.actorKind}
               createdAt={message.createdAt}
               currentUserId={currentUserId}
               text={message.content}

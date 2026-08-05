@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 
 import { useAuthStore } from '@/features/auth';
-
+import { mapAuthSessionUser } from '@/features/auth/model/utils/mapAuthSessionUser';
 import { ROUTES } from '../config/routes';
 
 export const queryClient = new QueryClient();
@@ -34,15 +34,9 @@ mainAxios.interceptors.response.use(
           },
         });
 
-        useAuthStore.getState().setAuth({
-          id: refreshResult?.data?.user?.id,
-          role: refreshResult?.data?.user?.role,
-          membershipRole: refreshResult?.data?.user?.membershipRole,
-          isPrime: Boolean(refreshResult?.data?.user?.isPrime),
-          primeStatus: refreshResult?.data?.user?.primeStatus ?? 'NONE',
-          primeExpiresAt: refreshResult?.data?.user?.primeExpiresAt ?? null,
-          isEmailConfirmed: Boolean(refreshResult?.data?.user?.isEmailConfirmed),
-        });
+        useAuthStore
+          .getState()
+          .setAuth(mapAuthSessionUser(refreshResult.data.user));
       } else {
         if (originalRequest.url.includes('invites/accept')) {
           window.location.href = `${ROUTES.AUTH}?isAuthFailed=true&token=${window.location.search.split('=')[1]}`;

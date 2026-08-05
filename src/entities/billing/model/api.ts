@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { useAuthStore, type PrimeStatus } from '@/features/auth'
+import { mapAuthSessionUser, useAuthStore, type PrimeStatus } from '@/features/auth'
 import { mainAxios } from '@/shared/api'
 
 export type SubscriptionResponse = {
@@ -18,17 +18,20 @@ export const billingKeys = {
 const applySubscriptionToAuth = (data: SubscriptionResponse) => {
   const auth = useAuthStore.getState()
 
-  if (!auth.id || !auth.role || !auth.membershipRole) return
+  if (!auth.id || !auth.accountId || !auth.role || !auth.membershipRole) return
 
-  auth.setAuth({
-    id: auth.id,
-    role: auth.role,
-    membershipRole: auth.membershipRole,
-    isPrime: data.isPrime,
-    primeStatus: data.status,
-    primeExpiresAt: data.expiresAt,
-    isEmailConfirmed: auth.isEmailConfirmed,
-  })
+  auth.setAuth(
+    mapAuthSessionUser({
+      id: auth.id,
+      accountId: auth.accountId,
+      role: auth.role,
+      membershipRole: auth.membershipRole,
+      isPrime: data.isPrime,
+      primeStatus: data.status,
+      primeExpiresAt: data.expiresAt,
+      isEmailConfirmed: auth.isEmailConfirmed,
+    }),
+  )
 }
 
 export const useSubscriptionQuery = (options?: { enabled?: boolean }) =>

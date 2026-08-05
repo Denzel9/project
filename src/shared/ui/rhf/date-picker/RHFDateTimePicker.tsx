@@ -14,10 +14,11 @@ type RHFDateTimePickerProps<
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > = {
   name: TName;
-  label: string;
+  label?: string;
   width?: number | string;
   control: Control<TFieldValues>;
   size?: 'small' | 'medium';
+  disabled?: boolean;
 };
 
 export const RHFDateTimePicker = <
@@ -29,6 +30,7 @@ export const RHFDateTimePicker = <
   control,
   width = '100%',
   size = 'medium',
+  disabled = false,
 }: RHFDateTimePickerProps<TFieldValues, TName>) => (
   <Controller
     name={name}
@@ -36,6 +38,7 @@ export const RHFDateTimePicker = <
     render={({ field, fieldState }) => (
       <DateTimePicker
         label={label}
+        disabled={disabled || field?.disabled}
         value={field.value ? dayjs(field.value) : null}
         onChange={(value: Dayjs | null) =>
           field.onChange(value?.isValid() ? value.toISOString() : null)

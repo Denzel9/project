@@ -29,11 +29,11 @@ import { useSnackbarStore } from '@/widgets';
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog';
 import { FavoriteViewModeToggle } from './FavoriteViewModeToggle';
 
-import type { FavoriteGroupFilter } from '../model/utils';
 import type {
   FavoriteTableReportControls,
   FavoriteViewMode,
 } from '../model/types';
+import type { FavoriteGroupFilter } from '../model/utils';
 
 type FavoriteFilterProps = {
   value: FavoriteGroupFilter;
@@ -171,7 +171,7 @@ const FavoriteFilter = ({
           >
             <MenuItem value="POST">Посты</MenuItem>
             <MenuItem value={isCompany ? 'CREATOR' : 'COMPANY'}>
-              {isCompany ? 'Креаторы' : 'Компании'}
+              {isCompany ? 'Исполнители' : 'Компании'}
             </MenuItem>
           </TextField>
 

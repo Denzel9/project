@@ -3,6 +3,7 @@ import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 
 import {
+  buildCreateTaskPayload,
   canEditTaskFields,
   TASK_STATUS_ENUM,
   useCreateTaskMutation,
@@ -66,25 +67,17 @@ export const TaskActionsMenu = ({
   const handleCopy = async () => {
     closeMenu();
 
+    const postId = task.postId || task.post?.id;
+    if (!postId) {
+      setSnackbarOpen(true, 'Не удалось дублировать задачу');
+      return;
+    }
+
     try {
-      await createTask({
-        postId: task.post?.id ?? '',
-        executorId: task.executorId ? task.executorId : undefined,
-        description: task.description,
-        finalDate: task.finalDate,
-        photoCount: task.photoCount,
-        videoCount: task.videoCount,
-        deliverables: task.deliverables,
-        cooperationDetails: task.cooperationDetails,
-        bloggerRequirements: task.bloggerRequirements,
-        brief: task.brief,
-        media: task.media,
-        urgent: task.urgent,
-        title: task.title,
-      });
-      setSnackbarOpen(true, 'Задача успешно скопирована');
+      await createTask(buildCreateTaskPayload(task, postId));
+      setSnackbarOpen(true, 'Задача успешно дублирована');
     } catch {
-      setSnackbarOpen(true, 'Не удалось скопировать задачу');
+      setSnackbarOpen(true, 'Не удалось дублировать задачу');
     }
   };
 
@@ -144,7 +137,7 @@ export const TaskActionsMenu = ({
             disabled={isCopying}
             onClick={runMenuAction(() => void handleCopy())}
           >
-            Копировать
+            Дублировать
           </MenuItem>
         )}
 

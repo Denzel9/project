@@ -57,10 +57,6 @@ export const UserDisplayName = ({
     );
   }
 
-  if (!displayName) {
-    return null;
-  }
-
   return (
     <Stack
       direction="row"
@@ -69,10 +65,8 @@ export const UserDisplayName = ({
     >
       <Typography
         variant={variant}
-        sx={{ minWidth: 0 }}
-        noWrap
       >
-        {displayName}
+        {displayName ? displayName : 'Не назначено'}
       </Typography>
 
       {shouldShowBadges && (

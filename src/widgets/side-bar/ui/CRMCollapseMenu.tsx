@@ -18,16 +18,20 @@ import {
   getSidebarItemTextSx,
 } from './sidebarItemStyles';
 
+import type { SidebarCounters } from '../model/useSidebarCounters';
+
 type CRMCollapseMenuProps = {
   pathname: string;
   isSidebarExpanded: boolean;
   onNavigate?: () => void;
+  badges?: SidebarCounters;
 };
 
 export const CRMCollapseMenu = ({
   pathname,
   isSidebarExpanded,
   onNavigate,
+  badges,
 }: CRMCollapseMenuProps) => {
   const isCrmActive = pathname.startsWith(ROUTES.CRM);
   const [isOpen, setIsOpen] = useState(isCrmActive);
@@ -132,6 +136,7 @@ export const CRMCollapseMenu = ({
           pathname={pathname}
           variant="drawer"
           onItemClick={onNavigate}
+          badges={badges}
         />
       </Collapse>
 
@@ -155,6 +160,7 @@ export const CRMCollapseMenu = ({
           pathname={pathname}
           variant="popover"
           onItemClick={handleItemClick}
+          badges={badges}
         />
       </Popover>
     </Box>

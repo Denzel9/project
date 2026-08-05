@@ -19,6 +19,7 @@ type TaskListDialogProps = {
   onClose: () => void;
   tasks: Task[];
   currentTaskId?: string;
+  title?: string;
   onSelectTask: (taskId: string) => void;
 };
 
@@ -27,6 +28,7 @@ export const TaskListDialog = ({
   onClose,
   tasks,
   currentTaskId,
+  title = 'Список задач',
   onSelectTask,
 }: TaskListDialogProps) => {
   const handleSelect = (taskId: string) => {
@@ -50,7 +52,7 @@ export const TaskListDialog = ({
         direction="row"
         sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
       >
-        <Typography variant="h6">Список задач</Typography>
+        <Typography variant="h6">{title}</Typography>
         <IconButton
           aria-label="Закрыть"
           onClick={onClose}

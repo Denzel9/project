@@ -1,25 +1,25 @@
 import { SyncOutlined } from '@mui/icons-material';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
-import { isPast, startOfDay } from 'date-fns';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { Box, Button, Stack, Tooltip, Typography } from '@mui/material';
+import { useFormContext, useWatch, type Control } from 'react-hook-form';
 
 import { TASK_STATUS_ENUM, type TaskStatus } from '@/entities';
-import { RHFDateTimePicker, RHFInput } from '@/shared';
+import { RHFInput } from '@/shared';
 
-import { RequirementCard } from './RequirementCard';
 import { TaskTzSections } from './task-tz-sections';
 import { TaskPostBrief } from './TaskPostBrief';
+import { TaskRequirementsFields } from './TaskRequirementsFields';
 
 import type { TaskFormType } from '../model/schema/schema';
 import type { Post } from '@/entities/post';
 
 type TaskFormFieldsProps = {
+  post?: Post;
   isMe: boolean;
   isEdit: boolean;
   status: TaskStatus;
-  post?: Post;
-  showPrefillHint?: boolean;
+  withExecutor?: boolean;
   onStartEdit: () => void;
+  showPrefillHint?: boolean;
   onApplyFromPost?: () => void;
 };
 
@@ -32,42 +32,86 @@ const SectionTitle = ({ children }: { children: string }) => (
   </Typography>
 );
 
-const isDeadlineOverdue = (
-  finalDate: string | null | undefined,
-  status: TaskStatus
-) => {
-  if (!finalDate) return false;
+type TaskTitleFieldProps = {
+  title?: string;
+  control: Control<TaskFormType>;
+  isEditEnabled: boolean;
+  canEditForm: boolean;
+  onStartEdit: () => void;
+};
 
-  const isTerminal =
-    status === TASK_STATUS_ENUM.COMPLETED ||
-    status === TASK_STATUS_ENUM.CANCELLED ||
-    status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR;
+const TaskTitleField = ({
+  title,
+  control,
+  isEditEnabled,
+  canEditForm,
+  onStartEdit,
+}: TaskTitleFieldProps) => {
+  if (isEditEnabled) {
+    return (
+      <RHFInput
+        name="title"
+        control={control}
+        props={{
+          label: 'Заголовок',
+          fullWidth: true,
+        }}
+      />
+    );
+  }
 
-  return !isTerminal && isPast(startOfDay(new Date(finalDate)));
+  if (title?.trim()) {
+    return (
+      <Typography
+        variant="h6"
+        sx={{
+          fontWeight: 600,
+          cursor: canEditForm ? 'pointer' : 'default',
+        }}
+        onClick={onStartEdit}
+      >
+        {title}
+      </Typography>
+    );
+  }
+
+  if (!canEditForm) return null;
+
+  return (
+    <Typography
+      variant="body1"
+      onClick={onStartEdit}
+      sx={{
+        color: 'info.main',
+        fontWeight: 500,
+        cursor: 'pointer',
+        ':hover': { color: 'primary.main' },
+      }}
+    >
+      Добавить заголовок
+    </Typography>
+  );
 };
 
 export const TaskFormFields = ({
-  isMe,
-  status,
-  isEdit,
   post,
-  showPrefillHint,
+  isMe,
+  isEdit,
+  status,
   onStartEdit,
+  // TODO
+  // withExecutor,
   onApplyFromPost,
 }: TaskFormFieldsProps) => {
   const { control } = useFormContext<TaskFormType>();
 
-  const { title, photoCount, videoCount, finalDate } = useWatch({
+  const { title } = useWatch({
     control,
   });
 
-  const isCancelled = [
-    TASK_STATUS_ENUM.CANCELLED,
-    TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
-  ].includes(status as TASK_STATUS_ENUM);
+  const isCancelled = status === TASK_STATUS_ENUM.ANNULLED;
 
   const isEditEnabled = isEdit && !isCancelled;
-  const isOverdue = isDeadlineOverdue(finalDate, status);
   const canEditForm =
     isMe &&
     (status === TASK_STATUS_ENUM.PREPARING ||
@@ -96,144 +140,38 @@ export const TaskFormFields = ({
           <SectionTitle>Параметры задания</SectionTitle>
 
           {canApplyFromPost && (
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<SyncOutlined />}
-              onClick={onApplyFromPost}
-            >
-              Заполнить из объявления
-            </Button>
+            <Tooltip title="Заполнить данными из поста">
+              <Button
+                size="small"
+                startIcon={<SyncOutlined />}
+                onClick={onApplyFromPost}
+                sx={{
+                  px: 2,
+                }}
+              >
+                Заполнить из поста
+              </Button>
+            </Tooltip>
           )}
         </Stack>
 
-        {showPrefillHint && canApplyFromPost && (
-          <Alert
-            severity="info"
-            sx={{ mb: 2, borderRadius: '16px', color: 'info.main' }}
-          >
-            Нажмите «Заполнить из объявления», чтобы подставить данные из поста.
-          </Alert>
-        )}
-
         <Stack spacing={4}>
-          {isEditEnabled ? (
-            <RHFInput
-              name="title"
-              control={control}
-              props={{
-                label: 'Заголовок',
-                fullWidth: true,
-              }}
-            />
-          ) : title?.trim() ? (
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                cursor: canEditForm ? 'pointer' : 'default',
-              }}
-              onClick={handleStartEdit}
-            >
-              {title}
-            </Typography>
-          ) : canEditForm ? (
-            <Typography
-              variant="body1"
-              onClick={handleStartEdit}
-              sx={{
-                color: 'info.main',
-                fontWeight: 500,
-                cursor: 'pointer',
-                ':hover': { color: 'primary.main' },
-              }}
-            >
-              Добавить заголовок
-            </Typography>
-          ) : null}
+          <TaskTitleField
+            title={title}
+            control={control}
+            canEditForm={canEditForm}
+            isEditEnabled={isEditEnabled}
+            onStartEdit={handleStartEdit}
+          />
 
-          {(Number(photoCount) > 0 ||
-            Number(videoCount) > 0 ||
-            Boolean(finalDate)) && (
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={2}
-            >
-              {photoCount && Number(photoCount) > 0 && (
-                <RequirementCard
-                  isEdit={isEdit}
-                  icon="photo"
-                  label="Фото"
-                  value={photoCount}
-                  onEdit={handleStartEdit}
-                  canEdit={canEditForm}
-                  placeholder="Указать количество"
-                  emptyReadOnlyLabel={isMe ? undefined : '—'}
-                >
-                  {isEditEnabled ? (
-                    <RHFInput
-                      name="photoCount"
-                      control={control}
-                      props={{
-                        size: 'small',
-                        sx: { mt: 0.5 },
-                        label: 'Кол-во фото',
-                      }}
-                    />
-                  ) : undefined}
-                </RequirementCard>
-              )}
-
-              {videoCount && Number(videoCount) > 0 && (
-                <RequirementCard
-                  isEdit={isEdit}
-                  icon="video"
-                  label="Видео"
-                  value={videoCount}
-                  onEdit={handleStartEdit}
-                  canEdit={canEditForm}
-                  placeholder="Указать количество"
-                  emptyReadOnlyLabel={isMe ? undefined : '—'}
-                >
-                  {isEditEnabled ? (
-                    <RHFInput
-                      name="videoCount"
-                      control={control}
-                      props={{
-                        size: 'small',
-                        sx: { mt: 0.5 },
-                        label: 'Кол-во видео',
-                      }}
-                    />
-                  ) : undefined}
-                </RequirementCard>
-              )}
-
-              {finalDate && (
-                <RequirementCard
-                  isEdit={isEdit}
-                  icon="deadline"
-                  label="Дедлайн"
-                  value={finalDate}
-                  error={isOverdue}
-                  onEdit={handleStartEdit}
-                  placeholder="Указать дату"
-                  canEdit={canEditForm}
-                >
-                  {isEditEnabled ? (
-                    <Box sx={{ mt: 0.5 }}>
-                      <RHFDateTimePicker
-                        size="small"
-                        label="Дедлайн"
-                        name="finalDate"
-                        control={control}
-                      />
-                    </Box>
-                  ) : undefined}
-                </RequirementCard>
-              )}
-            </Stack>
-          )}
+          <TaskRequirementsFields
+            isMe={isMe}
+            isEdit={isEdit}
+            status={status}
+            canEditForm={canEditForm}
+            isEditEnabled={isEditEnabled}
+            onStartEdit={handleStartEdit}
+          />
         </Stack>
       </Box>
 

@@ -10,6 +10,7 @@ export type PublicationTableReportControls = {
 
 export type PublicationSortField =
   | 'title'
+  | 'post'
   | 'platform'
   | 'executor'
   | 'createdAt'

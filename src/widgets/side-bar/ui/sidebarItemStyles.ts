@@ -1,6 +1,7 @@
 export const getSidebarItemButtonSx = (isExpanded: boolean) => ({
   display: 'flex',
   alignItems: 'center',
+  flexShrink: 0,
   justifyContent: isExpanded ? 'flex-start' : 'center',
   px: isExpanded ? '32px !important' : '0 !important',
 });

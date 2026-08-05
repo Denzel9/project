@@ -116,6 +116,8 @@ export const ChatTaskTzPanel = ({
         fullWidth
         messageId={item.message.id}
         senderId={item.message.senderId}
+        actorDisplayName={item.message.actorDisplayName}
+        actorKind={item.message.actorKind}
         createdAt={item.message.createdAt}
         currentUserId={currentUserId}
         text={item.message.content}

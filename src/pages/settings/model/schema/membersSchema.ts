@@ -12,7 +12,7 @@ export const addMemberSchema = yup.object().shape({
     .string()
     .default(MemberRole.ADMIN)
     .required('Role is required')
-    .oneOf(Object.values(MemberRole), 'Invalid role'),
+    .oneOf([MemberRole.ADMIN], 'Invalid role'),
 });
 
 export const defaultAddMemberValues = addMemberSchema.getDefault();

@@ -14,4 +14,5 @@ export * from './user-config'
 export * from './settings'
 export * from './geo'
 export * from './billing'
+export * from './integrations'
 

@@ -1,16 +1,64 @@
 import { Add, ManageAccounts } from '@mui/icons-material';
-import { TextField, MenuItem, Skeleton, Menu, IconButton } from '@mui/material';
-import { useEffect, useState, type MouseEvent } from 'react';
+import {
+  Box,
+  TextField,
+  MenuItem,
+  Skeleton,
+  Menu,
+  IconButton,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useGetProfilesQuery, useSwitchProfileMutation } from '@/entities';
+import {
+  getProfileSwitchLines,
+  useGetProfilesQuery,
+  useSwitchProfileMutation,
+  type WorkspaceMember,
+} from '@/entities';
 import { prefetchUserConfig } from '@/entities/user-config';
-import { useAuthStore } from '@/features';
+import { mapAuthSessionUser, useAuthStore } from '@/features';
 import { queryClient } from '@/shared/api';
 import { ROUTES } from '@/shared/config/routes';
 import { useSnackbarStore } from '@/widgets';
 
 import { useCurrentUserStore } from '../model/store';
+
+const ProfileSwitchLabel = ({
+  item,
+  emphasize = false,
+}: {
+  item: WorkspaceMember;
+  emphasize?: boolean;
+}) => {
+  const { primary, secondary } = getProfileSwitchLines(item);
+
+  return (
+    <Stack
+      spacing={0}
+      sx={{ textAlign: 'left', overflow: 'hidden' }}
+    >
+      <Typography
+        variant="body2"
+        noWrap
+        sx={{ fontWeight: emphasize ? 600 : undefined }}
+      >
+        {primary}
+      </Typography>
+      {secondary ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          noWrap
+        >
+          {secondary}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
+};
 
 export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -29,11 +77,18 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
 
   const { mutateAsync: switchProfile, isPending } = useSwitchProfileMutation();
 
-  const { id, setAuth } = useAuthStore();
+  const { id, role, setAuth } = useAuthStore();
 
   const { currentUser, setCurrentUser } = useCurrentUserStore();
 
   const navigate = useNavigate();
+
+  const profiles = useMemo(() => data?.data ?? [], [data?.data]);
+
+  const activeProfile = useMemo(
+    () => profiles.find(item => item.userId === id),
+    [profiles, id]
+  );
 
   useEffect(() => {
     if (data?.data) {
@@ -42,21 +97,13 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
     }
   }, [data, id, setCurrentUser]);
 
-  const handleSwitchProfile = async (id: string) => {
-    const res = await switchProfile(id);
+  const handleSwitchProfile = async (profileId: string) => {
+    const res = await switchProfile(profileId);
     const user = res.data.user;
 
     if (!user?.id) return;
 
-    setAuth({
-      id: user.id,
-      role: user.role as string,
-      membershipRole: user.membershipRole as string,
-      isPrime: Boolean(user.isPrime),
-      primeStatus: user.primeStatus ?? 'NONE',
-      primeExpiresAt: user.primeExpiresAt ?? null,
-      isEmailConfirmed: Boolean(user.isEmailConfirmed),
-    });
+    setAuth(mapAuthSessionUser(user));
 
     try {
       await prefetchUserConfig(queryClient);
@@ -67,7 +114,9 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
 
   const handleChangeUser = async (value: string) => {
     if (value === 'newUser') {
-      navigate(ROUTES.SETTINGS_MEMBERS);
+      navigate(
+        role === 'MANAGER' ? ROUTES.SETTINGS_PROFILES : ROUTES.SETTINGS_MEMBERS
+      );
       return;
     }
 
@@ -100,25 +149,26 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
           anchorEl={anchorEl}
           onClose={handleClose}
         >
-          {data?.data?.map(item => (
+          {profiles.map(item => (
             <MenuItem
               key={item.id}
               disabled={item.userId === id}
               onClick={() => handleChangeUser(item.userId || '')}
             >
-              {item.displayName}
+              <ProfileSwitchLabel item={item} />
             </MenuItem>
           ))}
 
           <MenuItem
             value="newUser"
             sx={{ color: 'primary.main' }}
+            onClick={() => handleChangeUser('newUser')}
           >
             <Add
               sx={{ mr: 1 }}
               color="primary"
             />{' '}
-            Добавить пользователя
+            {role === 'MANAGER' ? 'К профилям' : 'Добавить пользователя'}
           </MenuItem>
         </Menu>
       </>
@@ -126,36 +176,51 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   }
 
   return (
-    <TextField
-      select
-      size="small"
-      value={currentUser}
-      onChange={e => handleChangeUser(e.target.value)}
-      sx={{
-        width: 300,
-        borderRadius: '16px',
-        backgroundColor: 'white',
-      }}
-    >
-      {data?.data?.map(item => (
-        <MenuItem
-          key={item.id}
-          disabled={item.userId === id}
-          value={item.userId}
-        >
-          {item.displayName}
-        </MenuItem>
-      ))}
-      <MenuItem
-        value="newUser"
-        sx={{ color: 'primary.main' }}
+    <Box sx={{ minWidth: 300 }}>
+      <TextField
+        select
+        size="small"
+        value={currentUser}
+        onChange={e => handleChangeUser(e.target.value)}
+        sx={{
+          width: '100%',
+          borderRadius: '16px',
+          backgroundColor: 'white',
+        }}
+        slotProps={{
+          select: {
+            renderValue: () =>
+              activeProfile ? (
+                <ProfileSwitchLabel
+                  item={activeProfile}
+                  emphasize
+                />
+              ) : (
+                'Профиль'
+              ),
+          },
+        }}
       >
-        <Add
-          sx={{ mr: 1 }}
-          color="primary"
-        />{' '}
-        Добавить пользователя
-      </MenuItem>
-    </TextField>
+        {profiles.map(item => (
+          <MenuItem
+            key={item.id}
+            disabled={item.userId === id}
+            value={item.userId}
+          >
+            <ProfileSwitchLabel item={item} />
+          </MenuItem>
+        ))}
+        <MenuItem
+          value="newUser"
+          sx={{ color: 'primary.main' }}
+        >
+          <Add
+            sx={{ mr: 1 }}
+            color="primary"
+          />{' '}
+          {role === 'MANAGER' ? 'К профилям' : 'Добавить пользователя'}
+        </MenuItem>
+      </TextField>
+    </Box>
   );
 };

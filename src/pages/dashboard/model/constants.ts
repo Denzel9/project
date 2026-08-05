@@ -11,3 +11,11 @@ export const DASHBOARD_COMMENTS_ITEMS_LIMIT = 10;
 export const DASHBOARD_COMMENTS_THREAD_LIMIT = 10;
 
 export const DASHBOARD_COMMENT_CARD_COLLAPSE_MS = 280;
+
+export const DASHBOARD_PERIOD_OPTIONS = [
+  { value: 'all', label: 'Весь период' },
+  { value: 'today', label: 'Сегодня' },
+  { value: 'week', label: 'Эта неделя' },
+  { value: 'month', label: 'Этот месяц' },
+] as const;
+

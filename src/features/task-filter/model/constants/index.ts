@@ -29,8 +29,7 @@ export const KANBAN_COLUMNS: KanbanColumnConfig[] = [
     { status: TASK_STATUS_ENUM.REVISION, label: TASK_STATUS_LABELS.REVISION, color: 'warning' },
     { status: TASK_STATUS_ENUM.CHECKING, label: TASK_STATUS_LABELS.CHECKING, color: 'info' },
     { status: TASK_STATUS_ENUM.COMPLETED, label: TASK_STATUS_LABELS.COMPLETED, color: 'success' },
-    { status: TASK_STATUS_ENUM.CANCELLED, label: TASK_STATUS_LABELS.CANCELLED, color: 'error' },
-    { status: TASK_STATUS_ENUM.CANCELLED_EXECUTOR, label: TASK_STATUS_LABELS.CANCELLED_EXECUTOR, color: 'error' },
+    { status: TASK_STATUS_ENUM.ANNULLED, label: TASK_STATUS_LABELS.ANNULLED, color: 'error' },
 ];
 
 export const ALL_TASK_STATUSES: TaskStatus[] = KANBAN_COLUMNS.map(

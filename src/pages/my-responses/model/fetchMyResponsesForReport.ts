@@ -14,6 +14,7 @@ export type MyResponsesReportOptions = {
   status: ApplicationStatusFilter
   updatedDate: string | null
   companyId: CompanyFilter
+  q?: string
 }
 
 export const fetchMyResponsesForReport = async (
@@ -22,6 +23,7 @@ export const fetchMyResponsesForReport = async (
   const params = toMyApplicationsParams({
     status: options.status,
     updatedDate: options.updatedDate,
+    q: options.q,
   })
 
   const { page: _page, limit: _limit, ...filters } = params

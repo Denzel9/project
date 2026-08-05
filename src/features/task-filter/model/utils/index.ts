@@ -5,11 +5,45 @@ import {
   type TaskStatsCategory,
   type TaskStatus,
 } from '@/entities/task';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
 
 import { ALL_TASK_STATUSES } from '../constants';
 
+dayjs.locale('ru');
+
 export type TaskRoleFilter = TaskRole | 'all';
 export type TaskStatusFilter = TaskStatus | 'all';
+
+export type DashboardPeriod = 'all' | 'today' | 'week' | 'month';
+
+export const getDashboardPeriodRange = (
+  period: DashboardPeriod,
+): { dateFrom?: string; dateTo?: string; dateField?: 'finalDate' } => {
+  if (period === 'all') return {};
+
+  const now = dayjs();
+
+  if (period === 'today') {
+    const day = now.format('YYYY-MM-DD');
+
+    return { dateFrom: day, dateTo: day, dateField: 'finalDate' };
+  }
+
+  if (period === 'week') {
+    return {
+      dateFrom: now.startOf('week').format('YYYY-MM-DD'),
+      dateTo: now.endOf('week').format('YYYY-MM-DD'),
+      dateField: 'finalDate',
+    };
+  }
+
+  return {
+    dateFrom: now.startOf('month').format('YYYY-MM-DD'),
+    dateTo: now.endOf('month').format('YYYY-MM-DD'),
+    dateField: 'finalDate',
+  };
+};
 
 export type FastButtonValueType = TaskStatsCategory;
 export type FastButtonFilter = FastButtonValueType | null;
@@ -95,11 +129,10 @@ export const ACTIVE_KANBAN_STATUSES: TaskStatus[] = [
 ];
 
 const CANCELLED_KANBAN_STATUSES: TaskStatus[] = [
-  TASK_STATUS_ENUM.CANCELLED,
-  TASK_STATUS_ENUM.CANCELLED_EXECUTOR,
+  TASK_STATUS_ENUM.ANNULLED,
 ];
 
-const CANCELLED_TASK_STATUSES = 'CANCELLED,CANCELLED_EXECUTOR';
+const CANCELLED_TASK_STATUSES = 'ANNULLED';
 
 export const getKanbanColumnsForFastButton = (
   fastButtonValue: FastButtonFilter,
@@ -127,7 +160,7 @@ export const toTasksParams = (
   ...(filters.status !== 'all' && { status: filters.status }),
   ...(filters.postId && { postId: filters.postId }),
   ...(filters.executorId && { executorId: filters.executorId }),
-  ...(filters.updatedDate && { createdDate: filters.updatedDate }),
+  ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
 });
 
 export const toTaskFilterParams = (
@@ -200,8 +233,12 @@ export const toMyTasksQueryParams = (filters: {
   viewMode: 'grid' | 'kanban' | 'table';
   fastButtonValue: FastButtonFilter;
   extraFilter: TaskExtraFilter | null;
+  onlyMyTasks?: boolean;
+  assigneeAccountId?: string;
   isCompany: boolean;
   q?: string;
+  taskId?: string;
+  deadlineDate?: string | null;
   page?: number;
   limit?: number;
 }): TaskListParams => {
@@ -216,6 +253,15 @@ export const toMyTasksQueryParams = (filters: {
         ? { executorId: filters.executorId }
         : { ownerId: filters.executorId })),
     ...(filters.q && { q: filters.q }),
+    ...(filters.taskId &&
+      filters.taskId !== 'all' && { taskId: filters.taskId }),
+    ...(filters.deadlineDate && { deadlineDate: filters.deadlineDate }),
+    ...(filters.onlyMyTasks && { assigneeMine: true }),
+    ...(filters.assigneeAccountId &&
+      filters.assigneeAccountId !== 'all' &&
+      !filters.onlyMyTasks && {
+        assigneeAccountId: filters.assigneeAccountId,
+      }),
   };
 
   let params = base;
@@ -243,6 +289,17 @@ export type DashboardTasksQueryFilters = {
   taskId?: string;
   personId?: string;
   urgentOnly?: boolean;
+  updatedDate?: string;
+  deadlineDate?: string;
+  q?: string;
+  personQ?: string;
+  onlyMyTasks?: boolean;
+  assigneeAccountId?: string;
+  postId?: string;
+  executorId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  dateField?: 'createdAt' | 'updatedAt' | 'finalDate';
 };
 
 export const toDashboardTasksQueryParams = (
@@ -251,10 +308,35 @@ export const toDashboardTasksQueryParams = (
 ): TaskListParams => ({
   page: pagination.page,
   limit: pagination.limit,
+  role: filters.isCompany ? 'owner' : 'executor',
   ...(filters.status && { status: filters.status }),
   ...(filters.urgentOnly && { urgent: true }),
+  ...(filters.taskId && { taskId: filters.taskId }),
   ...(filters.personId &&
     (filters.isCompany
       ? { executorId: filters.personId }
       : { ownerId: filters.personId })),
+  ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
+  ...(filters.deadlineDate && { deadlineDate: filters.deadlineDate }),
+  ...(filters.q && { q: filters.q }),
+  ...(filters.personQ && {
+    personQ: filters.personQ,
+    personField: filters.isCompany ? 'executor' : 'owner',
+  }),
+  ...(filters.onlyMyTasks && { assigneeMine: true }),
+  ...(filters.assigneeAccountId &&
+    filters.assigneeAccountId !== 'all' &&
+    !filters.onlyMyTasks && {
+      assigneeAccountId: filters.assigneeAccountId,
+    }),
+  ...(filters.postId &&
+    filters.postId !== 'all' && { postId: filters.postId }),
+  ...(filters.executorId &&
+    filters.executorId !== 'all' &&
+    (filters.isCompany
+      ? { executorId: filters.executorId }
+      : { ownerId: filters.executorId })),
+  ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
+  ...(filters.dateTo && { dateTo: filters.dateTo }),
+  ...(filters.dateField && { dateField: filters.dateField }),
 });

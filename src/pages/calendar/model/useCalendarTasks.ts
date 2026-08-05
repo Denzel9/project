@@ -24,6 +24,10 @@ type UseCalendarTasksParams = {
   urgentOnly: boolean;
   companyId: 'all' | string;
   isCompany: boolean;
+  onlyMyTasks?: boolean;
+  assigneeAccountId?: string;
+  postId?: string;
+  executorId?: string;
 };
 
 const mergeCalendarTasks = (lists: Array<TaskCalendarItem[] | undefined>) => {
@@ -45,6 +49,10 @@ export const useCalendarTasks = ({
   urgentOnly,
   companyId,
   isCompany,
+  onlyMyTasks = false,
+  assigneeAccountId = 'all',
+  postId = 'all',
+  executorId = 'all',
 }: UseCalendarTasksParams) => {
   const baseParams = useMemo<Omit<TaskCalendarParams, 'page' | 'limit'>>(
     () => ({
@@ -53,8 +61,25 @@ export const useCalendarTasks = ({
       ...(urgentOnly ? { urgent: true } : {}),
       ...(companyId !== 'all' && isCompany ? { executorId: companyId } : {}),
       ...(companyId !== 'all' && !isCompany ? { ownerId: companyId } : {}),
+      ...(onlyMyTasks ? { assigneeMine: true } : {}),
+      ...(assigneeAccountId !== 'all' && !onlyMyTasks
+        ? { assigneeAccountId }
+        : {}),
+      ...(postId !== 'all' ? { postId } : {}),
+      ...(executorId !== 'all' && isCompany ? { executorId } : {}),
+      ...(executorId !== 'all' && !isCompany ? { ownerId: executorId } : {}),
     }),
-    [companyId, dateFrom, dateTo, isCompany, urgentOnly],
+    [
+      assigneeAccountId,
+      companyId,
+      dateFrom,
+      dateTo,
+      executorId,
+      isCompany,
+      onlyMyTasks,
+      postId,
+      urgentOnly,
+    ],
   );
 
   const createdQuery = useTasksCalendarQuery(

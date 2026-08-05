@@ -48,7 +48,7 @@ const buildTaskContactsCsv = (
     contactColumnLabel,
     interactionsColumnLabel,
     'Публикации',
-    'Последнее',
+    'Последнее взаимодействие',
     'ID',
   ];
   const data = rows.map(row => [

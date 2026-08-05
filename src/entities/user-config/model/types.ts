@@ -72,6 +72,8 @@ export type UserConfig = {
   userId: string
   inAppNotificationTypes: NotificationType[]
   emailNotificationTypes: NotificationType[]
+  telegramNotificationTypes: NotificationType[]
+  maxNotificationTypes: NotificationType[]
   dashboardTiles: DashboardTileType[]
   dashboardShowTasks: boolean
   dashboardShowActivity: boolean
@@ -85,6 +87,8 @@ export type UserConfig = {
 export type UpdateUserConfigDto = {
   inAppNotificationTypes?: NotificationType[]
   emailNotificationTypes?: NotificationType[]
+  telegramNotificationTypes?: NotificationType[]
+  maxNotificationTypes?: NotificationType[]
   dashboardTiles?: DashboardTileType[]
   dashboardShowTasks?: boolean
   dashboardShowActivity?: boolean

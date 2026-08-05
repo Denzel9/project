@@ -195,7 +195,7 @@ export const CalendarTaskList = ({
                   icon={
                     <ScheduleOutlined sx={{ fontSize: '16px !important' }} />
                   }
-                  label={`Дедлайны: ${dayStats.deadlines}`}
+                  label={`Дедлайны сегодня: ${dayStats.deadlines}`}
                   color="primary"
                   variant="outlined"
                 />
@@ -219,7 +219,7 @@ export const CalendarTaskList = ({
                 <Chip
                   size="small"
                   icon={<Whatshot sx={{ fontSize: '14px !important' }} />}
-                  label={`Срочные: ${dayStats.urgent}`}
+                  label={`Из них срочные: ${dayStats.urgent}`}
                   color="error"
                   variant="outlined"
                 />

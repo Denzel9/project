@@ -6,10 +6,11 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useState, type SyntheticEvent } from 'react';
-import { useSearchParams } from 'react-router';
+import { Navigate, useSearchParams } from 'react-router';
 
 import { useGetUserByIdQuery, USER_ROLE } from '@/entities';
 import { useAuthStore, CurrentUser } from '@/features';
+import { ROUTES } from '@/shared/config/routes';
 import { PageFooter, SideBarButton } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
@@ -25,10 +26,25 @@ export const ProfilePage = () => {
   const [mediaTabValue, setMediaTabValue] = useState(MEDIA_TAB_VALUES.ACTIVE);
   const [tabValue, setTabValue] = useState(0);
 
-  const { id: userId } = useAuthStore();
-  const { data: user, isLoading } = useGetUserByIdQuery(id || userId);
+  const { id: userId, role } = useAuthStore();
+  const profileUserId = id || userId;
+  const isOwnProfile = !id || id === userId;
+  const isManager = role === USER_ROLE.MANAGER;
 
+  const { data: user, isLoading } = useGetUserByIdQuery(
+    isManager && isOwnProfile ? null : profileUserId
+  );
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+
+  // У менеджера нет своей витрины — только просмотр чужих профилей
+  if (isManager && isOwnProfile) {
+    return (
+      <Navigate
+        to={ROUTES.SETTINGS_ACCOUNT}
+        replace
+      />
+    );
+  }
 
   const handleTabChange = (_: SyntheticEvent, newValue: number) => {
     setTabValue(newValue);

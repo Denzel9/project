@@ -8,7 +8,6 @@ import {
   Dialog,
   IconButton,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
@@ -17,6 +16,7 @@ import {
   sortConversationsByUnread,
   type ChatConversation,
 } from '@/entities/chat';
+import { ChatContactSearch } from '@/features/chat';
 
 type SharePostToChatDialogProps = {
   open: boolean;
@@ -41,29 +41,18 @@ export const SharePostToChatDialog = ({
   postUrl = null,
   onSend,
 }: SharePostToChatDialogProps) => {
-  const [search, setSearch] = useState('');
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
-      setSearch('');
       setSelectedPeerId(null);
     }
   }, [open]);
 
-  const availableConversations = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return sortConversationsByUnread(
-      conversations.filter(conversation => {
-        if (!query) {
-          return true;
-        }
-
-        return conversation.peer.displayName.toLowerCase().includes(query);
-      })
-    );
-  }, [conversations, search]);
+  const availableConversations = useMemo(
+    () => sortConversationsByUnread(conversations),
+    [conversations]
+  );
 
   const handleClose = () => {
     if (isSending) {
@@ -151,14 +140,14 @@ export const SharePostToChatDialog = ({
         </Box>
       )}
 
-      <TextField
-        label="Поиск контакта"
-        fullWidth
-        value={search}
-        disabled={isSending}
-        onChange={event => setSearch(event.target.value)}
-        sx={{ mb: 2 }}
-      />
+      <Box sx={{ mb: 2 }}>
+        <ChatContactSearch
+          disabled={isSending}
+          onSelect={user => {
+            setSelectedPeerId(user.id);
+          }}
+        />
+      </Box>
 
       <Box
         sx={{

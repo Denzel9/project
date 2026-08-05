@@ -47,6 +47,9 @@ export type Notification = {
   readAt: string | null
   createdAt: string
   actor: NotificationActor | null
+  actorAccountId?: string | null
+  actorDisplayName?: string | null
+  actorKind?: 'OWNER' | 'MANAGER' | null
 }
 
 export type NotificationList = {

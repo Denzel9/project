@@ -73,7 +73,7 @@ export const exportFavoritesReport = (
 
   const rows = users.map(item => [
     getFavoriteUserName(item.user),
-    item.user.role === 'COMPANY' ? 'Компания' : 'Креатор',
+    item.user.role === 'COMPANY' ? 'Компания' : 'Исполнитель',
     item.user.location || '—',
     String(item.user.followers ?? 0),
     String(item.user.completedTasksCount ?? 0),

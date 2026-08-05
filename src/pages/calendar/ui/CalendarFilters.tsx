@@ -14,11 +14,10 @@ import { ru } from 'date-fns/locale/ru';
 import { useEffect, useState } from 'react';
 
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
-import { toCalendarDateKey, type CalendarEvent } from '../model/utils';
+import { hasActiveCalendarFilters, toCalendarDateKey, type CalendarEvent } from '../model/utils';
 
 import {
   CalendarFilterFields,
-  hasActiveCalendarFilters,
 } from './CalendarFilterFields';
 
 import type {
@@ -165,13 +164,13 @@ export const CalendarFilters = ({
 
           <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pb: 2 }}>
             <CalendarFilterFields
+              stacked
               value={draft}
+              isCompany={isCompany}
+              showInlineReset={false}
               onChange={handleDraftChange}
               companyOptions={companyOptions}
-              isCompany={isCompany}
               isLoadingCompanies={isLoadingCompanies}
-              stacked
-              showInlineReset={false}
             />
           </Box>
 

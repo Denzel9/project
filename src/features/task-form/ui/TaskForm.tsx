@@ -195,8 +195,6 @@ export const TaskForm = ({
     void handleSubmit(onFormValid)(event);
   };
 
-  console.log({ canChangeStatus });
-
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleFormSubmit}>
@@ -207,6 +205,7 @@ export const TaskForm = ({
           isEdit={isEdit}
           onStartEdit={beginEditSession}
           showPrefillHint={showPrefillHint}
+          withExecutor={Boolean(task.executorId)}
           onApplyFromPost={post ? handleApplyFromPost : undefined}
         />
 

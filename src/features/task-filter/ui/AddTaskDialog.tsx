@@ -3,7 +3,6 @@ import {
   Button,
   Checkbox,
   Dialog,
-  MenuItem,
   Stack,
   Tab,
   Tabs,
@@ -17,10 +16,10 @@ import { useNavigate } from 'react-router';
 import {
   useCreatePostMutation,
   useCreateTaskMutation,
-  usePostsQuery,
+  useMyPostOptionsQuery,
 } from '@/entities';
-import { useAuthStore, useRequireEmailConfirmed } from '@/features';
-import { ROUTES } from '@/shared';
+import { useRequireEmailConfirmed } from '@/features';
+import { FilterAutocomplete, ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 type AddTaskDialogProps = {
@@ -37,12 +36,10 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
 
   const navigate = useNavigate();
 
-  const { id } = useAuthStore();
-
   const { setSnackbarOpen } = useSnackbarStore();
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
-  const { data: posts } = usePostsQuery({ ownerId: id ?? '' });
+  const { data: posts, isLoading: isPostsLoading } = useMyPostOptionsQuery(open);
 
   const { mutateAsync: createPost } = useCreatePostMutation();
   const { mutateAsync: createTask } = useCreateTaskMutation();
@@ -85,12 +82,14 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     setNewTaskId(undefined);
   };
 
-  const postOptions = useMemo(() => {
-    return posts?.items.map(post => ({
-      id: post.id,
-      label: post.title,
-    }));
-  }, [posts]);
+  const postOptions = useMemo(
+    () =>
+      posts?.items.map(post => ({
+        id: post.id,
+        label: post.title,
+      })) ?? [],
+    [posts]
+  );
 
   return (
     <Dialog
@@ -125,22 +124,14 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
       )}
 
       {tab === 0 && !newTaskId && (
-        <TextField
-          select
-          fullWidth
-          value={postId}
+        <FilterAutocomplete
           label="Объявление"
-          onChange={e => setPostId(e.target.value)}
-        >
-          {postOptions?.map(post => (
-            <MenuItem
-              key={post.id}
-              value={post.id}
-            >
-              {post.label}
-            </MenuItem>
-          ))}
-        </TextField>
+          value={postId ?? 'all'}
+          options={postOptions}
+          loading={isPostsLoading}
+          placeholder="Выберите объявление"
+          onChange={id => setPostId(id === 'all' ? null : id)}
+        />
       )}
 
       {tab === 1 && (

@@ -2,6 +2,7 @@ export type PrimeStatus = 'NONE' | 'ACTIVE' | 'EXPIRED' | 'CANCELED'
 
 export type AuthSessionUser = {
   id: string
+  accountId: string
   role: string
   membershipRole: string
   isVerified?: boolean
@@ -28,6 +29,13 @@ export type RegistrationCreatorRequest = {
   password: string
 }
 
+export type RegistrationManagerRequest = {
+  name: string
+  lastName: string
+  email: string
+  password: string
+}
+
 export type RecoveryPasswordRequest = {
   email: string
 }
@@ -43,6 +51,7 @@ export type AuthResponse = {
 
 export type AuthSliceState = {
   id: string | null
+  accountId: string | null
   role: string | null
   membershipRole: string | null
   isPrime: boolean

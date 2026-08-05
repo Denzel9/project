@@ -1,20 +1,21 @@
-import { Close } from '@mui/icons-material';
-import { Box, Dialog, IconButton } from '@mui/material';
-import { Navigation, Pagination } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import { Close } from '@mui/icons-material'
+import { Box, Dialog, IconButton } from '@mui/material'
+import { Navigation, Pagination } from 'swiper/modules'
+import { Swiper, SwiperSlide } from 'swiper/react'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
 
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
+import { MediaItem } from './MediaItem'
 
-import type { MediaItemType } from '../model/types';
+import type { MediaItemType } from '../model/types'
 
 type FullScreenImageViewerProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  items: MediaItemType[];
-  initialSlide?: number;
-};
+  isOpen: boolean
+  onClose: () => void
+  items: MediaItemType[]
+  initialSlide?: number
+}
 
 export const FullScreenImageViewer = ({
   isOpen,
@@ -23,7 +24,7 @@ export const FullScreenImageViewer = ({
   initialSlide = 0,
 }: FullScreenImageViewerProps) => {
   if (!items.length) {
-    return null;
+    return null
   }
 
   return (
@@ -68,27 +69,22 @@ export const FullScreenImageViewer = ({
               sx={{
                 width: '100%',
                 height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                px: 2,
-                py: 6,
+                px: { xs: 1, md: 2 },
+                py: { xs: 7, md: 6 },
+                boxSizing: 'border-box',
               }}
             >
-              <Box
-                component="img"
+              <MediaItem
                 src={item.url}
                 alt=""
-                sx={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  objectFit: 'contain',
-                }}
+                mimeType={item.mimeType}
+                fit="contain"
+                loading="eager"
               />
             </Box>
           </SwiperSlide>
         ))}
       </Swiper>
     </Dialog>
-  );
-};
+  )
+}

@@ -1,22 +1,19 @@
-import { Menu, MenuItem, Typography } from '@mui/material';
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 
 import { TASK_STATUS_ENUM, type Task } from '@/entities';
-import { ROUTES } from '@/shared';
 import { PageLayout } from '@/widgets';
 
-import { useTaskData } from '../model/hooks/useTaskData';
+import {
+  getTaskUserKey,
+  useTaskData,
+} from '../model/hooks/useTaskData';
 
 import TaskItem from './TaskItem';
 import { TaskSwitcher } from './TaskSwitcher';
 
-const getExecutorKey = (task: Task) => task.executorId || 'unassigned';
-
 export const TaskPage = () => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [anchorElMore, setAnchorElMore] = useState<null | HTMLElement>(null);
-
+  const [, setSearchParams] = useSearchParams();
   const {
     currentTask,
     setCurrentTask,
@@ -27,40 +24,42 @@ export const TaskPage = () => {
     post,
   } = useTaskData();
 
-  const handleChangeTask = (taskId: string) => {
-    const task = tasks?.items?.find(item => item.id === taskId);
-    if (task) {
-      setCurrentTask(task);
-    }
+  const syncTaskInUrl = (task: Task) => {
+    setSearchParams(
+      {
+        userId: getTaskUserKey(task),
+        taskId: task.id,
+      },
+      { replace: true },
+    );
   };
 
-  const handleChangeCancelledTask = (taskId: string) => {
-    handleChangeTask(taskId);
-    setAnchorEl(null);
+  const handleChangeTask = (taskId: string) => {
+    const task = tasks?.items?.find(item => item.id === taskId);
+    if (!task) return;
+
+    setCurrentTask(task);
+    syncTaskInUrl(task);
   };
 
   const activeTasks = useMemo(
     () =>
       tasks?.items?.filter(
-        task =>
-          task.status !== TASK_STATUS_ENUM.CANCELLED &&
-          task.status !== TASK_STATUS_ENUM.CANCELLED_EXECUTOR
+        task => task.status !== TASK_STATUS_ENUM.ANNULLED
       ) || [],
     [tasks?.items]
   );
 
   const cancelledTasks =
     tasks?.items?.filter(
-      task =>
-        task.status === TASK_STATUS_ENUM.CANCELLED ||
-        task.status === TASK_STATUS_ENUM.CANCELLED_EXECUTOR
+      task => task.status === TASK_STATUS_ENUM.ANNULLED
     ) || [];
 
   const groupedTasks = useMemo(
     () =>
       activeTasks.reduce(
         (acc, task) => {
-          const key = getExecutorKey(task);
+          const key = getTaskUserKey(task);
           acc[key] = [...(acc[key] || []), task];
           return acc;
         },
@@ -75,58 +74,31 @@ export const TaskPage = () => {
 
     if (executorTasks.some(task => task.id === currentTask?.id)) return;
 
-    setCurrentTask(executorTasks[0]);
+    const task = executorTasks[0];
+    setCurrentTask(task);
+    syncTaskInUrl(task);
   };
 
-  const showSwitcher = Boolean(cancelledTasks.length) || activeTasks.length > 1;
+  const handleTaskCreated = (task: Task) => {
+    setCurrentTask(task);
+    syncTaskInUrl(task);
+  };
 
   return (
     <PageLayout>
-      {showSwitcher && (
-        <>
-          <TaskSwitcher
-            groupedTasks={groupedTasks}
-            currentTask={currentTask}
-            cancelledTasks={cancelledTasks}
-            onSelectTask={handleChangeTask}
-            onSelectExecutor={handleChangeExecutor}
-            onOpenCancelledMenu={event => setAnchorEl(event.currentTarget)}
-            onOpenMoreMenu={event => setAnchorElMore(event.currentTarget)}
-          />
-
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={() => setAnchorEl(null)}
-          >
-            {cancelledTasks.map(task => (
-              <MenuItem
-                key={task.id}
-                onClick={() => handleChangeCancelledTask(task.id)}
-              >
-                <Typography>{task.title ?? 'Без названия'}</Typography>
-              </MenuItem>
-            ))}
-          </Menu>
-
-          <Menu
-            anchorEl={anchorElMore}
-            open={Boolean(anchorElMore)}
-            onClose={() => setAnchorElMore(null)}
-          >
-            <MenuItem
-              target="_blank"
-              component={Link}
-              to={`${ROUTES.TASK}/${id}?taskId=${currentTask?.id}`}
-            >
-              <Typography>Открыть отдельно</Typography>
-            </MenuItem>
-          </Menu>
-        </>
-      )}
+      <TaskSwitcher
+        postId={id}
+        currentTask={currentTask}
+        groupedTasks={groupedTasks}
+        cancelledTasks={cancelledTasks}
+        onSelectTask={handleChangeTask}
+        onSelectExecutor={handleChangeExecutor}
+        onTaskCreated={handleTaskCreated}
+      />
 
       {currentTask && (
         <TaskItem
+          key={currentTask.id}
           post={post}
           task={currentTask}
           isLoading={isLoading}

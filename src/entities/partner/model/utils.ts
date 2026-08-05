@@ -92,7 +92,7 @@ export const getPartnerName = (profile?: Pick<
     return profile.companyName ?? 'Компания';
   }
 
-  return [profile.name, profile.lastName].filter(Boolean).join(' ') || 'Креатор';
+  return [profile.name, profile.lastName].filter(Boolean).join(' ') || 'Исполнитель';
 };
 
 export const getPartnerKind = (

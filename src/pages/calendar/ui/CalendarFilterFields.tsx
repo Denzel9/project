@@ -7,8 +7,10 @@ import {
   getPlacementFormatLabel,
   getPlatformLabel,
 } from '@/entities/post';
+import { AssigneeFilterMenu } from '@/features';
+import { FilterAutocomplete } from '@/shared';
 
-import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
+import { hasActiveCalendarFilters } from '../model/utils';
 
 import type {
   CalendarFiltersState,
@@ -19,13 +21,6 @@ const SELECT_WIDTH = 240;
 
 const PLATFORM_OPTIONS = Object.values(PlatformEnum);
 const PLACEMENT_FORMAT_OPTIONS = Object.values(PlacementFormatEnum);
-
-export const hasActiveCalendarFilters = (value: CalendarFiltersState) =>
-  value.eventType !== DEFAULT_CALENDAR_FILTERS.eventType ||
-  value.urgentOnly !== DEFAULT_CALENDAR_FILTERS.urgentOnly ||
-  value.companyId !== DEFAULT_CALENDAR_FILTERS.companyId ||
-  value.platform !== DEFAULT_CALENDAR_FILTERS.platform ||
-  value.placementFormat !== DEFAULT_CALENDAR_FILTERS.placementFormat;
 
 type CalendarFilterFieldsProps = {
   value: CalendarFiltersState;
@@ -77,30 +72,18 @@ export const CalendarFilterFields = ({
         }
       >
         <MenuItem value="all">Все</MenuItem>
-        <MenuItem value="created">Создана</MenuItem>
-        <MenuItem value="deadline">Дедлайн</MenuItem>
+        <MenuItem value="created">Создано в этот день</MenuItem>
+        <MenuItem value="deadline">Дедлайн в этот день</MenuItem>
       </TextField>
 
-      <TextField
-        select
-        fullWidth={stacked}
-        size="small"
+      <FilterAutocomplete
         label={companyLabel}
         value={value.companyId}
-        disabled={isLoadingCompanies}
-        sx={stacked ? undefined : { width: SELECT_WIDTH }}
-        onChange={event => onChange({ companyId: event.target.value })}
-      >
-        <MenuItem value="all">Все</MenuItem>
-        {companyOptions.map(option => (
-          <MenuItem
-            key={option.id}
-            value={option.id}
-          >
-            {option.label}
-          </MenuItem>
-        ))}
-      </TextField>
+        options={companyOptions}
+        loading={isLoadingCompanies}
+        onChange={companyId => onChange({ companyId })}
+        sx={stacked ? undefined : { width: SELECT_WIDTH, flex: '0 0 auto' }}
+      />
 
       <TextField
         select
@@ -170,6 +153,8 @@ export const CalendarFilterFields = ({
         >
           <Whatshot color={value.urgentOnly ? 'error' : 'action'} />
         </IconButton>
+
+        <AssigneeFilterMenu isCompany={isCompany} />
 
         {showReset && (
           <Button

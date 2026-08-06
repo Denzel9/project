@@ -3,6 +3,7 @@ import {
   PrintOutlined,
 } from '@mui/icons-material';
 import {
+  Chip,
   CircularProgress,
   IconButton,
   Stack,
@@ -42,12 +43,14 @@ type PublicationsFilterProps = {
   selectedExecutorOption?: FilterAutocompleteOption | null;
   isPostSearchLoading?: boolean;
   isExecutorSearchLoading?: boolean;
+  hasActiveFilters?: boolean;
   onQueryChange: (value: string) => void;
   onPostChange: (value: PublicationPostFilter) => void;
   onExecutorChange: (value: PublicationExecutorFilter) => void;
   onPostSearch: (query: string) => void;
   onExecutorSearch: (query: string) => void;
   onViewModeChange: (value: PublicationViewMode) => void;
+  onResetFilters: () => void;
   tableReport?: PublicationTableReportControls;
 };
 
@@ -62,12 +65,14 @@ export const PublicationsFilter = ({
   selectedExecutorOption = null,
   isPostSearchLoading = false,
   isExecutorSearchLoading = false,
+  hasActiveFilters = false,
   onQueryChange,
   onPostChange,
   onExecutorChange,
   onPostSearch,
   onExecutorSearch,
   onViewModeChange,
+  onResetFilters,
   tableReport,
 }: PublicationsFilterProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
@@ -102,37 +107,63 @@ export const PublicationsFilter = ({
             minWidth: 0,
             maxWidth: { xs: '100%', md: '50%' },
             flexWrap: { xs: 'wrap', md: 'nowrap' },
+            display: viewMode === 'table' ? 'none' : 'flex',
+            alignItems: 'center',
           }}
         >
           <FilterAutocomplete
+            size="small"
             label="Задача"
             value={postId}
+            sx={{ flex: 1 }}
             options={postOptions}
-            selectedOption={selectedPostOption}
-            loading={isPostSearchLoading}
-            minInputLength={SEARCH_MIN}
             onSearch={onPostSearch}
             onChange={onPostChange}
-            sx={{ flex: 1 }}
+            minInputLength={SEARCH_MIN}
+            loading={isPostSearchLoading}
+            selectedOption={selectedPostOption}
           />
 
           <FilterAutocomplete
+            size="small"
+            sx={{ flex: 1 }}
             label="Исполнитель"
             value={executorId}
             options={executorOptions}
-            selectedOption={selectedExecutorOption}
-            loading={isExecutorSearchLoading}
             minInputLength={SEARCH_MIN}
             onSearch={onExecutorSearch}
             onChange={onExecutorChange}
-            sx={{ flex: 1 }}
+            loading={isExecutorSearchLoading}
+            selectedOption={selectedExecutorOption}
           />
+
+          {hasActiveFilters && (
+            <Chip
+              label="Сбросить"
+              variant="outlined"
+              onClick={onResetFilters}
+              sx={{ flexShrink: 0 }}
+            />
+          )}
         </Stack>
+
+        {viewMode === 'table' && hasActiveFilters && (
+          <Chip
+            label="Сбросить"
+            variant="outlined"
+            onClick={onResetFilters}
+            sx={{ flexShrink: 0 }}
+          />
+        )}
 
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: 'center', flexShrink: 0 }}
+          sx={{
+            alignItems: 'center',
+            flexShrink: 0,
+            ml: viewMode === 'table' && !hasActiveFilters ? 'auto' : undefined,
+          }}
         >
           {viewMode === 'table' && tableReport && (
             <>

@@ -95,7 +95,7 @@ export const TaskRequirementsFields = ({
           placeholder="Указать количество"
           emptyReadOnlyLabel={isMe ? undefined : '—'}
         >
-          {isEditEnabled && (
+          {isEditEnabled ? (
             <RHFInput
               name="videoCount"
               control={control}
@@ -105,7 +105,7 @@ export const TaskRequirementsFields = ({
                 label: 'Кол-во видео',
               }}
             />
-          )}
+          ) : undefined}
         </RequirementCard>
       )}
 

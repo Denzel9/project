@@ -577,8 +577,7 @@ export const TaskTable = ({
         ref={tableContainerRef}
         sx={{
           width: '100%',
-          scrollbarWidth: 'thin',
-          scrollbarGutter: 'stable',
+          scrollbarWidth: 'none',
           ...(forPrint
             ? {
               height: 'auto',
@@ -1052,18 +1051,20 @@ export const TaskTable = ({
                             {task.post.title}
                           </Typography>
                         )}
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {getTaskTitle(task)}
-                          {forPrint && task.urgent ? ' (срочная)' : ''}
-                        </Typography>
+                        <Tooltip title={getTaskTitle(task)}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {getTaskTitle(task)}
+                            {forPrint && task.urgent ? ' (срочная)' : ''}
+                          </Typography>
+                        </Tooltip>
                       </Stack>
                       {!forPrint && task.urgent && <Whatshot color="error" />}
                     </Stack>
@@ -1094,14 +1095,31 @@ export const TaskTable = ({
                     >
                       {!forPrint && (
                         <Avatar
-                          src={task.executor?.avatar ?? ''}
+                          src={
+                            (isCompany
+                              ? task.executor?.avatar
+                              : task.owner?.avatar) || undefined
+                          }
                           sx={{ width: 28, height: 28 }}
                         />
                       )}
+
                       <UserDisplayName
-                        user={executorToUserPartial(task.executor)}
+                        user={
+                          isCompany
+                            ? executorToUserPartial(task.executor)
+                            : (task.owner as Partial<User>)
+                        }
                         variant="body2"
                         withBadges={false}
+                        sx={{
+                          minWidth: 0,
+                          '& .MuiTypography-root': {
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          },
+                        }}
                       />
                     </Stack>
                   </TableCell>
@@ -1112,7 +1130,7 @@ export const TaskTable = ({
                     <Typography
                       sx={{ whiteSpace: 'nowrap' }}
                       variant={forPrint ? 'body2' : 'caption'}
-                      color={forPrint ? 'text.primary' : 'text.secondary'}
+                      color={forPrint ? 'text.primary' : 'text.info'}
                     >
                       {forPrint
                         ? format(new Date(task.updatedAt), 'dd.MM.yyyy HH:mm', {
@@ -1151,7 +1169,7 @@ export const TaskTable = ({
                     ) : (
                       <Typography
                         variant="body2"
-                        color="text.secondary"
+                        color="info"
                       >
                         —
                       </Typography>

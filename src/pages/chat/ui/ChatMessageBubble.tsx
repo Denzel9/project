@@ -42,6 +42,7 @@ type ChatMessageBubbleProps = {
   side: MessageSide
   time?: string
   isRead?: boolean
+  isPinned?: boolean
   highlight?: string
   isDeleting?: boolean
   isEditing?: boolean
@@ -49,6 +50,7 @@ type ChatMessageBubbleProps = {
   onDelete?: (messageId: string) => void
   onEdit?: (messageId: string, content: string) => Promise<boolean>
   onForward?: (messageId: string) => void
+  onPin?: (messageId: string, nextPinned: boolean) => void
 }
 
 const escapeRegExp = (value: string) =>
@@ -184,6 +186,7 @@ export const ChatMessageBubble = ({
   side,
   time,
   isRead = false,
+  isPinned = false,
   highlight,
   isDeleting = false,
   isEditing: isSavingEdit = false,
@@ -191,6 +194,7 @@ export const ChatMessageBubble = ({
   onDelete,
   onEdit,
   onForward,
+  onPin,
 }: ChatMessageBubbleProps) => {
   const navigate = useNavigate()
   const isOutgoing = side === 'outgoing'
@@ -203,7 +207,7 @@ export const ChatMessageBubble = ({
     canModify && !hasResponse && !isRedirected && Boolean(onEdit)
   const canDelete = canModify && Boolean(onDelete)
   const canForward = !hasResponse && Boolean(onForward)
-  const showMenu = canEdit || canDelete || canForward
+  const showMenu = canEdit || canDelete || canForward || Boolean(onPin)
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0)
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
@@ -251,6 +255,11 @@ export const ChatMessageBubble = ({
   const handleForward = () => {
     handleCloseMenu()
     onForward?.(messageId)
+  }
+
+  const handleTogglePin = () => {
+    handleCloseMenu()
+    onPin?.(messageId, !isPinned)
   }
 
   const handleStartEdit = () => {
@@ -310,6 +319,11 @@ export const ChatMessageBubble = ({
       )}
       {canForward && onForward && (
         <MenuItem onClick={handleForward}>Переслать</MenuItem>
+      )}
+      {onPin && (
+        <MenuItem onClick={handleTogglePin}>
+          {isPinned ? 'Открепить' : 'Закрепить'}
+        </MenuItem>
       )}
       {canDelete && onDelete && (
         <MenuItem disabled={isDeleting} onClick={handleDelete}>

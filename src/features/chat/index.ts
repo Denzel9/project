@@ -7,4 +7,8 @@ export {
   formatPostLinkForChat,
   sendPostLinkToChat,
 } from './model/sendPostLinkToChat'
+export {
+  formatProfileLinkForChat,
+  sendProfileLinkToChat,
+} from './model/sendProfileLinkToChat'
 export { ChatContactSearch } from './ui/ChatContactSearch'

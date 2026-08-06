@@ -53,7 +53,7 @@ export const getUserName = (user: Partial<User> | undefined | null) => {
     return user?.companyProfile?.companyName;
   }
 
-  return `${user?.creatorProfile?.name} ${user?.creatorProfile?.lastName}`;
+  return `${user?.creatorProfile?.name ?? ''} ${user?.creatorProfile?.lastName ?? ''}`.trim();
 };
 
 export const executorToUserPartial = (executor?: {

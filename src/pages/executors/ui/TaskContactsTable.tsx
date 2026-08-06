@@ -16,16 +16,18 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { UserDisplayName } from '@/entities/user';
-import { EmptyBlock, ROUTES } from '@/shared';
+import { EmptyBlock, FilterAutocomplete, ROUTES } from '@/shared';
 
 import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
 import { formatRelativeTime, sortTaskContactRows } from '../model/utils';
 
+import { PartnersColumnFilterButton } from './PartnersColumnFilterButton';
 import { PartnersRowActionsMenu } from './PartnersRowActionsMenu';
 import { partnersTableShellSx } from './PartnersTableSkeleton';
 
 import type {
   PartnersSortOrder,
+  PartnersUserColumnFilter,
   TaskContactRow,
   TaskContactSortField,
 } from '../model/types';
@@ -38,6 +40,7 @@ type TaskContactsTableProps = {
   total?: number;
   page?: number;
   rowsPerPage?: number;
+  userFilter?: PartnersUserColumnFilter;
   onPageChange?: (event: unknown, nextPage: number) => void;
   onInteractionsClick?: (item: TaskContactRow) => void;
   onPublicationsClick?: (item: TaskContactRow) => void;
@@ -51,6 +54,7 @@ export const TaskContactsTable = ({
   total,
   page: controlledPage,
   rowsPerPage = PARTNERS_TABLE_PAGE_SIZE,
+  userFilter,
   onPageChange,
   onInteractionsClick,
   onPublicationsClick,
@@ -60,9 +64,13 @@ export const TaskContactsTable = ({
   const [sortField, setSortField] =
     useState<TaskContactSortField>('interactionsCount');
   const [sortOrder, setSortOrder] = useState<PartnersSortOrder>('desc');
+  const [isFilterRowOpen, setIsFilterRowOpen] = useState(false);
 
   const isServerPagination =
     controlledPage !== undefined && onPageChange !== undefined;
+  const hasActiveUserFilter = Boolean(
+    userFilter && userFilter.value !== 'all',
+  );
 
   const sortedItems = useMemo(
     () => sortTaskContactRows(items, sortField, sortOrder),
@@ -108,6 +116,9 @@ export const TaskContactsTable = ({
     ? paginationCount > rowsPerPage || items.length >= rowsPerPage
     : paginationCount > rowsPerPage;
 
+  const isEmpty = !items.length && (!isServerPagination || paginationCount === 0);
+  const showTableShell = Boolean(userFilter) || !isEmpty;
+
   const handleSort = (field: TaskContactSortField) => {
     if (sortField === field) {
       setSortOrder(current => (current === 'asc' ? 'desc' : 'asc'));
@@ -126,7 +137,7 @@ export const TaskContactsTable = ({
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (!items.length && !isServerPagination) {
+  if (isEmpty && !showTableShell) {
     return (
       <Box
         sx={{
@@ -137,23 +148,14 @@ export const TaskContactsTable = ({
           py: 8,
         }}
       >
-        <EmptyBlock title={emptyMessage} />
-      </Box>
-    );
-  }
-
-  if (!items.length && isServerPagination && paginationCount === 0) {
-    return (
-      <Box
-        sx={{
-          ...partnersTableShellSx,
-          alignItems: 'center',
-          justifyContent: 'center',
-          px: 3,
-          py: 8,
-        }}
-      >
-        <EmptyBlock title={emptyMessage} description='Появятся после отклика на ваше объявление' />
+        <EmptyBlock
+          title={emptyMessage}
+          description={
+            isServerPagination
+              ? 'Появятся после отклика на ваше объявление'
+              : undefined
+          }
+        />
       </Box>
     );
   }
@@ -177,13 +179,28 @@ export const TaskContactsTable = ({
           <TableHead>
             <TableRow>
               <TableCell sortDirection={getSortDirection('name')}>
-                <TableSortLabel
-                  active={sortField === 'name'}
-                  direction={sortField === 'name' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('name')}
+                <Stack
+                  spacing={0}
+                  direction="row"
+                  sx={{ alignItems: 'center' }}
                 >
-                  {contactColumnLabel}
-                </TableSortLabel>
+                  <TableSortLabel
+                    active={sortField === 'name'}
+                    direction={sortField === 'name' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('name')}
+                  >
+                    {contactColumnLabel}
+                  </TableSortLabel>
+
+                  {userFilter && (
+                    <PartnersColumnFilterButton
+                      title={userFilter.label}
+                      open={isFilterRowOpen}
+                      active={hasActiveUserFilter}
+                      onClick={() => setIsFilterRowOpen(open => !open)}
+                    />
+                  )}
+                </Stack>
               </TableCell>
 
               <TableCell sortDirection={getSortDirection('interactionsCount')}>
@@ -228,133 +245,182 @@ export const TaskContactsTable = ({
                 sx={{ width: 56 }}
               />
             </TableRow>
+
+            {userFilter && isFilterRowOpen && (
+              <TableRow className="partners-no-print">
+                <TableCell>
+                  <Box onClick={event => event.stopPropagation()}>
+                    <FilterAutocomplete
+                      size="small"
+                      variant="standard"
+                      value={userFilter.value}
+                      options={userFilter.options}
+                      selectedOption={userFilter.selectedOption}
+                      placeholder={
+                        userFilter.placeholder ?? `Все ${userFilter.label.toLowerCase()}`
+                      }
+                      loading={userFilter.loading}
+                      minInputLength={userFilter.minInputLength}
+                      onSearch={userFilter.onSearch}
+                      onChange={userFilter.onChange}
+                    />
+                  </Box>
+                </TableCell>
+                <TableCell />
+                <TableCell />
+                <TableCell />
+                <TableCell className="partners-no-print" />
+              </TableRow>
+            )}
           </TableHead>
 
           <TableBody>
-            {visibleItems.map(item => (
-              <TableRow
-                key={item.id}
-                hover
-                onClick={() =>
-                  navigate(`${ROUTES.PROFILE}?userId=${item.id}`)
-                }
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'secondary.light' },
-                }}
-              >
-                <TableCell>
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{ alignItems: 'center', minWidth: 180 }}
-                  >
-                    <Avatar
-                      className="partners-no-print"
-                      src={item.avatar || undefined}
-                      sx={{ width: 36, height: 36 }}
-                    >
-                      {item.name.charAt(0)}
-                    </Avatar>
-
-                    <UserDisplayName
-                      user={{ id: item.id }}
-                      name={item.name}
-                      variant="body2"
-                    />
-                  </Stack>
-                </TableCell>
-
+            {isEmpty ? (
+              <TableRow>
                 <TableCell
-                  onClick={
-                    onInteractionsClick
-                      ? event => {
-                        event.stopPropagation();
-                        onInteractionsClick(item);
-                      }
-                      : undefined
-                  }
-                  sx={
-                    onInteractionsClick
-                      ? {
-                        cursor: 'pointer',
-                        color: 'primary.main',
-                        fontWeight: 600,
-                        '&:hover': { textDecoration: 'underline' },
-                      }
-                      : undefined
-                  }
+                  colSpan={5}
+                  sx={{ py: 8, border: 0 }}
                 >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={
-                      onInteractionsClick
-                        ? { color: 'inherit', fontWeight: 'inherit' }
+                  <EmptyBlock
+                    title={
+                      hasActiveUserFilter
+                        ? 'Ничего не найдено'
+                        : emptyMessage
+                    }
+                    description={
+                      hasActiveUserFilter
+                        ? 'Попробуйте изменить фильтр'
                         : undefined
                     }
-                  >
-                    {item.interactionsCount}
-                  </Typography>
-                </TableCell>
-
-                <TableCell
-                  onClick={
-                    onPublicationsClick
-                      ? event => {
-                        event.stopPropagation();
-                        onPublicationsClick(item);
-                      }
-                      : undefined
-                  }
-                  sx={
-                    onPublicationsClick
-                      ? {
-                        cursor: 'pointer',
-                        color: 'primary.main',
-                        fontWeight: 600,
-                        '&:hover': { textDecoration: 'underline' },
-                      }
-                      : undefined
-                  }
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={
-                      onPublicationsClick
-                        ? { color: 'inherit', fontWeight: 'inherit' }
-                        : undefined
-                    }
-                  >
-                    {item.publicationsCount}
-                  </Typography>
-                </TableCell>
-
-                <TableCell>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ whiteSpace: 'nowrap' }}
-                  >
-                    {formatRelativeTime(item.lastInteractionAt)}
-                  </Typography>
-                </TableCell>
-
-                <TableCell
-                  className="partners-no-print"
-                  align="right"
-                  onClick={event => event.stopPropagation()}
-                >
-                  <PartnersRowActionsMenu userId={item.id} />
+                  />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              visibleItems.map(item => (
+                <TableRow
+                  key={item.id}
+                  hover
+                  onClick={() =>
+                    navigate(`${ROUTES.PROFILE}?userId=${item.id}`)
+                  }
+                  sx={{
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'secondary.light' },
+                  }}
+                >
+                  <TableCell>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{ alignItems: 'center', minWidth: 180 }}
+                    >
+                      <Avatar
+                        className="partners-no-print"
+                        src={item.avatar || undefined}
+                        sx={{ width: 36, height: 36 }}
+                      >
+                        {item.name.charAt(0)}
+                      </Avatar>
+
+                      <UserDisplayName
+                        user={{ id: item.id }}
+                        name={item.name}
+                        variant="body2"
+                      />
+                    </Stack>
+                  </TableCell>
+
+                  <TableCell
+                    onClick={
+                      onInteractionsClick
+                        ? event => {
+                          event.stopPropagation();
+                          onInteractionsClick(item);
+                        }
+                        : undefined
+                    }
+                    sx={
+                      onInteractionsClick
+                        ? {
+                          cursor: 'pointer',
+                          color: 'primary.main',
+                          fontWeight: 600,
+                          '&:hover': { textDecoration: 'underline' },
+                        }
+                        : undefined
+                    }
+                  >
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      sx={
+                        onInteractionsClick
+                          ? { color: 'inherit', fontWeight: 'inherit' }
+                          : undefined
+                      }
+                    >
+                      {item.interactionsCount}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell
+                    onClick={
+                      onPublicationsClick
+                        ? event => {
+                          event.stopPropagation();
+                          onPublicationsClick(item);
+                        }
+                        : undefined
+                    }
+                    sx={
+                      onPublicationsClick
+                        ? {
+                          cursor: 'pointer',
+                          color: 'primary.main',
+                          fontWeight: 600,
+                          '&:hover': { textDecoration: 'underline' },
+                        }
+                        : undefined
+                    }
+                  >
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      sx={
+                        onPublicationsClick
+                          ? { color: 'inherit', fontWeight: 'inherit' }
+                          : undefined
+                      }
+                    >
+                      {item.publicationsCount}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      {formatRelativeTime(item.lastInteractionAt)}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell
+                    className="partners-no-print"
+                    align="right"
+                    onClick={event => event.stopPropagation()}
+                  >
+                    <PartnersRowActionsMenu userId={item.id} />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {showPagination && (
+      {showPagination && !isEmpty && (
         <TablePagination
           component="div"
           className="partners-no-print"

@@ -13,6 +13,8 @@ import type { SvgIconComponent } from '@mui/icons-material';
 
 export type { DashboardCardVariant };
 
+export type DashboardUpcomingViewMode = 'grid' | 'table';
+
 export type DashboardCardAccentColor = 'primary' | 'warning' | 'info' | 'error';
 
 export const CARD_CONFIG: Record<

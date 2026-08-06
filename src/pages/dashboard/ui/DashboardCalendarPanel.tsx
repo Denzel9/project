@@ -152,8 +152,7 @@ export const DashboardCalendarPanel = () => {
           </Box>
 
           <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600 }}
+            variant='h6'
           >
             Календарь
           </Typography>

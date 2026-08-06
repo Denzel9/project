@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 import {
   TASK_STATUS_ENUM,
   type TaskListParams,
@@ -5,7 +7,6 @@ import {
   type TaskStatsCategory,
   type TaskStatus,
 } from '@/entities/task';
-import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 
 import { ALL_TASK_STATUSES } from '../constants';
@@ -95,7 +96,7 @@ export const FAST_BUTTON_TASK_OPTIONS = FAST_BUTTON_OPTIONS.filter(
 
 export const FAST_BUTTON_LABELS: Record<FastButtonValueType, string> = {
   'pending-action': 'Ожидают действия',
-  'pending-executor-assign': 'Ожидают назначения',
+  'pending-executor-assign': 'Ожидают подтверждения',
   'no-executor-assign': 'Не назначены',
   overdue: 'Просроченные',
   urgent: 'Срочные',
@@ -260,8 +261,8 @@ export const toMyTasksQueryParams = (filters: {
     ...(filters.assigneeAccountId &&
       filters.assigneeAccountId !== 'all' &&
       !filters.onlyMyTasks && {
-        assigneeAccountId: filters.assigneeAccountId,
-      }),
+      assigneeAccountId: filters.assigneeAccountId,
+    }),
   };
 
   let params = base;
@@ -327,8 +328,8 @@ export const toDashboardTasksQueryParams = (
   ...(filters.assigneeAccountId &&
     filters.assigneeAccountId !== 'all' &&
     !filters.onlyMyTasks && {
-      assigneeAccountId: filters.assigneeAccountId,
-    }),
+    assigneeAccountId: filters.assigneeAccountId,
+  }),
   ...(filters.postId &&
     filters.postId !== 'all' && { postId: filters.postId }),
   ...(filters.executorId &&

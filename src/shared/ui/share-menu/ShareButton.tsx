@@ -11,19 +11,25 @@ import {
   useConversationsQuery,
   useCreateConversationMutation,
 } from '@/entities/chat';
-import { sendPostLinkToChat } from '@/features';
-import { getPostShareUrl, openShareUrl, SHARE_TARGETS } from '@/shared';
+import { sendPostLinkToChat, sendProfileLinkToChat } from '@/features';
+import { getPostShareUrl, getProfileShareUrl, openShareUrl, SHARE_TARGETS } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 import { SharePostToChatDialog } from './SharePostToChatDialog';
 
 type ShareButtonProps = {
-  postId: string;
   title: string;
   size?: IconButtonProps['size'];
+  postId?: string;
+  userId?: string;
 };
 
-export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
+export const ShareButton = ({
+  postId,
+  userId,
+  title,
+  size,
+}: ShareButtonProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isShareToChatOpen, setIsShareToChatOpen] = useState(false);
   const [isSendingToChat, setIsSendingToChat] = useState(false);
@@ -31,9 +37,20 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
 
   const { setSnackbarOpen } = useSnackbarStore();
 
-  const shareUrl = useMemo(() => getPostShareUrl(postId), [postId]);
+  const shareUrl = useMemo(() => {
+    if (postId) {
+      return getPostShareUrl(postId);
+    }
+
+    if (userId) {
+      return getProfileShareUrl(userId);
+    }
+
+    return '';
+  }, [postId, userId]);
   const open = Boolean(anchorEl);
   const canUseNativeShare = typeof navigator.share === 'function';
+  const isDisabled = !postId && !userId;
 
   const { data: conversations = [], isLoading: isConversationsLoading } =
     useConversationsQuery(undefined, { enabled: isShareToChatOpen });
@@ -55,8 +72,8 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
     handleClose();
   };
 
-  const handleSendPostToChat = async (peerId: string) => {
-    if (!postId || isSendingToChat) {
+  const handleSendToChat = async (peerId: string) => {
+    if (isSendingToChat || (!postId && !userId)) {
       return false;
     }
 
@@ -64,15 +81,26 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
       setIsSendingToChat(true);
       setShareToChatError(null);
 
-      await sendPostLinkToChat({
-        postId,
-        postTitle: title,
-        peerId,
-        conversations,
-        createConversation,
-      });
+      if (postId) {
+        await sendPostLinkToChat({
+          postId,
+          postTitle: title,
+          peerId,
+          conversations,
+          createConversation,
+        });
+        setSnackbarOpen?.(true, 'Ссылка на пост отправлена в чат');
+      } else if (userId) {
+        await sendProfileLinkToChat({
+          userId,
+          profileTitle: title,
+          peerId,
+          conversations,
+          createConversation,
+        });
+        setSnackbarOpen?.(true, 'Ссылка на профиль отправлена в чат');
+      }
 
-      setSnackbarOpen?.(true, 'Ссылка на пост отправлена в чат');
       return true;
     } catch {
       setShareToChatError('Не удалось отправить ссылку в чат');
@@ -109,7 +137,7 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
       <IconButton
         size={size}
         onClick={handleOpen}
-        disabled={!postId}
+        disabled={isDisabled}
       >
         <Share />
       </IconButton>
@@ -154,7 +182,7 @@ export const ShareButton = ({ postId, title, size }: ShareButtonProps) => {
         error={shareToChatError}
         postTitle={title}
         postUrl={shareUrl}
-        onSend={handleSendPostToChat}
+        onSend={handleSendToChat}
       />
     </>
   );

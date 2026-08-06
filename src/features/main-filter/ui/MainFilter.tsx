@@ -77,6 +77,8 @@ export const MainFilter = () => {
           px: 2,
           pb: 2,
           pt: isScrolled ? 4 : 1,
+          border: isScrolled ? '1px solid' : 'none',
+          borderColor: 'divider',
           transition: 'all 0.3s ease',
           bgcolor: isScrolled ? 'white' : 'transparent',
           borderBottomLeftRadius: isScrolled ? '32px' : '0',

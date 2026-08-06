@@ -43,6 +43,7 @@ export const TaskTzDescription = ({
       >
         <Typography
           variant="subtitle2"
+          color="info"
           sx={{ fontWeight: 600 }}
         >
           Описание

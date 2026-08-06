@@ -155,6 +155,7 @@ export const DashboardCommentListItem = ({
           <Box sx={{ mb: 0.5 }}>
             <ActionActorCaption
               actor={comment}
+              direction='row'
             />
           </Box>
         ) : null}

@@ -185,14 +185,12 @@ export const ChatAddTaskDialog = ({
           {message}
         </Typography>
         {withIcon && hasActiveFilters && (
-          <Button
-            size="small"
+          <Chip
+            label="Сбросить"
             variant="outlined"
             onClick={resetFilters}
-            sx={{ mt: 0.5, px: 2, py: 0.75 }}
-          >
-            Сбросить фильтры
-          </Button>
+            sx={{ flexShrink: 0, mt: 0.5 }}
+          />
         )}
       </Stack>
     </Box>
@@ -408,14 +406,12 @@ export const ChatAddTaskDialog = ({
               color="primary"
               variant="outlined"
             />
-            <Button
-              size="small"
-              variant="text"
+            <Chip
+              label="Сбросить"
+              variant="outlined"
               onClick={resetFilters}
-              sx={{ ml: 'auto !important', px: 1, minWidth: 0 }}
-            >
-              Сбросить
-            </Button>
+              sx={{ flexShrink: 0, ml: 'auto !important' }}
+            />
           </>
         )}
       </Stack>

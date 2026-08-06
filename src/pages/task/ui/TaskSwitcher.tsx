@@ -315,15 +315,17 @@ export const TaskSwitcher = ({
                         spacing={1}
                         sx={{ alignItems: 'center' }}
                       >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: { xs: 140, sm: 220 },
-                            fontWeight: isActive ? 600 : 400,
-                          }}
-                        >
-                          {task.title || 'Без названия'}
-                        </Typography>
+                        <Tooltip title={task.title}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: { xs: 140, sm: 220 },
+                              fontWeight: isActive ? 600 : 400,
+                            }}
+                          >
+                            {task.title && task.title.length > 20 ? task.title.slice(0, 20) + '...' : task.title || 'Без названия'}
+                          </Typography>
+                        </Tooltip>
                         <Chip
                           color={getTaskStatusColor(task.status, isActive)}
                           label={TASK_STATUS_LABELS[task.status]}

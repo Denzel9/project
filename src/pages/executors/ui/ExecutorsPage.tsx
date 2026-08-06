@@ -2,7 +2,6 @@ import { Alert, Box, Stack } from '@mui/material';
 import { useCallback, useMemo, useState } from 'react';
 
 import {
-  USER_ROLE,
   getPartnerName,
   mapApplicationCompanyToRow,
   mapPartnerUserToRow,
@@ -14,14 +13,16 @@ import {
   usePartnerExecutorsQuery,
 } from '@/entities';
 import { useAuthStore } from '@/features';
-import {
-  FilterAutocomplete,
-  ROUTES,
-  type FilterAutocompleteOption,
-} from '@/shared';
+import { type FilterAutocompleteOption, ROUTES } from '@/shared';
 import { PageLayout } from '@/widgets';
 
-import { CONTACT_LABELS, EMPTY_MESSAGES, PARTNERS_TABLE_PAGE_SIZE, USER_SEARCH_LIMIT, USER_SEARCH_MIN } from '../model/constants';
+import {
+  CONTACT_LABELS,
+  EMPTY_MESSAGES,
+  PARTNERS_TABLE_PAGE_SIZE,
+  USER_SEARCH_LIMIT,
+  USER_SEARCH_MIN,
+} from '../model/constants';
 import { exportPartnersReport } from '../model/exportPartnersReport';
 import {
   DEFAULT_APPLICANT_STATUSES,
@@ -36,11 +37,14 @@ import { PartnersTableSkeleton } from './PartnersTableSkeleton';
 import { PartnersTabs } from './PartnersTabs';
 import { TaskContactsTable } from './TaskContactsTable';
 
-import type { PartnersTabId, TaskContactRow } from '../model/types';
+import type {
+  PartnersTabId,
+  PartnersUserColumnFilter,
+  TaskContactRow,
+} from '../model/types';
 
 export const ExecutorsPage = () => {
   const { role } = useAuthStore();
-  const isCompany = role === USER_ROLE.COMPANY;
   const [isExporting, setIsExporting] = useState(false);
 
   const pageConfig = useMemo(() => getPartnersPageConfig(role), [role]);
@@ -55,78 +59,99 @@ export const ExecutorsPage = () => {
 
   const userIdParam = userFilterId === 'all' ? undefined : userFilterId;
   const canSearchUsers = userSearchQuery.trim().length >= USER_SEARCH_MIN;
+  const searchQuery = userSearchQuery.trim();
+  const listPage = page + 1;
+  const listLimit = PARTNERS_TABLE_PAGE_SIZE;
 
-  const userSearchParams = {
-    q: userSearchQuery.trim(),
-    sort: 'name' as const,
-    page: 1,
-    limit: USER_SEARCH_LIMIT,
-  };
-
-  const paginationParams = {
-    page: page + 1,
-    limit: PARTNERS_TABLE_PAGE_SIZE,
-    ...(userIdParam && { userId: userIdParam }),
-  };
+  const listFilterParams = useMemo(
+    () => ({
+      ...(userIdParam && { userId: userIdParam }),
+    }),
+    [userIdParam],
+  );
 
   const executorsQuery = usePartnerExecutorsQuery(
     {
+      ...listFilterParams,
       sort: 'name',
-      ...paginationParams,
+      page: listPage,
+      limit: listLimit,
     },
-    { enabled: isCompany && activeTab === 'executors' },
+    { enabled: activeTab === 'executors' },
   );
-
   const applicantsQuery = usePartnerApplicantsQuery(
     {
+      ...listFilterParams,
       statuses: [...DEFAULT_APPLICANT_STATUSES],
-      ...paginationParams,
+      page: listPage,
+      limit: listLimit,
     },
-    { enabled: isCompany && activeTab === 'applicants' },
+    { enabled: activeTab === 'applicants' },
   );
-
   const customersQuery = usePartnerCustomersQuery(
     {
+      ...listFilterParams,
       sort: 'name',
-      ...paginationParams,
+      page: listPage,
+      limit: listLimit,
     },
-    { enabled: !isCompany && activeTab === 'customers' },
+    { enabled: activeTab === 'customers' },
   );
-
   const companiesQuery = usePartnerApplicationCompaniesQuery(
     {
+      ...listFilterParams,
       sort: 'recent',
-      ...paginationParams,
+      page: listPage,
+      limit: listLimit,
     },
-    { enabled: !isCompany && activeTab === 'companies' },
+    { enabled: activeTab === 'companies' },
   );
 
-  const searchExecutorsQuery = usePartnerExecutorsQuery(userSearchParams, {
-    enabled: isCompany && activeTab === 'executors' && canSearchUsers,
-  });
-
-  const searchApplicantsQuery = usePartnerApplicantsQuery(
+  const executorsSearch = usePartnerExecutorsQuery(
+    { q: searchQuery, sort: 'name', page: 1, limit: USER_SEARCH_LIMIT },
+    { enabled: activeTab === 'executors' && canSearchUsers },
+  );
+  const applicantsSearch = usePartnerApplicantsQuery(
     {
-      ...userSearchParams,
+      q: searchQuery,
       statuses: [...DEFAULT_APPLICANT_STATUSES],
+      page: 1,
+      limit: USER_SEARCH_LIMIT,
     },
-    { enabled: isCompany && activeTab === 'applicants' && canSearchUsers },
+    { enabled: activeTab === 'applicants' && canSearchUsers },
+  );
+  const customersSearch = usePartnerCustomersQuery(
+    { q: searchQuery, sort: 'name', page: 1, limit: USER_SEARCH_LIMIT },
+    { enabled: activeTab === 'customers' && canSearchUsers },
+  );
+  const companiesSearch = usePartnerApplicationCompaniesQuery(
+    { q: searchQuery, sort: 'name', page: 1, limit: USER_SEARCH_LIMIT },
+    { enabled: activeTab === 'companies' && canSearchUsers },
   );
 
-  const searchCustomersQuery = usePartnerCustomersQuery(userSearchParams, {
-    enabled: !isCompany && activeTab === 'customers' && canSearchUsers,
-  });
+  const listQuery =
+    activeTab === 'executors'
+      ? executorsQuery
+      : activeTab === 'applicants'
+        ? applicantsQuery
+        : activeTab === 'customers'
+          ? customersQuery
+          : companiesQuery;
 
-  const searchCompaniesQuery = usePartnerApplicationCompaniesQuery(
-    userSearchParams,
-    { enabled: !isCompany && activeTab === 'companies' && canSearchUsers },
-  );
+  const searchQueryResult =
+    activeTab === 'executors'
+      ? executorsSearch
+      : activeTab === 'applicants'
+        ? applicantsSearch
+        : activeTab === 'customers'
+          ? customersSearch
+          : companiesSearch;
 
   const userSearchOptions = useMemo(() => {
     if (!canSearchUsers) return [];
 
     if (activeTab === 'companies') {
-      return (searchCompaniesQuery.data?.items ?? [])
+      return (companiesSearch.data?.items ?? [])
         .map(normalizePartnerApplicationCompany)
         .map(item => ({
           id: item.id,
@@ -136,10 +161,10 @@ export const ExecutorsPage = () => {
 
     const items =
       activeTab === 'executors'
-        ? (searchExecutorsQuery.data?.items ?? [])
+        ? (executorsSearch.data?.items ?? [])
         : activeTab === 'applicants'
-          ? (searchApplicantsQuery.data?.items ?? [])
-          : (searchCustomersQuery.data?.items ?? []);
+          ? (applicantsSearch.data?.items ?? [])
+          : (customersSearch.data?.items ?? []);
 
     return items.map(normalizePartnerUser).map(item => ({
       id: item.id,
@@ -147,11 +172,11 @@ export const ExecutorsPage = () => {
     }));
   }, [
     activeTab,
+    applicantsSearch.data?.items,
     canSearchUsers,
-    searchApplicantsQuery.data?.items,
-    searchCompaniesQuery.data?.items,
-    searchCustomersQuery.data?.items,
-    searchExecutorsQuery.data?.items,
+    companiesSearch.data?.items,
+    customersSearch.data?.items,
+    executorsSearch.data?.items,
   ]);
 
   const handleTabChange = (tab: PartnersTabId) => {
@@ -162,107 +187,63 @@ export const ExecutorsPage = () => {
     setPage(0);
   };
 
-  const handleUserFilterChange = (nextId: string) => {
-    setUserFilterId(nextId);
-    setPage(0);
+  const handleUserFilterChange = useCallback(
+    (nextId: string) => {
+      setUserFilterId(nextId);
+      setPage(0);
 
-    if (nextId === 'all') {
-      setSelectedUserOption(null);
-      return;
-    }
+      if (nextId === 'all') {
+        setSelectedUserOption(null);
+        return;
+      }
 
-    const fromSearch = userSearchOptions.find(option => option.id === nextId);
-    setSelectedUserOption(current =>
-      fromSearch ?? (current?.id === nextId ? current : null),
-    );
-  };
+      setSelectedUserOption(current => {
+        const fromSearch = userSearchOptions.find(option => option.id === nextId);
+
+        return fromSearch ?? (current?.id === nextId ? current : null);
+      });
+    },
+    [userSearchOptions],
+  );
 
   const handlePageChange = useCallback((_event: unknown, nextPage: number) => {
     setPage(nextPage);
   }, []);
-
-  const activeQuery = useMemo(() => {
-    switch (activeTab) {
-      case 'executors':
-        return executorsQuery;
-      case 'applicants':
-        return applicantsQuery;
-      case 'customers':
-        return customersQuery;
-      case 'companies':
-        return companiesQuery;
-      default:
-        return executorsQuery;
-    }
-  }, [
-    activeTab,
-    applicantsQuery,
-    companiesQuery,
-    customersQuery,
-    executorsQuery,
-  ]);
-
-  const activeSearchQuery = useMemo(() => {
-    switch (activeTab) {
-      case 'executors':
-        return searchExecutorsQuery;
-      case 'applicants':
-        return searchApplicantsQuery;
-      case 'customers':
-        return searchCustomersQuery;
-      case 'companies':
-        return searchCompaniesQuery;
-      default:
-        return searchExecutorsQuery;
-    }
-  }, [
-    activeTab,
-    searchApplicantsQuery,
-    searchCompaniesQuery,
-    searchCustomersQuery,
-    searchExecutorsQuery,
-  ]);
 
   const activeTabLabel = useMemo(
     () => pageConfig.tabs.find(tab => tab.id === activeTab)?.label ?? activeTab,
     [activeTab, pageConfig.tabs],
   );
 
-  const activeTotal = activeQuery.data?.total ?? 0;
+  const activeTotal = listQuery.data?.total ?? 0;
   const reportDisabled =
-    activeQuery.isLoading || activeQuery.isError || activeTotal === 0;
+    listQuery.isLoading || listQuery.isError || activeTotal === 0;
 
-  const executorRows = useMemo(
-    () =>
-      (executorsQuery.data?.items ?? [])
-        .map(normalizePartnerUser)
-        .map(mapPartnerUserToRow),
-    [executorsQuery.data?.items],
-  );
+  const contactRows = useMemo(() => {
+    if (activeTab === 'companies') return [];
 
-  const applicantRows = useMemo(
-    () =>
-      (applicantsQuery.data?.items ?? [])
-        .map(normalizePartnerUser)
-        .map(mapPartnerUserToRow),
-    [applicantsQuery.data?.items],
-  );
+    const items =
+      activeTab === 'executors'
+        ? (executorsQuery.data?.items ?? [])
+        : activeTab === 'applicants'
+          ? (applicantsQuery.data?.items ?? [])
+          : (customersQuery.data?.items ?? []);
 
-  const customerRows = useMemo(
-    () =>
-      (customersQuery.data?.items ?? [])
-        .map(normalizePartnerUser)
-        .map(mapPartnerUserToRow),
-    [customersQuery.data?.items],
-  );
+    return items.map(normalizePartnerUser).map(mapPartnerUserToRow);
+  }, [
+    activeTab,
+    applicantsQuery.data?.items,
+    customersQuery.data?.items,
+    executorsQuery.data?.items,
+  ]);
 
-  const companyRows = useMemo(
-    () =>
-      (companiesQuery.data?.items ?? [])
-        .map(normalizePartnerApplicationCompany)
-        .map(mapApplicationCompanyToRow),
-    [companiesQuery.data?.items],
-  );
+  const companyRows = useMemo(() => {
+    if (activeTab !== 'companies') return [];
+
+    return (companiesQuery.data?.items ?? [])
+      .map(normalizePartnerApplicationCompany)
+      .map(mapApplicationCompanyToRow);
+  }, [activeTab, companiesQuery.data?.items]);
 
   const userFilterLabel = useMemo(() => {
     switch (activeTab) {
@@ -323,12 +304,34 @@ export const ExecutorsPage = () => {
     onPageChange: handlePageChange,
   };
 
+  const userColumnFilter = useMemo<PartnersUserColumnFilter>(
+    () => ({
+      value: userFilterId,
+      options: userSearchOptions,
+      selectedOption: selectedUserOption,
+      label: userFilterLabel,
+      loading: canSearchUsers && searchQueryResult.isFetching,
+      minInputLength: USER_SEARCH_MIN,
+      onSearch: setUserSearchQuery,
+      onChange: handleUserFilterChange,
+    }),
+    [
+      canSearchUsers,
+      handleUserFilterChange,
+      searchQueryResult.isFetching,
+      selectedUserOption,
+      userFilterId,
+      userFilterLabel,
+      userSearchOptions,
+    ],
+  );
+
   const renderContent = () => {
-    if (activeQuery.isLoading) {
+    if (listQuery.isLoading) {
       return <PartnersTableSkeleton />;
     }
 
-    if (activeQuery.isError) {
+    if (listQuery.isError) {
       return (
         <Alert severity="error">
           Не удалось загрузить данные. Попробуйте обновить страницу.
@@ -340,9 +343,10 @@ export const ExecutorsPage = () => {
       case 'executors':
         return (
           <TaskContactsTable
-            items={executorRows}
+            items={contactRows}
             contactColumnLabel={CONTACT_LABELS.executors ?? 'Контакт'}
             emptyMessage={EMPTY_MESSAGES.executors}
+            userFilter={userColumnFilter}
             onInteractionsClick={handleInteractionsClick}
             onPublicationsClick={handlePublicationsClick}
             {...paginationProps}
@@ -352,10 +356,11 @@ export const ExecutorsPage = () => {
       case 'applicants':
         return (
           <TaskContactsTable
-            items={applicantRows}
+            items={contactRows}
             contactColumnLabel={CONTACT_LABELS.applicants ?? 'Кандидат'}
             interactionsColumnLabel="Отклики"
             emptyMessage={EMPTY_MESSAGES.applicants}
+            userFilter={userColumnFilter}
             onInteractionsClick={handleApplicantInteractionsClick}
             onPublicationsClick={handlePublicationsClick}
             {...paginationProps}
@@ -365,9 +370,10 @@ export const ExecutorsPage = () => {
       case 'customers':
         return (
           <TaskContactsTable
-            items={customerRows}
+            items={contactRows}
             contactColumnLabel={CONTACT_LABELS.customers ?? 'Контакт'}
             emptyMessage={EMPTY_MESSAGES.customers}
+            userFilter={userColumnFilter}
             onInteractionsClick={handleInteractionsClick}
             onPublicationsClick={handlePublicationsClick}
             {...paginationProps}
@@ -379,6 +385,7 @@ export const ExecutorsPage = () => {
           <ApplicationCompaniesTable
             items={companyRows}
             emptyMessage={EMPTY_MESSAGES.companies}
+            userFilter={userColumnFilter}
             {...paginationProps}
           />
         );
@@ -424,34 +431,12 @@ export const ExecutorsPage = () => {
             onChange={handleTabChange}
           />
 
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              flexShrink: 0,
-              ml: 'auto',
-            }}
-          >
-            <PartnersReportToolbar
-              onPrint={handlePrint}
-              onExport={handleExport}
-              disabled={reportDisabled}
-              isExporting={isExporting}
-            />
-
-            <FilterAutocomplete
-              value={userFilterId}
-              options={userSearchOptions}
-              selectedOption={selectedUserOption}
-              label={userFilterLabel}
-              loading={canSearchUsers && activeSearchQuery.isFetching}
-              minInputLength={USER_SEARCH_MIN}
-              onSearch={setUserSearchQuery}
-              onChange={handleUserFilterChange}
-              sx={{ width: 280, flex: '0 0 280px' }}
-            />
-          </Stack>
+          <PartnersReportToolbar
+            onPrint={handlePrint}
+            onExport={handleExport}
+            disabled={reportDisabled}
+            isExporting={isExporting}
+          />
         </Stack>
 
         <PartnersPrintHeader

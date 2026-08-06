@@ -19,7 +19,9 @@ import {
   useDeleteMessageMutation,
   useEditMessageMutation,
   useMarkConversationReadMutation,
+  useMessagePinsQuery,
   useMessagesQuery,
+  usePinMessageMutation,
   validateChatMediaFile,
   type ChatConversation,
   type ChatMessage,
@@ -152,10 +154,14 @@ export const useMessenger = () => {
     error: messagesError,
   } = useMessagesQuery(selectedConversationId)
 
+  const { data: pinnedMessages = [] } =
+    useMessagePinsQuery(selectedConversationId)
+
   const createConversation = useCreateConversationMutation()
   const markConversationRead = useMarkConversationReadMutation()
   const deleteMessageMutation = useDeleteMessageMutation()
   const editMessageMutation = useEditMessageMutation()
+  const pinMessageMutation = usePinMessageMutation()
 
   const recipientUserQuery = useGetUserByIdQuery(
     recipientIdParam &&
@@ -186,6 +192,29 @@ export const useMessenger = () => {
   const messages = useMemo(
     () => mergeMessages(historyMessages, liveMessages),
     [historyMessages, liveMessages],
+  )
+
+  const pinnedMessageIds = useMemo(
+    () => new Set(pinnedMessages.map(pin => pin.messageId)),
+    [pinnedMessages],
+  )
+
+  const isMessagePinned = useCallback(
+    (messageId: string) => pinnedMessageIds.has(messageId),
+    [pinnedMessageIds],
+  )
+
+  const onTogglePinMessage = useCallback(
+    (messageId: string, nextPinned: boolean) => {
+      if (!selectedConversationId) return
+
+      pinMessageMutation.mutate({
+        conversationId: selectedConversationId,
+        messageId,
+        isPinned: nextPinned,
+      })
+    },
+    [pinMessageMutation, selectedConversationId],
   )
 
   const selectConversation = useCallback(
@@ -865,6 +894,9 @@ export const useMessenger = () => {
     selectConversation,
     openDraftChat,
     messages,
+    pinnedMessages,
+    isMessagePinned,
+    onTogglePinMessage,
     unreadDividerMessageId,
     currentUserId,
     draft,

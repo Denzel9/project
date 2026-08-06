@@ -275,12 +275,13 @@ export const CalendarTaskList = ({
             minHeight: 0,
             overflowY: 'auto',
             pr: 0.5,
+            scrollbarWidth: 'none',
           }}
         >
           {visibleEvents.map(event => (
             <CalendarTaskListItem
-              key={`${event.task.id}-${event.type}`}
               event={event}
+              key={`${event.task.id}-${event.type}`}
             />
           ))}
 

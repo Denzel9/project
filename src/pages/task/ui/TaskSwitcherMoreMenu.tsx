@@ -1,6 +1,6 @@
 import { MoreVert } from '@mui/icons-material';
 import { Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -8,8 +8,8 @@ import {
   isTaskExecutor,
   isTaskOwner,
   TASK_STATUS_ENUM,
+  useConversationsQuery,
   useCreateTaskMutation,
-  useUpdateTaskMutation,
   type Task,
 } from '@/entities';
 import { useAuthStore } from '@/features';
@@ -20,11 +20,17 @@ import { RequestCancelTaskDialog } from './RequestCancelTaskDialog';
 import { RequestDeadlineExtensionDialog } from './RequestDeadlineExtensionDialog';
 import { TaskTargetPostDialog } from './TaskTargetPostDialog';
 
-type TaskTargetPostMode = 'duplicate';
+type TaskTargetPostMode = 'duplicate' | 'duplicate-same';
 
 type TaskSwitcherMoreMenuProps = {
   task?: Task | null;
   onTaskCreated?: (task: Task) => void;
+};
+
+const getExecutorLabel = (task: Task) => {
+  if (!task.executor) return 'Исполнитель';
+
+  return `${task.executor.name} ${task.executor.lastName}`.trim() || 'Исполнитель';
 };
 
 export const TaskSwitcherMoreMenu = ({
@@ -43,10 +49,13 @@ export const TaskSwitcherMoreMenu = ({
 
   const { mutateAsync: createTask, isPending: isCreating } =
     useCreateTaskMutation();
-  const { mutateAsync: updateTask, isPending: isUpdating } =
-    useUpdateTaskMutation();
 
   const isOwner = Boolean(task && isTaskOwner(task, currentUserId));
+  const isDialogOpen = Boolean(targetPostMode);
+
+  const { data: conversations = [] } = useConversationsQuery(undefined, {
+    enabled: isDialogOpen,
+  });
 
   const pendingAnnulment =
     task?.annulment?.status === 'PENDING' ? task.annulment : null;
@@ -79,51 +88,62 @@ export const TaskSwitcherMoreMenu = ({
 
   const currentPostId = task?.postId || task?.post?.id || null;
 
+  const executorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+
+    if (task?.executorId) {
+      map.set(task.executorId, getExecutorLabel(task));
+    }
+
+    conversations.forEach(conversation => {
+      map.set(conversation.peer.id, conversation.peer.displayName);
+    });
+
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [conversations, task]);
+
   const closeMenu = () => setMenuAnchor(null);
 
-  const handleDuplicate = async () => {
-    if (!task || !currentPostId) return;
-    closeMenu();
+  const handleCloseTargetDialog = () => {
+    setTargetPostMode(null);
+  };
 
-    try {
-      const created = await createTask(
-        buildCreateTaskPayload(task, currentPostId)
-      );
-      setSnackbarOpen(true, 'Задача успешно дублирована');
-      onTaskCreated?.(created);
-    } catch {
-      setSnackbarOpen(true, 'Не удалось дублировать задачу');
+  const handleGoToCreatedTask = (created: Task) => {
+    const postId = created.postId || created.post?.id;
+    const isSamePost = Boolean(postId && postId === currentPostId);
+
+    if (isSamePost && onTaskCreated) {
+      onTaskCreated(created);
+      return;
+    }
+
+    if (postId) {
+      navigate(`${ROUTES.TASK}/${postId}?taskId=${created.id}`);
     }
   };
 
-  const handleTargetPostConfirm = async (postId: string) => {
+  const handleTargetPostConfirm = async ({
+    postId,
+    executorId,
+  }: {
+    postId: string;
+    executorId: string | null;
+  }) => {
     if (!task || !targetPostMode) return;
 
     try {
-      if (targetPostMode === 'duplicate') {
-        const created = await createTask(buildCreateTaskPayload(task, postId));
+      const created = await createTask(
+        buildCreateTaskPayload(task, postId, executorId)
+      );
+
+      if (targetPostMode === 'duplicate-same') {
         setSnackbarOpen(true, 'Задача успешно дублирована');
-        setTargetPostMode(null);
-        navigate(`${ROUTES.TASK}/${postId}?taskId=${created.id}`);
-        return;
       }
 
-      const updated = await updateTask({
-        id: task.id,
-        body: { postId },
-      });
-      setSnackbarOpen(true, 'Задача успешно перенесена');
-      setTargetPostMode(null);
-      navigate(
-        `${ROUTES.TASK}/${updated.postId || postId}?taskId=${updated.id}`
-      );
-    } catch {
-      setSnackbarOpen(
-        true,
-        targetPostMode === 'duplicate'
-          ? 'Не удалось дублировать задачу'
-          : 'Не удалось перенести задачу'
-      );
+      return created;
+    } catch (error) {
+      setSnackbarOpen(true, 'Не удалось дублировать задачу');
+      throw error;
     }
   };
 
@@ -150,7 +170,10 @@ export const TaskSwitcherMoreMenu = ({
           <>
             <MenuItem
               disabled={isCreating}
-              onClick={() => void handleDuplicate()}
+              onClick={() => {
+                closeMenu();
+                setTargetPostMode('duplicate-same');
+              }}
             >
               <Typography>Дублировать</Typography>
             </MenuItem>
@@ -213,12 +236,16 @@ export const TaskSwitcherMoreMenu = ({
       />
 
       <TaskTargetPostDialog
-        open={Boolean(targetPostMode)}
+        open={isDialogOpen}
         mode={targetPostMode ?? 'duplicate'}
+        fixedPostId={currentPostId}
         excludePostId={currentPostId}
-        isPending={isCreating || isUpdating}
-        onClose={() => setTargetPostMode(null)}
+        initialExecutorId={task.executorId}
+        executorOptions={executorOptions}
+        isPending={isCreating}
+        onClose={handleCloseTargetDialog}
         onConfirm={handleTargetPostConfirm}
+        onGoToCreatedTask={handleGoToCreatedTask}
       />
     </>
   );

@@ -69,6 +69,9 @@ export const ChatPage = () => {
     setDraft,
     messages,
     unreadDividerMessageId,
+    pinnedMessages,
+    isMessagePinned,
+    onTogglePinMessage,
     isLoading,
     sendMessage,
     sendTextMessage,
@@ -555,6 +558,9 @@ export const ChatPage = () => {
                 error={error}
                 messages={messages}
                 unreadDividerMessageId={unreadDividerMessageId}
+                pinnedMessages={pinnedMessages}
+                isMessagePinned={isMessagePinned}
+                onTogglePinMessage={onTogglePinMessage}
                 onSend={sendMessage}
                 onDeleteMessage={messageId => void deleteMessage(messageId)}
                 onEditMessage={editMessage}

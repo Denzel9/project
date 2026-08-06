@@ -266,9 +266,7 @@ export const DashboardCommentsPanel = () => {
           )}
 
           <Typography
-            variant="subtitle1"
-            noWrap
-            sx={{ fontWeight: 600 }}
+            variant={selectedItem ? "subtitle1" : "h6"}
           >
             {selectedItem
               ? getTaskDisplayTitle(selectedItem.task)
@@ -427,10 +425,10 @@ export const DashboardCommentsPanel = () => {
               )}
 
               <Chip
-                size="small"
-                variant="outlined"
                 label="Сбросить"
+                variant="outlined"
                 onClick={handleResetFilters}
+                sx={{ flexShrink: 0 }}
               />
             </Stack>
           )}
@@ -504,12 +502,12 @@ export const DashboardCommentsPanel = () => {
                 icon={<ChatBubbleOutlined sx={{ fontSize: 44, color: 'text.disabled' }} />}
               />
               {hasActiveFilters && (
-                <Button
-                  size="small"
+                <Chip
+                  label="Сбросить"
+                  variant="outlined"
                   onClick={handleResetFilters}
-                >
-                  Сбросить фильтры
-                </Button>
+                  sx={{ flexShrink: 0 }}
+                />
               )}
             </Stack>
           )}

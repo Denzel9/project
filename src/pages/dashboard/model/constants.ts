@@ -4,6 +4,8 @@ export const DASHBOARD_TABLE_PAGE_SIZE = 20;
 
 export const MOBILE_DASHBOARD_TABLE_PAGE_SIZE = 6;
 
+export const DASHBOARD_UPCOMING_VIEW_MODE_KEY = 'dashboard-upcoming-view-mode';
+
 export const DASHBOARD_ACTIVITY_PAGE_SIZE = 20;
 
 export const DASHBOARD_COMMENTS_ITEMS_LIMIT = 10;

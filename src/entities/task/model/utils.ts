@@ -547,6 +547,251 @@ export const getIsCompanyAction = (
   return !task.isCompanyAction
 }
 
+type TaskStatusTransitionOptions = {
+  /** Подмена «последнего актора» со страницы задачи (activities). */
+  lastStatusActorId?: string | null
+}
+
+const canActOnTurnBasedStatus = (
+  task: Task,
+  userId: string | null,
+  options?: TaskStatusTransitionOptions,
+) => {
+  if (options?.lastStatusActorId !== undefined) {
+    return Boolean(userId) && options.lastStatusActorId !== userId
+  }
+
+  return isTaskAwaitingUserAction(task, userId)
+}
+
+/**
+ * Разрешённые переходы статуса — те же правила, что на странице задачи (Action.tsx).
+ * Для PENDING_APPROVAL / REVISION без activities используется isTaskAwaitingUserAction.
+ */
+export const getAllowedTaskStatusTransitions = (
+  task: Pick<
+    Task,
+    | 'status'
+    | 'ownerId'
+    | 'executorId'
+    | 'isExecutorApprove'
+    | 'isCompanyAction'
+  >,
+  userId: string | null,
+  options?: TaskStatusTransitionOptions,
+): TaskStatus[] => {
+  if (!userId || !canEditTaskStatus(task as Task, userId)) return []
+  if (!task.executorId || task.isExecutorApprove !== true) return []
+
+  const isOwner = isTaskOwner(task as Task, userId)
+  const isExecutor = isTaskExecutor(task, userId)
+  const canAct = canActOnTurnBasedStatus(task as Task, userId, options)
+  const allowed: TaskStatus[] = []
+
+  switch (task.status) {
+    case TASK_STATUS_ENUM.PREPARING:
+      if (isOwner) allowed.push(TASK_STATUS_ENUM.PENDING_APPROVAL)
+      break
+
+    case TASK_STATUS_ENUM.PENDING_APPROVAL:
+      if (canAct) allowed.push(TASK_STATUS_ENUM.IN_PROGRESS)
+      // «На доработку» — обе стороны
+      allowed.push(TASK_STATUS_ENUM.REVISION)
+      break
+
+    case TASK_STATUS_ENUM.REVISION:
+      if (canAct) {
+        if (isOwner) allowed.push(TASK_STATUS_ENUM.PENDING_APPROVAL)
+        if (isExecutor) allowed.push(TASK_STATUS_ENUM.IN_PROGRESS)
+      }
+      break
+
+    case TASK_STATUS_ENUM.IN_PROGRESS:
+      if (isExecutor) allowed.push(TASK_STATUS_ENUM.CHECKING)
+      break
+
+    case TASK_STATUS_ENUM.CHECKING:
+      if (isOwner) {
+        allowed.push(TASK_STATUS_ENUM.COMPLETED)
+        allowed.push(TASK_STATUS_ENUM.REVISION)
+      }
+      break
+
+    default:
+      break
+  }
+
+  return allowed
+}
+
+export const canTransitionTaskStatus = (
+  task: Pick<
+    Task,
+    | 'status'
+    | 'ownerId'
+    | 'executorId'
+    | 'isExecutorApprove'
+    | 'isCompanyAction'
+  >,
+  userId: string | null,
+  toStatus: TaskStatus,
+  options?: TaskStatusTransitionOptions,
+) => getAllowedTaskStatusTransitions(task, userId, options).includes(toStatus)
+
+type TaskStatusTransitionFields = Pick<
+  Task,
+  | 'status'
+  | 'ownerId'
+  | 'executorId'
+  | 'isExecutorApprove'
+  | 'isCompanyAction'
+>
+
+/**
+ * Почему нельзя менять статус / перейти в конкретный статус.
+ * `null` — переход разрешён (или есть хотя бы один, если `toStatus` не передан).
+ */
+export const getTaskStatusTransitionBlockReason = (
+  task: TaskStatusTransitionFields,
+  userId: string | null,
+  toStatus?: TaskStatus,
+  options?: TaskStatusTransitionOptions,
+): string | null => {
+  if (toStatus !== undefined) {
+    if (canTransitionTaskStatus(task, userId, toStatus, options)) return null
+  } else if (
+    getAllowedTaskStatusTransitions(task, userId, options).length > 0
+  ) {
+    return null
+  }
+
+  if (!userId) {
+    return 'Войдите в аккаунт, чтобы менять статус'
+  }
+
+  if (!canEditTaskStatus(task as Task, userId)) {
+    return 'Смена статуса доступна только заказчику или исполнителю'
+  }
+
+  if (task.status === TASK_STATUS_ENUM.COMPLETED) {
+    return 'Задача уже завершена'
+  }
+
+  if (task.status === TASK_STATUS_ENUM.ANNULLED) {
+    return 'Задача аннулирована'
+  }
+
+  if (!task.executorId) {
+    return 'Назначьте исполнителя'
+  }
+
+  if (task.isExecutorApprove === null) {
+    return 'Ожидается подтверждение исполнителя'
+  }
+
+  if (task.isExecutorApprove === false) {
+    return 'Исполнитель отклонил задачу'
+  }
+
+  const isOwner = isTaskOwner(task as Task, userId)
+  const isExecutor = isTaskExecutor(task, userId)
+  const canAct = canActOnTurnBasedStatus(task as Task, userId, options)
+
+  if (toStatus !== undefined) {
+    switch (task.status) {
+      case TASK_STATUS_ENUM.PREPARING:
+        if (
+          toStatus === TASK_STATUS_ENUM.PENDING_APPROVAL &&
+          !isOwner
+        ) {
+          return 'На согласование может отправить только заказчик'
+        }
+        break
+
+      case TASK_STATUS_ENUM.PENDING_APPROVAL:
+        if (
+          toStatus === TASK_STATUS_ENUM.IN_PROGRESS &&
+          !canAct
+        ) {
+          return 'Сейчас ход другой стороны'
+        }
+        break
+
+      case TASK_STATUS_ENUM.REVISION:
+        if (!canAct) {
+          return 'Сейчас ход другой стороны'
+        }
+        if (
+          toStatus === TASK_STATUS_ENUM.PENDING_APPROVAL &&
+          !isOwner
+        ) {
+          return 'На согласование может отправить только заказчик'
+        }
+        if (
+          toStatus === TASK_STATUS_ENUM.IN_PROGRESS &&
+          !isExecutor
+        ) {
+          return 'В работу может взять только исполнитель'
+        }
+        break
+
+      case TASK_STATUS_ENUM.IN_PROGRESS:
+        if (
+          toStatus === TASK_STATUS_ENUM.CHECKING &&
+          !isExecutor
+        ) {
+          return 'На проверку может отправить только исполнитель'
+        }
+        if (toStatus === TASK_STATUS_ENUM.REVISION) {
+          return 'Из «В работе» нельзя отправить на доработку'
+        }
+        break
+
+      case TASK_STATUS_ENUM.CHECKING:
+        if (!isOwner) {
+          return 'Завершить или отправить на доработку может только заказчик'
+        }
+        break
+
+      default:
+        break
+    }
+
+    return 'Нельзя перевести задачу в этот статус'
+  }
+
+  switch (task.status) {
+    case TASK_STATUS_ENUM.PREPARING:
+      if (!isOwner) {
+        return 'На согласование может отправить только заказчик'
+      }
+      break
+
+    case TASK_STATUS_ENUM.REVISION:
+      if (!canAct) {
+        return 'Сейчас ход другой стороны'
+      }
+      break
+
+    case TASK_STATUS_ENUM.IN_PROGRESS:
+      if (!isExecutor) {
+        return 'На проверку может отправить только исполнитель'
+      }
+      break
+
+    case TASK_STATUS_ENUM.CHECKING:
+      if (!isOwner) {
+        return 'Завершить или отправить на доработку может только заказчик'
+      }
+      break
+
+    default:
+      break
+  }
+
+  return 'Нет доступных переходов статуса'
+}
+
 export const COMMENT_MODIFY_WINDOW_MS = 60_000
 
 export const canManageComment = (
@@ -689,18 +934,25 @@ export const normalizeTaskWithCommentsItem = (
 export const buildCreateTaskPayload = (
   task: Task,
   postId: string,
+  executorId?: string | null,
 ): CreateTaskDto => ({
   postId,
-  ...(task.executorId ? { executorId: task.executorId } : {}),
+  ...(executorId ? { executorId } : {}),
   description: task.description,
-  finalDate: task.finalDate,
   photoCount: task.photoCount,
   videoCount: task.videoCount,
   deliverables: task.deliverables,
   cooperationDetails: task.cooperationDetails,
   bloggerRequirements: task.bloggerRequirements,
   brief: task.brief,
-  media: task.media,
+  // Без id/kind: CreateTaskDto на бэке принимает только url/key/size/mimeType
+  // (forbidNonWhitelisted). Ключи старой задачи бэкенд скопирует в новую.
+  media: (task.media ?? []).map(({ url, key, size, mimeType }) => ({
+    url,
+    key,
+    size,
+    mimeType,
+  })),
   urgent: task.urgent,
   title: task.title,
 })

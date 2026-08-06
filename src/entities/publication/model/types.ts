@@ -52,6 +52,7 @@ export type PublicationListParams = {
   postId?: string
   taskId?: string
   executorId?: string
+  platform?: Platform
   q?: string
   executorQ?: string
   page?: number

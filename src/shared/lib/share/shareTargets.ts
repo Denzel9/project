@@ -44,5 +44,8 @@ export const SHARE_TARGETS: ShareTarget[] = [
 export const getPostShareUrl = (postId: string) =>
   `${window.location.origin}${ROUTES.POST}/${postId}`;
 
+export const getProfileShareUrl = (userId: string) =>
+  `${window.location.origin}${ROUTES.PROFILE}?userId=${userId}`;
+
 export const openShareUrl = (url: string) =>
   window.open(url, '_blank', 'noopener,noreferrer');

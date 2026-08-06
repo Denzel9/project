@@ -5,7 +5,7 @@ import {
   ChatOutlined,
   Close,
   FilterList,
-  OpenInNewOutlined,
+  PushPinOutlined,
   Search,
 } from '@mui/icons-material';
 import {
@@ -13,8 +13,14 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Divider,
   IconButton,
-  MenuItem,
+  List,
+  ListItemButton,
+  ListItemText,
   Stack,
   TextField,
   Tooltip,
@@ -22,17 +28,26 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { format } from 'date-fns';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import {
-  sortConversationsByUnread,
   useConversationsQuery,
+  useMessagePinsQuery,
   useSearchMessagesQuery,
+  type ChatConversation,
   type ChatMessage,
+  type ChatMessagePin,
 } from '@/entities/chat';
-import { ChatContactSearch } from '@/features/chat';
 import { useAuthStore } from '@/features';
+import { ChatContactSearch } from '@/features/chat';
 import { extractChatTaskTzMessages } from '@/pages/chat/model/chatTaskTzMessages';
 import { useChatPeerTasks } from '@/pages/chat/model/hooks/useChatPeerTasks';
 import { ChatAttachmentsPanel } from '@/pages/chat/ui/ChatAttachmentsPanel';
@@ -75,6 +90,7 @@ export const DashboardChatsPanel = () => {
   const [searchItems, setSearchItems] = useState<ChatMessage[]>([]);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
   const [isTaskTzOpen, setIsTaskTzOpen] = useState(false);
+  const [pinnedDialogOpen, setPinnedDialogOpen] = useState(false);
   const [peerOptions, setPeerOptions] = useState<
     { id: string; displayName: string }[]
   >([]);
@@ -123,7 +139,16 @@ export const DashboardChatsPanel = () => {
   }, [allConversations, data]);
 
   const recentConversations = useMemo(() => {
-    const sorted = sortConversationsByUnread(data ?? []);
+    const sorted = [...(data ?? [])].sort((a: ChatConversation, b: ChatConversation) => {
+      const aHasUnread = a.unreadCount > 0;
+      const bHasUnread = b.unreadCount > 0;
+
+      if (aHasUnread !== bHasUnread) {
+        return aHasUnread ? -1 : 1;
+      }
+
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
 
     return hasActiveFilters ? sorted : sorted.slice(0, DASHBOARD_CHATS_LIMIT);
   }, [data, hasActiveFilters]);
@@ -167,6 +192,35 @@ export const DashboardChatsPanel = () => {
     sendMessage,
     isSending,
   } = useDashboardChatThread({ conversationId: selectedConversationId });
+
+  const { data: pinnedMessages = [] } = useMessagePinsQuery(
+    selectedConversationId,
+  );
+
+  const getPinPreview = useCallback((pin: ChatMessagePin) => {
+    const trimmed = pin.content.trim();
+
+    if (trimmed) {
+      const max = 80;
+      return trimmed.length > max ? `${trimmed.slice(0, max)}...` : trimmed;
+    }
+
+    return `Медиа (${pin.mediaCount})`;
+  }, []);
+
+  const handleJumpToPinnedMessage = useCallback((messageId: string) => {
+    setPinnedDialogOpen(false);
+    setIsThreadSearchOpen(false);
+
+    const container = messagesContainerRef.current;
+    const el = container?.querySelector(
+      `#dashboard-chat-message-${messageId}`,
+    ) as HTMLElement | null;
+
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
 
   const { peerAssignedTasks } = useChatPeerTasks(
     selectedConversation?.peer?.id,
@@ -283,6 +337,7 @@ export const DashboardChatsPanel = () => {
       setThreadSearchQuery('');
       setIsAttachmentsOpen(false);
       setIsTaskTzOpen(false);
+      setPinnedDialogOpen(false);
     }, 0);
   }, [selectedConversationId]);
 
@@ -382,7 +437,7 @@ export const DashboardChatsPanel = () => {
           )}
 
           <Typography
-            variant="subtitle1"
+            variant={selectedConversation ? "subtitle1" : "h6"}
             noWrap
             sx={{ fontWeight: 600 }}
           >
@@ -451,15 +506,6 @@ export const DashboardChatsPanel = () => {
               </Tooltip>
             </>
           )}
-
-          {!selectedConversation && (
-            <IconButton
-              aria-label="Открыть чаты"
-              onClick={() => navigate(ROUTES.CHAT)}
-            >
-              <OpenInNewOutlined />
-            </IconButton>
-          )}
         </Stack>
       </Stack>
 
@@ -475,38 +521,10 @@ export const DashboardChatsPanel = () => {
             borderColor: 'divider',
           }}
         >
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1}
-            sx={{ alignItems: { sm: 'center' } }}
-          >
-            <TextField
-              select
-              fullWidth
-              size="small"
-              label="Собеседник"
-              value={peerId}
-              onChange={event => setPeerId(event.target.value)}
-              sx={{ minWidth: 0 }}
-            >
-              <MenuItem value="all">Все собеседники</MenuItem>
-              {peerOptions.map(peer => (
-                <MenuItem
-                  key={peer.id}
-                  value={peer.id}
-                >
-                  {peer.displayName}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Box sx={{ minWidth: 0, flex: 1, width: '100%' }}>
-              <ChatContactSearch
-                size="small"
-                onSelect={handleSelectContact}
-              />
-            </Box>
-          </Stack>
+          <ChatContactSearch
+            size="small"
+            onSelect={handleSelectContact}
+          />
 
           {hasActiveFilters && (
             <Stack
@@ -523,10 +541,10 @@ export const DashboardChatsPanel = () => {
               )}
 
               <Chip
-                size="small"
                 label="Сбросить"
+                variant="outlined"
                 onClick={handleResetFilters}
-                sx={{ bgcolor: 'transparent' }}
+                sx={{ flexShrink: 0 }}
               />
             </Stack>
           )}
@@ -539,6 +557,7 @@ export const DashboardChatsPanel = () => {
             flex: 1,
             minHeight: 0,
             overflow: 'auto',
+            scrollbarWidth: 'none',
           }}
         >
           {isLoading && (
@@ -583,9 +602,11 @@ export const DashboardChatsPanel = () => {
             !isError &&
             recentConversations.map(conversation => (
               <ConversationItem
+                isSelected={false}
                 key={conversation.id}
                 conversation={conversation}
-                isSelected={false}
+                showActions={false}
+                showPinIcon={false}
                 onSelect={() => setSelectedConversationId(conversation.id)}
               />
             ))}
@@ -606,6 +627,73 @@ export const DashboardChatsPanel = () => {
               pr: 0.5,
             }}
           >
+            {!isDesktopSearch && pinnedMessages.length > 0 && (
+              <Box
+                sx={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10,
+                  px: 1.5,
+                  py: 1.25,
+                  mb: 1,
+                  bgcolor: 'common.white',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: '16px',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        color: 'text.secondary',
+                        fontWeight: 600,
+                        mb: 0.5,
+                      }}
+                    >
+                      Закреплённые · {pinnedMessages.length}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.primary',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {getPinPreview(pinnedMessages[0])}
+                    </Typography>
+                  </Box>
+
+                  <Tooltip title="Посмотреть закреплённые">
+                    <IconButton
+                      size="small"
+                      aria-label="Посмотреть закреплённые"
+                      onClick={() => setPinnedDialogOpen(true)}
+                      sx={{
+                        flexShrink: 0,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                      }}
+                    >
+                      <PushPinOutlined fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+            )}
+
             {isDesktopSearch ? (
               <>
                 {isSearchLoading && searchItems.length === 0 && (
@@ -751,6 +839,7 @@ export const DashboardChatsPanel = () => {
                   messages.map(message => (
                     <Box
                       key={message.id}
+                      id={`dashboard-chat-message-${message.id}`}
                       sx={{ mb: 1 }}
                     >
                       <ChatMessageBubble
@@ -784,6 +873,61 @@ export const DashboardChatsPanel = () => {
               placeholder="Написать сообщение…"
             />
           )}
+
+          <Dialog
+            open={pinnedDialogOpen}
+            onClose={() => setPinnedDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Закреплённые сообщения</DialogTitle>
+            <DialogContent>
+              {pinnedMessages.length === 0 ? (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ py: 2 }}
+                >
+                  Нет закреплённых сообщений
+                </Typography>
+              ) : (
+                <List disablePadding>
+                  {pinnedMessages.map(pin => (
+                    <Box key={pin.messageId}>
+                      <ListItemButton
+                        onClick={() => handleJumpToPinnedMessage(pin.messageId)}
+                      >
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {getPinPreview(pin)}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {format(new Date(pin.pinnedAt), 'dd.MM HH:mm')}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                      <Divider />
+                    </Box>
+                  ))}
+                </List>
+              )}
+            </DialogContent>
+          </Dialog>
         </Stack>
       )}
 

@@ -19,7 +19,6 @@ import {
   Tooltip,
   Typography,
   useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -116,8 +115,7 @@ export const DashboardCommentGroupCard = ({
   onToggle,
   onCommentSuccess,
 }: DashboardCommentGroupCardProps) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const currentUserId = useAuthStore(state => state.id);
   const messagesRef = useRef<HTMLDivElement>(null);
   const skipScrollToBottomRef = useRef(false);
@@ -417,7 +415,7 @@ export const DashboardCommentGroupCard = ({
             boxShadow: expanded
               ? theme => `0 8px 24px ${theme.palette.primary.main}12`
               : '0 1px 2px rgba(15, 23, 42, 0.04)',
-            transition: theme.transitions.create(
+            transition: theme => theme.transitions.create(
               ['box-shadow', 'border-color', 'flex'],
               { duration: DASHBOARD_COMMENT_CARD_COLLAPSE_MS }
             ),

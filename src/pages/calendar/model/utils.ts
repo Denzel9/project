@@ -1,6 +1,8 @@
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
+import { ROUTES } from '@/shared'
+
 import { DEFAULT_CALENDAR_FILTERS } from './constants'
 
 import type {
@@ -71,6 +73,16 @@ export const getEventLabel = (
 export const isCalendarTaskOverdue = (task: TaskCalendarItem) =>
   Boolean(task.finalDate) &&
   dayjs.utc(task.finalDate).isBefore(dayjs.utc(), 'day')
+
+export const getCalendarTaskPath = (task: TaskCalendarItem) => {
+  const userId = task.executor?.id || 'unassigned'
+  const params = new URLSearchParams({
+    userId,
+    taskId: task.id,
+  })
+
+  return `${ROUTES.TASK}/${task.postId}?${params.toString()}`
+}
 
 export const buildCalendarPostMetaMap = (
   tasks: TaskCalendarItem[],

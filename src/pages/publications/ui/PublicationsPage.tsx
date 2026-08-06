@@ -30,10 +30,13 @@ import { fetchPublicationsForReport } from '../model/fetchPublicationsForReport'
 import {
   getPublicationExecutorOptions,
   getPublicationPostOptions,
+  getPublicationTitleOptions,
   hasActivePublicationFilters,
   parsePublicationSearchParams,
+  PUBLICATION_PLATFORM_FILTER_OPTIONS,
   toPublicationsParams,
   type PublicationExecutorFilter,
+  type PublicationPlatformFilter,
   type PublicationPostFilter,
 } from '../model/utils';
 
@@ -43,7 +46,10 @@ import { PublicationsFilter } from './PublicationsFilter';
 import { PublicationsPrintHeader } from './PublicationsPrintHeader';
 import { PublicationTable } from './PublicationTable';
 
-import type { PublicationViewMode } from '../model/types';
+import type {
+  PublicationTableColumnFilters,
+  PublicationViewMode,
+} from '../model/types';
 
 const FILTER_SEARCH_MIN = 2;
 const FILTER_SEARCH_LIMIT = 20;
@@ -80,12 +86,17 @@ export const PublicationsPage = () => {
   const [executorId, setExecutorId] = useState<PublicationExecutorFilter>(
     deepLinkFilters.executorId ?? 'all'
   );
+  const [platform, setPlatform] = useState<PublicationPlatformFilter>('all');
   const [postSearchQuery, setPostSearchQuery] = useState('');
   const [executorSearchQuery, setExecutorSearchQuery] = useState('');
+  const [titleSearchQuery, setTitleSearchQuery] = useState('');
   const [selectedPostOption, setSelectedPostOption] =
     useState<FilterAutocompleteOption | null>(null);
   const [selectedExecutorOption, setSelectedExecutorOption] =
     useState<FilterAutocompleteOption | null>(null);
+  const [selectedTitleOption, setSelectedTitleOption] =
+    useState<FilterAutocompleteOption | null>(null);
+  const [isTableFilterRowOpen, setIsTableFilterRowOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [reportPublications, setReportPublications] = useState<
@@ -123,9 +134,10 @@ export const PublicationsPage = () => {
         q,
         postId,
         executorId,
+        platform,
         taskId: deepLinkFilters.taskId,
       }),
-    [q, postId, executorId, deepLinkFilters.taskId]
+    [q, postId, executorId, platform, deepLinkFilters.taskId]
   );
 
   const paginationResetKey = useMemo(
@@ -135,10 +147,11 @@ export const PublicationsPage = () => {
         q,
         postId,
         executorId,
+        platform,
         deepLinkFilters.taskId ?? '',
         deepLinkFilters.postId ?? '',
       ].join('|'),
-    [viewMode, q, postId, executorId, deepLinkFilters]
+    [viewMode, q, postId, executorId, platform, deepLinkFilters]
   );
 
   const [tablePageState, setTablePageState] = useState({
@@ -183,16 +196,30 @@ export const PublicationsPage = () => {
   const canSearchPosts = postSearchQuery.trim().length >= FILTER_SEARCH_MIN;
   const canSearchExecutors =
     executorSearchQuery.trim().length >= FILTER_SEARCH_MIN;
+  const canSearchTitles = titleSearchQuery.trim().length >= FILTER_SEARCH_MIN;
+  const allowOptionSearch = !isTableView || isTableFilterRowOpen;
 
-  const { data: postSearchData, isFetching: isPostSearchFetching } =
-    usePublicationsQuery(
-      {
-        q: postSearchQuery.trim(),
-        page: 1,
-        limit: FILTER_SEARCH_LIMIT,
-      },
-      { enabled: canSearchPosts },
-    );
+  const titleQ = titleSearchQuery.trim();
+  const postQ = postSearchQuery.trim();
+  const sharedTitlePostQ =
+    titleQ.length >= FILTER_SEARCH_MIN
+      ? titleQ
+      : postQ.length >= FILTER_SEARCH_MIN
+        ? postQ
+        : '';
+  const canSearchTitleOrPost = sharedTitlePostQ.length >= FILTER_SEARCH_MIN;
+
+  const {
+    data: titlePostSearchData,
+    isFetching: isTitlePostSearchFetching,
+  } = usePublicationsQuery(
+    {
+      q: sharedTitlePostQ,
+      page: 1,
+      limit: FILTER_SEARCH_LIMIT,
+    },
+    { enabled: canSearchTitleOrPost && allowOptionSearch },
+  );
 
   const { data: executorSearchData, isFetching: isExecutorSearchFetching } =
     usePublicationsQuery(
@@ -201,7 +228,7 @@ export const PublicationsPage = () => {
         page: 1,
         limit: FILTER_SEARCH_LIMIT,
       },
-      { enabled: canSearchExecutors },
+      { enabled: canSearchExecutors && allowOptionSearch },
     );
 
   const infinitePublications = useMemo(
@@ -220,18 +247,26 @@ export const PublicationsPage = () => {
   const visiblePublications = rawPublications;
 
   const postOptions = useMemo(() => {
-    if (!canSearchPosts) return [];
+    if (!canSearchPosts || !allowOptionSearch || sharedTitlePostQ !== postQ) {
+      return [];
+    }
 
-    return getPublicationPostOptions(postSearchData?.items ?? []).map(
+    return getPublicationPostOptions(titlePostSearchData?.items ?? []).map(
       ([id, label]) => ({
         id,
         label,
       }),
     );
-  }, [canSearchPosts, postSearchData?.items]);
+  }, [
+    allowOptionSearch,
+    canSearchPosts,
+    postQ,
+    sharedTitlePostQ,
+    titlePostSearchData?.items,
+  ]);
 
   const executorOptions = useMemo(() => {
-    if (!canSearchExecutors) return [];
+    if (!canSearchExecutors || !allowOptionSearch) return [];
 
     return getPublicationExecutorOptions(executorSearchData?.items ?? []).map(
       ([id, label]) => ({
@@ -239,42 +274,95 @@ export const PublicationsPage = () => {
         label,
       }),
     );
-  }, [canSearchExecutors, executorSearchData?.items]);
+  }, [allowOptionSearch, canSearchExecutors, executorSearchData?.items]);
 
-  const handlePostChange = (value: PublicationPostFilter) => {
-    setPostId(value);
-
-    if (value === 'all') {
-      setSelectedPostOption(null);
-      return;
+  const titleOptions = useMemo(() => {
+    if (!canSearchTitles || !allowOptionSearch || sharedTitlePostQ !== titleQ) {
+      return [];
     }
 
-    const fromSearch = postOptions.find(option => option.id === value);
-    setSelectedPostOption(current =>
-      fromSearch ?? (current?.id === value ? current : null),
+    return getPublicationTitleOptions(titlePostSearchData?.items ?? []).map(
+      ([id, label]) => ({
+        id,
+        label,
+      }),
     );
-  };
+  }, [
+    allowOptionSearch,
+    canSearchTitles,
+    sharedTitlePostQ,
+    titlePostSearchData?.items,
+    titleQ,
+  ]);
 
-  const handleExecutorChange = (value: PublicationExecutorFilter) => {
-    setExecutorId(value);
+  const handlePostChange = useCallback(
+    (value: PublicationPostFilter) => {
+      setPostId(value);
 
-    if (value === 'all') {
-      setSelectedExecutorOption(null);
-      return;
-    }
+      if (value === 'all') {
+        setSelectedPostOption(null);
+        return;
+      }
 
-    const fromSearch = executorOptions.find(option => option.id === value);
-    setSelectedExecutorOption(current =>
-      fromSearch ?? (current?.id === value ? current : null),
+      setSelectedPostOption(current => {
+        const fromSearch = postOptions.find(option => option.id === value);
+
+        return fromSearch ?? (current?.id === value ? current : null);
+      });
+    },
+    [postOptions],
+  );
+
+  const handleExecutorChange = useCallback(
+    (value: PublicationExecutorFilter) => {
+      setExecutorId(value);
+
+      if (value === 'all') {
+        setSelectedExecutorOption(null);
+        return;
+      }
+
+      setSelectedExecutorOption(current => {
+        const fromSearch = executorOptions.find(option => option.id === value);
+
+        return fromSearch ?? (current?.id === value ? current : null);
+      });
+    },
+    [executorOptions],
+  );
+
+  const handleTitleChange = useCallback(
+    (value: string) => {
+      if (value === 'all') {
+        setQ('');
+        setSelectedTitleOption(null);
+        return;
+      }
+
+      setQ(value);
+      setSelectedTitleOption(current => {
+        const fromSearch = titleOptions.find(option => option.id === value);
+
+        return fromSearch ?? (current?.id === value ? current : { id: value, label: value });
+      });
+    },
+    [titleOptions],
+  );
+
+  const handlePlatformChange = useCallback((value: string) => {
+    setPlatform(
+      value === 'all' ? 'all' : (value as PublicationPlatformFilter),
     );
-  };
+  }, []);
 
   const hasActiveFilters = hasActivePublicationFilters({
     q,
     postId,
     executorId,
+    platform,
   });
-  const isFilterEmpty = !q.trim() && postId === 'all' && executorId === 'all';
+  const isFilterEmpty =
+    !q.trim() && postId === 'all' && executorId === 'all' && platform === 'all';
   const isLoading = useServerTablePagination
     ? isTableLoading
     : isInfiniteLoading;
@@ -282,7 +370,9 @@ export const PublicationsPage = () => {
   const isInitialLoading = isLoading && rawPublications.length === 0;
   const isEmpty =
     !isInitialLoading && !isError && visiblePublications.length === 0;
-  const showFilter = Boolean(rawPublications.length || !isFilterEmpty);
+  const showFilter = Boolean(
+    rawPublications.length || !isFilterEmpty || isTableView,
+  );
   const tableReportDisabled = isLoading || isEmpty;
 
   const reportOptions = useMemo(
@@ -290,9 +380,10 @@ export const PublicationsPage = () => {
       q,
       postId,
       executorId,
+      platform,
       taskId: deepLinkFilters.taskId,
     }),
-    [q, postId, executorId, deepLinkFilters.taskId]
+    [q, postId, executorId, platform, deepLinkFilters.taskId]
   );
 
   const printPublications = reportPublications ?? visiblePublications;
@@ -369,10 +460,93 @@ export const PublicationsPage = () => {
     [handleExport, handlePrint, isExporting, isPrinting, tableReportDisabled]
   );
 
+  const columnFilters = useMemo<PublicationTableColumnFilters>(
+    () => ({
+      title: {
+        value: q.trim() || 'all',
+        options: titleOptions,
+        selectedOption: selectedTitleOption,
+        label: 'Название',
+        placeholder: 'Все названия',
+        loading:
+          canSearchTitles &&
+          allowOptionSearch &&
+          sharedTitlePostQ === titleQ &&
+          isTitlePostSearchFetching,
+        minInputLength: FILTER_SEARCH_MIN,
+        onSearch: setTitleSearchQuery,
+        onChange: handleTitleChange,
+      },
+      post: {
+        value: postId,
+        options: postOptions,
+        selectedOption: selectedPostOption,
+        label: 'Задача',
+        placeholder: 'Все задачи',
+        loading:
+          canSearchPosts &&
+          allowOptionSearch &&
+          sharedTitlePostQ === postQ &&
+          isTitlePostSearchFetching,
+        minInputLength: FILTER_SEARCH_MIN,
+        onSearch: setPostSearchQuery,
+        onChange: handlePostChange,
+      },
+      platform: {
+        value: platform,
+        options: PUBLICATION_PLATFORM_FILTER_OPTIONS,
+        label: 'Площадка',
+        placeholder: 'Все площадки',
+        onChange: handlePlatformChange,
+      },
+      executor: {
+        value: executorId,
+        options: executorOptions,
+        selectedOption: selectedExecutorOption,
+        label: 'Исполнитель',
+        placeholder: 'Все исполнители',
+        loading:
+          canSearchExecutors && allowOptionSearch && isExecutorSearchFetching,
+        minInputLength: FILTER_SEARCH_MIN,
+        onSearch: setExecutorSearchQuery,
+        onChange: handleExecutorChange,
+      },
+    }),
+    [
+      allowOptionSearch,
+      canSearchExecutors,
+      canSearchPosts,
+      canSearchTitles,
+      executorId,
+      executorOptions,
+      handleExecutorChange,
+      handlePlatformChange,
+      handlePostChange,
+      handleTitleChange,
+      isExecutorSearchFetching,
+      isTitlePostSearchFetching,
+      platform,
+      postId,
+      postOptions,
+      postQ,
+      q,
+      selectedExecutorOption,
+      selectedPostOption,
+      selectedTitleOption,
+      sharedTitlePostQ,
+      titleOptions,
+      titleQ,
+    ],
+  );
+
   const handleResetFilters = () => {
     setQ('');
     setPostId('all');
     setExecutorId('all');
+    setPlatform('all');
+    setSelectedTitleOption(null);
+    setSelectedPostOption(null);
+    setSelectedExecutorOption(null);
   };
 
   const handleTablePageChange = (_: unknown, nextPage: number) => {
@@ -428,10 +602,18 @@ export const PublicationsPage = () => {
               executorOptions={executorOptions}
               selectedPostOption={selectedPostOption}
               selectedExecutorOption={selectedExecutorOption}
-              isPostSearchLoading={canSearchPosts && isPostSearchFetching}
-              isExecutorSearchLoading={
-                canSearchExecutors && isExecutorSearchFetching
+              isPostSearchLoading={
+                canSearchPosts &&
+                allowOptionSearch &&
+                sharedTitlePostQ === postQ &&
+                isTitlePostSearchFetching
               }
+              isExecutorSearchLoading={
+                canSearchExecutors &&
+                allowOptionSearch &&
+                isExecutorSearchFetching
+              }
+              hasActiveFilters={hasActiveFilters}
               tableReport={tableReport}
               onQueryChange={setQ}
               onPostChange={handlePostChange}
@@ -439,6 +621,7 @@ export const PublicationsPage = () => {
               onPostSearch={setPostSearchQuery}
               onExecutorSearch={setExecutorSearchQuery}
               onViewModeChange={setViewMode}
+              onResetFilters={handleResetFilters}
             />
           </Box>
         )}
@@ -473,7 +656,7 @@ export const PublicationsPage = () => {
           </Box>
         )}
 
-        {isEmpty && (
+        {isEmpty && !isTableView && (
           <Box
             sx={{
               py: 8,
@@ -518,7 +701,8 @@ export const PublicationsPage = () => {
 
         {!isInitialLoading &&
           !isError &&
-          (visiblePublications.length > 0 ||
+          (isTableView ||
+            visiblePublications.length > 0 ||
             Boolean(reportPublications?.length)) && (
             <Box
               ref={contentRef}
@@ -530,7 +714,7 @@ export const PublicationsPage = () => {
                 minHeight: isTableView ? 0 : undefined,
               }}
             >
-              {!isTableView && (
+              {!isTableView && visiblePublications.length > 0 && (
                 <Box
                   sx={{
                     gap: 1.5,
@@ -578,6 +762,13 @@ export const PublicationsPage = () => {
                         }
                         serverPagination={useServerTablePagination}
                         onPageChange={handleTablePageChange}
+                        onFilterRowOpenChange={setIsTableFilterRowOpen}
+                        columnFilters={columnFilters}
+                        emptyMessage={
+                          hasActiveFilters
+                            ? 'По выбранным фильтрам ничего не найдено'
+                            : 'Публикаций пока нет'
+                        }
                       />
                     </Box>
                   )}

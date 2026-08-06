@@ -1,13 +1,9 @@
-import { Close, Whatshot } from '@mui/icons-material';
-import { Button, IconButton, MenuItem, Stack, TextField } from '@mui/material';
+import { Whatshot } from '@mui/icons-material';
+import { Chip, IconButton, MenuItem, Stack, TextField } from '@mui/material';
 
 import {
-  PlacementFormatEnum,
-  PlatformEnum,
-  getPlacementFormatLabel,
-  getPlatformLabel,
-} from '@/entities/post';
-import { AssigneeFilterMenu } from '@/features';
+  AssigneeFilterMenu
+} from '@/features';
 import { FilterAutocomplete } from '@/shared';
 
 import { hasActiveCalendarFilters } from '../model/utils';
@@ -19,8 +15,6 @@ import type {
 
 const SELECT_WIDTH = 240;
 
-const PLATFORM_OPTIONS = Object.values(PlatformEnum);
-const PLACEMENT_FORMAT_OPTIONS = Object.values(PlacementFormatEnum);
 
 type CalendarFilterFieldsProps = {
   value: CalendarFiltersState;
@@ -55,95 +49,45 @@ export const CalendarFilterFields = ({
       sx={
         stacked
           ? undefined
-          : { flexWrap: 'wrap', alignItems: 'center', gap: 2 }
+          : { flexWrap: 'wrap', alignItems: 'center', gap: 2, justifyContent: 'space-between' }
       }
+    ><Stack
+      direction="row"
+      spacing={1}
+      sx={{
+        alignItems: 'center',
+        ...(stacked && { pt: 0.5 }),
+      }}
     >
-      <TextField
-        select
-        fullWidth={stacked}
-        size="small"
-        label="Тип событий"
-        value={value.eventType}
-        sx={stacked ? undefined : { width: SELECT_WIDTH }}
-        onChange={event =>
-          onChange({
-            eventType: event.target.value as CalendarFiltersState['eventType'],
-          })
-        }
-      >
-        <MenuItem value="all">Все</MenuItem>
-        <MenuItem value="created">Создано в этот день</MenuItem>
-        <MenuItem value="deadline">Дедлайн в этот день</MenuItem>
-      </TextField>
+        <TextField
+          select
+          fullWidth={stacked}
+          size="small"
+          label="Тип событий"
+          value={value.eventType}
+          sx={stacked ? undefined : { width: SELECT_WIDTH }}
+          onChange={event =>
+            onChange({
+              eventType: event.target.value as CalendarFiltersState['eventType'],
+            })
+          }
+        >
+          <MenuItem value="all">Все</MenuItem>
+          <MenuItem value="created">Создано в этот день</MenuItem>
+          <MenuItem value="deadline">Дедлайн в этот день</MenuItem>
+        </TextField>
 
-      <FilterAutocomplete
-        label={companyLabel}
-        value={value.companyId}
-        options={companyOptions}
-        loading={isLoadingCompanies}
-        onChange={companyId => onChange({ companyId })}
-        sx={stacked ? undefined : { width: SELECT_WIDTH, flex: '0 0 auto' }}
-      />
+        <FilterAutocomplete
+          size="small"
+          label={companyLabel}
+          value={value.companyId}
+          options={companyOptions}
+          loading={isLoadingCompanies}
+          onChange={companyId => onChange({ companyId })}
+          sx={stacked ? undefined : { width: SELECT_WIDTH, flex: '0 0 auto' }}
+        />
 
-      <TextField
-        select
-        fullWidth={stacked}
-        size="small"
-        label="Платформа"
-        value={value.platform}
-        disabled={!isCompany}
-        sx={stacked ? undefined : { width: SELECT_WIDTH }}
-        onChange={event =>
-          onChange({
-            platform: event.target.value as CalendarFiltersState['platform'],
-          })
-        }
-      >
-        <MenuItem value="all">Все</MenuItem>
-        {PLATFORM_OPTIONS.map(platform => (
-          <MenuItem
-            key={platform}
-            value={platform}
-          >
-            {getPlatformLabel(platform)}
-          </MenuItem>
-        ))}
-      </TextField>
 
-      <TextField
-        select
-        fullWidth={stacked}
-        size="small"
-        label="Тип контента"
-        value={value.placementFormat}
-        disabled={!isCompany}
-        sx={stacked ? undefined : { width: SELECT_WIDTH }}
-        onChange={event =>
-          onChange({
-            placementFormat: event.target
-              .value as CalendarFiltersState['placementFormat'],
-          })
-        }
-      >
-        <MenuItem value="all">Все</MenuItem>
-        {PLACEMENT_FORMAT_OPTIONS.map(format => (
-          <MenuItem
-            key={format}
-            value={format}
-          >
-            {getPlacementFormatLabel(format)}
-          </MenuItem>
-        ))}
-      </TextField>
-
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{
-          alignItems: 'center',
-          ...(stacked && { pt: 0.5 }),
-        }}
-      >
         <IconButton
           aria-label={
             value.urgentOnly ? 'Показать все задачи' : 'Только срочные задачи'
@@ -154,19 +98,18 @@ export const CalendarFilterFields = ({
           <Whatshot color={value.urgentOnly ? 'error' : 'action'} />
         </IconButton>
 
-        <AssigneeFilterMenu isCompany={isCompany} />
 
         {showReset && (
-          <Button
-            size="small"
-            startIcon={<Close />}
+          <Chip
+            label="Сбросить"
+            variant="outlined"
             onClick={onReset}
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', px: 2 }}
-          >
-            Сбросить
-          </Button>
+            sx={{ flexShrink: 0 }}
+          />
         )}
       </Stack>
+
+      <AssigneeFilterMenu isCompany={isCompany} />
     </Stack>
   );
 };

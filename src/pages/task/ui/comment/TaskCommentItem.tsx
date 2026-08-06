@@ -245,6 +245,7 @@ export const TaskCommentItem = ({
             <Box sx={{ mb: 0.5, pr: showMenu ? 4 : 0 }}>
               <ActionActorCaption
                 actor={comment}
+                direction='row'
               />
             </Box>
           ) : null}

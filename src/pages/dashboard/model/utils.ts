@@ -154,7 +154,7 @@ export const mapActivityFeedItem = (
 };
 
 const getTaskTitle = (task: Task) =>
-  task.title || task.post?.title || 'Задача';
+  task.title || task.post?.title || 'Задача без названия';
 
 export const getTaskDisplayTitle = getTaskTitle;
 
@@ -163,10 +163,10 @@ export const getCommentPreview = (
     | TaskComment
     | TaskLastCommentPreview
     | {
-        preview?: string
-        content?: string
-        media?: TaskComment['media']
-      }
+      preview?: string
+      content?: string
+      media?: TaskComment['media']
+    }
     | null,
 ) => {
   if (!comment) return 'Комментарий'

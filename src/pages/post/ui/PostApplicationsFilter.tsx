@@ -70,8 +70,16 @@ export const PostApplicationsFilter = ({
           minWidth: 0,
         }}
       >
+        <IconButton
+          color={createdDate ? 'primary' : 'default'}
+          onClick={event => setAnchorEl(event.currentTarget)}
+        >
+          <CalendarMonthOutlined />
+        </IconButton>
+
         <FilterAutocomplete
           label="Статус"
+          size="small"
           value={status}
           options={statusOptions}
           onChange={value =>
@@ -82,18 +90,12 @@ export const PostApplicationsFilter = ({
 
         <FilterAutocomplete
           label="Кандидат"
+          size="small"
           value={applicantId}
           options={applicantOptions}
           onChange={onApplicantChange}
           sx={{ flex: 1, maxWidth: { md: 280 }, minWidth: 250 }}
         />
-
-        <IconButton
-          color={createdDate ? 'primary' : 'default'}
-          onClick={event => setAnchorEl(event.currentTarget)}
-        >
-          <CalendarMonthOutlined />
-        </IconButton>
       </Stack>
 
       <Popover

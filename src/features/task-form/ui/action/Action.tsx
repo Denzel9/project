@@ -1,8 +1,11 @@
-import { Stack, Button } from '@mui/material';
+import { InfoOutlined } from '@mui/icons-material';
+import { Stack, Button, Box, Typography } from '@mui/material';
 import { useEffect, useMemo, type MouseEvent } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import {
+  canTransitionTaskStatus,
+  getAllowedTaskStatusTransitions,
   TASK_STATUS_ENUM,
   TaskActivityType,
   useUpdateTaskMutation,
@@ -25,6 +28,7 @@ type ActionProps = {
   taskOwnerId: string;
   activities: TaskActivity[];
   isExecutorApprove?: boolean | null;
+  isCompanyAction?: boolean;
 
   handleCancel: () => void;
   handleGoToRevision: () => void;
@@ -32,6 +36,29 @@ type ActionProps = {
   handleEdit: (isEdit: boolean) => void;
   handleSubmitForm: (newStatus?: TaskStatus) => void;
   handleSave: (e: MouseEvent<HTMLButtonElement>) => void;
+};
+
+const WAITING_LABELS: Partial<Record<TaskStatus, string>> = {
+  [TASK_STATUS_ENUM.PREPARING]: 'Подготовка',
+  [TASK_STATUS_ENUM.PENDING_APPROVAL]: 'Ожидается согласование',
+  [TASK_STATUS_ENUM.REVISION]: 'На доработке',
+  [TASK_STATUS_ENUM.IN_PROGRESS]: 'В работе',
+  [TASK_STATUS_ENUM.CHECKING]: 'На проверке',
+};
+
+const getForwardActionLabel = (toStatus: TaskStatus): string => {
+  switch (toStatus) {
+    case TASK_STATUS_ENUM.PENDING_APPROVAL:
+      return 'На согласование';
+    case TASK_STATUS_ENUM.IN_PROGRESS:
+      return 'В работу';
+    case TASK_STATUS_ENUM.CHECKING:
+      return 'На проверку';
+    case TASK_STATUS_ENUM.COMPLETED:
+      return 'Завершить';
+    default:
+      return 'Далее';
+  }
 };
 
 export const Action = ({
@@ -48,6 +75,7 @@ export const Action = ({
   taskOwnerId,
   handleSubmitForm,
   isExecutorApprove,
+  isCompanyAction = false,
   handleGoToRevision,
 }: ActionProps) => {
   const { setSnackbarOpen } = useSnackbarStore();
@@ -67,62 +95,59 @@ export const Action = ({
         .filter(activity => activity.type === TaskActivityType.STATUS_CHANGED)
         .sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )[0],
-    [activities]
+    [activities],
   );
 
   const isMe = id === taskOwnerId;
-  const isMeLastActor = lastActivitiesStatus?.actorId === id;
+
+  const transitionTask = useMemo(
+    () => ({
+      status,
+      ownerId: taskOwnerId,
+      executorId: executorId ?? null,
+      isExecutorApprove: isExecutorApprove ?? null,
+      isCompanyAction,
+    }),
+    [
+      status,
+      taskOwnerId,
+      executorId,
+      isExecutorApprove,
+      isCompanyAction,
+    ],
+  );
+
+  const transitionOptions = useMemo(
+    () => ({
+      lastStatusActorId: lastActivitiesStatus?.actorId ?? null,
+    }),
+    [lastActivitiesStatus?.actorId],
+  );
 
   const getSaveButtonConditions = () => {
-    switch (status) {
-      case TASK_STATUS_ENUM.PREPARING:
-        return isMe
-          ? {
-              label: 'На согласование',
-              isDisabled: false,
-              status: TASK_STATUS_ENUM.PENDING_APPROVAL,
-            }
-          : { label: 'Подготовка', isDisabled: true };
-      case TASK_STATUS_ENUM.PENDING_APPROVAL:
-        return isMeLastActor
-          ? { label: 'Ожидается согласование', isDisabled: true }
-          : {
-              label: 'В работу',
-              isDisabled: false,
-              status: TASK_STATUS_ENUM.IN_PROGRESS,
-            };
-      case TASK_STATUS_ENUM.REVISION:
-        return isMeLastActor
-          ? { label: 'На доработке', isDisabled: true }
-          : {
-              label: isMe ? 'На согласование' : 'В работу',
-              isDisabled: false,
-              status: isMe
-                ? TASK_STATUS_ENUM.PENDING_APPROVAL
-                : TASK_STATUS_ENUM.IN_PROGRESS,
-            };
-      case TASK_STATUS_ENUM.IN_PROGRESS:
-        return isMe
-          ? { label: 'В работе', isDisabled: true }
-          : {
-              label: 'На проверку',
-              isDisabled: false,
-              status: TASK_STATUS_ENUM.CHECKING,
-            };
-      case TASK_STATUS_ENUM.CHECKING:
-        return isMe
-          ? {
-              label: 'Завершить',
-              isDisabled: false,
-              status: TASK_STATUS_ENUM.COMPLETED,
-            }
-          : { label: 'На проверке', isDisabled: true };
+    const allowed = getAllowedTaskStatusTransitions(
+      transitionTask,
+      id ?? null,
+      transitionOptions,
+    );
+    const forward = allowed.find(
+      nextStatus => nextStatus !== TASK_STATUS_ENUM.REVISION,
+    );
 
-      default:
-        return { label: 'Далее', isDisabled: true };
+    if (forward) {
+      return {
+        label: getForwardActionLabel(forward),
+        isDisabled: false,
+        status: forward,
+      };
     }
+
+    return {
+      label: WAITING_LABELS[status] ?? 'Далее',
+      isDisabled: true,
+    };
   };
 
   const { label, isDisabled, status: newStatus } = getSaveButtonConditions();
@@ -132,9 +157,12 @@ export const Action = ({
     TASK_STATUS_ENUM.COMPLETED,
   ].includes(status as TASK_STATUS_ENUM);
 
-  const isRevisionEnabled =
-    status === TASK_STATUS_ENUM.PENDING_APPROVAL ||
-    (status === TASK_STATUS_ENUM.CHECKING && isMe);
+  const isRevisionEnabled = canTransitionTaskStatus(
+    transitionTask,
+    id ?? null,
+    TASK_STATUS_ENUM.REVISION,
+    transitionOptions,
+  );
 
   const isEditEnabled =
     (status === TASK_STATUS_ENUM.PREPARING && isMe) ||
@@ -172,79 +200,97 @@ export const Action = ({
   }
 
   return (
-    <Stack
-      spacing={2}
-      sx={{ mt: 3 }}
-      direction="row"
-    >
-      {!isEdit && (
-        <>
-          {isSaveEnabled && (
-            <Button
-              size="small"
-              variant="contained"
-              loading={isLoading}
-              disabled={
-                isLoading || isDisabled || !executorId || !isExecutorApprove
-              }
-              onClick={() => handleSubmitForm(newStatus)}
-            >
-              {label}
-            </Button>
-          )}
+    <Box>
+      <Stack
+        spacing={2}
+        sx={{ mt: 3 }}
+        direction="row"
+      >
+        {!isEdit && (
+          <>
+            {isSaveEnabled && (
+              <Button
+                size="small"
+                variant="contained"
+                loading={isLoading}
+                disabled={
+                  isLoading || isDisabled || !executorId || !isExecutorApprove
+                }
+                onClick={() => handleSubmitForm(newStatus)}
+              >
+                {label}
+              </Button>
+            )}
 
-          {isRevisionEnabled && (
-            <Button
-              size="small"
-              color="error"
-              variant="outlined"
-              loading={isLoading}
-              disabled={isLoading}
-              onClick={handleGoToRevision}
-            >
-              На доработку
-            </Button>
-          )}
-        </>
-      )}
+            {isRevisionEnabled && (
+              <Button
+                size="small"
+                color="error"
+                variant="outlined"
+                loading={isLoading}
+                disabled={isLoading}
+                onClick={handleGoToRevision}
+              >
+                На доработку
+              </Button>
+            )}
+          </>
+        )}
 
-      {isEdit && (
-        <Button
-          size="small"
-          color="error"
-          variant="outlined"
-          disabled={isSaving}
-          onClick={handleCancel}
+        {isEdit && (
+          <Button
+            size="small"
+            color="error"
+            variant="outlined"
+            disabled={isSaving}
+            onClick={handleCancel}
+          >
+            Отменить
+          </Button>
+        )}
+
+        {isEditEnabled && (
+          <>
+            {isEdit ? (
+              <Button
+                size="small"
+                color="primary"
+                variant="outlined"
+                loading={isSaving}
+                disabled={isSaving}
+                onClick={handleSave}
+              >
+                Сохранить
+              </Button>
+            ) : isMe ? (
+              <Button
+                size="small"
+                color="primary"
+                variant="outlined"
+                onClick={() => handleEdit(true)}
+              >
+                Редактировать
+              </Button>
+            ) : null}
+          </>
+        )}
+      </Stack>
+
+      {isExecutorApprove === null && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ mt: 2, alignItems: 'center' }}
         >
-          Отменить
-        </Button>
+          <InfoOutlined color="info" />
+          <Typography
+            variant="body2"
+            color="info"
+          >
+            Смена статуса будет доступна после одобрения задачи
+          </Typography>
+        </Stack>
       )}
-
-      {isEditEnabled && (
-        <>
-          {isEdit ? (
-            <Button
-              size="small"
-              color="primary"
-              variant="outlined"
-              loading={isSaving}
-              disabled={isSaving}
-              onClick={handleSave}
-            >
-              Сохранить
-            </Button>
-          ) : isMe ? (
-            <Button
-              size="small"
-              color="primary"
-              variant="outlined"
-              onClick={() => handleEdit(true)}
-            >
-              Редактировать
-            </Button>
-          ) : null}
-        </>
-      )}
-    </Stack>
+    </Box>
   );
 };

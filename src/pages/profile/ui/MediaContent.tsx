@@ -46,7 +46,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
       <Box sx={{ borderRadius: '32px' }}>
         {mediaTabValue === MEDIA_TAB_VALUES.ACTIVE && (
           <Stack
-            spacing={2}
+            spacing={1}
             direction="column"
           >
             {posts.map(post => (
@@ -69,7 +69,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
 
       {mediaTabValue === MEDIA_TAB_VALUES.ARCHIVED && (
         <Stack
-          spacing={2}
+          spacing={1}
           direction="column"
         >
           {posts.map(post => (
@@ -87,7 +87,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
 
       {mediaTabValue === MEDIA_TAB_VALUES.PRIVATE && (
         <Stack
-          spacing={2}
+          spacing={1}
           direction="column"
         >
           {posts.map(post => (

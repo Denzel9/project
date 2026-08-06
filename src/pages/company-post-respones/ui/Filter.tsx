@@ -166,6 +166,7 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
           <FilterAutocomplete
             label="Объявление"
             value={postId}
+            size="small"
             options={postOptions}
             onChange={setPostId}
             sx={{ flex: 1, maxWidth: 250, minWidth: 250 }}
@@ -174,6 +175,7 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
           <FilterAutocomplete
             label="Пользователь"
             value={userId}
+            size="small"
             options={userOptions}
             loading={isApplicantsLoading}
             onChange={setUserId}

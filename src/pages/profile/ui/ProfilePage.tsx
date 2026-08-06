@@ -8,7 +8,7 @@ import {
 import { useState, type SyntheticEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 
-import { useGetUserByIdQuery, USER_ROLE } from '@/entities';
+import { useGetUserByIdQuery, USER_ROLE, getUserName } from '@/entities';
 import { useAuthStore, CurrentUser } from '@/features';
 import { ROUTES } from '@/shared/config/routes';
 import { PageFooter, SideBarButton } from '@/widgets';
@@ -51,13 +51,12 @@ export const ProfilePage = () => {
   };
 
   return (
-    <Box
+    <Stack
+      direction="column"
       sx={{
         height: '100%',
-        display: 'flex',
         bgcolor: 'white',
         position: 'relative',
-        flexDirection: 'column',
         borderTopLeftRadius: '32px',
         borderBottomLeftRadius: '32px',
         borderBottomRightRadius: '32px',
@@ -82,7 +81,6 @@ export const ProfilePage = () => {
         }}
       >
         <Stack
-          spacing={2}
           direction="row"
           sx={{
             width: '100%',
@@ -113,7 +111,7 @@ export const ProfilePage = () => {
       >
         <Stack
           direction={{ xs: 'column', md: 'row' }}
-          spacing={{ xs: 4, md: 2 }}
+          spacing={{ xs: 4, md: 1 }}
           sx={{
             width: '100%',
             height: '100%',
@@ -127,7 +125,7 @@ export const ProfilePage = () => {
           />
 
           <Stack
-            spacing={2}
+            spacing={1}
             direction="column"
             sx={{
               width: '100%',
@@ -136,6 +134,7 @@ export const ProfilePage = () => {
           >
             <ProfileControl
               id={id || ''}
+              shareTitle={getUserName(user?.data) || 'Профиль'}
               tabValue={tabValue}
               mediaTabValue={mediaTabValue}
               handleTabChange={handleTabChange}
@@ -161,7 +160,7 @@ export const ProfilePage = () => {
       >
         <CircularProgress />
       </Backdrop>
-    </Box>
+    </Stack>
   );
 };
 

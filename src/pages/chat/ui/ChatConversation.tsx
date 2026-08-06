@@ -1,9 +1,17 @@
-import { ChatOutlined, KeyboardArrowDown } from '@mui/icons-material';
+import { ChatOutlined, KeyboardArrowDown, PushPinOutlined } from '@mui/icons-material';
 import {
   Box,
   CircularProgress,
+  Divider,
   IconButton,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItemButton,
+  ListItemText,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
@@ -17,7 +25,7 @@ import { ChatMessageBubble } from './ChatMessageBubble';
 import { UnreadMessagesDivider } from './UnreadMessagesDivider';
 
 import type { MessageSide } from '../model/types';
-import type { ChatMessage, ChatPeer } from '@/entities/chat';
+import type { ChatMessage, ChatMessagePin, ChatPeer } from '@/entities/chat';
 
 type ChatConversationProps = {
   messages: ChatMessage[];
@@ -42,6 +50,10 @@ type ChatConversationProps = {
   error?: string | null;
   onRetryError?: () => void;
   onDismissError?: () => void;
+
+  pinnedMessages: ChatMessagePin[];
+  isMessagePinned: (messageId: string) => boolean;
+  onTogglePinMessage: (messageId: string, nextPinned: boolean) => void;
 };
 
 const toMessageSide = (
@@ -73,12 +85,16 @@ export const ChatConversation = ({
   error = null,
   onRetryError,
   onDismissError,
+  pinnedMessages,
+  isMessagePinned,
+  onTogglePinMessage,
 }: ChatConversationProps) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesContentRef = useRef<HTMLDivElement>(null);
   const prevPeerIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [pinnedDialogOpen, setPinnedDialogOpen] = useState(false);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current;
@@ -112,6 +128,34 @@ export const ChatConversation = ({
     scrollToBottom('smooth');
     setShowScrollToBottom(false);
   }, [scrollToBottom]);
+
+  const getPinPreview = useCallback((pin: ChatMessagePin) => {
+    const trimmed = pin.content.trim();
+
+    if (trimmed) {
+      const max = 80;
+      return trimmed.length > max ? `${trimmed.slice(0, max)}...` : trimmed;
+    }
+
+    return `Медиа (${pin.mediaCount})`;
+  }, []);
+
+  const handleJumpToMessage = useCallback(
+    (messageId: string) => {
+      setPinnedDialogOpen(false);
+
+      const container = messagesContainerRef.current;
+      const el = container?.querySelector(
+        `#chat-message-${messageId}`,
+      ) as HTMLElement | null;
+
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setShowScrollToBottom(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!peer) {
@@ -264,6 +308,72 @@ export const ChatConversation = ({
             bgcolor: 'secondary.light',
           }}
         >
+          {pinnedMessages.length > 0 ? (
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                px: { xs: 1.5, md: 2 },
+                py: 1.25,
+                bgcolor: 'common.white',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                }}
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: 'text.secondary',
+                      fontWeight: 600,
+                      mb: 0.5,
+                    }}
+                  >
+                    Закреплённые · {pinnedMessages.length}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.primary',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 500,
+                      maxWidth: { xs: 220, sm: 360, md: 460 },
+                    }}
+                  >
+                    {getPinPreview(pinnedMessages[0])}
+                  </Typography>
+                </Box>
+
+                <Tooltip title="Посмотреть закреплённые">
+                  <IconButton
+                    size="small"
+                    aria-label="Посмотреть закреплённые"
+                    onClick={() => setPinnedDialogOpen(true)}
+                    sx={{
+                      flexShrink: 0,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <PushPinOutlined fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          ) : null}
+
           <Box
             ref={messagesContentRef}
             sx={{
@@ -288,6 +398,7 @@ export const ChatConversation = ({
             {messages.map(message => (
               <Box
                 key={message.id}
+                id={`chat-message-${message.id}`}
                 sx={{ width: '100%' }}
               >
                 {unreadDividerMessageId === message.id && (
@@ -308,6 +419,8 @@ export const ChatConversation = ({
                   side={toMessageSide(message.senderId, currentUserId)}
                   time={format(new Date(message.createdAt), 'HH:mm')}
                   isRead={message.isRead}
+                  isPinned={isMessagePinned(message.id)}
+                  onPin={onTogglePinMessage}
                   onDelete={onDeleteMessage}
                   onEdit={onEditMessage}
                   onForward={onForwardMessage}
@@ -357,6 +470,52 @@ export const ChatConversation = ({
           onSend={onSend}
         />
       </Box>
+
+      <Dialog
+        open={pinnedDialogOpen}
+        onClose={() => setPinnedDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Закреплённые сообщения</DialogTitle>
+        <DialogContent>
+          {pinnedMessages.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+              Нет закреплённых сообщений
+            </Typography>
+          ) : (
+            <List disablePadding>
+              {pinnedMessages.map(pin => (
+                <Box key={pin.messageId}>
+                  <ListItemButton onClick={() => handleJumpToMessage(pin.messageId)}>
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {getPinPreview(pin)}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography variant="caption" color="text.secondary">
+                          {format(new Date(pin.pinnedAt), 'dd.MM HH:mm')}
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                  <Divider />
+                </Box>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+      </Dialog>
     </Stack>
   );
 };

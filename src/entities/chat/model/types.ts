@@ -31,6 +31,15 @@ export type ChatMessage = {
   isRead: boolean
 }
 
+export type ChatMessagePin = {
+  messageId: string
+  content: string
+  mediaCount: number
+  pinnedAt: string
+  pinnedById?: string
+  createdAt: string
+}
+
 export type ChatConversation = {
   id: string
   peer: ChatPeer

@@ -26,6 +26,16 @@ type AssigneeFilterMenuProps = {
   isCompany: boolean;
 };
 
+export const useIsManagerAccount = () => {
+  const { data: profilesData } = useGetProfilesQuery();
+
+  return useMemo(
+    () =>
+      (profilesData?.data ?? []).some(profile => profile.role === 'MANAGER'),
+    [profilesData?.data]
+  );
+};
+
 export const AssigneeFilterMenu = ({ isCompany }: AssigneeFilterMenuProps) => {
   const membershipRole = useAuthStore(state => state.membershipRole);
   const {
@@ -37,12 +47,7 @@ export const AssigneeFilterMenu = ({ isCompany }: AssigneeFilterMenuProps) => {
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const { data: profilesData } = useGetProfilesQuery();
-  const isManagerAccount = useMemo(
-    () =>
-      (profilesData?.data ?? []).some(profile => profile.role === 'MANAGER'),
-    [profilesData?.data]
-  );
+  const isManagerAccount = useIsManagerAccount();
 
   const canFilterByAssignee =
     isCompany &&
@@ -55,9 +60,9 @@ export const AssigneeFilterMenu = ({ isCompany }: AssigneeFilterMenuProps) => {
   const didApplyManagerDefault = useRef(false);
 
   useEffect(() => {
-    if (!profilesData?.data) return;
+    if (!isCompany) return;
 
-    if (isCompany && isManagerAccount) {
+    if (isManagerAccount) {
       if (!didApplyManagerDefault.current) {
         didApplyManagerDefault.current = true;
         setOnlyMyTasks(true);
@@ -69,7 +74,7 @@ export const AssigneeFilterMenu = ({ isCompany }: AssigneeFilterMenuProps) => {
       didApplyManagerDefault.current = false;
       setOnlyMyTasks(false);
     }
-  }, [profilesData?.data, isCompany, isManagerAccount, setOnlyMyTasks]);
+  }, [isCompany, isManagerAccount, setOnlyMyTasks]);
 
   const { data: profileMembers, isLoading: isManagersLoading } =
     useGetProfileMembersQuery(showManagerMenu && Boolean(menuAnchor));
@@ -87,6 +92,7 @@ export const AssigneeFilterMenu = ({ isCompany }: AssigneeFilterMenuProps) => {
 
   if (!showManagerMenu && !showOnlyMyTasksMenu) return null;
 
+  // Для менеджера «только мои» — дефолт и иконка primary
   const isActive = showOnlyMyTasksMenu
     ? onlyMyTasks
     : assigneeAccountId !== 'all';
@@ -106,7 +112,8 @@ export const AssigneeFilterMenu = ({ isCompany }: AssigneeFilterMenuProps) => {
   return (
     <>
       <Tooltip title={tooltipTitle}>
-        <IconButton size="small"
+        <IconButton
+          size="small"
           aria-pressed={isActive}
           aria-label="Фильтр по ответственному"
           color={isActive ? 'primary' : 'default'}

@@ -6,6 +6,7 @@ import {
 import {
   toPublicationsParams,
   type PublicationExecutorFilter,
+  type PublicationPlatformFilter,
   type PublicationPostFilter,
 } from './utils'
 
@@ -13,6 +14,7 @@ type FetchPublicationsForReportOptions = {
   q: string
   postId: PublicationPostFilter
   executorId: PublicationExecutorFilter
+  platform?: PublicationPlatformFilter
   taskId?: string
 }
 

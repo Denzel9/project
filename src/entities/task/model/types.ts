@@ -278,23 +278,24 @@ export type SearchTasksParams = {
 
 export type TaskCalendarDateField = 'createdAt' | 'updatedAt' | 'finalDate'
 
-export type TaskCalendarOwner = {
+export type TaskCalendarParticipant = {
   id: string
-  avatar?: string
-  creatorProfile?: CreatorProfile
-  companyProfile?: CompanyProfile
-}
-
-export type TaskCalendarExecutor = {
-  id: string
-  avatar?: string
+  role?: string
+  avatar?: string | null
   name?: string
   lastName?: string
+  companyName?: string
 }
+
+/** @deprecated Используйте TaskCalendarParticipant */
+export type TaskCalendarOwner = TaskCalendarParticipant
+
+/** @deprecated Используйте TaskCalendarParticipant */
+export type TaskCalendarExecutor = TaskCalendarParticipant
 
 export type TaskCalendarItem = {
   id: string
-  postId?: string
+  postId: string
   createdAt: string
   updatedAt: string
   urgent: boolean
@@ -302,8 +303,8 @@ export type TaskCalendarItem = {
   title: string | null
   platforms?: Platform[]
   placementFormats?: PlacementFormat[]
-  owner?: TaskCalendarOwner
-  executor?: TaskCalendarExecutor
+  owner?: TaskCalendarParticipant
+  executor?: TaskCalendarParticipant | null
 }
 
 export type TaskCalendarList = {
@@ -579,7 +580,7 @@ export type CreateTaskDto = {
   cooperationDetails?: CooperationDetails | null
   brief?: PostBrief | null
   deliverables?: PostDeliverable[] | null
-  media?: TaskMedia[] | null
+  media?: Array<Pick<TaskMedia, 'url' | 'key' | 'size' | 'mimeType'>> | null
 }
 
 export type CreateTaskCommentDto = {

@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
-import { USER_ROLE, type TaskCalendarItem } from '@/entities';
+import { USER_ROLE, type TaskCalendarItem, type TaskCalendarParticipant } from '@/entities';
 import {
   executorToUserPartial,
   getUserName,
@@ -12,9 +12,9 @@ import {
   type User,
 } from '@/entities/user';
 import { useAuthStore } from '@/features';
-import { ROUTES } from '@/shared';
 
 import {
+  getCalendarTaskPath,
   getEventLabel,
   isCalendarTaskOverdue,
   type CalendarEvent,
@@ -24,9 +24,30 @@ type CalendarTaskListItemProps = {
   event: CalendarEvent;
 };
 
+const calendarParticipantToUser = (
+  participant?: TaskCalendarParticipant | null
+): Partial<User> | undefined => {
+  if (!participant?.id) return undefined;
+
+  if (participant.companyName) {
+    return {
+      id: participant.id,
+      companyProfile: {
+        companyName: participant.companyName,
+      } as User['companyProfile'],
+    };
+  }
+
+  return executorToUserPartial({
+    id: participant.id,
+    name: participant.name,
+    lastName: participant.lastName,
+  });
+};
+
 const getContact = (task: TaskCalendarItem, isCompany: boolean) => {
   if (isCompany) {
-    const user = executorToUserPartial(task.executor ?? undefined);
+    const user = calendarParticipantToUser(task.executor);
 
     return {
       user,
@@ -36,7 +57,7 @@ const getContact = (task: TaskCalendarItem, isCompany: boolean) => {
     };
   }
 
-  const user = task.owner as Partial<User>;
+  const user = calendarParticipantToUser(task.owner);
 
   return {
     user,
@@ -70,7 +91,7 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
   return (
     <Box
       component={Link}
-      to={`${ROUTES.TASK}/${task.id}?taskId=${task.id}&inviteId=${task.id}`}
+      to={getCalendarTaskPath(task)}
       target="_blank"
       rel="noopener noreferrer"
       sx={{
@@ -168,27 +189,14 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
         <Avatar
           src={contact.avatar || undefined}
           sx={{ width: 26, height: 26, flexShrink: 0 }}
-        >
-          {contact.name.charAt(0)}
-        </Avatar>
+        />
 
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              display: 'block',
-              lineHeight: 1.2,
-              fontSize: '0.65rem',
-            }}
-          >
-            {contact.label}
-          </Typography>
-          <UserDisplayName
-            user={contact.user}
-            variant="body2"
-          />
-        </Box>
+        <UserDisplayName
+          name={contact.name}
+          user={contact.user}
+          variant="body2"
+          withBadges={false}
+        />
       </Stack>
     </Box>
   );

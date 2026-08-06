@@ -22,10 +22,14 @@ export const ConversationItem = ({
   conversation,
   isSelected,
   onSelect,
+  showActions = true,
+  showPinIcon = true,
 }: {
   conversation: ChatConversation;
   isSelected: boolean;
   onSelect: () => void;
+  showActions?: boolean;
+  showPinIcon?: boolean;
 }) => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<null | HTMLElement>(null);
@@ -68,12 +72,13 @@ export const ConversationItem = ({
       sx={{
         mb: 1,
         p: 2,
+        alignItems: 'center',
         width: '100%',
         cursor: 'pointer',
         borderRadius: '16px',
         bgcolor: isSelected
           ? 'primary.light'
-          : isPinned
+          : isPinned && showPinIcon
             ? 'action.hover'
             : 'secondary.light',
       }}
@@ -121,30 +126,36 @@ export const ConversationItem = ({
         spacing={0.5}
         sx={{ alignItems: 'flex-end', flexShrink: 0 }}
       >
-        <IconButton
-          size="small"
-          aria-label="Ещё"
-          onClick={handleMore}
-          onMouseDown={event => event.stopPropagation()}
-          sx={{
-            p: 0.5,
-          }}
-        >
-          <MoreVert sx={{ fontSize: 18, color: 'white' }} color="action" />
-        </IconButton>
+        {showActions && (
+          <>
+            <IconButton
+              size="small"
+              aria-label="Ещё"
+              onClick={handleMore}
+              onMouseDown={e => e.stopPropagation()}
+              sx={{
+                p: 0.5,
+              }}
+            >
+              <MoreVert sx={{ fontSize: 18, color: isSelected ? 'common.white' : 'action' }} color="action" />
+            </IconButton>
 
-        <Menu
-          anchorEl={moreMenuAnchorEl}
-          open={isMoreMenuOpen}
-          onClose={() => setIsMoreMenuOpen(false)}
-        >
-          <MenuItem onClick={handleTogglePin}>{isPinned ? 'Открепить' : 'Закрепить'}</MenuItem>
-        </Menu>
+            <Menu
+              anchorEl={moreMenuAnchorEl}
+              open={isMoreMenuOpen}
+              onClose={() => setIsMoreMenuOpen(false)}
+            >
+              <MenuItem onClick={handleTogglePin}>{isPinned ? 'Открепить' : 'Закрепить'}</MenuItem>
+            </Menu>
+          </>
+        )}
 
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          {isPinned && <Tooltip title={isPinned ? 'Открепить' : 'Закрепить'}>
-            <PushPin sx={{ fontSize: 16, color: 'white' }} />
-          </Tooltip>}
+          {showPinIcon && isPinned && (
+            <Tooltip title={isPinned ? 'Открепить' : 'Закрепить'}>
+              <PushPin sx={{ fontSize: 16, color: isSelected ? 'common.white' : 'action' }} />
+            </Tooltip>
+          )}
 
           <Typography
             variant="body2"

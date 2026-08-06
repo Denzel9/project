@@ -1,4 +1,4 @@
-import { getPlatformLabel } from '@/entities/post'
+import { PLATFORM_LABELS, getPlatformLabel, type Platform } from '@/entities/post'
 import { getUserName, type User } from '@/entities/user'
 import { ROUTES } from '@/shared/config/routes'
 import { isGalleryMedia } from '@/widgets'
@@ -8,41 +8,55 @@ import type { Publication, PublicationListParams } from '@/entities/publication'
 
 export type PublicationPostFilter = 'all' | string
 export type PublicationExecutorFilter = 'all' | string
+export type PublicationPlatformFilter = 'all' | Platform
+export type PublicationTitleFilter = 'all' | string
 
 type PublicationsFilterState = {
   q: string
   postId?: PublicationPostFilter
   executorId?: PublicationExecutorFilter
+  platform?: PublicationPlatformFilter
   taskId?: string
 }
 
 const isValidFilterId = (value?: string | null): value is string =>
   Boolean(value) && value !== 'all' && value !== 'undefined' && value !== 'null'
 
+export const PUBLICATION_PLATFORM_FILTER_OPTIONS: {
+  id: Platform
+  label: string
+}[] = (
+  Object.entries(PLATFORM_LABELS) as [Platform, string][]
+).map(([id, label]) => ({ id, label }))
+
 export const toPublicationsParams = ({
   q,
   postId,
   taskId,
   executorId,
+  platform,
 }: PublicationsFilterState): Omit<PublicationListParams, 'page'> => ({
   ...(q.trim() && { q: q.trim() }),
   ...(isValidFilterId(postId) && postId !== 'all' && { postId }),
   ...(isValidFilterId(taskId) && { taskId }),
   ...(isValidFilterId(executorId) &&
     executorId !== 'all' && { executorId }),
+  ...(platform && platform !== 'all' && { platform }),
 })
 
 export const hasActivePublicationFilters = ({
   q,
   postId = 'all',
   executorId = 'all',
+  platform = 'all',
 }: Pick<
   PublicationsFilterState,
-  'q' | 'postId' | 'executorId'
+  'q' | 'postId' | 'executorId' | 'platform'
 >) =>
   Boolean(q.trim()) ||
   (isValidFilterId(postId) && postId !== 'all') ||
-  (isValidFilterId(executorId) && executorId !== 'all')
+  (isValidFilterId(executorId) && executorId !== 'all') ||
+  (platform !== 'all' && Boolean(platform))
 
 export const parsePublicationSearchParams = (
   searchParams: URLSearchParams,
@@ -180,6 +194,22 @@ export const getPublicationExecutorOptions = (publications: Publication[]) => {
       'Исполнитель'
 
     map.set(executor.id, name)
+  })
+
+  return Array.from(map.entries()).sort((left, right) =>
+    left[1].localeCompare(right[1], 'ru'),
+  )
+}
+
+export const getPublicationTitleOptions = (publications: Publication[]) => {
+  const map = new Map<string, string>()
+
+  publications.forEach(publication => {
+    const title = getPublicationTitle(publication)
+
+    if (!title || map.has(title)) return
+
+    map.set(title, title)
   })
 
   return Array.from(map.entries()).sort((left, right) =>

@@ -16,3 +16,22 @@ export type PublicationSortField =
   | 'createdAt'
 
 export type PublicationSortOrder = 'asc' | 'desc'
+
+export type PublicationColumnFilter = {
+  value: string
+  options: { id: string; label: string }[]
+  selectedOption?: { id: string; label: string } | null
+  label: string
+  placeholder?: string
+  loading?: boolean
+  minInputLength?: number
+  onSearch?: (query: string) => void
+  onChange: (id: string) => void
+}
+
+export type PublicationTableColumnFilters = {
+  title: PublicationColumnFilter
+  post: PublicationColumnFilter
+  platform: PublicationColumnFilter
+  executor: PublicationColumnFilter
+}

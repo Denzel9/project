@@ -1,5 +1,4 @@
-import { Close } from '@mui/icons-material';
-import { Button, MenuItem, Stack, TextField } from '@mui/material';
+import { MenuItem, Stack, TextField, Chip } from '@mui/material';
 import { useMemo } from 'react';
 
 import { useMyPostOptionsQuery } from '@/entities';
@@ -11,6 +10,7 @@ import {
 } from '@/entities/partner';
 import {
   AssigneeFilterMenu,
+  useIsManagerAccount,
   useMyTaskFilterStore,
   type DashboardPeriod,
 } from '@/features';
@@ -25,6 +25,7 @@ type DashboardFiltersBarProps = {
 export const DashboardFiltersBar = ({
   isCompany,
 }: DashboardFiltersBarProps) => {
+  const isManagerAccount = useIsManagerAccount();
   const postId = useMyTaskFilterStore(state => state.postId);
   const executorId = useMyTaskFilterStore(state => state.executorId);
   const period = useMyTaskFilterStore(state => state.period);
@@ -74,17 +75,23 @@ export const DashboardFiltersBar = ({
 
   const isPartnersLoading = isCompany ? isExecutorsLoading : isCustomersLoading;
 
+  const hasAssigneeFilter = isManagerAccount
+    ? false
+    : assigneeAccountId !== 'all';
+
   const hasActiveFilters =
     postId !== 'all' ||
     executorId !== 'all' ||
     period !== 'all' ||
-    assigneeAccountId !== 'all';
+    hasAssigneeFilter;
 
   const handleReset = () => {
     setPostId('all');
     setExecutorId('all');
     setPeriod('all');
-    setOnlyMyTasks(false);
+    if (!isManagerAccount) {
+      setOnlyMyTasks(false);
+    }
     setAssigneeAccountId('all');
   };
 
@@ -126,7 +133,7 @@ export const DashboardFiltersBar = ({
           select
           size="small"
           value={period}
-          label="Период (дедлайн)"
+          label="Период"
           sx={{ width: { xs: '100%', sm: 180 } }}
           onChange={event => setPeriod(event.target.value as DashboardPeriod)}
         >
@@ -141,14 +148,12 @@ export const DashboardFiltersBar = ({
         </TextField>
 
         {hasActiveFilters && (
-          <Button
-            size="small"
-            startIcon={<Close />}
+          <Chip
+            label="Сбросить"
+            variant="outlined"
             onClick={handleReset}
-            sx={{ py: 1, px: 2 }}
-          >
-            Сбросить
-          </Button>
+            sx={{ flexShrink: 0 }}
+          />
         )}
       </Stack>
 

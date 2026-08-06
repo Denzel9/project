@@ -232,7 +232,6 @@ export const DashboardActivityPanel = () => {
             >
               <Typography
                 variant="h6"
-                sx={{ lineHeight: 1.2 }}
               >
                 Активность
               </Typography>
@@ -345,10 +344,10 @@ export const DashboardActivityPanel = () => {
               )}
 
               <Chip
-                size="small"
-                variant="outlined"
                 label="Сбросить"
+                variant="outlined"
                 onClick={handleResetFilters}
+                sx={{ flexShrink: 0 }}
               />
             </Stack>
           )}
@@ -378,12 +377,12 @@ export const DashboardActivityPanel = () => {
             icon={<HistoryOutlined sx={{ fontSize: 40, color: 'text.disabled' }} />}
           />
           {hasActiveFilters && (
-            <Button
-              size="small"
+            <Chip
+              label="Сбросить"
+              variant="outlined"
               onClick={handleResetFilters}
-            >
-              Сбросить фильтры
-            </Button>
+              sx={{ flexShrink: 0 }}
+            />
           )}
         </Stack>
       )}
@@ -395,6 +394,7 @@ export const DashboardActivityPanel = () => {
             flex: 1,
             overflowY: 'auto',
             pr: 0.25,
+            scrollbarWidth: 'none',
           }}
         >
           <Stack

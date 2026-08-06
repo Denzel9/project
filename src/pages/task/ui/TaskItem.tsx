@@ -27,6 +27,7 @@ import {
   useRejectTaskDeadlineExtensionMutation,
   type TaskStatus,
   type UpdateTaskDto,
+  type TaskAnnulmentInitiator,
   TASK_STATUS_ENUM,
   TaskActivityType,
   type Task,
@@ -64,6 +65,12 @@ const finalStatuses = [
 ];
 
 const CANCELLED_STATUSES = [TASK_STATUS_ENUM.ANNULLED] as const;
+
+const ANNULMENT_INITIATOR_LABELS: Record<TaskAnnulmentInitiator, string> = {
+  CUSTOMER: 'Заказчик',
+  EXECUTOR: 'Исполнитель',
+  MUTUAL: 'Договорённость сторон',
+};
 
 type TaskItemProps = {
   task: Task;
@@ -313,6 +320,30 @@ export const TaskItem = ({
   const isOverdueBannerHidden = hiddenOverdueForTaskId === task.id;
   const pendingAnnulment =
     task.annulment?.status === 'PENDING' ? task.annulment : null;
+  const confirmedAnnulment =
+    task.annulments
+      ?.filter(item => item.status === 'CONFIRMED')
+      .sort(
+        (a, b) =>
+          new Date(b.confirmedAt ?? b.requestedAt).getTime() -
+          new Date(a.confirmedAt ?? a.requestedAt).getTime(),
+      )[0] ??
+    (task.annulment?.status === 'CONFIRMED' ? task.annulment : null);
+  const annulmentBannerDetails = confirmedAnnulment
+    ? [
+        `Инициатор: ${ANNULMENT_INITIATOR_LABELS[confirmedAnnulment.initiator]}`,
+        confirmedAnnulment.reason.trim()
+          ? `Причина: ${confirmedAnnulment.reason.trim()}`
+          : null,
+        `Дата: ${format(
+          new Date(
+            confirmedAnnulment.confirmedAt ?? confirmedAnnulment.requestedAt,
+          ),
+          'd MMMM yyyy, HH:mm',
+          { locale: ru },
+        )}`,
+      ].filter((item): item is string => Boolean(item))
+    : undefined;
   const canRespondToAnnulment =
     Boolean(pendingAnnulment) &&
     pendingAnnulment?.requestedById !== currentUserId &&
@@ -392,6 +423,7 @@ export const TaskItem = ({
       {status === TASK_STATUS_ENUM.ANNULLED && !isCancelBannerHidden && (
         <TaskAlertBanner
           message="Задача аннулирована"
+          details={annulmentBannerDetails}
           onClose={() => setHiddenCancelForTaskId(task.id)}
         />
       )}

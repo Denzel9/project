@@ -224,6 +224,7 @@ export const TaskForm = ({
             handleCancel={handleCancelEdit}
             handleSubmitForm={handleSubmitForm}
             isExecutorApprove={isExecutorApprove}
+            isCompanyAction={task.isCompanyAction}
             handleGoToRevision={handleGoToRevision}
             handleCompleteTask={handleCompleteTask}
           />

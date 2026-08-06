@@ -20,8 +20,8 @@ export const getActionActorKindLabel = (
   actor?: Pick<ActionActorFields, 'actorKind'> | null,
 ) => {
   const kind = actor?.actorKind
-  if (!kind) return ''
-  return ACTION_ACTOR_KIND_LABELS[kind] ?? ''
+  if (kind !== 'MANAGER') return ''
+  return ACTION_ACTOR_KIND_LABELS.MANAGER
 }
 
 export const getActionActorDisplayName = (
@@ -33,7 +33,6 @@ export const getActionActorDisplayName = (
   return fallback?.trim() ?? ''
 }
 
-/** Раздельно: kind (Менеджер/Владелец) и ФИО / название */
 export const getActionActorParts = (
   actor?: ActionActorFields | null,
   fallback?: string,
@@ -46,7 +45,6 @@ export const getActionActorParts = (
   return { kindLabel, name }
 }
 
-/** Однострочная подпись для компактных мест: «Менеджер · ФИО» */
 export const formatActionActorLabel = (
   actor?: ActionActorFields | null,
   fallback?: string,

@@ -1,7 +1,9 @@
-import type { ChatConversation, ChatMessage, ChatMessageMedia } from './types'
-import { getChatTaskTzPreview } from './taskTzMessage'
-import type { UploadMediaResponse } from '@/entities/post'
 import { validateMediaFile } from '@/shared/lib/media'
+
+import { getChatTaskTzPreview } from './taskTzMessage'
+
+import type { ChatConversation, ChatMessage, ChatMessageMedia } from './types'
+import type { UploadMediaResponse } from '@/entities/post'
 
 export const CHAT_MEDIA_ACCEPT =
   'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation'

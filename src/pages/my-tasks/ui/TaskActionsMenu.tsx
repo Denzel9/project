@@ -1,11 +1,12 @@
 import { MoreVertOutlined } from '@mui/icons-material';
 import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
-import { useState, type MouseEvent } from 'react';
+import { useMemo, useState, type MouseEvent } from 'react';
 
 import {
   buildCreateTaskPayload,
   canEditTaskFields,
   TASK_STATUS_ENUM,
+  useConversationsQuery,
   useCreateTaskMutation,
   useDeleteTaskMutation,
   type Task,
@@ -13,11 +14,18 @@ import {
 import { useAuthStore } from '@/features';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
+import { TaskTargetPostDialog } from '@/pages/task/ui/TaskTargetPostDialog';
 
 type TaskActionsMenuProps = {
   task: Task;
   ownerOnly?: boolean;
   size?: 'small' | 'medium';
+};
+
+const getExecutorLabel = (task: Task) => {
+  if (!task.executor) return 'Исполнитель';
+
+  return `${task.executor.name} ${task.executor.lastName}`.trim() || 'Исполнитель';
 };
 
 export const TaskActionsMenu = ({
@@ -31,10 +39,15 @@ export const TaskActionsMenu = ({
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
 
   const { mutateAsync: createTask, isPending: isCopying } =
     useCreateTaskMutation();
   const { mutateAsync: deleteTask } = useDeleteTaskMutation();
+
+  const { data: conversations = [] } = useConversationsQuery(undefined, {
+    enabled: isDuplicateDialogOpen,
+  });
 
   const isOwner = canEditTaskFields(task, currentUserId);
 
@@ -43,6 +56,22 @@ export const TaskActionsMenu = ({
   const canDelete =
     task.status === TASK_STATUS_ENUM.PREPARING ||
     task.status === TASK_STATUS_ENUM.PENDING_APPROVAL;
+
+  const currentPostId = task.postId || task.post?.id || null;
+
+  const executorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+
+    if (task.executorId) {
+      map.set(task.executorId, getExecutorLabel(task));
+    }
+
+    conversations.forEach(conversation => {
+      map.set(conversation.peer.id, conversation.peer.displayName);
+    });
+
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [conversations, task]);
 
   const closeMenu = () => {
     setMenuAnchor(null);
@@ -64,20 +93,19 @@ export const TaskActionsMenu = ({
     setMenuAnchor(event.currentTarget);
   };
 
-  const handleCopy = async () => {
-    closeMenu();
-
-    const postId = task.postId || task.post?.id;
-    if (!postId) {
-      setSnackbarOpen(true, 'Не удалось дублировать задачу');
-      return;
-    }
-
+  const handleDuplicateConfirm = async ({
+    postId,
+    executorId,
+  }: {
+    postId: string;
+    executorId: string | null;
+  }) => {
     try {
-      await createTask(buildCreateTaskPayload(task, postId));
+      await createTask(buildCreateTaskPayload(task, postId, executorId));
       setSnackbarOpen(true, 'Задача успешно дублирована');
-    } catch {
+    } catch (error) {
       setSnackbarOpen(true, 'Не удалось дублировать задачу');
+      throw error;
     }
   };
 
@@ -135,7 +163,10 @@ export const TaskActionsMenu = ({
           <MenuItem
             sx={{ minWidth: 160 }}
             disabled={isCopying}
-            onClick={runMenuAction(() => void handleCopy())}
+            onClick={runMenuAction(() => {
+              closeMenu();
+              setIsDuplicateDialogOpen(true);
+            })}
           >
             Дублировать
           </MenuItem>
@@ -166,6 +197,18 @@ export const TaskActionsMenu = ({
         taskId={task.id}
         isOpen={isAssignDialogOpen}
         onClose={() => setIsAssignDialogOpen(false)}
+      />
+
+      <TaskTargetPostDialog
+        open={isDuplicateDialogOpen}
+        mode="duplicate-same"
+        fixedPostId={currentPostId}
+        initialExecutorId={task.executorId}
+        executorOptions={executorOptions}
+        isPending={isCopying}
+        onClose={() => setIsDuplicateDialogOpen(false)}
+        onConfirm={handleDuplicateConfirm}
+        onGoToCreatedTask={() => undefined}
       />
     </Box>
   );

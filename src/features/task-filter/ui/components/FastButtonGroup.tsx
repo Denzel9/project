@@ -47,8 +47,13 @@ export const FastButtonGroup = ({
   const { role } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
 
-  const { fastButtonValue, setFastButtonValue, postId } =
-    useMyTaskFilterStore();
+  const {
+    fastButtonValue,
+    setFastButtonValue,
+    postId,
+    onlyMyTasks,
+    assigneeAccountId,
+  } = useMyTaskFilterStore();
 
   const fastButtonOptions = useMemo(
     () => getFastButtonOptions(isCompany),
@@ -58,10 +63,26 @@ export const FastButtonGroup = ({
   const primaryOptions = fastButtonOptions.slice(0, FAST_BUTTON_PRIMARY_COUNT);
   const menuOptions = fastButtonOptions.slice(FAST_BUTTON_PRIMARY_COUNT);
 
-  const statsParams = useMemo(
-    () => (postId !== 'all' ? { postId } : undefined),
-    [postId]
-  );
+  const statsParams = useMemo(() => {
+    const params: {
+      postId?: string;
+      assigneeMine?: boolean;
+      assigneeAccountId?: string;
+    } = {};
+
+    if (postId !== 'all') {
+      params.postId = postId;
+    }
+
+    // Счётчики должны совпадать с активным фильтром ответственного
+    if (onlyMyTasks) {
+      params.assigneeMine = true;
+    } else if (assigneeAccountId !== 'all') {
+      params.assigneeAccountId = assigneeAccountId;
+    }
+
+    return Object.keys(params).length > 0 ? params : undefined;
+  }, [postId, onlyMyTasks, assigneeAccountId]);
 
   const { data: stats } = useTaskStatsQuery(statsParams);
 
@@ -74,8 +95,8 @@ export const FastButtonGroup = ({
 
   return (
     <Stack
-      direction="row"
       spacing={1}
+      direction="row"
       sx={{
         width: 'fit-content',
         alignItems: 'center',
@@ -86,28 +107,40 @@ export const FastButtonGroup = ({
         '&::-webkit-scrollbar': { display: 'none' },
       }}
     >
-      {primaryOptions.map((value, index) => (
-        <FastChip
-          sx={{ ml: isSearchOpen ? (index > 0 ? '-30px !important' : 0) : 0 }}
-          key={value}
-          count={getCount(value)}
-          label={getFastButtonLabel(value)}
-          isActive={fastButtonValue === value}
-          onClick={() => handleFastButtonClick(value)}
-        />
-      ))}
+      {primaryOptions.map((value, index) => {
+        const count = getCount(value);
+        const isActive = fastButtonValue === value;
+
+        if (count <= 0 && !isActive) return null;
+
+        return (
+          <FastChip
+            key={value}
+            count={count}
+            label={getFastButtonLabel(value)}
+            isActive={isActive}
+            onClick={() => handleFastButtonClick(value)}
+            sx={{ ml: isSearchOpen ? (index > 0 ? '-30px !important' : 0) : 0 }}
+          />
+        );
+      })}
 
       {menuOptions.map((value, index) => {
         if (value === 'urgent') return null;
 
+        const count = getCount(value);
+        const isActive = fastButtonValue === value;
+
+        if (count <= 0 && !isActive) return null;
+
         return (
           <FastChip
-            sx={{ ml: isSearchOpen ? '-30px !important' : 0, zIndex: index }}
             key={value}
-            count={getCount(value)}
+            count={count}
             label={getFastButtonLabel(value)}
-            isActive={fastButtonValue === value}
+            isActive={isActive}
             onClick={() => handleFastButtonClick(value)}
+            sx={{ ml: isSearchOpen ? '-30px !important' : 0, zIndex: index }}
           />
         );
       })}

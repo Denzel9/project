@@ -8,10 +8,11 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useRef, useState } from 'react';
+import { useRef, useState, memo } from 'react';
 import { useDrop } from 'react-dnd';
 
-import { TASK_STATUS_ENUM, type Task, type TaskStatus } from '@/entities';
+import { canTransitionTaskStatus, type Task, type TaskStatus } from '@/entities';
+import { useAuthStore } from '@/features';
 import { InfiniteScrollSentinel } from '@/shared';
 
 import { KANBAN_COLUMN_PAGE_SIZE } from '../model/constants/constants';
@@ -37,7 +38,7 @@ type KanbanColumnProps = {
   onTaskDrop: (taskId: string, status: TaskStatus) => void;
 };
 
-export const KanbanColumn = ({
+export const KanbanColumn = memo(function KanbanColumn({
   tasks,
   column,
   resetKey,
@@ -47,7 +48,7 @@ export const KanbanColumn = ({
   hasNextPage = false,
   isFetchingNextPage = false,
   onFetchNextPage,
-}: KanbanColumnProps) => {
+}: KanbanColumnProps) {
   const { visibleItems, hasMore, loadMore } = useTasksLoadMore(
     tasks,
     `${resetKey}|${column.status}`,
@@ -55,52 +56,45 @@ export const KanbanColumn = ({
   );
   const ref = useRef<HTMLDivElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const currentUserId = useAuthStore(state => state.id);
 
-  const getIsOver = (item: KanbanTaskDragItem) => {
-    if (
-      item?.status === TASK_STATUS_ENUM.PREPARING &&
-      column?.status === TASK_STATUS_ENUM.PENDING_APPROVAL
-    ) {
-      return true;
-    } else if (
-      item?.status === TASK_STATUS_ENUM.PENDING_APPROVAL &&
-      column?.status === TASK_STATUS_ENUM.IN_PROGRESS
-    ) {
-      return true;
-    } else if (
-      (item?.status === TASK_STATUS_ENUM.IN_PROGRESS &&
-        column?.status === TASK_STATUS_ENUM.REVISION) ||
-      (item?.status === TASK_STATUS_ENUM.IN_PROGRESS &&
-        column?.status === TASK_STATUS_ENUM.CHECKING)
-    ) {
-      return true;
-    } else if (
-      item?.status === TASK_STATUS_ENUM.REVISION &&
-      column?.status === TASK_STATUS_ENUM.IN_PROGRESS
-    ) {
-      return true;
-    } else if (
-      (item?.status === TASK_STATUS_ENUM.CHECKING &&
-        column?.status === TASK_STATUS_ENUM.REVISION) ||
-      (item?.status === TASK_STATUS_ENUM.CHECKING &&
-        column?.status === TASK_STATUS_ENUM.COMPLETED)
-    ) {
-      return true;
-    }
+  const canDropItem = (item: KanbanTaskDragItem | null) => {
+    if (!item) return false;
 
-    return false;
+    return canTransitionTaskStatus(
+      {
+        status: item.status,
+        ownerId: item.ownerId,
+        executorId: item.executorId,
+        isExecutorApprove: item.isExecutorApprove,
+        isCompanyAction: item.isCompanyAction,
+      },
+      currentUserId ?? null,
+      column.status,
+    );
   };
 
-  const [{ isOver }, drop] = useDrop({
+  const [{ isOver, isOverForbidden, isSourceColumn }, drop] = useDrop({
     accept: KANBAN_TASK_DRAG_TYPE,
+    canDrop: (item: KanbanTaskDragItem) => item.status !== column.status,
     drop: (item: KanbanTaskDragItem) => {
-      if (getIsOver(item)) {
-        onTaskDrop(item.taskId, column.status);
-      }
+      onTaskDrop(item.taskId, column.status);
     },
-    collect: monitor => ({
-      isOver: getIsOver(monitor?.getItem()),
-    }),
+    collect: monitor => {
+      const item = monitor.getItem<KanbanTaskDragItem | null>();
+      const isDraggingType =
+        monitor.getItemType() === KANBAN_TASK_DRAG_TYPE && Boolean(item);
+      const over = monitor.isOver({ shallow: true });
+      const allowed = canDropItem(item);
+      const isSourceColumn =
+        isDraggingType && item?.status === column.status;
+
+      return {
+        isOver: over && allowed,
+        isOverForbidden: over && Boolean(item) && !allowed && !isSourceColumn,
+        isSourceColumn,
+      };
+    },
   });
 
   // eslint-disable-next-line react-hooks/refs
@@ -132,9 +126,23 @@ export const KanbanColumn = ({
         overflow: 'hidden',
         borderRadius: '20px',
         flexDirection: 'column',
-        bgcolor: isOver ? 'info.light' : 'secondary.light',
+        bgcolor: isOver
+          ? 'info.light'
+          : isSourceColumn
+            ? 'grey.300'
+            : isOverForbidden
+              ? 'error.light'
+              : 'secondary.light',
         border: theme =>
-          `1px solid ${isOver ? theme.palette.primary.main : theme.palette.secondary.main}`,
+          `1px solid ${
+            isOver
+              ? theme.palette.primary.main
+              : isSourceColumn
+                ? theme.palette.grey[400]
+                : isOverForbidden
+                  ? theme.palette.error.main
+                  : theme.palette.secondary.main
+          }`,
         transition: 'background-color 0.2s ease, border-color 0.2s ease',
       }}
     >
@@ -198,6 +206,8 @@ export const KanbanColumn = ({
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
         {tasks.length === 0 && (
@@ -230,6 +240,6 @@ export const KanbanColumn = ({
       </Stack>
     </Box>
   );
-};
+});
 
 export default KanbanColumn;

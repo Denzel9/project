@@ -18,7 +18,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { UserDisplayName } from '@/entities/user';
-import { EmptyBlock, ROUTES } from '@/shared';
+import { EmptyBlock, FilterAutocomplete, ROUTES } from '@/shared';
 
 import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
 import {
@@ -26,6 +26,7 @@ import {
   sortApplicationCompanyRows,
 } from '../model/utils';
 
+import { PartnersColumnFilterButton } from './PartnersColumnFilterButton';
 import { PartnersRowActionsMenu } from './PartnersRowActionsMenu';
 import { partnersTableShellSx } from './PartnersTableSkeleton';
 
@@ -33,6 +34,7 @@ import type {
   ApplicationCompanyRow,
   ApplicationCompanySortField,
   PartnersSortOrder,
+  PartnersUserColumnFilter,
 } from '../model/types';
 
 type ApplicationCompaniesTableProps = {
@@ -41,6 +43,7 @@ type ApplicationCompaniesTableProps = {
   total?: number;
   page?: number;
   rowsPerPage?: number;
+  userFilter?: PartnersUserColumnFilter;
   onPageChange?: (event: unknown, nextPage: number) => void;
 };
 
@@ -50,6 +53,7 @@ export const ApplicationCompaniesTable = ({
   total,
   page: controlledPage,
   rowsPerPage = PARTNERS_TABLE_PAGE_SIZE,
+  userFilter,
   onPageChange,
 }: ApplicationCompaniesTableProps) => {
   const navigate = useNavigate();
@@ -57,9 +61,13 @@ export const ApplicationCompaniesTable = ({
   const [sortField, setSortField] =
     useState<ApplicationCompanySortField>('name');
   const [sortOrder, setSortOrder] = useState<PartnersSortOrder>('asc');
+  const [isFilterRowOpen, setIsFilterRowOpen] = useState(false);
 
   const isServerPagination =
     controlledPage !== undefined && onPageChange !== undefined;
+  const hasActiveUserFilter = Boolean(
+    userFilter && userFilter.value !== 'all',
+  );
 
   const sortedItems = useMemo(
     () => sortApplicationCompanyRows(items, sortField, sortOrder),
@@ -105,6 +113,9 @@ export const ApplicationCompaniesTable = ({
     ? paginationCount > rowsPerPage || items.length >= rowsPerPage
     : paginationCount > rowsPerPage;
 
+  const isEmpty = !items.length && paginationCount === 0;
+  const showTableShell = Boolean(userFilter) || !isEmpty;
+
   const handleSort = (field: ApplicationCompanySortField) => {
     if (sortField === field) {
       setSortOrder(current => (current === 'asc' ? 'desc' : 'asc'));
@@ -123,7 +134,7 @@ export const ApplicationCompaniesTable = ({
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (!items.length && paginationCount === 0) {
+  if (isEmpty && !showTableShell) {
     return (
       <Box
         sx={{
@@ -158,13 +169,28 @@ export const ApplicationCompaniesTable = ({
           <TableHead>
             <TableRow>
               <TableCell sortDirection={getSortDirection('name')}>
-                <TableSortLabel
-                  active={sortField === 'name'}
-                  direction={sortField === 'name' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('name')}
+                <Stack
+                  direction="row"
+                  spacing={0.25}
+                  sx={{ alignItems: 'center', minWidth: 0 }}
                 >
-                  Компания
-                </TableSortLabel>
+                  <TableSortLabel
+                    active={sortField === 'name'}
+                    direction={sortField === 'name' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('name')}
+                  >
+                    Компания
+                  </TableSortLabel>
+
+                  {userFilter && (
+                    <PartnersColumnFilterButton
+                      title={userFilter.label}
+                      open={isFilterRowOpen}
+                      active={hasActiveUserFilter}
+                      onClick={() => setIsFilterRowOpen(open => !open)}
+                    />
+                  )}
+                </Stack>
               </TableCell>
 
               <TableCell sortDirection={getSortDirection('applicationsCount')}>
@@ -207,90 +233,139 @@ export const ApplicationCompaniesTable = ({
                 sx={{ width: 56 }}
               />
             </TableRow>
+
+            {userFilter && isFilterRowOpen && (
+              <TableRow className="partners-no-print">
+                <TableCell sx={{ py: 1.5, verticalAlign: 'middle' }}>
+                  <Box onClick={event => event.stopPropagation()}>
+                    <FilterAutocomplete
+                      size="small"
+                      variant="standard"
+                      value={userFilter.value}
+                      options={userFilter.options}
+                      selectedOption={userFilter.selectedOption}
+                      placeholder={
+                        userFilter.placeholder ?? 'Все компании'
+                      }
+                      loading={userFilter.loading}
+                      minInputLength={userFilter.minInputLength}
+                      onSearch={userFilter.onSearch}
+                      onChange={userFilter.onChange}
+                    />
+                  </Box>
+                </TableCell>
+                <TableCell />
+                <TableCell />
+                <TableCell />
+                <TableCell className="partners-no-print" />
+              </TableRow>
+            )}
           </TableHead>
 
           <TableBody>
-            {visibleItems.map(item => (
-              <TableRow
-                key={item.id}
-                hover
-                onClick={() =>
-                  navigate(`${ROUTES.PROFILE}?userId=${item.id}`)
-                }
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'secondary.light' },
-                }}
-              >
-                <TableCell>
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    sx={{ alignItems: 'center', minWidth: 180 }}
-                  >
-                    <Avatar
-                      className="partners-no-print"
-                      src={item.avatar || undefined}
-                      sx={{ width: 36, height: 36 }}
-                    >
-                      {item.name.charAt(0)}
-                    </Avatar>
-
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ alignItems: 'center', minWidth: 0 }}
-                    >
-                      <UserDisplayName
-                        user={item}
-                        variant="body2"
-                      />
-
-                      <Chip
-                        className="partners-no-print"
-                        size="small"
-                        variant="outlined"
-                        icon={<BusinessOutlined />}
-                        label="Компания"
-                      />
-                    </Stack>
-                  </Stack>
-                </TableCell>
-
-                <TableCell>
-                  <Typography variant="body2">
-                    {item.applicationsCount}
-                  </Typography>
-                </TableCell>
-
-                <TableCell>
-                  <Typography variant="body2">{item.postsCount}</Typography>
-                </TableCell>
-
-                <TableCell>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ whiteSpace: 'nowrap' }}
-                  >
-                    {formatRelativeTime(item.lastActivityAt)}
-                  </Typography>
-                </TableCell>
-
+            {isEmpty ? (
+              <TableRow>
                 <TableCell
-                  className="partners-no-print"
-                  align="right"
-                  onClick={event => event.stopPropagation()}
+                  colSpan={5}
+                  sx={{ py: 8, border: 0 }}
                 >
-                  <PartnersRowActionsMenu userId={item.id} />
+                  <EmptyBlock
+                    title={
+                      hasActiveUserFilter
+                        ? 'Ничего не найдено'
+                        : emptyMessage
+                    }
+                    description={
+                      hasActiveUserFilter
+                        ? 'Попробуйте изменить фильтр'
+                        : undefined
+                    }
+                  />
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              visibleItems.map(item => (
+                <TableRow
+                  key={item.id}
+                  hover
+                  onClick={() =>
+                    navigate(`${ROUTES.PROFILE}?userId=${item.id}`)
+                  }
+                  sx={{
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'secondary.light' },
+                  }}
+                >
+                  <TableCell>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      sx={{ alignItems: 'center', minWidth: 180 }}
+                    >
+                      <Avatar
+                        className="partners-no-print"
+                        src={item.avatar || undefined}
+                        sx={{ width: 36, height: 36 }}
+                      >
+                        {item.name.charAt(0)}
+                      </Avatar>
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: 'center', minWidth: 0 }}
+                      >
+                        <UserDisplayName
+                          user={item}
+                          variant="body2"
+                        />
+
+                        <Chip
+                          className="partners-no-print"
+                          size="small"
+                          variant="outlined"
+                          icon={<BusinessOutlined />}
+                          label="Компания"
+                        />
+                      </Stack>
+                    </Stack>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="body2">
+                      {item.applicationsCount}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="body2">{item.postsCount}</Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      {formatRelativeTime(item.lastActivityAt)}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell
+                    className="partners-no-print"
+                    align="right"
+                    onClick={event => event.stopPropagation()}
+                  >
+                    <PartnersRowActionsMenu userId={item.id} />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {showPagination && (
+      {showPagination && !isEmpty && (
         <TablePagination
           component="div"
           className="partners-no-print"

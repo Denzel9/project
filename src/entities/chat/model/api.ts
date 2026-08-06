@@ -19,6 +19,7 @@ import type {
   ChatAttachment,
   ChatConversation,
   ChatMessage,
+  ChatMessagePin,
   ChatMessageMedia,
   ChatUnreadCount,
   ConversationsParams,
@@ -47,6 +48,8 @@ export const chatKeys = {
   conversationsRoot: () => [...chatKeys.all, 'conversations'] as const,
   conversations: (params?: ConversationsParams) =>
     [...chatKeys.conversationsRoot(), params ?? {}] as const,
+  messagePins: (conversationId: string) =>
+    [...chatKeys.all, 'messagePins', conversationId] as const,
   messages: (conversationId: string, cursor?: string, markRead?: boolean) =>
     [
       ...chatKeys.all,
@@ -464,6 +467,49 @@ export const useMessagesQuery = (
       return sortMessages(data.map(normalizeMessage))
     },
     enabled: Boolean(conversationId),
+  })
+}
+
+export const useMessagePinsQuery = (conversationId: string | null) => {
+  return useQuery({
+    queryKey: chatKeys.messagePins(conversationId ?? ''),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<ChatMessagePin[]>(
+        `/chat/conversations/${conversationId}/messages/pins`,
+        {
+          params: { limit: 50 },
+        },
+      )
+
+      return data
+    },
+    enabled: Boolean(conversationId),
+  })
+}
+
+export const usePinMessageMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      messageId,
+      isPinned,
+    }: {
+      conversationId: string
+      messageId: string
+      isPinned: boolean
+    }) => {
+      await mainAxios.patch(
+        `/chat/conversations/${conversationId}/messages/${messageId}/pin`,
+        { isPinned },
+      )
+    },
+    onSuccess: (_data, { conversationId }) => {
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.messagePins(conversationId),
+      })
+    },
   })
 }
 

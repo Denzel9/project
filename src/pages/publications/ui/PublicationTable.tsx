@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { theme } from '@/app/index';
@@ -29,7 +29,7 @@ import {
   UserDisplayName,
   type User,
 } from '@/entities/user';
-import { scrollMainToTop } from '@/shared';
+import { EmptyBlock, FilterAutocomplete, scrollMainToTop } from '@/shared';
 import { FullScreenGallery, MediaPreview } from '@/widgets';
 
 import {
@@ -47,9 +47,12 @@ import {
   sortPublications,
 } from '../model/utils';
 
+import { PublicationColumnFilterButton } from './PublicationColumnFilterButton';
+
 import type {
   PublicationSortField,
   PublicationSortOrder,
+  PublicationTableColumnFilters,
 } from '../model/types';
 import type { Publication } from '@/entities/publication';
 import type { TaskMedia } from '@/entities/task';
@@ -63,7 +66,10 @@ type PublicationTableProps = {
   paginated?: boolean;
   serverPagination?: boolean;
   rowsPerPage?: number;
+  columnFilters?: PublicationTableColumnFilters;
+  emptyMessage?: string;
   onPageChange?: (event: unknown, nextPage: number) => void;
+  onFilterRowOpenChange?: (open: boolean) => void;
 };
 
 export const PublicationTable = ({
@@ -74,7 +80,10 @@ export const PublicationTable = ({
   paginated = true,
   serverPagination = false,
   rowsPerPage = PUBLICATION_TABLE_PAGE_SIZE,
+  columnFilters,
+  emptyMessage = 'Публикаций пока нет',
   onPageChange,
+  onFilterRowOpenChange,
 }: PublicationTableProps) => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -86,6 +95,20 @@ export const PublicationTable = ({
   const [internalPage, setInternalPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<PublicationSortOrder>('desc');
   const [sortField, setSortField] = useState<PublicationSortField>('createdAt');
+  const [isFilterRowOpen, setIsFilterRowOpen] = useState(false);
+
+  useEffect(() => {
+    onFilterRowOpenChange?.(isFilterRowOpen);
+  }, [isFilterRowOpen, onFilterRowOpenChange]);
+
+  const showColumnFilters = Boolean(columnFilters) && !forPrint;
+  const hasActiveColumnFilter = Boolean(
+    columnFilters &&
+      (columnFilters.title.value !== 'all' ||
+        columnFilters.post.value !== 'all' ||
+        columnFilters.platform.value !== 'all' ||
+        columnFilters.executor.value !== 'all'),
+  );
 
   const isControlledPagination =
     controlledPage !== undefined && onPageChange !== undefined;
@@ -137,9 +160,12 @@ export const PublicationTable = ({
     rowsPerPage,
   ]);
 
+  const isEmpty = visiblePublications.length === 0;
+
   const showPagination =
     paginated &&
     !forPrint &&
+    !isEmpty &&
     (serverPagination
       ? paginationCount > rowsPerPage ||
       sortedPublications.length >= rowsPerPage
@@ -199,6 +225,15 @@ export const PublicationTable = ({
     boxSizing: 'border-box',
   });
 
+  const filterCellSx = (width: string | number) => ({
+    py: 1.5,
+    px: 3,
+    width,
+    maxWidth: width,
+    verticalAlign: 'middle',
+    boxSizing: 'border-box',
+  });
+
   const mediaCellSx = {
     p: 2,
     width: PUBLICATION_TABLE_COLUMN_WIDTHS.media,
@@ -211,6 +246,8 @@ export const PublicationTable = ({
     event.stopPropagation();
     setGalleryItems(items);
   };
+
+  const colSpan = forPrint ? 6 : 7;
 
   return (
     <>
@@ -279,60 +316,120 @@ export const PublicationTable = ({
                   sortDirection={getSortDirection('title')}
                   sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.title)}
                 >
-                  <TableSortLabel
-                    active={sortField === 'title'}
-                    direction={sortField === 'title' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('title')}
-                    hideSortIcon={forPrint}
-                    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                  <Stack
+                    direction="row"
+                    spacing={0.25}
+                    sx={{ alignItems: 'center', minWidth: 0 }}
                   >
-                    Название
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortField === 'title'}
+                      direction={sortField === 'title' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('title')}
+                      hideSortIcon={forPrint}
+                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                    >
+                      Название
+                    </TableSortLabel>
+
+                    {showColumnFilters && columnFilters && (
+                      <PublicationColumnFilterButton
+                        title={columnFilters.title.label}
+                        open={isFilterRowOpen}
+                        active={columnFilters.title.value !== 'all'}
+                        onClick={() => setIsFilterRowOpen(open => !open)}
+                      />
+                    )}
+                  </Stack>
                 </TableCell>
 
                 <TableCell
                   sortDirection={getSortDirection('post')}
                   sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.post)}
                 >
-                  <TableSortLabel
-                    active={sortField === 'post'}
-                    direction={sortField === 'post' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('post')}
-                    hideSortIcon={forPrint}
-                    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                  <Stack
+                    direction="row"
+                    spacing={0.25}
+                    sx={{ alignItems: 'center', minWidth: 0 }}
                   >
-                    Пост
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortField === 'post'}
+                      direction={sortField === 'post' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('post')}
+                      hideSortIcon={forPrint}
+                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                    >
+                      Пост
+                    </TableSortLabel>
+
+                    {showColumnFilters && columnFilters && (
+                      <PublicationColumnFilterButton
+                        title={columnFilters.post.label}
+                        open={isFilterRowOpen}
+                        active={columnFilters.post.value !== 'all'}
+                        onClick={() => setIsFilterRowOpen(open => !open)}
+                      />
+                    )}
+                  </Stack>
                 </TableCell>
 
                 <TableCell
                   sortDirection={getSortDirection('platform')}
                   sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.platform)}
                 >
-                  <TableSortLabel
-                    active={sortField === 'platform'}
-                    direction={sortField === 'platform' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('platform')}
-                    hideSortIcon={forPrint}
-                    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                  <Stack
+                    direction="row"
+                    spacing={0.25}
+                    sx={{ alignItems: 'center', minWidth: 0 }}
                   >
-                    Площадки
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortField === 'platform'}
+                      direction={sortField === 'platform' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('platform')}
+                      hideSortIcon={forPrint}
+                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                    >
+                      Площадки
+                    </TableSortLabel>
+
+                    {showColumnFilters && columnFilters && (
+                      <PublicationColumnFilterButton
+                        title={columnFilters.platform.label}
+                        open={isFilterRowOpen}
+                        active={columnFilters.platform.value !== 'all'}
+                        onClick={() => setIsFilterRowOpen(open => !open)}
+                      />
+                    )}
+                  </Stack>
                 </TableCell>
 
                 <TableCell
                   sortDirection={getSortDirection('executor')}
                   sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.executor)}
                 >
-                  <TableSortLabel
-                    active={sortField === 'executor'}
-                    direction={sortField === 'executor' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('executor')}
-                    hideSortIcon={forPrint}
-                    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                  <Stack
+                    direction="row"
+                    spacing={0.25}
+                    sx={{ alignItems: 'center', minWidth: 0 }}
                   >
-                    Исполнитель
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortField === 'executor'}
+                      direction={sortField === 'executor' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('executor')}
+                      hideSortIcon={forPrint}
+                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                    >
+                      Исполнитель
+                    </TableSortLabel>
+
+                    {showColumnFilters && columnFilters && (
+                      <PublicationColumnFilterButton
+                        title={columnFilters.executor.label}
+                        open={isFilterRowOpen}
+                        active={columnFilters.executor.value !== 'all'}
+                        onClick={() => setIsFilterRowOpen(open => !open)}
+                      />
+                    )}
+                  </Stack>
                 </TableCell>
 
                 <TableCell
@@ -358,10 +455,125 @@ export const PublicationTable = ({
 
                 <TableCell sx={mediaCellSx}>Медиа</TableCell>
               </TableRow>
+
+              {showColumnFilters && columnFilters && isFilterRowOpen && (
+                <TableRow className="print-no-print">
+                  <TableCell
+                    sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.title)}
+                  >
+                    <Box onClick={event => event.stopPropagation()}>
+                      <FilterAutocomplete
+                        size="small"
+                        variant="standard"
+                        value={columnFilters.title.value}
+                        options={columnFilters.title.options}
+                        selectedOption={columnFilters.title.selectedOption}
+                        placeholder={
+                          columnFilters.title.placeholder ?? 'Все названия'
+                        }
+                        loading={columnFilters.title.loading}
+                        minInputLength={columnFilters.title.minInputLength}
+                        onSearch={columnFilters.title.onSearch}
+                        onChange={columnFilters.title.onChange}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.post)}
+                  >
+                    <Box onClick={event => event.stopPropagation()}>
+                      <FilterAutocomplete
+                        size="small"
+                        variant="standard"
+                        value={columnFilters.post.value}
+                        options={columnFilters.post.options}
+                        selectedOption={columnFilters.post.selectedOption}
+                        placeholder={
+                          columnFilters.post.placeholder ?? 'Все задачи'
+                        }
+                        loading={columnFilters.post.loading}
+                        minInputLength={columnFilters.post.minInputLength}
+                        onSearch={columnFilters.post.onSearch}
+                        onChange={columnFilters.post.onChange}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.platform)}
+                  >
+                    <Box onClick={event => event.stopPropagation()}>
+                      <FilterAutocomplete
+                        size="small"
+                        variant="standard"
+                        value={columnFilters.platform.value}
+                        options={columnFilters.platform.options}
+                        selectedOption={columnFilters.platform.selectedOption}
+                        placeholder={
+                          columnFilters.platform.placeholder ?? 'Все площадки'
+                        }
+                        onChange={columnFilters.platform.onChange}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.executor)}
+                  >
+                    <Box onClick={event => event.stopPropagation()}>
+                      <FilterAutocomplete
+                        size="small"
+                        variant="standard"
+                        value={columnFilters.executor.value}
+                        options={columnFilters.executor.options}
+                        selectedOption={columnFilters.executor.selectedOption}
+                        placeholder={
+                          columnFilters.executor.placeholder ??
+                          'Все исполнители'
+                        }
+                        loading={columnFilters.executor.loading}
+                        minInputLength={columnFilters.executor.minInputLength}
+                        onSearch={columnFilters.executor.onSearch}
+                        onChange={columnFilters.executor.onChange}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    sx={filterCellSx(
+                      PUBLICATION_TABLE_COLUMN_WIDTHS.publishedAt,
+                    )}
+                  />
+                  {!forPrint && (
+                    <TableCell
+                      sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.actions)}
+                    />
+                  )}
+                  <TableCell sx={mediaCellSx} />
+                </TableRow>
+              )}
             </TableHead>
 
             <TableBody>
-              {visiblePublications.map(publication => {
+              {isEmpty ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={colSpan}
+                    sx={{ py: 8, border: 0 }}
+                  >
+                    <EmptyBlock
+                      title={
+                        hasActiveColumnFilter
+                          ? 'Ничего не найдено'
+                          : emptyMessage
+                      }
+                      description={
+                        hasActiveColumnFilter
+                          ? 'Попробуйте изменить фильтры'
+                          : undefined
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+              visiblePublications.map(publication => {
                 const participantUser = publication.executor
                   ? executorToUserPartial(publication.executor)
                   : (publication.owner as Partial<User>);
@@ -593,7 +805,8 @@ export const PublicationTable = ({
                     </TableCell>
                   </TableRow>
                 );
-              })}
+              })
+              )}
             </TableBody>
           </Table>
         </TableContainer>

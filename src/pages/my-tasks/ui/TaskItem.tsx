@@ -20,6 +20,7 @@ import { TaskActionsMenu } from './TaskActionsMenu';
 type TaskItemProps = {
   task: Task;
   isCompany: boolean;
+  compact?: boolean;
 };
 
 const getContact = (task: Task, isCompany: boolean) => {
@@ -44,11 +45,152 @@ const getContact = (task: Task, isCompany: boolean) => {
   };
 };
 
-export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
+export const TaskItem = ({
+  task,
+  isCompany,
+  compact = false,
+}: TaskItemProps) => {
   const taskConfig = getTaskConfig(task.status);
   const accentColor = taskConfig?.color ?? 'primary';
   const contact = getContact(task, isCompany);
   const overdue = isTaskOverdue(task);
+
+  if (compact) {
+    return (
+      <Box
+        component={Link}
+        to={getTaskPath(task)}
+        sx={{
+          p: 1.25,
+          height: '100%',
+          color: 'inherit',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'white',
+          borderRadius: '14px',
+          textDecoration: 'none',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderLeftWidth: 3,
+          borderLeftColor: theme => theme.palette[accentColor].main,
+          transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+          ':hover': {
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+            transform: 'translateY(-1px)',
+          },
+        }}
+      >
+        <Stack
+          spacing={1}
+          direction="row"
+          sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+        >
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: 'center', minWidth: 0, flex: 1, flexWrap: 'wrap' }}
+          >
+            <Chip
+              size="small"
+              variant="outlined"
+              label={taskConfig?.label}
+              color={accentColor}
+              sx={{ height: 22, fontSize: '0.7rem', flexShrink: 0 }}
+            />
+
+            {task.urgent && (
+              <Whatshot sx={{ fontSize: 16, color: 'error.main', flexShrink: 0 }} />
+            )}
+          </Stack>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ whiteSpace: 'nowrap', fontSize: '0.65rem', flexShrink: 0 }}
+          >
+            {formatDistanceToNow(new Date(task.updatedAt), {
+              addSuffix: true,
+              locale: ru,
+            })}
+          </Typography>
+        </Stack>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}
+        >
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            {task.post?.title || 'Без названия'}
+          </Typography>
+
+
+        </Stack>
+
+        <Tooltip title={task.title}>
+          <Typography
+            variant="body2"
+            sx={{
+              mt: 1,
+            }}
+          >
+            {task.title || 'Без названия'}
+          </Typography>
+        </Tooltip>
+
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            mt: 1,
+            minWidth: 0,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center', minWidth: 0 }}
+          >
+            <Avatar
+              src={contact.avatar || undefined}
+              sx={{ width: 24, height: 24, flexShrink: 0 }}
+            />
+            <UserDisplayName
+              variant="body2"
+              withBadges={false}
+              user={contact.user}
+              sx={{
+                overflow: 'hidden',
+                '& .MuiTypography-root': {
+                  fontSize: '0.75rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
+              }}
+            />
+          </Stack>
+
+          {task.finalDate && (
+            <Tooltip title={overdue ? 'Просрочено' : 'Дедлайн'}>
+              <Chip
+                size="small"
+                label={format(new Date(task.finalDate), 'dd.MM.yy')}
+                color={overdue ? 'error' : 'default'}
+                variant={overdue ? 'filled' : 'outlined'}
+                sx={{ height: 22, fontSize: '0.7rem', opacity: 0.85 }}
+              />
+            </Tooltip>
+          )}
+        </Stack>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -136,24 +278,18 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
           WebkitBoxOrient: 'vertical',
         }}
       >
-        {task.post?.title ?? 'Без названия'}
+        {task.post?.title || 'Без названия'}
       </Typography>
 
-      {task.title && (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            mb: 1.5,
-            overflow: 'hidden',
-            WebkitLineClamp: 1,
-            display: '-webkit-box',
-            WebkitBoxOrient: 'vertical',
-          }}
-        >
-          {task.title}
-        </Typography>
-      )}
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{
+          mb: 1.5,
+        }}
+      >
+        {task.title || 'Без названия'}
+      </Typography>
 
       <Stack
         direction="row"
@@ -174,20 +310,12 @@ export const TaskItem = ({ task, isCompany }: TaskItemProps) => {
             src={contact.avatar || undefined}
             sx={{ width: 32, height: 32 }}
           />
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', lineHeight: 1.2 }}
-            >
-              {contact.label}
-            </Typography>
-            <UserDisplayName
-              variant="body2"
-              withBadges={false}
-              user={contact.user}
-            />
-          </Box>
+
+          <UserDisplayName
+            variant="body2"
+            withBadges={false}
+            user={contact.user}
+          />
         </Stack>
 
         {task.finalDate && (

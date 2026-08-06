@@ -8,6 +8,7 @@ import {
 import {
   Button,
   Checkbox,
+  Chip,
   Divider,
   FormControlLabel,
   IconButton,
@@ -33,7 +34,7 @@ import { useScroll, DateCalendarFilter, FilterAutocomplete } from '@/shared';
 import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
 
-import { AssigneeFilterMenu } from './components/AssigneeFilterMenu';
+import { AssigneeFilterMenu, useIsManagerAccount } from './components/AssigneeFilterMenu';
 import { FastButtonGroup } from './components/FastButtonGroup';
 import {
   TaskFilterActionsMenu,
@@ -57,6 +58,7 @@ export const MyTaskFilter = ({
   tableReport?: TaskTableReportControls;
 }) => {
   const { isScrolled, ref } = useScroll(150);
+  const isManagerAccount = useIsManagerAccount();
 
   const {
     postId,
@@ -130,33 +132,39 @@ export const MyTaskFilter = ({
     setAnchorEl(null);
   };
 
-  const hasActiveSelectFilters = useMemo(
-    () =>
+  const hasActiveSelectFilters = useMemo(() => {
+    const hasAssigneeFilter = isManagerAccount
+      ? false
+      : onlyMyTasks || assigneeAccountId !== 'all';
+
+    return (
       (viewMode === 'grid' && status !== 'all') ||
       (viewMode !== 'table' && postId !== 'all') ||
       (viewMode !== 'table' && executorId !== 'all') ||
       extraFilter !== null ||
-      onlyMyTasks ||
-      assigneeAccountId !== 'all' ||
-      updatedDate !== null,
-    [
-      viewMode,
-      status,
-      postId,
-      executorId,
-      extraFilter,
-      onlyMyTasks,
-      assigneeAccountId,
-      updatedDate,
-    ]
-  );
+      hasAssigneeFilter ||
+      updatedDate !== null
+    );
+  }, [
+    viewMode,
+    status,
+    postId,
+    executorId,
+    extraFilter,
+    onlyMyTasks,
+    assigneeAccountId,
+    updatedDate,
+    isManagerAccount,
+  ]);
 
   const handleResetSelectFilters = () => {
     setStatus('all');
     setPostId('all');
     setExecutorId('all');
     setExtraFilter(null);
-    setOnlyMyTasks(false);
+    if (!isManagerAccount) {
+      setOnlyMyTasks(false);
+    }
     setAssigneeAccountId('all');
     setUpdatedDate(null);
   };
@@ -223,6 +231,7 @@ export const MyTaskFilter = ({
               <>
                 <FilterAutocomplete
                   label="Пост"
+                  size="small"
                   value={postId}
                   onChange={setPostId}
                   options={postOptions}
@@ -230,6 +239,7 @@ export const MyTaskFilter = ({
                 />
 
                 <FilterAutocomplete
+                  size="small"
                   value={executorId}
                   options={partnerOptions}
                   onChange={setExecutorId}
@@ -241,14 +251,12 @@ export const MyTaskFilter = ({
             )}
 
             {hasActiveSelectFilters && (
-              <Button
-                size="small"
-                startIcon={<Close />}
+              <Chip
+                label="Сбросить"
+                variant="outlined"
                 onClick={handleResetSelectFilters}
-                sx={{ px: 2, py: 1 }}
-              >
-                Сбросить
-              </Button>
+                sx={{ flexShrink: 0 }}
+              />
             )}
           </Stack>}
 

@@ -15,7 +15,6 @@ type ActionActorCaptionProps = {
   direction?: StackProps['direction']
 }
 
-/** kind (Менеджер/Владелец) и имя отдельными строками */
 export const ActionActorCaption = ({
   actor,
   icon,

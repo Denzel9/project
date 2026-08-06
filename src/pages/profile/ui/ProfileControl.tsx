@@ -17,13 +17,14 @@ import { useNavigate } from 'react-router';
 
 import { useFavoriteUserIds } from '@/entities/favorite';
 import { useRequireEmailConfirmed } from '@/features/auth';
-import { ROUTES } from '@/shared';
+import { ROUTES, ShareButton } from '@/shared';
 import { UserFavoriteButton } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
 
 type ProfileControlProps = {
   id?: string;
+  shareTitle?: string;
   tabValue: number;
   isCompany: boolean;
   mediaTabValue: MEDIA_TAB_VALUES;
@@ -33,6 +34,7 @@ type ProfileControlProps = {
 
 export const ProfileControl = ({
   id,
+  shareTitle = '',
   tabValue,
   isCompany,
   mediaTabValue,
@@ -77,7 +79,7 @@ export const ProfileControl = ({
           value={tabValue}
           onChange={handleTabChange}
         >
-          <Tab label="Медиа" />
+          <Tab label="Посты" />
           <Tab label={isCompany ? 'О компании' : 'Обо мне'} />
           <Tab label="Контакты" />
         </Tabs>
@@ -91,6 +93,11 @@ export const ProfileControl = ({
               <UserFavoriteButton
                 userId={id}
                 isFavorite={favoriteUserIds.has(id)}
+              />
+
+              <ShareButton
+                userId={id}
+                title={shareTitle}
               />
 
               <Box>
@@ -107,11 +114,6 @@ export const ProfileControl = ({
                 <MenuItem>
                   {/* TODO: add report action */}
                   <Typography>Пожаловаться</Typography>
-                </MenuItem>
-
-                {/* TODO: add share action */}
-                <MenuItem>
-                  <Typography>Поделиться</Typography>
                 </MenuItem>
               </Menu>
             </Stack>

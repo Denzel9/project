@@ -25,7 +25,7 @@ import { useIsMessageDeletable } from '../model/hooks/useIsMessageDeletable'
 
 import { ChatMediaAlbum } from './ChatMediaAlbum'
 
-import type { MessageSide } from '../model/types'
+import type { MessageSide } from '../model/types/types'
 import type { ChatMessageActorKind, ChatMessageMedia } from '@/entities/chat'
 
 type ChatMessageBubbleProps = {
@@ -47,6 +47,7 @@ type ChatMessageBubbleProps = {
   isDeleting?: boolean
   isEditing?: boolean
   fullWidth?: boolean
+  isHighlighted?: boolean
   onDelete?: (messageId: string) => void
   onEdit?: (messageId: string, content: string) => Promise<boolean>
   onForward?: (messageId: string) => void
@@ -188,6 +189,7 @@ export const ChatMessageBubble = ({
   isRead = false,
   isPinned = false,
   highlight,
+  isHighlighted = false,
   isDeleting = false,
   isEditing: isSavingEdit = false,
   fullWidth = false,
@@ -351,21 +353,25 @@ export const ChatMessageBubble = ({
     >
       <Box
         sx={{
+          p: 2,
           position: 'relative',
           width: fullWidth ? '100%' : undefined,
           maxWidth: fullWidth
             ? '100%'
-            : isTaskTzMessage
-              ? { xs: '94%', sm: '82%' }
-              : hasMedia
-                ? { xs: '88%', sm: '68%' }
-                : { xs: '82%', sm: '64%' },
-          minWidth: fullWidth ? 0 : isMediaOnly ? 160 : 120,
-          p: 2,
+            : isTaskTzMessage && hasMedia
+              ? { xs: '86%', sm: '56%' }
+              : isTaskTzMessage
+                ? { xs: '90%', sm: '72%' }
+                : hasMedia
+                  ? { xs: '82%', sm: '52%' }
+                  : { xs: '82%', sm: '64%' },
+          minWidth: fullWidth ? 0 : isMediaOnly ? 140 : 120,
+          transition:
+            'background-color 200ms ease, box-shadow 200ms ease',
           borderRadius: isOutgoing
             ? '18px 18px 6px 18px'
             : '18px 18px 18px 6px',
-          bgcolor: isOutgoing
+          bgcolor: isHighlighted ? 'primary.light' : isOutgoing
             ? 'primary.main'
             : theme => alpha(theme.palette.common.white, 0.96),
           color: isOutgoing ? 'common.white' : 'text.primary',
@@ -378,8 +384,6 @@ export const ChatMessageBubble = ({
             : '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04)',
         }}
       >
-
-
         {isRedirected && (
           <Stack
             direction="row"

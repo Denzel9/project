@@ -1,4 +1,4 @@
-import { Notifications } from '@mui/icons-material';
+import { NotificationsNoneOutlined } from '@mui/icons-material';
 import {
   Avatar,
   Badge,
@@ -98,13 +98,13 @@ export const NotificationsMenu = () => {
 
   return (
     <>
-      <IconButton onClick={handleOpen}>
+      <IconButton onClick={handleOpen} sx={{ mr: '16px !important' }}>
         <Badge
           badgeContent={unreadCount}
           color="primary"
           max={99}
         >
-          <Notifications />
+          <NotificationsNoneOutlined />
         </Badge>
       </IconButton>
 

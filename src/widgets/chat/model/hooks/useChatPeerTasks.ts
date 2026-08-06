@@ -7,7 +7,7 @@ import {
   canUploadChatPhotoReport,
   getChatPeerTasksParams,
   isActiveChatTask,
-} from '../utils'
+} from '../utils/utils'
 
 export const useChatPeerTasks = (peerId: string | undefined) => {
   const role = useAuthStore(state => state.role)

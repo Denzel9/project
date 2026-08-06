@@ -34,33 +34,35 @@ export const EmptyBlock = ({
 
   return (
     <Stack
-      spacing={1}
+      spacing={2}
       sx={{
         alignItems: 'center',
         justifyContent: 'center',
         ...sx,
       }}
     >
-      {icon}
-      <Typography
-        variant="body1"
-        color="info"
-        sx={{ textAlign: 'center' }}
-      >
-        {hasActiveFilters ? 'По выбранным фильтрам ничего не найдено' : title}
-      </Typography>
-
-      {showDescription && (
+      <Stack spacing={1} direction="column" sx={{ alignItems: 'center' }}>
+        {icon}
         <Typography
-          variant='caption'
+          variant="body1"
           color="info"
           sx={{ textAlign: 'center' }}
         >
-          {hasActiveFilters
-            ? 'Попробуйте изменить фильтры или сбросить их'
-            : description}
+          {hasActiveFilters ? 'По выбранным фильтрам ничего не найдено' : title}
         </Typography>
-      )}
+
+        {showDescription && (
+          <Typography
+            variant='caption'
+            color="info"
+            sx={{ textAlign: 'center' }}
+          >
+            {hasActiveFilters
+              ? 'Попробуйте изменить фильтры или сбросить их'
+              : description}
+          </Typography>
+        )}
+      </Stack>
 
       {showButton && (
         <Button

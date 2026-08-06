@@ -202,25 +202,25 @@ export const DashboardCalendarPanel = () => {
           size={{ xs: 12, md: 7, lg: 7 }}
           sx={{
             display: 'flex',
-            minHeight: { xs: 320, lg: 0 },
             height: { lg: '100%' },
+            minHeight: { xs: 320, lg: 0 },
+
             '& > .MuiBox-root': {
-              border: 'none',
-              bgcolor: 'transparent',
-              borderRadius: 0,
               p: 0,
-              height: '100%',
               minHeight: 0,
+              border: 'none',
+              height: '100%',
+              borderRadius: 0,
+              bgcolor: 'transparent',
             },
           }}
         >
           <CalendarTaskList
             events={events}
-            isLoading={isLoading}
             withHeader={false}
+            isLoading={isLoading}
             selectedDate={selectedDate}
             onSelectDate={handleSelectDate}
-            onGoToToday={() => handleSelectDate(dayjs())}
           />
         </Grid>
       </Grid>

@@ -38,6 +38,10 @@ export type ChatMessagePin = {
   pinnedAt: string
   pinnedById?: string
   createdAt: string
+  senderId?: string
+  senderDisplayName?: string
+  actorDisplayName?: string | null
+  actorKind?: ChatMessageActorKind | null
 }
 
 export type ChatConversation = {

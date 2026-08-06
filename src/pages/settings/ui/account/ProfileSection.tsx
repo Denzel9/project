@@ -55,7 +55,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         Личная информация
       </Typography>
 
-      <Box sx={{ position: 'relative', mt: 4, width: 'fit-content' }}>
+      <Box sx={{ position: 'relative', mt: 4, mb: 2, width: 'fit-content' }}>
         <Avatar
           src={avatarUrl}
           sx={{ width: 140, height: 140 }}
@@ -69,9 +69,14 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         </Box>
       </Box>
 
+      <Typography variant="caption" color="info">
+        Рекомендуемый размер 512×512
+      </Typography>
+
       <Box
         sx={{
-          my: 4,
+          mt: 4,
+          mb: 2,
           width: '100%',
           height: '250px',
           display: 'flex',
@@ -106,6 +111,10 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
           />
         </Box>
       </Box>
+
+      <Typography variant="caption" color="info">
+        Рекомендуемый размер 1920×640
+      </Typography>
 
       {user?.companyProfile && (
         <FormBlock>

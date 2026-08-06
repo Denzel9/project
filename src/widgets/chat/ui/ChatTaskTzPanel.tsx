@@ -19,8 +19,8 @@ import { type Task } from '@/entities/task';
 import {
   extractChatTaskTzMessages,
   type ChatTaskTzItem,
-} from '../model/chatTaskTzMessages';
-import { getChatTaskLabel } from '../model/utils';
+} from '../model/utils/chatTaskTzMessages';
+import { getChatTaskLabel } from '../model/utils/utils';
 
 import { ChatMessageBubble } from './ChatMessageBubble';
 
@@ -62,7 +62,12 @@ export const ChatTaskTzPanel = ({
   }, [open]);
 
   const taskTzItems = useMemo(
-    () => extractChatTaskTzMessages(messages),
+    () =>
+      extractChatTaskTzMessages(messages).sort(
+        (left, right) =>
+          new Date(right.message.createdAt).getTime() -
+          new Date(left.message.createdAt).getTime(),
+      ),
     [messages]
   );
 

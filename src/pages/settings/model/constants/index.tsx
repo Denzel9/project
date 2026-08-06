@@ -59,7 +59,7 @@ export const SETTINGS_MENU_SECTIONS: SettingsMenuSection[] = [
         icon: <PeopleOutlined fontSize="small" />,
       },
       {
-        label: 'Платежи',
+        label: 'Подписка',
         path: ROUTES.SETTINGS_BILLING,
         icon: <PaymentOutlined fontSize="small" />,
       },

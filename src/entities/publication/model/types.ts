@@ -55,6 +55,8 @@ export type PublicationListParams = {
   platform?: Platform
   q?: string
   executorQ?: string
+  createdDate?: string
+  tzOffset?: number
   page?: number
   limit?: number
 }

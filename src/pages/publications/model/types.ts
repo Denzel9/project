@@ -34,4 +34,6 @@ export type PublicationTableColumnFilters = {
   post: PublicationColumnFilter
   platform: PublicationColumnFilter
   executor: PublicationColumnFilter
+  createdDate: string | null
+  onCreatedDateChange: (value: string | null) => void
 }

@@ -13,9 +13,27 @@ export const publicationKeys = {
     [...publicationKeys.all, 'infinite', params ?? {}] as const,
 }
 
+const serializePublicationListParams = (
+  params: PublicationListParams,
+): Record<string, string | number> => {
+  const serialized: Record<string, string | number> = {}
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue
+
+    serialized[key] = value as string | number
+  }
+
+  if (params.createdDate !== undefined && params.tzOffset === undefined) {
+    serialized.tzOffset = new Date().getTimezoneOffset()
+  }
+
+  return serialized
+}
+
 export const fetchPublicationsList = async (params?: PublicationListParams) => {
   const { data } = await mainAxios.get<PublicationList>('/publications', {
-    params,
+    params: params ? serializePublicationListParams(params) : undefined,
   })
 
   return data
@@ -36,7 +54,11 @@ export const usePublicationsInfiniteQuery = (
     queryKey: publicationKeys.infinite({ ...params, limit }),
     queryFn: async ({ pageParam }) => {
       const { data } = await mainAxios.get<PublicationList>('/publications', {
-        params: { ...params, page: pageParam, limit },
+        params: serializePublicationListParams({
+          ...params,
+          page: pageParam,
+          limit,
+        }),
       })
 
       return data

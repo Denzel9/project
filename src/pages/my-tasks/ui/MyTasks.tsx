@@ -81,6 +81,11 @@ export const MyTasks = () => {
     setUpdatedDate,
     setExtraFilter,
     setFastButtonValue,
+    setPostId,
+    setOnlyMyTasks,
+    setAssigneeAccountId,
+    setIsSearchOpen,
+    setSearchQuery,
     fastButtonValue,
     toggleKanbanColumn,
     visibleKanbanColumns,
@@ -131,6 +136,8 @@ export const MyTasks = () => {
     columnFilters,
     taskId: taskIdFilter,
     deadlineDate: deadlineDateFilter,
+    hasActiveFilters: hasActiveColumnFilters,
+    resetFilters: resetColumnFilters,
   } = useTaskTableColumnFilters({
     isCompany,
     status: { value: status, onChange: setStatus },
@@ -346,7 +353,35 @@ export const MyTasks = () => {
 
   const isFullHeightView = viewMode === 'kanban' || viewMode === 'table';
   const isEmpty = !isLoading && !filteredTasks.length;
+  const hasActiveFilters =
+    hasActiveColumnFilters ||
+    postId !== 'all' ||
+    Boolean(fastButtonValue) ||
+    Boolean(searchQ) ||
+    onlyMyTasks ||
+    assigneeAccountId !== 'all';
+  const showFilter = Boolean(
+    !isEmpty || hasActiveFilters || isSearchOpen,
+  );
   const tableReportDisabled = isLoading || isEmpty;
+
+  const handleResetFilters = useCallback(() => {
+    resetColumnFilters();
+    setPostId('all');
+    setFastButtonValue(null);
+    setOnlyMyTasks(false);
+    setAssigneeAccountId('all');
+    setSearchQuery('');
+    setIsSearchOpen(false);
+  }, [
+    resetColumnFilters,
+    setPostId,
+    setFastButtonValue,
+    setOnlyMyTasks,
+    setAssigneeAccountId,
+    setSearchQuery,
+    setIsSearchOpen,
+  ]);
 
   useEffect(() => {
     const column = pendingKanbanScrollRef.current;
@@ -498,20 +533,22 @@ export const MyTasks = () => {
           },
         }}
       >
-        <Box
-          sx={{
-            top: 0,
-            zIndex: isContentExpanded ? 0 : 1000,
-            flexShrink: 0,
-            position: 'sticky',
-          }}
-        >
-          <MyTaskFilter
-            tableReport={tableReport}
-            initialPosts={initialPosts}
-            isCompany={isCompany}
-          />
-        </Box>
+        {showFilter && (
+          <Box
+            sx={{
+              top: 0,
+              zIndex: isContentExpanded ? 0 : 1000,
+              flexShrink: 0,
+              position: 'sticky',
+            }}
+          >
+            <MyTaskFilter
+              tableReport={tableReport}
+              initialPosts={initialPosts}
+              isCompany={isCompany}
+            />
+          </Box>
+        )}
 
         {isEmpty && (
           <Box
@@ -528,16 +565,30 @@ export const MyTasks = () => {
           >
             <EmptyBlock
               title={
-                searchQ ? 'Ничего не найдено' : 'У вас пока нет задач'
+                searchQ
+                  ? 'Ничего не найдено'
+                  : hasActiveFilters
+                    ? 'По выбранным фильтрам ничего не найдено'
+                    : 'У вас пока нет задач'
               }
               description={
-                searchQ ? 'Попробуйте изменить запрос' : undefined
+                searchQ
+                  ? 'Попробуйте изменить запрос'
+                  : hasActiveFilters
+                    ? 'Попробуйте изменить фильтры или сбросить их'
+                    : undefined
               }
-              {...(!searchQ &&
-                isCompany && {
-                buttonText: 'Добавить задачу',
-                buttonOnClick: () => setIsAddTaskOpen(true),
-              })}
+              {...(hasActiveFilters
+                ? {
+                    buttonText: 'Сбросить фильтры',
+                    buttonOnClick: handleResetFilters,
+                  }
+                : isCompany
+                  ? {
+                      buttonText: 'Создать задачу',
+                      buttonOnClick: () => setIsAddTaskOpen(true),
+                    }
+                  : {})}
             />
           </Box>
         )}

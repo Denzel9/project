@@ -5,7 +5,7 @@ export const PUBLICATION_VIEW_MODE_KEY = 'publications-view-mode'
 export const PUBLICATION_TABLE_COLUMN_WIDTHS = {
   title: '15%',
   post: '15%',
-  platform: '10%',
+  platform: '15%',
   executor: '16%',
   publishedAt: '10%',
   actions: '10%',

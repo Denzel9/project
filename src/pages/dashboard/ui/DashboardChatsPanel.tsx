@@ -13,14 +13,7 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Divider,
   IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
   Stack,
   TextField,
   Tooltip,
@@ -44,25 +37,27 @@ import {
   useSearchMessagesQuery,
   type ChatConversation,
   type ChatMessage,
-  type ChatMessagePin,
-} from '@/entities/chat';
-import { useAuthStore } from '@/features';
-import { ChatContactSearch } from '@/features/chat';
-import { extractChatTaskTzMessages } from '@/pages/chat/model/chatTaskTzMessages';
-import { useChatPeerTasks } from '@/pages/chat/model/hooks/useChatPeerTasks';
-import { ChatAttachmentsPanel } from '@/pages/chat/ui/ChatAttachmentsPanel';
-import { ChatInput } from '@/pages/chat/ui/ChatInput';
-import { ChatMessageBubble } from '@/pages/chat/ui/ChatMessageBubble';
-import { ChatSearchPanel } from '@/pages/chat/ui/ChatSearchPanel';
-import { ChatTaskTzPanel } from '@/pages/chat/ui/ChatTaskTzPanel';
-import { ConversationItem } from '@/pages/chat/ui/ConversationItem';
+} from '@/entities';
+import { useAuthStore, ChatContactSearch } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
-import { useSnackbarStore } from '@/widgets';
+import {
+  ChatAttachmentsPanel,
+  ChatInput,
+  ChatMessageBubble,
+  ChatPinnedMessagesDialog,
+  ChatSearchPanel,
+  ChatTaskTzPanel,
+  ConversationItem,
+  extractChatTaskTzMessages,
+  getPinnedMessagePreview,
+  useChatPeerTasks,
+  useSnackbarStore,
+  type MessageSide,
+} from '@/widgets';
 
 import { useDashboardChatThread } from '../model/useDashboardChatThread';
 
 import type { UserSearchItem } from '@/entities/user';
-import type { MessageSide } from '@/pages/chat/model/types';
 
 const DASHBOARD_CHATS_LIMIT = 8;
 
@@ -196,17 +191,6 @@ export const DashboardChatsPanel = () => {
   const { data: pinnedMessages = [] } = useMessagePinsQuery(
     selectedConversationId,
   );
-
-  const getPinPreview = useCallback((pin: ChatMessagePin) => {
-    const trimmed = pin.content.trim();
-
-    if (trimmed) {
-      const max = 80;
-      return trimmed.length > max ? `${trimmed.slice(0, max)}...` : trimmed;
-    }
-
-    return `Медиа (${pin.mediaCount})`;
-  }, []);
 
   const handleJumpToPinnedMessage = useCallback((messageId: string) => {
     setPinnedDialogOpen(false);
@@ -574,6 +558,7 @@ export const DashboardChatsPanel = () => {
 
           {!isLoading && isError && (
             <EmptyBlock
+              sx={{ height: '100%' }}
               title="Не удалось загрузить чаты"
               description="Попробуйте ещё раз"
               buttonText="Повторить"
@@ -583,6 +568,7 @@ export const DashboardChatsPanel = () => {
 
           {!isLoading && !isError && recentConversations.length === 0 && (
             <EmptyBlock
+              sx={{ height: '100%' }}
               title={emptyMessage}
               description={
                 hasActiveFilters
@@ -671,7 +657,7 @@ export const DashboardChatsPanel = () => {
                         fontWeight: 500,
                       }}
                     >
-                      {getPinPreview(pinnedMessages[0])}
+                      {getPinnedMessagePreview(pinnedMessages[0])}
                     </Typography>
                   </Box>
 
@@ -808,6 +794,7 @@ export const DashboardChatsPanel = () => {
 
                 {!isThreadLoading && isThreadError && (
                   <EmptyBlock
+                    sx={{ height: '100%' }}
                     title="Не удалось загрузить сообщения"
                     description="Попробуйте ещё раз"
                     buttonText="Повторить"
@@ -874,60 +861,12 @@ export const DashboardChatsPanel = () => {
             />
           )}
 
-          <Dialog
+          <ChatPinnedMessagesDialog
             open={pinnedDialogOpen}
+            pinnedMessages={pinnedMessages}
             onClose={() => setPinnedDialogOpen(false)}
-            maxWidth="sm"
-            fullWidth
-          >
-            <DialogTitle>Закреплённые сообщения</DialogTitle>
-            <DialogContent>
-              {pinnedMessages.length === 0 ? (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ py: 2 }}
-                >
-                  Нет закреплённых сообщений
-                </Typography>
-              ) : (
-                <List disablePadding>
-                  {pinnedMessages.map(pin => (
-                    <Box key={pin.messageId}>
-                      <ListItemButton
-                        onClick={() => handleJumpToPinnedMessage(pin.messageId)}
-                      >
-                        <ListItemText
-                          primary={
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {getPinPreview(pin)}
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {format(new Date(pin.pinnedAt), 'dd.MM HH:mm')}
-                            </Typography>
-                          }
-                        />
-                      </ListItemButton>
-                      <Divider />
-                    </Box>
-                  ))}
-                </List>
-              )}
-            </DialogContent>
-          </Dialog>
+            onSelect={handleJumpToPinnedMessage}
+          />
         </Stack>
       )}
 

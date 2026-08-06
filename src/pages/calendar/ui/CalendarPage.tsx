@@ -105,13 +105,6 @@ export const CalendarPage = () => {
     setVisibleMonth(date);
   };
 
-  const handleGoToToday = () => {
-    const today = dayjs();
-
-    setSelectedDate(today);
-    setVisibleMonth(today);
-  };
-
   return (
     <PageLayout withFooter={false}>
       <CalendarFilters
@@ -162,9 +155,9 @@ export const CalendarPage = () => {
           <CalendarTaskList
             events={events}
             isLoading={isLoading}
+            isCompany={isCompany}
             selectedDate={selectedDate}
             onSelectDate={handleSelectDate}
-            onGoToToday={handleGoToToday}
           />
         </Grid>
       </Grid>

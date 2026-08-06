@@ -11,6 +11,7 @@ import {
   incrementConversationUnreadCount,
   markConversationReadInCache,
   removeMessageFromCache,
+  sortConversationsByUnread,
   updateConversationLastMessage,
   updateMessageInCache,
   uploadConversationMediaBatch,
@@ -505,8 +506,12 @@ export const useMessenger = () => {
       conversations.length > 0 &&
       !recipientIdParam
     ) {
+      const firstConversation = sortConversationsByUnread(conversations)[0]
+
+      if (!firstConversation?.id) return
+
       setTimeout(() => {
-        selectConversation(conversations[0].id)
+        selectConversation(firstConversation.id)
       }, 0)
     }
   }, [

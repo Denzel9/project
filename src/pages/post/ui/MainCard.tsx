@@ -25,7 +25,6 @@ import { ShareButton, ROUTES } from '@/shared';
 import {
   Media,
   Action,
-  AddToCollectionDialog,
   useApplicationItemStore,
 } from '@/widgets';
 
@@ -254,8 +253,6 @@ export const MainCard = ({
         onClose={() => setIsOpenDeleteDialog(false)}
         onSuccess={() => navigate(ROUTES.INDEX)}
       />
-
-      <AddToCollectionDialog />
     </Box>
   );
 };

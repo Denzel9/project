@@ -1,4 +1,4 @@
-import { ArrowBack, Assignment, Close, MoreVert, Search } from '@mui/icons-material';
+import { ArrowBack, Close, MoreVert, Search } from '@mui/icons-material';
 import {
   Avatar,
   IconButton,
@@ -64,6 +64,11 @@ export const ChatHeader = ({
   const handleOpenAttachments = () => {
     handleCloseMenu();
     onOpenAttachments();
+  };
+
+  const handleOpenTaskTz = () => {
+    handleCloseMenu();
+    onOpenTaskTz?.();
   };
 
   const handleOpenPhotoReport = () => {
@@ -162,15 +167,6 @@ export const ChatHeader = ({
           {isSearchOpen ? <Close /> : <Search />}
         </IconButton>
 
-        {hasTaskTzMessages && (
-          <IconButton
-            aria-label="Технические задания"
-            onClick={() => onOpenTaskTz?.()}
-          >
-            <Assignment />
-          </IconButton>
-        )}
-
         <IconButton onClick={handleOpenMenu}>
           <MoreVert />
         </IconButton>
@@ -190,6 +186,10 @@ export const ChatHeader = ({
           </MenuItem>
 
           <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
+
+          {hasTaskTzMessages && (
+            <MenuItem onClick={handleOpenTaskTz}>Посмотреть ТЗ</MenuItem>
+          )}
 
           {role === USER_ROLE.COMPANY && (
             <MenuItem onClick={handleOpenAddTask}>Добавить ТЗ</MenuItem>

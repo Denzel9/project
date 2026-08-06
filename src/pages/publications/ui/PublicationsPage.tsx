@@ -87,6 +87,7 @@ export const PublicationsPage = () => {
     deepLinkFilters.executorId ?? 'all'
   );
   const [platform, setPlatform] = useState<PublicationPlatformFilter>('all');
+  const [createdDate, setCreatedDate] = useState<string | null>(null);
   const [postSearchQuery, setPostSearchQuery] = useState('');
   const [executorSearchQuery, setExecutorSearchQuery] = useState('');
   const [titleSearchQuery, setTitleSearchQuery] = useState('');
@@ -136,8 +137,9 @@ export const PublicationsPage = () => {
         executorId,
         platform,
         taskId: deepLinkFilters.taskId,
+        createdDate,
       }),
-    [q, postId, executorId, platform, deepLinkFilters.taskId]
+    [q, postId, executorId, platform, deepLinkFilters.taskId, createdDate]
   );
 
   const paginationResetKey = useMemo(
@@ -148,10 +150,11 @@ export const PublicationsPage = () => {
         postId,
         executorId,
         platform,
+        createdDate ?? '',
         deepLinkFilters.taskId ?? '',
         deepLinkFilters.postId ?? '',
       ].join('|'),
-    [viewMode, q, postId, executorId, platform, deepLinkFilters]
+    [viewMode, q, postId, executorId, platform, createdDate, deepLinkFilters]
   );
 
   const [tablePageState, setTablePageState] = useState({
@@ -360,9 +363,14 @@ export const PublicationsPage = () => {
     postId,
     executorId,
     platform,
+    createdDate,
   });
   const isFilterEmpty =
-    !q.trim() && postId === 'all' && executorId === 'all' && platform === 'all';
+    !q.trim() &&
+    postId === 'all' &&
+    executorId === 'all' &&
+    platform === 'all' &&
+    !createdDate;
   const isLoading = useServerTablePagination
     ? isTableLoading
     : isInfiniteLoading;
@@ -381,9 +389,10 @@ export const PublicationsPage = () => {
       postId,
       executorId,
       platform,
+      createdDate,
       taskId: deepLinkFilters.taskId,
     }),
-    [q, postId, executorId, platform, deepLinkFilters.taskId]
+    [q, postId, executorId, platform, createdDate, deepLinkFilters.taskId]
   );
 
   const printPublications = reportPublications ?? visiblePublications;
@@ -511,12 +520,15 @@ export const PublicationsPage = () => {
         onSearch: setExecutorSearchQuery,
         onChange: handleExecutorChange,
       },
+      createdDate,
+      onCreatedDateChange: setCreatedDate,
     }),
     [
       allowOptionSearch,
       canSearchExecutors,
       canSearchPosts,
       canSearchTitles,
+      createdDate,
       executorId,
       executorOptions,
       handleExecutorChange,
@@ -544,6 +556,7 @@ export const PublicationsPage = () => {
     setPostId('all');
     setExecutorId('all');
     setPlatform('all');
+    setCreatedDate(null);
     setSelectedTitleOption(null);
     setSelectedPostOption(null);
     setSelectedExecutorOption(null);
@@ -566,15 +579,14 @@ export const PublicationsPage = () => {
   return (
     <PageLayout
       printHide={isTableView}
-
     >
       <Box
         className={isTableView ? 'print-root' : undefined}
         sx={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           height: isTableView ? '100%' : 'auto',
-          flex: isTableView ? 1 : undefined,
           minHeight: isTableView ? 0 : undefined,
           '@media print': {
             height: 'auto',
@@ -674,9 +686,10 @@ export const PublicationsPage = () => {
           >
             <Stack
               spacing={2}
-              sx={{ alignItems: 'center', maxWidth: 420 }}
+              sx={{ alignItems: 'center', maxWidth: 420, height: '100%' }}
             >
               <EmptyBlock
+                sx={{ height: '100%' }}
                 title={hasActiveFilters
                   ? 'По выбранным фильтрам ничего не найдено'
                   : 'Публикаций пока нет'}

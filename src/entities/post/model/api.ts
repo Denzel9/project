@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -72,6 +73,7 @@ export const useMyPostOptionsQuery = (enabled = true) =>
 
 export const usePostsInfiniteQuery = (
   params?: Omit<PostListParams, 'page'>,
+  options?: { placeholderData?: typeof keepPreviousData },
 ) => {
   const limit = params?.limit ?? 20
 
@@ -89,6 +91,7 @@ export const usePostsInfiniteQuery = (
     },
     initialPageParam: 1,
     getNextPageParam: getPostListNextPageParam,
+    placeholderData: options?.placeholderData,
   })
 }
 

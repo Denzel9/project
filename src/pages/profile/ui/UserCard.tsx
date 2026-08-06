@@ -117,13 +117,11 @@ export const UserCard = ({
         isLoading={isLoading}
       />
 
-      {/* // TODO: do this */}
       <UserStatsRow
         followers={user?.followers}
         completedTasksCount={user?.completedTasksCount}
         sx={{ mb: 4, mt: 1 }}
       />
-
 
       {isLoading ? (
         <Skeleton

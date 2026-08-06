@@ -117,7 +117,6 @@ export const TaskContactsTable = ({
     : paginationCount > rowsPerPage;
 
   const isEmpty = !items.length && (!isServerPagination || paginationCount === 0);
-  const showTableShell = Boolean(userFilter) || !isEmpty;
 
   const handleSort = (field: TaskContactSortField) => {
     if (sortField === field) {
@@ -137,7 +136,7 @@ export const TaskContactsTable = ({
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isEmpty && !showTableShell) {
+  if (isEmpty) {
     return (
       <Box
         sx={{

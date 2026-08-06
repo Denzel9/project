@@ -1,8 +1,10 @@
-import { HelpOutlineTwoTone } from '@mui/icons-material';
+import { HelpOutlineTwoTone, RocketLaunchOutlined } from '@mui/icons-material';
 import { Box, IconButton, Stack, useMediaQuery } from '@mui/material';
 import { type PropsWithChildren, useState } from 'react';
+import { useNavigate } from 'react-router';
 
 import { CurrentUser } from '@/features/current-user';
+import { ROUTES } from '@/shared';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
 import { HelpDialog } from './HelpDialog';
@@ -18,14 +20,17 @@ export const PageLayout = ({
   isScreenHeight = false,
   printHide = false,
 }: PropsWithChildren<PageLayoutProps>) => {
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
+
+  const navigate = useNavigate();
 
   return (
     <Box
       className="page-layout"
       sx={{
-        pr: { xs: 0, md: 2 },
+        pr: { xs: 0, md: 1 },
         minHeight: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -70,6 +75,10 @@ export const PageLayout = ({
           direction="row"
           sx={{ alignItems: 'center' }}
         >
+          <IconButton aria-label="Prime-аккаунт" onClick={() => navigate(ROUTES.SETTINGS_BILLING)}>
+            <RocketLaunchOutlined />
+          </IconButton>
+
           <IconButton
             aria-label="Помощь"
             onClick={() => setIsHelpOpen(true)}
@@ -82,9 +91,7 @@ export const PageLayout = ({
             onClose={() => setIsHelpOpen(false)}
           />
 
-          <Box sx={{ mr: '8px !important' }}>
-            <NotificationsMenu />
-          </Box>
+          <NotificationsMenu />
 
           <CurrentUser isButton={isMobile} />
         </Stack>

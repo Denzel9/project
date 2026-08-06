@@ -31,6 +31,7 @@ import {
 } from '@/entities/user';
 import { EmptyBlock, FilterAutocomplete, scrollMainToTop } from '@/shared';
 import { FullScreenGallery, MediaPreview } from '@/widgets';
+import { ColumnDateFilter } from '@/pages/my-tasks/ui/ColumnDateFilter';
 
 import {
   PUBLICATION_TABLE_COLUMN_WIDTHS,
@@ -107,7 +108,8 @@ export const PublicationTable = ({
       (columnFilters.title.value !== 'all' ||
         columnFilters.post.value !== 'all' ||
         columnFilters.platform.value !== 'all' ||
-        columnFilters.executor.value !== 'all'),
+        columnFilters.executor.value !== 'all' ||
+        Boolean(columnFilters.createdDate)),
   );
 
   const isControlledPagination =
@@ -436,15 +438,30 @@ export const PublicationTable = ({
                   sortDirection={getSortDirection('createdAt')}
                   sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.publishedAt)}
                 >
-                  <TableSortLabel
-                    active={sortField === 'createdAt'}
-                    direction={sortField === 'createdAt' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('createdAt')}
-                    hideSortIcon={forPrint}
-                    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                  <Stack
+                    direction="row"
+                    spacing={0.25}
+                    sx={{ alignItems: 'center', minWidth: 0 }}
                   >
-                    Создано
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortField === 'createdAt'}
+                      direction={sortField === 'createdAt' ? sortOrder : 'asc'}
+                      onClick={() => handleSort('createdAt')}
+                      hideSortIcon={forPrint}
+                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                    >
+                      Создано
+                    </TableSortLabel>
+
+                    {showColumnFilters && columnFilters && (
+                      <PublicationColumnFilterButton
+                        title="Создано"
+                        open={isFilterRowOpen}
+                        active={Boolean(columnFilters.createdDate)}
+                        onClick={() => setIsFilterRowOpen(open => !open)}
+                      />
+                    )}
+                  </Stack>
                 </TableCell>
 
                 {!forPrint && (
@@ -540,7 +557,14 @@ export const PublicationTable = ({
                     sx={filterCellSx(
                       PUBLICATION_TABLE_COLUMN_WIDTHS.publishedAt,
                     )}
-                  />
+                  >
+                    <ColumnDateFilter
+                      value={columnFilters.createdDate}
+                      placeholder="Все даты"
+                      todayLabel="Создано сегодня"
+                      onChange={columnFilters.onCreatedDateChange}
+                    />
+                  </TableCell>
                   {!forPrint && (
                     <TableCell
                       sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.actions)}

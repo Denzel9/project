@@ -7,8 +7,7 @@ import {
 } from '@/entities/chat';
 import { type UserSearchItem } from '@/entities/user';
 import { ChatContactSearch } from '@/features/chat';
-
-import { ConversationItem } from './ConversationItem';
+import { ConversationItem } from '@/widgets/chat';
 
 type ContactsProps = {
   conversations: ChatConversation[];

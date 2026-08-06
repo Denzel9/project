@@ -1,6 +1,4 @@
 import {
-  ChevronLeft,
-  ChevronRight,
   EventOutlined,
   ScheduleOutlined,
   Whatshot,
@@ -9,10 +7,8 @@ import {
   Box,
   Button,
   Chip,
-  IconButton,
   Skeleton,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
@@ -20,6 +16,7 @@ import { ru } from 'date-fns/locale';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AddTaskDialog } from '@/features';
 import { EmptyBlock } from '@/shared';
 
 import { CALENDAR_DAY_EVENTS_PAGE_SIZE } from '../model/constants';
@@ -37,18 +34,18 @@ type CalendarTaskListProps = {
   selectedDate: Dayjs;
   isLoading?: boolean;
   withHeader?: boolean;
+  isCompany?: boolean;
   events: CalendarEvent[];
-  onGoToToday: () => void;
   onSelectDate: (date: Dayjs) => void;
 };
 
 export const CalendarTaskList = ({
   events,
-  onGoToToday,
   onSelectDate,
   selectedDate,
   isLoading = false,
   withHeader = true,
+  isCompany = false,
 }: CalendarTaskListProps) => {
   const dateKey = toCalendarDateKey(selectedDate);
   const dayEvents = sortCalendarEvents(
@@ -58,8 +55,8 @@ export const CalendarTaskList = ({
   const [visibleCount, setVisibleCount] = useState(
     CALENDAR_DAY_EVENTS_PAGE_SIZE
   );
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
-  const isToday = dateKey === toCalendarDateKey(dayjs());
   const nearestDayKey = useMemo(
     () =>
       dayEvents.length === 0 ? findNearestDayWithEvents(events, dateKey) : null,
@@ -145,41 +142,15 @@ export const CalendarTaskList = ({
               )}
             </Stack>
 
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{ alignItems: 'center' }}
-            >
-              <Tooltip title="Предыдущий день">
-                <IconButton
-                  size="small"
-                  aria-label="Предыдущий день"
-                  onClick={() => onSelectDate(selectedDate.subtract(1, 'day'))}
-                >
-                  <ChevronLeft />
-                </IconButton>
-              </Tooltip>
-
+            {isCompany && (
               <Button
                 size="small"
-                variant={isToday ? 'contained' : 'outlined'}
-                onClick={onGoToToday}
-                disabled={isToday}
-                sx={{ minWidth: 84 }}
+                variant="contained"
+                onClick={() => setIsAddTaskOpen(true)}
               >
-                Сегодня
+                Создать задачу
               </Button>
-
-              <Tooltip title="Следующий день">
-                <IconButton
-                  size="small"
-                  aria-label="Следующий день"
-                  onClick={() => onSelectDate(selectedDate.add(1, 'day'))}
-                >
-                  <ChevronRight />
-                </IconButton>
-              </Tooltip>
-            </Stack>
+            )}
           </Stack>
 
           {!isLoading && dayStats.total > 0 && (
@@ -297,6 +268,13 @@ export const CalendarTaskList = ({
             </Box>
           )}
         </Stack>
+      )}
+
+      {isCompany && (
+        <AddTaskDialog
+          open={isAddTaskOpen}
+          onClose={() => setIsAddTaskOpen(false)}
+        />
       )}
     </Box>
   );

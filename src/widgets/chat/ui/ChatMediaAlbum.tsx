@@ -64,11 +64,11 @@ const getAlbumLayout = (count: number): { columns: string; areas: string[] } => 
 const getTileArea = (index: number) => String.fromCharCode(97 + index)
 
 const getAlbumHeight = (count: number) => {
-  if (count === 1) return 280
-  if (count === 2) return 180
-  if (count <= 4) return 260
-  if (count <= 6) return 300
-  return 340
+  if (count === 1) return 220
+  if (count === 2) return 148
+  if (count <= 4) return 200
+  if (count <= 6) return 236
+  return 260
 }
 
 export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
@@ -107,8 +107,8 @@ export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
             gap: '2px',
             width: '100%',
             height: albumHeight,
-            maxHeight: { xs: 240, sm: albumHeight },
-            borderRadius: '14px',
+            maxHeight: { xs: 200, sm: albumHeight },
+            borderRadius: '12px',
             overflow: 'hidden',
             bgcolor: 'rgba(0,0,0,0.04)',
           }}

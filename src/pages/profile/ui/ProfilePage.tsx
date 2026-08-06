@@ -66,10 +66,10 @@ export const ProfilePage = () => {
       <Box
         sx={{
           width: '100%',
-          position: 'relative',
-          backgroundSize: 'cover',
           border: '1px solid',
+          position: 'relative',
           borderColor: 'divider',
+          backgroundSize: 'cover',
           bgcolor: 'secondary.main',
           height: { xs: 250, md: 300 },
           minHeight: { xs: 250, md: 300 },
@@ -98,13 +98,12 @@ export const ProfilePage = () => {
       <Stack
         direction="row"
         sx={{
-          mb: 2,
-          pb: 0,
+          mb: 1,
           mt: -7,
           flex: 1,
           width: '100%',
           pt: { xs: 0, md: 4 },
-          px: { xs: 0, md: 2 },
+          px: { xs: 0, md: 1 },
           alignItems: 'center',
           justifyContent: 'space-between',
         }}

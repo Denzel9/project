@@ -17,6 +17,7 @@ type PublicationsFilterState = {
   executorId?: PublicationExecutorFilter
   platform?: PublicationPlatformFilter
   taskId?: string
+  createdDate?: string | null
 }
 
 const isValidFilterId = (value?: string | null): value is string =>
@@ -35,6 +36,7 @@ export const toPublicationsParams = ({
   taskId,
   executorId,
   platform,
+  createdDate,
 }: PublicationsFilterState): Omit<PublicationListParams, 'page'> => ({
   ...(q.trim() && { q: q.trim() }),
   ...(isValidFilterId(postId) && postId !== 'all' && { postId }),
@@ -42,6 +44,7 @@ export const toPublicationsParams = ({
   ...(isValidFilterId(executorId) &&
     executorId !== 'all' && { executorId }),
   ...(platform && platform !== 'all' && { platform }),
+  ...(createdDate && { createdDate }),
 })
 
 export const hasActivePublicationFilters = ({
@@ -49,14 +52,16 @@ export const hasActivePublicationFilters = ({
   postId = 'all',
   executorId = 'all',
   platform = 'all',
+  createdDate = null,
 }: Pick<
   PublicationsFilterState,
-  'q' | 'postId' | 'executorId' | 'platform'
+  'q' | 'postId' | 'executorId' | 'platform' | 'createdDate'
 >) =>
   Boolean(q.trim()) ||
   (isValidFilterId(postId) && postId !== 'all') ||
   (isValidFilterId(executorId) && executorId !== 'all') ||
-  (platform !== 'all' && Boolean(platform))
+  (platform !== 'all' && Boolean(platform)) ||
+  Boolean(createdDate)
 
 export const parsePublicationSearchParams = (
   searchParams: URLSearchParams,

@@ -63,11 +63,11 @@ export const ProfileControl = ({
         bgcolor: 'white',
         p: { xs: 3, md: 4 },
         alignItems: 'start',
+        border: '1px solid',
         borderRadius: '32px',
         mt: { xs: 2, md: 20 },
-        justifyContent: 'space-between',
-        border: '1px solid',
         borderColor: 'divider',
+        justifyContent: 'space-between',
       }}
     >
       <Stack
@@ -79,7 +79,7 @@ export const ProfileControl = ({
           value={tabValue}
           onChange={handleTabChange}
         >
-          <Tab label="Посты" />
+          <Tab label="Объявления" />
           <Tab label={isCompany ? 'О компании' : 'Обо мне'} />
           <Tab label="Контакты" />
         </Tabs>
@@ -129,7 +129,7 @@ export const ProfileControl = ({
         </Box>
       </Stack>
 
-      {!id && tabValue === 0 && (
+      {!id && (
         <Stack
           direction="row"
           sx={{
@@ -137,6 +137,7 @@ export const ProfileControl = ({
             bgcolor: 'white',
             alignItems: 'center',
             justifyContent: 'space-between',
+            display: tabValue === 0 ? 'flex' : 'none',
           }}
         >
           <Box

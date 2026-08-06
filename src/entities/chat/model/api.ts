@@ -422,7 +422,7 @@ export const useConversationsQuery = (
         '/chat/conversations',
         { params: queryParams },
       )
-      return data.map(normalizeConversation)
+      return sortConversationsByUnread(data.map(normalizeConversation))
     },
     enabled: options?.enabled ?? true,
   })

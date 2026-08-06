@@ -60,7 +60,7 @@ export const SettingsBillingPage = () => {
         variant="h6"
         sx={{ fontWeight: 600 }}
       >
-        Платежи
+        Подписка
       </Typography>
 
       <SettingsRow

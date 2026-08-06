@@ -8,8 +8,11 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { useLocation, useNavigate } from 'react-router';
 
+import { USER_ROLE } from '@/entities';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
@@ -24,8 +27,6 @@ import { CRMCollapseMenu } from './CRMCollapseMenu';
 import { MenuItem } from './MenuItem';
 import { SettingsCollapseMenu } from './SettingsCollapseMenu';
 
-import { USER_ROLE } from '@/entities';
-
 type SideBarContentProps = {
   isExpanded?: boolean;
   onNavigate?: () => void;
@@ -37,11 +38,14 @@ export const SideBarContent = ({
 }: SideBarContentProps = {}) => {
   const { isOpenSideBar } = useSideBarStore();
 
-  const { isAuth, role, isPrime } = useAuthStore();
+  const { isAuth, role, isPrime, primeExpiresAt } = useAuthStore();
   const badges = useSidebarCounters();
   const isManager = role === USER_ROLE.MANAGER;
   const showPrimePromo = !isManager && !isPrime;
   const showPrimeActive = !isManager && isPrime;
+  const primeExpiresLabel = primeExpiresAt
+    ? format(new Date(primeExpiresAt), 'dd.MM.yyyy', { locale: ru })
+    : null;
 
   const isSidebarExpanded = isExpanded ?? isOpenSideBar;
 
@@ -212,6 +216,8 @@ export const SideBarContent = ({
               mx: 2,
               borderRadius: '24px',
               bgcolor: 'secondary.light',
+              border: '1px solid',
+              borderColor: 'divider',
             }}
           >
             <Typography variant="body1">Prime активен</Typography>
@@ -219,7 +225,9 @@ export const SideBarContent = ({
               variant="body2"
               sx={{ mt: 1 }}
             >
-              Доступны CRM и расширенные функции рабочего пространства.
+              {primeExpiresLabel
+                ? `Подписка действует до ${primeExpiresLabel}`
+                : 'Доступны CRM и расширенные функции рабочего пространства.'}
             </Typography>
           </Box>
         )}

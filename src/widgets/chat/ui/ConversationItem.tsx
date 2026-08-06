@@ -1,4 +1,4 @@
-import { MoreVert, PushPin, } from '@mui/icons-material';
+import { MoreVert, PushPin } from '@mui/icons-material';
 import {
   Badge,
   Stack,

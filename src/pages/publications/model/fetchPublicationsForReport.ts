@@ -16,6 +16,7 @@ type FetchPublicationsForReportOptions = {
   executorId: PublicationExecutorFilter
   platform?: PublicationPlatformFilter
   taskId?: string
+  createdDate?: string | null
 }
 
 export const fetchPublicationsForReport = async (

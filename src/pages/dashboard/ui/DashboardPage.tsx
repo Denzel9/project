@@ -1,6 +1,6 @@
 import { Add } from '@mui/icons-material';
-import { Box, Button, Grid } from '@mui/material';
-import { useCallback, useMemo, useState } from 'react';
+import { Box, Button, Grid, Stack, Typography } from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -20,8 +20,9 @@ import {
   type FastButtonValueType,
 } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
-import { PageLayout } from '@/widgets';
+import { ConfirmDialog, PageLayout } from '@/widgets';
 
+import { DASHBOARD_SETTINGS_TIP_SEEN_KEY } from '../model/constants';
 import { getDashboardCardCount } from '../model/utils';
 
 import { DashboardActivityPanel } from './DashboardActivityPanel';
@@ -38,6 +39,7 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const { role, isAuth } = useAuthStore();
   const [isUpcomingTasksError, setIsUpcomingTasksError] = useState(false);
+  const [isSettingsTipOpen, setIsSettingsTipOpen] = useState(false);
   const setFastButtonValue = useMyTaskFilterStore(
     state => state.setFastButtonValue
   );
@@ -86,6 +88,25 @@ export const DashboardPage = () => {
   const showActivity = userConfig?.dashboardShowActivity ?? true;
   const showComments = userConfig?.dashboardShowComments ?? true;
   const showCalendar = userConfig?.dashboardShowCalendar ?? true;
+
+  useEffect(() => {
+    if (!isAuth) return;
+    if (localStorage.getItem(DASHBOARD_SETTINGS_TIP_SEEN_KEY)) return;
+
+    setTimeout(() => {
+      setIsSettingsTipOpen(true);
+    }, 0);
+  }, [isAuth]);
+
+  const markSettingsTipSeen = () => {
+    localStorage.setItem(DASHBOARD_SETTINGS_TIP_SEEN_KEY, 'true');
+    setIsSettingsTipOpen(false);
+  };
+
+  const handleOpenDashboardSettings = () => {
+    markSettingsTipSeen();
+    navigate(ROUTES.SETTINGS_CRM);
+  };
 
   const hasWidgets = [
     showTasks,
@@ -350,6 +371,42 @@ export const DashboardPage = () => {
           Добавить виджет
         </Button>
       )}
+
+      <ConfirmDialog
+        withButtons={false}
+        isOpen={isSettingsTipOpen}
+        onClose={markSettingsTipSeen}
+      >
+        <Typography variant="h6">Настройте дашборд под себя</Typography>
+        <Typography
+          variant="body1"
+          sx={{ mt: 2 }}
+        >
+          Можно выбрать виджеты и карточки задач в настройках CRM — так на
+          экране останется только нужное.
+        </Typography>
+
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ mt: 4 }}
+        >
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={markSettingsTipSeen}
+          >
+            Понятно
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenDashboardSettings}
+          >
+            Перейти в настройки
+          </Button>
+        </Stack>
+      </ConfirmDialog>
     </PageLayout>
   );
 };

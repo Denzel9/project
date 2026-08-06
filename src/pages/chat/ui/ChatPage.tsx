@@ -20,21 +20,23 @@ import {
 import { fetchTaskById, type Task } from '@/entities/task';
 import { type UserSearchItem } from '@/entities/user';
 import { useMessenger, formatTaskTzForChat } from '@/features/chat';
-import { ROUTES } from '@/shared';
-import { PageLayout, useSnackbarStore } from '@/widgets';
-
-import { extractChatTaskTzMessages } from '../model/chatTaskTzMessages';
-import { useChatPeerTasks } from '../model/hooks/useChatPeerTasks';
+import { ROUTES, EmptyBlock } from '@/shared';
+import {
+  ChatAttachmentsPanel,
+  ChatMessageBubble,
+  ChatSearchPanel,
+  ChatTaskTzPanel,
+  extractChatTaskTzMessages,
+  PageLayout,
+  useChatPeerTasks,
+  useSnackbarStore,
+} from '@/widgets';
 
 import { ChatAddTaskDialog } from './ChatAddTaskDialog';
-import { ChatAttachmentsPanel } from './ChatAttachmentsPanel';
 import { ChatConversation } from './ChatConversation';
 import { ChatForwardMessageDialog } from './ChatForwardMessageDialog';
 import { ChatHeader } from './ChatHeader';
-import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatPhotoReportPanel } from './ChatPhotoReportPanel';
-import { ChatSearchPanel } from './ChatSearchPanel';
-import { ChatTaskTzPanel } from './ChatTaskTzPanel';
 import { Contacts } from './Contacts';
 
 const toMessageSide = (
@@ -220,10 +222,10 @@ export const ChatPage = () => {
         const media =
           fullTask.media?.length && selectedConversationId
             ? await copyTaskMediaToConversation({
-                taskId: fullTask.id,
-                conversationId: selectedConversationId,
-                kind: 'main',
-              })
+              taskId: fullTask.id,
+              conversationId: selectedConversationId,
+              kind: 'main',
+            })
             : undefined;
 
         const sent = await sendTextMessage(message, {
@@ -372,42 +374,23 @@ export const ChatPage = () => {
       <PageLayout isScreenHeight>
         <Box
           sx={{
-            mt: 2,
             width: '100%',
             height: '100%',
             display: 'flex',
             bgcolor: 'white',
+            border: '1px solid',
             p: { xs: 2, md: 4 },
             alignItems: 'center',
+            borderColor: 'divider',
             justifyContent: 'center',
             borderRadius: { xs: '16px', md: '32px' },
           }}
         >
-          <Stack
-            spacing={2}
-            direction="column"
-          >
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                opacity: 0.3,
-                fontWeight: 500,
-                textAlign: 'center',
-                fontSize: { xs: '28px', md: '44px' },
-              }}
-            >
-              Нет диалогов
-            </Typography>
-
-            <Button
-              color="primary"
-              variant="contained"
-              onClick={() => navigate(ROUTES.INDEX)}
-            >
-              На главную
-            </Button>
-          </Stack>
+          <EmptyBlock
+            title="Нет диалогов"
+            buttonText="На главную"
+            buttonOnClick={() => navigate(ROUTES.INDEX)}
+          />
         </Box>
       </PageLayout>
     );

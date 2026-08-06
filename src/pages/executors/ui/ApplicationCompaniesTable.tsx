@@ -114,7 +114,6 @@ export const ApplicationCompaniesTable = ({
     : paginationCount > rowsPerPage;
 
   const isEmpty = !items.length && paginationCount === 0;
-  const showTableShell = Boolean(userFilter) || !isEmpty;
 
   const handleSort = (field: ApplicationCompanySortField) => {
     if (sortField === field) {
@@ -134,7 +133,7 @@ export const ApplicationCompaniesTable = ({
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isEmpty && !showTableShell) {
+  if (isEmpty) {
     return (
       <Box
         sx={{

@@ -1,3 +1,5 @@
+export const DASHBOARD_SETTINGS_TIP_SEEN_KEY = 'dashboard-settings-tip-seen';
+
 export const MAX_DASHBOARD_LIST_ITEMS = 5;
 
 export const DASHBOARD_TABLE_PAGE_SIZE = 20;

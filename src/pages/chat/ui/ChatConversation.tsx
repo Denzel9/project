@@ -1,30 +1,27 @@
-import { ChatOutlined, KeyboardArrowDown, PushPinOutlined } from '@mui/icons-material';
+import { ChatOutlined, KeyboardArrowDown } from '@mui/icons-material';
 import {
   Box,
   CircularProgress,
-  Divider,
   IconButton,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  List,
-  ListItemButton,
-  ListItemText,
+  Snackbar,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { EmptyBlock } from '@/shared';
+import {
+  ChatInput,
+  ChatMessageBubble,
+  ChatPinnedMessagesDialog,
+  ChatPinnedMessagesHeader,
+  type MessageSide,
+} from '@/widgets/chat';
 
 import { ChatErrorBanner } from './ChatErrorBanner';
-import { ChatInput } from './ChatInput';
-import { ChatMessageBubble } from './ChatMessageBubble';
 import { UnreadMessagesDivider } from './UnreadMessagesDivider';
 
-import type { MessageSide } from '../model/types';
 import type { ChatMessage, ChatMessagePin, ChatPeer } from '@/entities/chat';
 
 type ChatConversationProps = {
@@ -93,8 +90,13 @@ export const ChatConversation = ({
   const messagesContentRef = useRef<HTMLDivElement>(null);
   const prevPeerIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
+  const highlightTimeoutRef = useRef<number | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [pinnedDialogOpen, setPinnedDialogOpen] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(
+    null,
+  );
+  const [jumpError, setJumpError] = useState<string | null>(null);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current;
@@ -129,38 +131,67 @@ export const ChatConversation = ({
     setShowScrollToBottom(false);
   }, [scrollToBottom]);
 
-  const getPinPreview = useCallback((pin: ChatMessagePin) => {
-    const trimmed = pin.content.trim();
-
-    if (trimmed) {
-      const max = 80;
-      return trimmed.length > max ? `${trimmed.slice(0, max)}...` : trimmed;
-    }
-
-    return `Медиа (${pin.mediaCount})`;
-  }, []);
-
   const handleJumpToMessage = useCallback(
     (messageId: string) => {
       setPinnedDialogOpen(false);
 
-      const container = messagesContainerRef.current;
-      const el = container?.querySelector(
-        `#chat-message-${messageId}`,
-      ) as HTMLElement | null;
+      window.setTimeout(() => {
+        const container = messagesContainerRef.current;
+        const el = container?.querySelector(
+          `[data-message-id="${messageId}"]`,
+        ) as HTMLElement | null;
 
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setShowScrollToBottom(false);
-      }
+        if (!container || !el) {
+          setJumpError('Сообщение не найдено в загруженной истории чата');
+          return;
+        }
+
+        const stickyHeader = container.querySelector(
+          '[data-pinned-header="true"]',
+        ) as HTMLElement | null;
+        const stickyOffset = stickyHeader?.offsetHeight ?? 0;
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetTop =
+          container.scrollTop +
+          (elRect.top - containerRect.top) -
+          stickyOffset -
+          container.clientHeight / 3;
+
+        container.scrollTo({
+          top: Math.max(0, targetTop),
+          behavior: 'smooth',
+        });
+
+        if (highlightTimeoutRef.current) {
+          window.clearTimeout(highlightTimeoutRef.current);
+        }
+
+        setHighlightedMessageId(messageId);
+        highlightTimeoutRef.current = window.setTimeout(() => {
+          setHighlightedMessageId(null);
+          highlightTimeoutRef.current = null;
+        }, 2200);
+
+        setShowScrollToBottom(!isNearBottom());
+      }, 0);
     },
-    [],
+    [isNearBottom],
   );
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!peer) {
       setTimeout(() => {
         setShowScrollToBottom(false);
+        setHighlightedMessageId(null);
       }, 0);
       return;
     }
@@ -308,71 +339,11 @@ export const ChatConversation = ({
             bgcolor: 'secondary.light',
           }}
         >
-          {pinnedMessages.length > 0 ? (
-            <Box
-              sx={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-                px: { xs: 1.5, md: 2 },
-                py: 1.25,
-                bgcolor: 'common.white',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      color: 'text.secondary',
-                      fontWeight: 600,
-                      mb: 0.5,
-                    }}
-                  >
-                    Закреплённые · {pinnedMessages.length}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.primary',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      fontWeight: 500,
-                      maxWidth: { xs: 220, sm: 360, md: 460 },
-                    }}
-                  >
-                    {getPinPreview(pinnedMessages[0])}
-                  </Typography>
-                </Box>
-
-                <Tooltip title="Посмотреть закреплённые">
-                  <IconButton
-                    size="small"
-                    aria-label="Посмотреть закреплённые"
-                    onClick={() => setPinnedDialogOpen(true)}
-                    sx={{
-                      flexShrink: 0,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <PushPinOutlined fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Box>
-          ) : null}
+          <ChatPinnedMessagesHeader
+            pinnedMessages={pinnedMessages}
+            onJumpToMessage={handleJumpToMessage}
+            onOpenAll={() => setPinnedDialogOpen(true)}
+          />
 
           <Box
             ref={messagesContentRef}
@@ -399,7 +370,13 @@ export const ChatConversation = ({
               <Box
                 key={message.id}
                 id={`chat-message-${message.id}`}
-                sx={{ width: '100%' }}
+                data-message-id={message.id}
+                sx={{
+                  width: '100%',
+                  borderRadius: '16px',
+                  transition:
+                    'background-color 200ms ease, box-shadow 200ms ease',
+                }}
               >
                 {unreadDividerMessageId === message.id && (
                   <UnreadMessagesDivider />
@@ -430,6 +407,7 @@ export const ChatConversation = ({
                   isEditing={
                     isEditingMessage && editingMessageId === message.id
                   }
+                  isHighlighted={highlightedMessageId === message.id}
                 />
               </Box>
             ))}
@@ -471,51 +449,20 @@ export const ChatConversation = ({
         />
       </Box>
 
-      <Dialog
+      <ChatPinnedMessagesDialog
         open={pinnedDialogOpen}
+        pinnedMessages={pinnedMessages}
         onClose={() => setPinnedDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Закреплённые сообщения</DialogTitle>
-        <DialogContent>
-          {pinnedMessages.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-              Нет закреплённых сообщений
-            </Typography>
-          ) : (
-            <List disablePadding>
-              {pinnedMessages.map(pin => (
-                <Box key={pin.messageId}>
-                  <ListItemButton onClick={() => handleJumpToMessage(pin.messageId)}>
-                    <ListItemText
-                      primary={
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontWeight: 600,
-                          }}
-                        >
-                          {getPinPreview(pin)}
-                        </Typography>
-                      }
-                      secondary={
-                        <Typography variant="caption" color="text.secondary">
-                          {format(new Date(pin.pinnedAt), 'dd.MM HH:mm')}
-                        </Typography>
-                      }
-                    />
-                  </ListItemButton>
-                  <Divider />
-                </Box>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-      </Dialog>
+        onSelect={handleJumpToMessage}
+      />
+
+      <Snackbar
+        open={Boolean(jumpError)}
+        autoHideDuration={3000}
+        onClose={() => setJumpError(null)}
+        message={jumpError}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Stack>
   );
 };

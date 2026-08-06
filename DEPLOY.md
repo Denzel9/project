@@ -45,7 +45,8 @@
 
 1. Build type: **Dockerfile**, port **80**.
 2. **Build arg** `VITE_API_URL_BACKEND=https://api.…` (обязательно).
-3. Domain → `app.…`, HTTPS.
+3. **Build arg** `VITE_HELP_URL=https://help.…` (опционально, база знаний).
+4. Domain → `app.…`, HTTPS.
 
 ---
 

@@ -43,6 +43,7 @@ type ContactCardProps = {
   withTitle?: boolean;
   status?: TaskStatus;
   isExecutorApprove?: boolean | null;
+  roleLabel?: string;
 };
 
 const cardSx = {
@@ -62,6 +63,7 @@ export const ContactCard = ({
   withTitle = false,
   isMyPost = false,
   isExecutorApprove,
+  roleLabel: roleLabelProp,
 }: ContactCardProps) => {
   const [isOpenAddExecutorDialog, setIsOpenAddExecutorDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -69,7 +71,8 @@ export const ContactCard = ({
 
   const navigate = useNavigate();
 
-  const roleLabel = isMyPost ? 'Исполнитель' : 'Заказчик';
+  const roleLabel =
+    roleLabelProp ?? (isMyPost ? 'Исполнитель' : 'Заказчик');
   const isAwaitingExecutorApproval = isExecutorApprove === null && isMyPost;
 
   if (!contact) {

@@ -57,6 +57,7 @@ export type PostFilterDraft = {
   bloggerRequirements: PostFilterBloggerRequirements;
   cooperationDetails: PostFilterCooperationDetails;
   tags: string[];
+  chips: string[];
 };
 
 const defaultBudget: PostFilterBudget = {
@@ -105,4 +106,5 @@ export const defaultPostFilterDraft: PostFilterDraft = {
   bloggerRequirements: defaultBloggerRequirements,
   cooperationDetails: defaultCooperationDetails,
   tags: [],
+  chips: [],
 };

@@ -580,14 +580,15 @@ export const MyTasks = () => {
               }
               {...(hasActiveFilters
                 ? {
-                    buttonText: 'Сбросить фильтры',
-                    buttonOnClick: handleResetFilters,
-                  }
+                  buttonText: 'Сбросить фильтры',
+                  buttonOnClick: handleResetFilters,
+                }
+                // TODO: подумать может ли исполнитель создавать себе задачи
                 : isCompany
                   ? {
-                      buttonText: 'Создать задачу',
-                      buttonOnClick: () => setIsAddTaskOpen(true),
-                    }
+                    buttonText: 'Создать задачу',
+                    buttonOnClick: () => setIsAddTaskOpen(true),
+                  }
                   : {})}
             />
           </Box>

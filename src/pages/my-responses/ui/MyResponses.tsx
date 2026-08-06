@@ -1,5 +1,4 @@
-import { ReplyAllOutlined } from '@mui/icons-material';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -427,45 +426,30 @@ export const MyResponses = () => {
       {isEmpty && (
         <Box
           sx={{
+            flex: 1,
             display: 'flex',
-            justifyContent: 'center',
             bgcolor: 'white',
+            border: '1px solid',
             borderRadius: '32px',
-            border: '1px dashed',
             borderColor: 'divider',
+            justifyContent: 'center',
             py: 8,
             px: 3,
-            flex: 1,
           }}
         >
-          <Stack
-            spacing={2}
-            sx={{ alignItems: 'center', maxWidth: 400 }}
-          >
-            <ReplyAllOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ textAlign: 'center' }}
-            >
-              {emptyTitle}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: 'center' }}
-            >
-              {emptyDescription}
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() =>
-                hasActiveFilters ? handleResetFilters() : navigate(ROUTES.INDEX)
-              }
-            >
-              {hasActiveFilters ? 'Сбросить фильтры' : 'На главную'}
-            </Button>
-          </Stack>
+          <EmptyBlock
+            title={emptyTitle}
+            description={emptyDescription}
+            {...(hasActiveFilters
+              ? {
+                  buttonText: 'Сбросить фильтры',
+                  buttonOnClick: handleResetFilters,
+                }
+              : {
+                  buttonText: 'На главную',
+                  buttonOnClick: () => navigate(ROUTES.INDEX),
+                })}
+          />
         </Box>
       )}
 

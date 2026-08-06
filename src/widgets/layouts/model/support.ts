@@ -28,6 +28,6 @@ export const SUPPORT_CHANNELS: SupportChannel[] = [
     id: 'knowledge-base',
     label: 'База знаний',
     description: 'Ответы на частые вопросы',
-    href: 'https://help.nikssens.ru',
+    href: import.meta.env.VITE_HELP_URL || 'https://help.nikssens.ru',
   },
 ];

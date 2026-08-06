@@ -143,15 +143,15 @@ const PostItem = ({
                 <Typography
                   variant="h6"
                   target="_blank"
-                  component={isCompany ? Link : 'span'}
-                  to={isCompany ? `${ROUTES.POST}/${post.id}` : undefined}
+                  component={Link}
+                  to={`${ROUTES.POST}/${post.id}`}
                   sx={{
                     color: 'inherit',
                     textDecoration: 'none',
                     transition: 'all 0.3s ease',
-                    cursor: isCompany ? 'pointer' : 'default',
+                    cursor: 'pointer',
                     ':hover': {
-                      color: isCompany ? 'primary.main' : 'inherit',
+                      color: 'primary.main',
                     },
                   }}
                 >
@@ -259,7 +259,7 @@ const PostItem = ({
                 ? post?.description.slice(0, 200) + '... '
                 : post?.description}
 
-              {isCompact && isCompany && post?.description?.length > 200 && (
+              {isCompact && post?.description?.length > 200 && (
                 <span
                   onClick={() => {
                     navigate(`${ROUTES.POST}/${post.id}`);

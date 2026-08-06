@@ -51,6 +51,8 @@ type ChatConversationProps = {
   pinnedMessages: ChatMessagePin[];
   isMessagePinned: (messageId: string) => boolean;
   onTogglePinMessage: (messageId: string, nextPinned: boolean) => void;
+  focusMessageId?: string | null;
+  onFocusMessageHandled?: () => void;
 };
 
 const toMessageSide = (
@@ -85,6 +87,8 @@ export const ChatConversation = ({
   pinnedMessages,
   isMessagePinned,
   onTogglePinMessage,
+  focusMessageId = null,
+  onFocusMessageHandled,
 }: ChatConversationProps) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesContentRef = useRef<HTMLDivElement>(null);
@@ -178,6 +182,13 @@ export const ChatConversation = ({
     },
     [isNearBottom],
   );
+
+  useEffect(() => {
+    if (!focusMessageId) return;
+
+    handleJumpToMessage(focusMessageId);
+    onFocusMessageHandled?.();
+  }, [focusMessageId, handleJumpToMessage, onFocusMessageHandled]);
 
   useEffect(() => {
     return () => {

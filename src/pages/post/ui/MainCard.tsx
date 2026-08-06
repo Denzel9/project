@@ -12,9 +12,9 @@ import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
+  formatPostBudget,
   UserDisplayName,
   UserStatsRow,
-  USER_ROLE,
   useFavoritePostIds,
   type Post,
   type User,
@@ -70,6 +70,12 @@ export const MainCard = ({
 
   const { favoritePostIds } = useFavoritePostIds();
 
+  const isCompanyPost = post?.type === 'COMPANY';
+  const typeLabel = isCompanyPost ? 'Объявление' : 'Пост исполнителя';
+  const budgetLabel = formatPostBudget(post?.budget);
+  const showRate =
+    !isCompanyPost && Boolean(post?.budget) && budgetLabel !== '—';
+
   return (
     <Box
       sx={{
@@ -79,6 +85,8 @@ export const MainCard = ({
         p: { xs: 2, md: 4 },
         flexDirection: 'column',
         borderRadius: { xs: '16px', md: '32px' },
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Box
@@ -93,40 +101,71 @@ export const MainCard = ({
             sx={{
               width: { xs: '100%', md: '550px' },
               height: { xs: '400px', md: '500px' },
+              flexShrink: 0,
             }}
           >
             <Media items={mediaItems} />
           </Box>
         )}
 
-        <Box sx={{ flex: 1, position: 'relative' }}>
+        <Box sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
           <Stack
             direction="row"
             spacing={2}
-            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+            sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
           >
-            <Stack
-              spacing={1}
-              direction="row"
-              sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
-            >
-              <Typography sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
+            <Stack spacing={1.5} sx={{ minWidth: 0, flex: 1 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}
+              >
+                <Chip
+                  size="small"
+                  label={typeLabel}
+                  color={isCompanyPost ? 'default' : 'primary'}
+                  variant={isCompanyPost ? 'outlined' : 'filled'}
+                  sx={{ fontWeight: 600 }}
+                />
+                {post?.urgent && (
+                  <Chip
+                    color="error"
+                    icon={<Whatshot />}
+                    label="Срочно"
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+              </Stack>
+
+              <Typography
+                sx={{
+                  fontSize: { xs: '1.5rem', md: '2.25rem' },
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  wordBreak: 'break-word',
+                }}
+              >
                 {post?.title}
               </Typography>
 
-              {post?.urgent && (
-                <Chip
-                  color="error"
-                  icon={<Whatshot />}
-                  label="Срочно"
-                  sx={{ fontWeight: 600 }}
-                />
+              {Boolean(post?.chips?.length) && (
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {post?.chips?.map(chip => (
+                    <Chip
+                      key={chip}
+                      label={chip}
+                      size="small"
+                    />
+                  ))}
+                </Box>
               )}
             </Stack>
 
             <Stack
               direction="row"
               spacing={1}
+              sx={{ flexShrink: 0 }}
             >
               <ShareButton
                 postId={post?.id ?? ''}
@@ -148,7 +187,7 @@ export const MainCard = ({
                       closeMenu();
                       if (!requireEmailConfirmed()) return;
                       navigate(
-                        `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`
+                        `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`,
                       );
                     }}
                   >
@@ -183,15 +222,36 @@ export const MainCard = ({
             </Stack>
           </Stack>
 
-          <Box sx={{ width: { xs: '100%', md: '90%' } }}>
-            <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-              {post?.chips?.map(chip => (
-                <Chip
-                  key={chip}
-                  label={chip}
-                />
-              ))}
-            </Box>
+          <Box sx={{ width: { xs: '100%', md: '90%' }, mt: 3 }}>
+            {showRate && (
+              <Box
+                sx={{
+                  mb: 3,
+                  display: { xs: 'none', lg: 'block' },
+                  p: 2,
+                  borderRadius: '16px',
+                  bgcolor: 'secondary.light',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  width: 'fit-content',
+                  minWidth: 160,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  Ставка
+                </Typography>
+                <Typography
+                  variant="h6"
+                  color="primary.main"
+                  sx={{ fontWeight: 600 }}
+                >
+                  {budgetLabel}
+                </Typography>
+              </Box>
+            )}
 
             <Stack
               component={Link}
@@ -199,7 +259,6 @@ export const MainCard = ({
               target="_blank"
               spacing={1}
               sx={{
-                mt: 6,
                 color: 'inherit',
                 cursor: 'pointer',
                 width: 'fit-content',
@@ -226,7 +285,7 @@ export const MainCard = ({
 
             <Typography
               variant="body1"
-              sx={{ mt: 6, whiteSpace: 'pre-wrap' }}
+              sx={{ mt: 3, whiteSpace: 'pre-wrap' }}
             >
               {post?.description}
             </Typography>
@@ -239,7 +298,7 @@ export const MainCard = ({
               applicationId={application?.id}
               isApplied={Boolean(application)}
               applicationStatus={application?.status}
-              isCompany={user?.role === USER_ROLE.COMPANY}
+              isCompany={isCompanyPost}
               isFavorite={favoritePostIds.has(post?.id ?? '')}
               removePostFromCollection={removePostFromCollection}
             />

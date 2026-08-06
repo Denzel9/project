@@ -11,6 +11,8 @@ COPY . .
 # Bake API URL at build time (Vite). Pass via Dokploy build args.
 ARG VITE_API_URL_BACKEND
 ENV VITE_API_URL_BACKEND=$VITE_API_URL_BACKEND
+ARG VITE_HELP_URL
+ENV VITE_HELP_URL=$VITE_HELP_URL
 
 RUN npm run build
 

@@ -124,7 +124,7 @@ export const PostPage = () => {
   }, [tab]);
 
   const isOwner = Boolean(post?.owner?.id === currentUserId);
-  const isCompanyPost = post?.owner?.companyProfile?.companyName;
+  const isCompanyPost = post?.type === 'COMPANY';
   const application = myApplicationsMap.get(post?.id ?? '');
 
   const mediaItems =
@@ -178,10 +178,10 @@ export const PostPage = () => {
   return (
     <PageLayout>
       <Stack
-        spacing={2}
+        spacing={1}
         sx={{ flex: 1 }}
       >
-        {isOwner && role === USER_ROLE.COMPANY && (
+        {isOwner && isCompanyPost && role === USER_ROLE.COMPANY && (
           <Stack
             direction="row"
             sx={{
@@ -227,7 +227,7 @@ export const PostPage = () => {
               />
             </Tabs>
 
-            {isOwner && role === USER_ROLE.COMPANY && tabValue === 1 && (
+            {isOwner && isCompanyPost && role === USER_ROLE.COMPANY && tabValue === 1 && (
               <PostApplicationsFilter
                 status={applicationStatusFilter}
                 applicantId={applicantId}
@@ -242,7 +242,7 @@ export const PostPage = () => {
         )}
 
         {tabValue === 0 && (
-          <Stack spacing={2}>
+          <Stack spacing={1}>
             <MainCard
               post={post}
               user={user?.data}
@@ -259,6 +259,8 @@ export const PostPage = () => {
                   py: 2,
                   bgcolor: 'white',
                   borderRadius: '24px',
+                  border: '1px solid',
+                  borderColor: 'divider',
                   display: { xs: 'block', lg: 'none' },
                 }}
               >
@@ -266,7 +268,7 @@ export const PostPage = () => {
                   variant="caption"
                   color="text.secondary"
                 >
-                  Бюджет
+                  {isCompanyPost ? 'Бюджет' : 'Ставка'}
                 </Typography>
                 <Typography
                   variant="h6"
@@ -279,14 +281,14 @@ export const PostPage = () => {
             )}
 
             <Stack
+              spacing={1}
               direction={{ xs: 'column', lg: 'row' }}
-              spacing={2}
               sx={{ alignItems: 'flex-start' }}
             >
               <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
                 <PostDetailsCard
                   post={post}
-                  isCompanyPost={Boolean(isCompanyPost)}
+                  isCompanyPost={isCompanyPost}
                 />
               </Box>
 
@@ -304,6 +306,7 @@ export const PostPage = () => {
                     taskId={post.id}
                     isMyPost={isOwner}
                     contact={user?.data}
+                    roleLabel={isCompanyPost ? 'Заказчик' : 'Исполнитель'}
                   />
                 </Box>
               )}

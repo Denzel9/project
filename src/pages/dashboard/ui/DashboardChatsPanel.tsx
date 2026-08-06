@@ -10,12 +10,10 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
-  Button,
   Chip,
   CircularProgress,
   IconButton,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -34,7 +32,6 @@ import { useNavigate } from 'react-router';
 import {
   useConversationsQuery,
   useMessagePinsQuery,
-  useSearchMessagesQuery,
   type ChatConversation,
   type ChatMessage,
 } from '@/entities';
@@ -44,6 +41,7 @@ import {
   ChatAttachmentsPanel,
   ChatInput,
   ChatMessageBubble,
+  ChatMessageSearchAutocomplete,
   ChatPinnedMessagesDialog,
   ChatSearchPanel,
   ChatTaskTzPanel,
@@ -79,10 +77,6 @@ export const DashboardChatsPanel = () => {
     string | null
   >(null);
   const [isThreadSearchOpen, setIsThreadSearchOpen] = useState(false);
-  const [threadSearchQuery, setThreadSearchQuery] = useState('');
-  const [debouncedThreadQuery, setDebouncedThreadQuery] = useState('');
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchItems, setSearchItems] = useState<ChatMessage[]>([]);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
   const [isTaskTzOpen, setIsTaskTzOpen] = useState(false);
   const [pinnedDialogOpen, setPinnedDialogOpen] = useState(false);
@@ -94,7 +88,6 @@ export const DashboardChatsPanel = () => {
   const prevMessagesLengthRef = useRef(0);
 
   const hasActiveFilters = peerId !== 'all';
-  const isDesktopSearch = isThreadSearchOpen && !isMobile;
 
   const conversationParams = useMemo(
     () => ({
@@ -206,6 +199,13 @@ export const DashboardChatsPanel = () => {
     }
   }, []);
 
+  const handleSelectSearchMessage = useCallback(
+    (message: ChatMessage) => {
+      handleJumpToPinnedMessage(message.id);
+    },
+    [handleJumpToPinnedMessage],
+  );
+
   const { peerAssignedTasks } = useChatPeerTasks(
     selectedConversation?.peer?.id,
   );
@@ -213,61 +213,6 @@ export const DashboardChatsPanel = () => {
   const hasTaskTzMessages = useMemo(
     () => extractChatTaskTzMessages(messages).length > 0,
     [messages],
-  );
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedThreadQuery(threadSearchQuery.trim());
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [threadSearchQuery]);
-
-  useEffect(() => {
-    if (!isDesktopSearch) {
-      setTimeout(() => {
-        setDebouncedThreadQuery('');
-        setSearchPage(1);
-        setSearchItems([]);
-      }, 0);
-    }
-  }, [isDesktopSearch]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setSearchPage(1);
-      setSearchItems([]);
-    }, 0);
-  }, [debouncedThreadQuery, selectedConversationId]);
-
-  const canSearch =
-    isDesktopSearch &&
-    Boolean(selectedConversationId) &&
-    debouncedThreadQuery.length >= 2;
-
-  const {
-    data: searchData,
-    isLoading: isSearchLoading,
-    isFetching: isSearchFetching,
-    error: searchError,
-  } = useSearchMessagesQuery(canSearch ? selectedConversationId : null, {
-    q: debouncedThreadQuery,
-    page: searchPage,
-    limit: 20,
-  });
-
-  useEffect(() => {
-    if (!canSearch || !searchData) return;
-
-    setTimeout(() => {
-      setSearchItems(prev =>
-        searchPage === 1 ? searchData.items : [...prev, ...searchData.items],
-      );
-    }, 0);
-  }, [canSearch, searchData, searchPage]);
-
-  const searchHasMore = Boolean(
-    searchData && searchData.page * searchData.limit < searchData.total,
   );
 
   const scrollMessagesToBottom = (behavior: ScrollBehavior = 'auto') => {
@@ -282,7 +227,7 @@ export const DashboardChatsPanel = () => {
   };
 
   useLayoutEffect(() => {
-    if (!selectedConversationId || isThreadLoading || isDesktopSearch) return;
+    if (!selectedConversationId || isThreadLoading) return;
 
     const conversationChanged =
       prevConversationIdRef.current !== selectedConversationId;
@@ -299,7 +244,7 @@ export const DashboardChatsPanel = () => {
     if (messagesAdded) {
       scrollMessagesToBottom('smooth');
     }
-  }, [selectedConversationId, isThreadLoading, messages, isDesktopSearch]);
+  }, [selectedConversationId, isThreadLoading, messages]);
 
   useEffect(() => {
     if (selectedConversationId) return;
@@ -318,7 +263,6 @@ export const DashboardChatsPanel = () => {
   useEffect(() => {
     setTimeout(() => {
       setIsThreadSearchOpen(false);
-      setThreadSearchQuery('');
       setIsAttachmentsOpen(false);
       setIsTaskTzOpen(false);
       setPinnedDialogOpen(false);
@@ -356,13 +300,7 @@ export const DashboardChatsPanel = () => {
   };
 
   const handleToggleThreadSearch = () => {
-    if (isThreadSearchOpen) {
-      setIsThreadSearchOpen(false);
-      setThreadSearchQuery('');
-      return;
-    }
-
-    setIsThreadSearchOpen(true);
+    setIsThreadSearchOpen(prev => !prev);
   };
 
   return (
@@ -450,13 +388,11 @@ export const DashboardChatsPanel = () => {
           {selectedConversation && (
             <>
               {isThreadSearchOpen && !isMobile && (
-                <TextField
+                <ChatMessageSearchAutocomplete
                   autoFocus
-                  size="small"
-                  label="Поиск"
-                  value={threadSearchQuery}
-                  onChange={event => setThreadSearchQuery(event.target.value)}
-                  sx={{ width: 180 }}
+                  conversationId={selectedConversationId}
+                  sx={{ width: 220 }}
+                  onSelect={handleSelectSearchMessage}
                 />
               )}
 
@@ -613,7 +549,7 @@ export const DashboardChatsPanel = () => {
               pr: 0.5,
             }}
           >
-            {!isDesktopSearch && pinnedMessages.length > 0 && (
+            {pinnedMessages.length > 0 && (
               <Box
                 sx={{
                   position: 'sticky',
@@ -680,186 +616,80 @@ export const DashboardChatsPanel = () => {
               </Box>
             )}
 
-            {isDesktopSearch ? (
-              <>
-                {isSearchLoading && searchItems.length === 0 && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      py: 6,
-                    }}
-                  >
-                    <CircularProgress size={28} />
-                  </Box>
-                )}
-
-                {searchError && (
-                  <Typography
-                    variant="body2"
-                    color="error"
-                    sx={{ textAlign: 'center', py: 2 }}
-                  >
-                    Не удалось выполнить поиск
-                  </Typography>
-                )}
-
-                {!isSearchLoading &&
-                  !searchError &&
-                  debouncedThreadQuery.length >= 2 &&
-                  searchItems.length === 0 && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ textAlign: 'center', py: 4 }}
-                    >
-                      Ничего не найдено
-                    </Typography>
-                  )}
-
-                {debouncedThreadQuery.length < 2 && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ textAlign: 'center', py: 4 }}
-                  >
-                    Введите минимум 2 символа для поиска
-                  </Typography>
-                )}
-
-                {searchItems.map(message => (
-                  <Box
-                    key={message.id}
-                    sx={{ mb: 1 }}
-                  >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mb: 0.5, display: 'block' }}
-                    >
-                      {format(
-                        new Date(message.createdAt),
-                        'dd.MM.yyyy HH:mm',
-                      )}
-                    </Typography>
-                    <ChatMessageBubble
-                      messageId={message.id}
-                      senderId={message.senderId}
-                      createdAt={message.createdAt}
-                      editedAt={message.editedAt}
-                      isRedirected={message.isRedirected}
-                      currentUserId={currentUserId}
-                      text={message.content}
-                      media={message.media}
-                      highlight={debouncedThreadQuery}
-                      side={toMessageSide(message.senderId, currentUserId)}
-                      time={format(new Date(message.createdAt), 'HH:mm')}
-                      isRead={message.isRead}
-                    />
-                  </Box>
-                ))}
-
-                {searchHasMore && (
-                  <Box
-                    sx={{
-                      pt: 1,
-                      display: 'flex',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      disabled={isSearchFetching}
-                      onClick={() => setSearchPage(prev => prev + 1)}
-                    >
-                      {isSearchFetching ? 'Загрузка…' : 'Загрузить ещё'}
-                    </Button>
-                  </Box>
-                )}
-              </>
-            ) : (
-              <>
-                {isThreadLoading && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      py: 6,
-                    }}
-                  >
-                    <CircularProgress size={28} />
-                  </Box>
-                )}
-
-                {!isThreadLoading && isThreadError && (
-                  <EmptyBlock
-                    sx={{ height: '100%' }}
-                    title="Не удалось загрузить сообщения"
-                    description="Попробуйте ещё раз"
-                    buttonText="Повторить"
-                    navigate={() => void refetchThread()}
-                  />
-                )}
-
-                {!isThreadLoading &&
-                  !isThreadError &&
-                  messages.length === 0 && (
-                    <Box
-                      sx={{
-                        py: 4,
-                        display: 'flex',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        Напишите первое сообщение ниже
-                      </Typography>
-                    </Box>
-                  )}
-
-                {!isThreadLoading &&
-                  !isThreadError &&
-                  messages.map(message => (
-                    <Box
-                      key={message.id}
-                      id={`dashboard-chat-message-${message.id}`}
-                      sx={{ mb: 1 }}
-                    >
-                      <ChatMessageBubble
-                        messageId={message.id}
-                        senderId={message.senderId}
-                        createdAt={message.createdAt}
-                        editedAt={message.editedAt}
-                        isRedirected={message.isRedirected}
-                        currentUserId={currentUserId}
-                        text={message.content}
-                        media={message.media}
-                        side={toMessageSide(message.senderId, currentUserId)}
-                        time={format(new Date(message.createdAt), 'HH:mm')}
-                        isRead={message.isRead}
-                      />
-                    </Box>
-                  ))}
-              </>
+            {isThreadLoading && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  py: 6,
+                }}
+              >
+                <CircularProgress size={28} />
+              </Box>
             )}
+
+            {!isThreadLoading && isThreadError && (
+              <EmptyBlock
+                sx={{ height: '100%' }}
+                title="Не удалось загрузить сообщения"
+                description="Попробуйте ещё раз"
+                buttonText="Повторить"
+                navigate={() => void refetchThread()}
+              />
+            )}
+
+            {!isThreadLoading && !isThreadError && messages.length === 0 && (
+              <Box
+                sx={{
+                  py: 4,
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Напишите первое сообщение ниже
+                </Typography>
+              </Box>
+            )}
+
+            {!isThreadLoading &&
+              !isThreadError &&
+              messages.map(message => (
+                <Box
+                  key={message.id}
+                  id={`dashboard-chat-message-${message.id}`}
+                  sx={{ mb: 1 }}
+                >
+                  <ChatMessageBubble
+                    messageId={message.id}
+                    senderId={message.senderId}
+                    createdAt={message.createdAt}
+                    editedAt={message.editedAt}
+                    isRedirected={message.isRedirected}
+                    currentUserId={currentUserId}
+                    text={message.content}
+                    media={message.media}
+                    side={toMessageSide(message.senderId, currentUserId)}
+                    time={format(new Date(message.createdAt), 'HH:mm')}
+                    isRead={message.isRead}
+                  />
+                </Box>
+              ))}
           </Box>
 
-          {!isDesktopSearch && (
-            <ChatInput
-              value={draft}
-              onChange={setDraft}
-              onSend={() => void handleSend()}
-              pendingFiles={pendingFiles}
-              onAttachFiles={attachFiles}
-              onRemoveFile={removeFile}
-              isSending={isSending}
-              placeholder="Написать сообщение…"
-            />
-          )}
+          <ChatInput
+            value={draft}
+            onChange={setDraft}
+            onSend={() => void handleSend()}
+            pendingFiles={pendingFiles}
+            onAttachFiles={attachFiles}
+            onRemoveFile={removeFile}
+            isSending={isSending}
+            placeholder="Написать сообщение…"
+          />
 
           <ChatPinnedMessagesDialog
             open={pinnedDialogOpen}
@@ -874,14 +704,9 @@ export const DashboardChatsPanel = () => {
         <>
           <ChatSearchPanel
             open={isThreadSearchOpen && isMobile}
-            query={threadSearchQuery}
-            onQueryChange={setThreadSearchQuery}
-            currentUserId={currentUserId}
-            onClose={() => {
-              setIsThreadSearchOpen(false);
-              setThreadSearchQuery('');
-            }}
+            onClose={() => setIsThreadSearchOpen(false)}
             conversationId={selectedConversationId}
+            onSelectMessage={handleSelectSearchMessage}
           />
 
           <ChatAttachmentsPanel

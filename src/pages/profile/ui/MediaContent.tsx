@@ -76,7 +76,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
                 isPrivate={isPrivate}
                 permissions={postPermissions}
                 isMyPost={post.owner.id === id}
-                isCompany={post.owner.id === id}
+                isCompany={Boolean(post.owner.companyProfile?.companyName)}
               />
             </Box>
           ))}

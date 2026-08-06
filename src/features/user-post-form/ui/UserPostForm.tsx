@@ -41,6 +41,13 @@ import {
   type FormProductType,
 } from '../model/schema/schema';
 
+import {
+  BudgetSection,
+  LocationSection,
+  MetaSection,
+  PlatformsSection,
+  PortfolioLinksSection,
+} from './ExtraSections';
 import { MainInfo } from './MainInfo';
 
 import type { Photo } from '@/entities/photo';
@@ -298,9 +305,16 @@ export const UserPostForm = ({
             rows: 5,
             fullWidth: true,
             multiline: true,
-            placeholder: 'Описание',
+            label: 'Описание',
+            sx: { mt: 4, width: { xs: '100%', md: '50%' } },
           }}
         />
+
+        <MetaSection />
+        <PlatformsSection />
+        <LocationSection />
+        <BudgetSection />
+        <PortfolioLinksSection />
 
         {submitError && (
           <Box sx={{ color: 'error.main', mt: 2 }}>{submitError}</Box>

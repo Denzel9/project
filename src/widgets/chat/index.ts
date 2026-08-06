@@ -6,6 +6,7 @@ export {
   ChatPinnedMessagesDialog,
 } from './ui/ChatPinnedMessagesDialog'
 export { ChatPinnedMessagesHeader } from './ui/ChatPinnedMessagesHeader'
+export { ChatMessageSearchAutocomplete } from './ui/ChatMessageSearchAutocomplete'
 export { ChatSearchPanel } from './ui/ChatSearchPanel'
 export { ChatTaskTzPanel } from './ui/ChatTaskTzPanel'
 export { ConversationItem } from './ui/ConversationItem'

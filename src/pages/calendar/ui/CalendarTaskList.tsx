@@ -100,7 +100,7 @@ export const CalendarTaskList = ({
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        p: { xs: 1.5, md: 2 },
+        p: { xs: 2, md: 4 },
         bgcolor: 'white',
         borderRadius: '32px',
         border: '1px solid',

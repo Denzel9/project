@@ -17,6 +17,7 @@ import {
   PlacementFormatEnum,
   PlatformEnum,
   UsageRightsEnum,
+  USER_ROLE,
   WorkFormatEnum,
   getBudgetTypeLabel,
   getContentStyleLabel,
@@ -26,6 +27,7 @@ import {
   getUsageRightsLabel,
   getWorkFormatLabel,
 } from '@/entities';
+import { useAuthStore } from '@/features/auth';
 import { DatePicker } from '@/shared';
 
 import { useMainFilterStore } from '../model/store';
@@ -38,6 +40,7 @@ import {
   type PostFilterLocation,
   type TriStateFilter,
 } from '../model/types';
+import { sanitizePostFilterDraftForRole } from '../model/utils';
 
 import { FilterChipGroup } from './components/FilterChipGroup';
 import { FilterSection } from './components/FilterSection';
@@ -52,13 +55,19 @@ const PLACEMENT_FORMAT_OPTIONS = Object.values(PlacementFormatEnum).map(
   value => ({
     value,
     label: getPlacementFormatLabel(value),
-  })
+  }),
 );
 
 const CONTENT_STYLE_OPTIONS = Object.values(ContentStyleEnum).map(value => ({
   value,
   label: getContentStyleLabel(value),
 }));
+
+const ADVANTAGE_CHIP_OPTIONS = [
+  'Удаленно',
+  'На месте работодателя',
+  'По договору',
+].map(value => ({ value, label: value }));
 
 const TRI_STATE_OPTIONS: { value: TriStateFilter; label: string }[] = [
   { value: '', label: 'Любой' },
@@ -74,19 +83,25 @@ export const SideBarFilter = () => {
     setPostFilters,
     resetPostFilters,
   } = useMainFilterStore();
+  const role = useAuthStore(state => state.role);
+  const isCompanyViewer = role === USER_ROLE.COMPANY;
+  const isCreatorViewer = role === USER_ROLE.CREATOR;
+  const showCompanyAdFilters = isCreatorViewer || role === USER_ROLE.MANAGER;
+  const showCreatorPostFilters = isCompanyViewer || role === USER_ROLE.MANAGER;
+
   const [draft, setDraft] = useState<PostFilterDraft>(defaultPostFilterDraft);
 
   useEffect(() => {
     if (!isOpenMainFilter) return;
 
     setTimeout(() => {
-      setDraft(postFilters);
+      setDraft(sanitizePostFilterDraftForRole(postFilters, role));
     }, 0);
-  }, [isOpenMainFilter, postFilters]);
+  }, [isOpenMainFilter, postFilters, role]);
 
   const setField = <K extends keyof PostFilterDraft>(
     key: K,
-    value: PostFilterDraft[K]
+    value: PostFilterDraft[K],
   ) => {
     setDraft(prev => ({ ...prev, [key]: value }));
   };
@@ -106,7 +121,7 @@ export const SideBarFilter = () => {
   };
 
   const setBloggerRequirements = (
-    patch: Partial<PostFilterBloggerRequirements>
+    patch: Partial<PostFilterBloggerRequirements>,
   ) => {
     setDraft(prev => ({
       ...prev,
@@ -115,7 +130,7 @@ export const SideBarFilter = () => {
   };
 
   const setCooperationDetails = (
-    patch: Partial<PostFilterCooperationDetails>
+    patch: Partial<PostFilterCooperationDetails>,
   ) => {
     setDraft(prev => ({
       ...prev,
@@ -124,7 +139,7 @@ export const SideBarFilter = () => {
   };
 
   const handleApply = () => {
-    setPostFilters(draft);
+    setPostFilters(sanitizePostFilterDraftForRole(draft, role));
     setIsOpenMainFilter(false);
   };
 
@@ -133,6 +148,9 @@ export const SideBarFilter = () => {
     setDraft(defaultPostFilterDraft);
     setIsOpenMainFilter(false);
   };
+
+  const budgetSectionTitle = isCompanyViewer ? 'Ставка' : 'Бюджет';
+  const budgetTypeLabel = isCompanyViewer ? 'Тип ставки' : 'Тип бюджета';
 
   return (
     <Stack
@@ -178,25 +196,27 @@ export const SideBarFilter = () => {
                 onChange={event => setField('title', event.target.value)}
               />
 
-              <TextField
-                size="small"
-                fullWidth
-                select
-                label="Срочность"
-                value={draft.urgent}
-                onChange={event =>
-                  setField('urgent', event.target.value as TriStateFilter)
-                }
-              >
-                {TRI_STATE_OPTIONS.map(option => (
-                  <MenuItem
-                    key={option.value || 'any'}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+              {showCompanyAdFilters && (
+                <TextField
+                  size="small"
+                  fullWidth
+                  select
+                  label="Срочность"
+                  value={draft.urgent}
+                  onChange={event =>
+                    setField('urgent', event.target.value as TriStateFilter)
+                  }
+                >
+                  {TRI_STATE_OPTIONS.map(option => (
+                    <MenuItem
+                      key={option.value || 'any'}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
 
               <DatePicker
                 label="Дата создания"
@@ -226,10 +246,24 @@ export const SideBarFilter = () => {
                 placeholder="beauty, food, tech..."
                 onChange={value => setField('niche', value)}
               />
+              {showCreatorPostFilters && (
+                <FilterChipGroup
+                  label="Преимущества"
+                  value={draft.chips}
+                  options={ADVANTAGE_CHIP_OPTIONS}
+                  onChange={value => setField('chips', value)}
+                />
+              )}
             </Stack>
           </FilterSection>
 
-          <FilterSection title="Площадки и формат">
+          <FilterSection
+            title={
+              showCompanyAdFilters && !isCompanyViewer
+                ? 'Площадки и формат'
+                : 'Площадки'
+            }
+          >
             <Stack spacing={4}>
               <FilterChipGroup
                 value={draft.platforms}
@@ -237,11 +271,14 @@ export const SideBarFilter = () => {
                 onChange={value => setField('platforms', value)}
               />
 
-              <FilterChipGroup
-                value={draft.placementFormats}
-                options={PLACEMENT_FORMAT_OPTIONS}
-                onChange={value => setField('placementFormats', value)}
-              />
+              {showCompanyAdFilters && (
+                <FilterChipGroup
+                  label="Форматы размещения"
+                  value={draft.placementFormats}
+                  options={PLACEMENT_FORMAT_OPTIONS}
+                  onChange={value => setField('placementFormats', value)}
+                />
+              )}
 
               <TextField
                 size="small"
@@ -252,7 +289,7 @@ export const SideBarFilter = () => {
                 onChange={event =>
                   setField(
                     'workFormat',
-                    event.target.value as PostFilterDraft['workFormat']
+                    event.target.value as PostFilterDraft['workFormat'],
                   )
                 }
               >
@@ -269,13 +306,13 @@ export const SideBarFilter = () => {
             </Stack>
           </FilterSection>
 
-          <FilterSection title="Бюджет">
+          <FilterSection title={budgetSectionTitle}>
             <Stack spacing={2}>
               <TextField
                 size="small"
                 fullWidth
                 select
-                label="Тип бюджета"
+                label={budgetTypeLabel}
                 value={draft.budget.type}
                 onChange={event =>
                   setBudget({
@@ -338,17 +375,19 @@ export const SideBarFilter = () => {
             </Stack>
           </FilterSection>
 
-          <FilterSection title="Сроки">
-            <TextField
-              size="small"
-              fullWidth
-              type="date"
-              label="Дедлайн"
-              value={draft.deadline}
-              slotProps={{ inputLabel: { shrink: true } }}
-              onChange={event => setField('deadline', event.target.value)}
-            />
-          </FilterSection>
+          {showCompanyAdFilters && (
+            <FilterSection title="Сроки">
+              <TextField
+                size="small"
+                fullWidth
+                type="date"
+                label="Дедлайн"
+                value={draft.deadline}
+                slotProps={{ inputLabel: { shrink: true } }}
+                onChange={event => setField('deadline', event.target.value)}
+              />
+            </FilterSection>
+          )}
 
           <FilterSection title="Локация">
             <Stack spacing={2}>
@@ -374,313 +413,328 @@ export const SideBarFilter = () => {
                 />
               </Stack>
 
-              <TextField
-                size="small"
-                fullWidth
-                select
-                label="Съёмка на месте"
-                value={draft.location.shootingRequired}
-                onChange={event =>
-                  setLocation({
-                    shootingRequired: event.target.value as TriStateFilter,
-                  })
-                }
-              >
-                {TRI_STATE_OPTIONS.map(option => (
-                  <MenuItem
-                    key={`shooting-${option.value || 'any'}`}
-                    value={option.value}
+              {showCompanyAdFilters && (
+                <TextField
+                  size="small"
+                  fullWidth
+                  select
+                  label="Съёмка на месте"
+                  value={draft.location.shootingRequired}
+                  onChange={event =>
+                    setLocation({
+                      shootingRequired: event.target.value as TriStateFilter,
+                    })
+                  }
+                >
+                  {TRI_STATE_OPTIONS.map(option => (
+                    <MenuItem
+                      key={`shooting-${option.value || 'any'}`}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </Stack>
+          </FilterSection>
+
+          {showCompanyAdFilters && (
+            <FilterSection title="Требования к блогеру">
+              <Stack spacing={2}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                >
+                  <TextField
+                    size="small"
+                    fullWidth
+                    type="number"
+                    label="Подписчики от"
+                    value={draft.bloggerRequirements.minFollowers}
+                    onChange={event =>
+                      setBloggerRequirements({
+                        minFollowers: event.target.value,
+                      })
+                    }
+                  />
+                  <TextField
+                    size="small"
+                    fullWidth
+                    type="number"
+                    label="Подписчики до"
+                    value={draft.bloggerRequirements.maxFollowers}
+                    onChange={event =>
+                      setBloggerRequirements({
+                        maxFollowers: event.target.value,
+                      })
+                    }
+                  />
+                </Stack>
+
+                <TextField
+                  size="small"
+                  fullWidth
+                  type="number"
+                  label="ER от, %"
+                  value={draft.bloggerRequirements.minEngagementRate}
+                  onChange={event =>
+                    setBloggerRequirements({
+                      minEngagementRate: event.target.value,
+                    })
+                  }
+                />
+
+                <FilterChipGroup
+                  label="Стили контента"
+                  value={draft.bloggerRequirements.contentStyle}
+                  options={CONTENT_STYLE_OPTIONS}
+                  onChange={value =>
+                    setBloggerRequirements({ contentStyle: value })
+                  }
+                />
+
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                >
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="Верификация"
+                    value={draft.bloggerRequirements.verifiedAccount}
+                    onChange={event =>
+                      setBloggerRequirements({
+                        verifiedAccount: event.target
+                          .value as TriStateFilter,
+                      })
+                    }
                   >
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Stack>
-          </FilterSection>
+                    {TRI_STATE_OPTIONS.map(option => (
+                      <MenuItem
+                        key={`verified-${option.value || 'any'}`}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-          <FilterSection title="Требования к блогеру">
-            <Stack spacing={2}>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-              >
-                <TextField
-                  size="small"
-                  fullWidth
-                  type="number"
-                  label="Подписчики от"
-                  value={draft.bloggerRequirements.minFollowers}
-                  onChange={event =>
-                    setBloggerRequirements({ minFollowers: event.target.value })
-                  }
-                />
-                <TextField
-                  size="small"
-                  fullWidth
-                  type="number"
-                  label="Подписчики до"
-                  value={draft.bloggerRequirements.maxFollowers}
-                  onChange={event =>
-                    setBloggerRequirements({ maxFollowers: event.target.value })
-                  }
-                />
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="Опыт рекламы"
+                    value={draft.bloggerRequirements.experienceWithAds}
+                    onChange={event =>
+                      setBloggerRequirements({
+                        experienceWithAds: event.target
+                          .value as TriStateFilter,
+                      })
+                    }
+                  >
+                    {TRI_STATE_OPTIONS.map(option => (
+                      <MenuItem
+                        key={`experience-${option.value || 'any'}`}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
               </Stack>
+            </FilterSection>
+          )}
 
-              <TextField
-                size="small"
-                fullWidth
-                type="number"
-                label="ER от, %"
-                value={draft.bloggerRequirements.minEngagementRate}
-                onChange={event =>
-                  setBloggerRequirements({
-                    minEngagementRate: event.target.value,
-                  })
-                }
-              />
-
-              <FilterChipGroup
-                label="Стили контента"
-                value={draft.bloggerRequirements.contentStyle}
-                options={CONTENT_STYLE_OPTIONS}
-                onChange={value =>
-                  setBloggerRequirements({ contentStyle: value })
-                }
-              />
-
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-              >
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="Верификация"
-                  value={draft.bloggerRequirements.verifiedAccount}
-                  onChange={event =>
-                    setBloggerRequirements({
-                      verifiedAccount: event.target.value as TriStateFilter,
-                    })
-                  }
+          {showCompanyAdFilters && (
+            <FilterSection title="Условия сотрудничества">
+              <Stack spacing={2}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
                 >
-                  {TRI_STATE_OPTIONS.map(option => (
-                    <MenuItem
-                      key={`verified-${option.value || 'any'}`}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="Эксклюзив"
+                    value={draft.cooperationDetails.exclusivity}
+                    onChange={event =>
+                      setCooperationDetails({
+                        exclusivity: event.target.value as TriStateFilter,
+                      })
+                    }
+                  >
+                    {TRI_STATE_OPTIONS.map(option => (
+                      <MenuItem
+                        key={`exclusivity-${option.value || 'any'}`}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="Опыт рекламы"
-                  value={draft.bloggerRequirements.experienceWithAds}
-                  onChange={event =>
-                    setBloggerRequirements({
-                      experienceWithAds: event.target.value as TriStateFilter,
-                    })
-                  }
+                  <TextField
+                    size="small"
+                    fullWidth
+                    type="number"
+                    label="Срок эксклюзива, дней"
+                    value={draft.cooperationDetails.exclusivityDays}
+                    onChange={event =>
+                      setCooperationDetails({
+                        exclusivityDays: event.target.value,
+                      })
+                    }
+                  />
+                </Stack>
+
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
                 >
-                  {TRI_STATE_OPTIONS.map(option => (
-                    <MenuItem
-                      key={`experience-${option.value || 'any'}`}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="Права на использование"
+                    value={draft.cooperationDetails.usageRights}
+                    onChange={event =>
+                      setCooperationDetails({
+                        usageRights: event.target
+                          .value as PostFilterCooperationDetails['usageRights'],
+                      })
+                    }
+                  >
+                    <MenuItem value="">Любые</MenuItem>
+                    {Object.values(UsageRightsEnum).map(option => (
+                      <MenuItem
+                        key={option}
+                        value={option}
+                      >
+                        {getUsageRightsLabel(option)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    size="small"
+                    fullWidth
+                    type="number"
+                    label="Срок использования, дней"
+                    value={draft.cooperationDetails.usageDurationDays}
+                    onChange={event =>
+                      setCooperationDetails({
+                        usageDurationDays: event.target.value,
+                      })
+                    }
+                  />
+                </Stack>
+
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                >
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="Маркировка рекламы"
+                    value={draft.cooperationDetails.requiresMarking}
+                    onChange={event =>
+                      setCooperationDetails({
+                        requiresMarking: event.target
+                          .value as TriStateFilter,
+                      })
+                    }
+                  >
+                    {TRI_STATE_OPTIONS.map(option => (
+                      <MenuItem
+                        key={`marking-${option.value || 'any'}`}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="Договор"
+                    value={draft.cooperationDetails.requiresContract}
+                    onChange={event =>
+                      setCooperationDetails({
+                        requiresContract: event.target
+                          .value as TriStateFilter,
+                      })
+                    }
+                  >
+                    {TRI_STATE_OPTIONS.map(option => (
+                      <MenuItem
+                        key={`contract-${option.value || 'any'}`}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    size="small"
+                    fullWidth
+                    select
+                    label="NDA"
+                    value={draft.cooperationDetails.ndaRequired}
+                    onChange={event =>
+                      setCooperationDetails({
+                        ndaRequired: event.target.value as TriStateFilter,
+                      })
+                    }
+                  >
+                    {TRI_STATE_OPTIONS.map(option => (
+                      <MenuItem
+                        key={`nda-${option.value || 'any'}`}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
               </Stack>
-            </Stack>
-          </FilterSection>
-
-          <FilterSection title="Условия сотрудничества">
-            <Stack spacing={2}>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-              >
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="Эксклюзив"
-                  value={draft.cooperationDetails.exclusivity}
-                  onChange={event =>
-                    setCooperationDetails({
-                      exclusivity: event.target.value as TriStateFilter,
-                    })
-                  }
-                >
-                  {TRI_STATE_OPTIONS.map(option => (
-                    <MenuItem
-                      key={`exclusivity-${option.value || 'any'}`}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  size="small"
-                  fullWidth
-                  type="number"
-                  label="Срок эксклюзива, дней"
-                  value={draft.cooperationDetails.exclusivityDays}
-                  onChange={event =>
-                    setCooperationDetails({
-                      exclusivityDays: event.target.value,
-                    })
-                  }
-                />
-              </Stack>
-
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-              >
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="Права на использование"
-                  value={draft.cooperationDetails.usageRights}
-                  onChange={event =>
-                    setCooperationDetails({
-                      usageRights: event.target
-                        .value as PostFilterCooperationDetails['usageRights'],
-                    })
-                  }
-                >
-                  <MenuItem value="">Любые</MenuItem>
-                  {Object.values(UsageRightsEnum).map(option => (
-                    <MenuItem
-                      key={option}
-                      value={option}
-                    >
-                      {getUsageRightsLabel(option)}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  size="small"
-                  fullWidth
-                  type="number"
-                  label="Срок использования, дней"
-                  value={draft.cooperationDetails.usageDurationDays}
-                  onChange={event =>
-                    setCooperationDetails({
-                      usageDurationDays: event.target.value,
-                    })
-                  }
-                />
-              </Stack>
-
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-              >
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="Маркировка рекламы"
-                  value={draft.cooperationDetails.requiresMarking}
-                  onChange={event =>
-                    setCooperationDetails({
-                      requiresMarking: event.target.value as TriStateFilter,
-                    })
-                  }
-                >
-                  {TRI_STATE_OPTIONS.map(option => (
-                    <MenuItem
-                      key={`marking-${option.value || 'any'}`}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="Договор"
-                  value={draft.cooperationDetails.requiresContract}
-                  onChange={event =>
-                    setCooperationDetails({
-                      requiresContract: event.target.value as TriStateFilter,
-                    })
-                  }
-                >
-                  {TRI_STATE_OPTIONS.map(option => (
-                    <MenuItem
-                      key={`contract-${option.value || 'any'}`}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  size="small"
-                  fullWidth
-                  select
-                  label="NDA"
-                  value={draft.cooperationDetails.ndaRequired}
-                  onChange={event =>
-                    setCooperationDetails({
-                      ndaRequired: event.target.value as TriStateFilter,
-                    })
-                  }
-                >
-                  {TRI_STATE_OPTIONS.map(option => (
-                    <MenuItem
-                      key={`nda-${option.value || 'any'}`}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Stack>
-            </Stack>
-          </FilterSection>
+            </FilterSection>
+          )}
         </Stack>
       </Box>
 
       <Stack
-        spacing={1}
+        direction="row"
+        spacing={2}
         sx={{
           pt: 2,
+          mt: 2,
           flexShrink: 0,
+          borderTop: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Button
-          variant="contained"
           fullWidth
-          size="large"
-          onClick={handleApply}
-        >
-          Применить
-        </Button>
-
-        <Button
           variant="outlined"
-          fullWidth
-          size="large"
           onClick={handleReset}
         >
           Сбросить
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleApply}
+        >
+          Применить
         </Button>
       </Stack>
     </Stack>

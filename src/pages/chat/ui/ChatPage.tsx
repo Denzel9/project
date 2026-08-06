@@ -1,9 +1,7 @@
 import {
   Box,
-  Button,
   CircularProgress,
   Stack,
-  Typography,
   useMediaQuery,
 } from '@mui/material';
 import { format } from 'date-fns';
@@ -14,7 +12,6 @@ import {
   copyTaskMediaToConversation,
   wrapChatTaskTzMessage,
   getMessagePreview,
-  useSearchMessagesQuery,
   type ChatMessage,
 } from '@/entities/chat';
 import { fetchTaskById, type Task } from '@/entities/task';
@@ -23,7 +20,6 @@ import { useMessenger, formatTaskTzForChat } from '@/features/chat';
 import { ROUTES, EmptyBlock } from '@/shared';
 import {
   ChatAttachmentsPanel,
-  ChatMessageBubble,
   ChatSearchPanel,
   ChatTaskTzPanel,
   extractChatTaskTzMessages,
@@ -39,18 +35,9 @@ import { ChatHeader } from './ChatHeader';
 import { ChatPhotoReportPanel } from './ChatPhotoReportPanel';
 import { Contacts } from './Contacts';
 
-const toMessageSide = (
-  senderId: string,
-  currentUserId: string | null
-): 'incoming' | 'outgoing' =>
-  currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
-
 export const ChatPage = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchItems, setSearchItems] = useState<ChatMessage[]>([]);
+  const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
   const [isTaskTzOpen, setIsTaskTzOpen] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
@@ -102,69 +89,14 @@ export const ChatPage = () => {
     openDraftChat,
   } = useMessenger();
 
-  const isDesktopSearch = isSearchOpen && !isMobile;
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedQuery(searchQuery.trim());
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (!isDesktopSearch) {
-      setTimeout(() => {
-        setDebouncedQuery('');
-        setSearchPage(1);
-        setSearchItems([]);
-      }, 0);
-    }
-  }, [isDesktopSearch]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setSearchPage(1);
-      setSearchItems([]);
-    }, 0);
-  }, [debouncedQuery, selectedConversationId]);
-
-  const canSearch = isDesktopSearch && debouncedQuery.length >= 2;
-
-  const {
-    data: searchData,
-    isLoading: isSearchLoading,
-    isFetching: isSearchFetching,
-    error: searchError,
-  } = useSearchMessagesQuery(canSearch ? selectedConversationId : null, {
-    q: debouncedQuery,
-    page: searchPage,
-    limit: 20,
-  });
-
-  useEffect(() => {
-    if (!canSearch || !searchData) return;
-
-    setTimeout(() => {
-      setSearchItems(prev =>
-        searchPage === 1 ? searchData.items : [...prev, ...searchData.items]
-      );
-    }, 0);
-  }, [canSearch, searchData, searchPage]);
-
-  const searchHasMore = Boolean(
-    searchData && searchData.page * searchData.limit < searchData.total
-  );
-
   const handleToggleSearch = () => {
-    if (isSearchOpen) {
-      setIsSearchOpen(false);
-      setSearchQuery('');
-      return;
-    }
-
-    setIsSearchOpen(true);
+    setIsSearchOpen(prev => !prev);
   };
+
+  const handleSelectSearchMessage = useCallback((message: ChatMessage) => {
+    setFocusMessageId(message.id);
+    setIsSearchOpen(false);
+  }, []);
 
   const {
     photoReportTasks,
@@ -201,7 +133,6 @@ export const ChatPage = () => {
       setIsAddTaskOpen(false);
       setIsTaskTzOpen(false);
       setIsSearchOpen(false);
-      setSearchQuery('');
     }, 0);
   }, [selectedConversationId, selectedConversation?.peer?.id]);
 
@@ -435,8 +366,8 @@ export const ChatPage = () => {
               hasActiveTasks={canAddPhotoReport}
               hasTaskTzMessages={hasTaskTzMessages}
               isSearchOpen={isSearchOpen}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
+              conversationId={selectedConversationId}
+              onSelectSearchMessage={handleSelectSearchMessage}
               onToggleSearch={handleToggleSearch}
               onOpenProfile={handleOpenProfile}
               onBackToContacts={handleBackToContacts}
@@ -455,86 +386,6 @@ export const ChatPage = () => {
                 currentUserId={currentUserId}
                 onClose={() => setIsPhotoReportOpen(false)}
               />
-            ) : canSearch ? (
-              <Box
-                sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  bgcolor: 'white',
-                  borderRadius: { xs: '16px', md: '32px' },
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  p: { xs: 2, md: 3 },
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                }}
-              >
-                {isSearchLoading && searchItems.length === 0 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-                    <CircularProgress size={32} />
-                  </Box>
-                )}
-
-                {searchError && (
-                  <Typography
-                    variant="body2"
-                    color="error"
-                    sx={{ textAlign: 'center', py: 2 }}
-                  >
-                    Не удалось выполнить поиск
-                  </Typography>
-                )}
-
-                {!isSearchLoading && !searchError && !searchItems.length && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ textAlign: 'center', py: 4 }}
-                  >
-                    Ничего не найдено
-                  </Typography>
-                )}
-
-                {searchItems.map(message => (
-                  <Box key={message.id}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mb: 0.5, display: 'block' }}
-                    >
-                      {format(new Date(message.createdAt), 'dd.MM.yyyy HH:mm')}
-                    </Typography>
-
-                    <ChatMessageBubble
-                      messageId={message.id}
-                      senderId={message.senderId}
-                      actorDisplayName={message.actorDisplayName}
-                      actorKind={message.actorKind}
-                      createdAt={message.createdAt}
-                      currentUserId={currentUserId}
-                      text={message.content}
-                      media={message.media}
-                      highlight={debouncedQuery}
-                      editedAt={message.editedAt}
-                      isRedirected={message.isRedirected}
-                      side={toMessageSide(message.senderId, currentUserId)}
-                      isRead={message.isRead}
-                    />
-                  </Box>
-                ))}
-
-                {searchHasMore && (
-                  <Button
-                    variant="outlined"
-                    disabled={isSearchFetching}
-                    onClick={() => setSearchPage(prev => prev + 1)}
-                  >
-                    {isSearchFetching ? 'Загрузка…' : 'Загрузить ещё'}
-                  </Button>
-                )}
-              </Box>
             ) : (
               <ChatConversation
                 draft={draft}
@@ -562,6 +413,8 @@ export const ChatPage = () => {
                 isLoading={isLoading && Boolean(selectedConversationId)}
                 onRetryError={retryError}
                 onDismissError={clearError}
+                focusMessageId={focusMessageId}
+                onFocusMessageHandled={() => setFocusMessageId(null)}
               />
             )}
           </Stack>
@@ -572,14 +425,9 @@ export const ChatPage = () => {
         <>
           <ChatSearchPanel
             open={isSearchOpen && isMobile}
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            currentUserId={currentUserId}
-            onClose={() => {
-              setIsSearchOpen(false);
-              setSearchQuery('');
-            }}
+            onClose={() => setIsSearchOpen(false)}
             conversationId={selectedConversationId}
+            onSelectMessage={handleSelectSearchMessage}
           />
 
           <ChatAttachmentsPanel

@@ -5,14 +5,14 @@ import {
   Menu,
   MenuItem,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 
-import { USER_ROLE, type ChatPeer } from '@/entities';
+import { USER_ROLE, type ChatMessage, type ChatPeer } from '@/entities';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
+import { ChatMessageSearchAutocomplete } from '@/widgets/chat';
 
 type ChatHeaderProps = {
   peer?: ChatPeer;
@@ -21,9 +21,9 @@ type ChatHeaderProps = {
   hasActiveTasks?: boolean;
   hasTaskTzMessages?: boolean;
   isSearchOpen: boolean;
-  searchQuery: string;
-  onSearchQueryChange: (value: string) => void;
+  conversationId: string | null;
   onToggleSearch: () => void;
+  onSelectSearchMessage: (message: ChatMessage) => void;
   onOpenTaskTz?: () => void;
   onOpenProfile: () => void;
   onBackToContacts: () => void;
@@ -39,9 +39,9 @@ export const ChatHeader = ({
   hasActiveTasks = false,
   hasTaskTzMessages = false,
   isSearchOpen,
-  searchQuery,
-  onSearchQueryChange,
+  conversationId,
   onToggleSearch,
+  onSelectSearchMessage,
   onOpenTaskTz,
   onOpenProfile,
   onBackToContacts,
@@ -152,14 +152,10 @@ export const ChatHeader = ({
         sx={{ alignItems: 'center', flexShrink: 0 }}
       >
         {isSearchOpen && !isMobile && (
-          <TextField
+          <ChatMessageSearchAutocomplete
             autoFocus
-            label="Поиск"
-            size="small"
-            variant="outlined"
-            value={searchQuery}
-            onChange={event => onSearchQueryChange(event.target.value)}
-            sx={{ width: 240 }}
+            conversationId={conversationId}
+            onSelect={onSelectSearchMessage}
           />
         )}
 

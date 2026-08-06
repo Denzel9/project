@@ -1,48 +1,59 @@
-import { ChevronLeft } from '@mui/icons-material';
-import { Box, Chip, IconButton, Typography } from '@mui/material';
-import { useFormContext, useWatch } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { ChevronLeft } from '@mui/icons-material'
+import {
+  Box,
+  Chip,
+  IconButton,
+  MenuItem,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { Controller, useFormContext, useWatch } from 'react-hook-form'
+import { useNavigate } from 'react-router'
 
-import { RHFInput } from '@/shared';
+import { WorkFormatEnum, getWorkFormatLabel } from '@/entities/post'
+import { useAuthStore } from '@/features/auth'
+import { RHFInput, RHFSwitch } from '@/shared/ui/rhf'
 
-import MenuButton from './MenuButton';
+import MenuButton from './MenuButton'
 
 const ADVANTAGE_OPTIONS = [
   'Удаленно',
-  'На месте работадатель',
+  'На месте работодателя',
   'По договору',
-  'Подтвержденный аккаунт',
-];
+]
 
 type Props = {
-  isEdit?: boolean;
-  menuOptions?: string[];
-  onMenuAction?: (action: string) => void;
-};
+  isEdit?: boolean
+  menuOptions?: string[]
+  onMenuAction?: (action: string) => void
+}
 
 export const MainInfo = ({
   isEdit = false,
   menuOptions = [],
   onMenuAction,
 }: Props) => {
-  const { control, setValue } = useFormContext();
+  const { control, setValue } = useFormContext()
+  const { role } = useAuthStore()
 
   const { chips } = useWatch({
     control,
-  });
+  })
 
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   const handleSetChips = (value: string) => {
-    if (chips.includes(value)) {
+    const current = chips ?? []
+
+    if (current.includes(value)) {
       setValue(
         'chips',
-        chips.filter((type: string) => type !== value)
-      );
+        current.filter((type: string) => type !== value),
+      )
     } else {
-      setValue('chips', [...chips, value]);
+      setValue('chips', [...current, value])
     }
-  };
+  }
 
   return (
     <Box>
@@ -60,7 +71,9 @@ export const MainInfo = ({
               display: { xs: 'none', lg: 'block' },
             }}
           >
-            {isEdit ? 'Редактирование поста' : 'Новый пост'}
+            {isEdit
+              ? `Редактирование ${role === 'company' ? 'объявления' : 'поста'}`
+              : `Новый ${role === 'company' ? 'объявление' : 'пост'}`}
           </Typography>
         </Box>
 
@@ -99,11 +112,45 @@ export const MainInfo = ({
               key={option}
               label={option}
               onClick={() => handleSetChips(option)}
-              color={chips.includes(option) ? 'primary' : 'default'}
+              color={(chips ?? []).includes(option) ? 'primary' : 'default'}
             />
           ))}
         </Box>
+
+        <Controller
+          name="workFormat"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              select
+              label="Формат работы"
+              error={!!fieldState?.error}
+              value={field.value || ''}
+              helperText={fieldState?.error?.message}
+              onChange={field.onChange}
+              sx={{ width: { lg: '50%', xs: '100%' }, mb: 4 }}
+            >
+              {Object.values(WorkFormatEnum).map(option => (
+                <MenuItem
+                  key={option}
+                  value={option}
+                >
+                  {getWorkFormatLabel(option)}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+        />
+
+        <Box sx={{ mb: 2 }}>
+          <RHFSwitch
+            name="isPrivate"
+            control={control}
+            label="Приватный пост"
+            description="Видно только вам"
+          />
+        </Box>
       </Box>
     </Box>
-  );
-};
+  )
+}

@@ -2,7 +2,7 @@ import {
   AccessTimeOutlined,
   LayersOutlined,
   Whatshot,
-} from '@mui/icons-material';
+} from '@mui/icons-material'
 import {
   Box,
   Chip,
@@ -10,11 +10,10 @@ import {
   Stack,
   Typography,
   type SxProps,
-} from '@mui/material';
-import { format } from 'date-fns';
+} from '@mui/material'
+import { format } from 'date-fns'
 
 import {
-  formatPlatforms,
   formatPlacementFormats,
   formatPostBrief,
   formatPostBudget,
@@ -23,23 +22,23 @@ import {
   formatBloggerRequirements,
   formatCooperationDetails,
   getPlacementFormatLabel,
+  getPlatformChipSx,
   getPlatformLabel,
-  getPostTypeLabel,
   getWorkFormatLabel,
+  type Platform,
   type Post,
   type PostDeliverable,
-} from '@/entities';
+} from '@/entities'
+import { getYandexMapsUrl } from '@/shared/lib/maps/openYandexMaps'
 
-import { getYandexMapsUrl } from '@/shared/lib/maps/openYandexMaps';
-
-import type { ReactNode } from 'react';
+import type { ReactNode } from 'react'
 
 type DetailRowProps = {
-  label: string;
-  children: ReactNode;
-  highlight?: boolean;
-  fullWidth?: boolean;
-};
+  label: string
+  children: ReactNode
+  highlight?: boolean
+  fullWidth?: boolean
+}
 
 const DetailRow = ({
   label,
@@ -71,23 +70,25 @@ const DetailRow = ({
       children
     )}
   </Box>
-);
+)
 
 type DetailSectionProps = {
-  title: string;
-  children: ReactNode;
-  sx?: SxProps;
-};
+  title: string
+  children: ReactNode
+  sx?: SxProps
+}
+
+const sectionSx = {
+  p: { xs: 2, md: 3 },
+  borderRadius: '32px',
+  bgcolor: 'white',
+  border: '1px solid',
+  borderColor: 'divider',
+  width: '100%',
+} as const
 
 const DetailSection = ({ title, children, sx }: DetailSectionProps) => (
-  <Box
-    sx={{
-      p: { xs: 2, md: 4 },
-      borderRadius: '20px',
-      bgcolor: 'secondary.light',
-      ...sx,
-    }}
-  >
+  <Box sx={{ ...sectionSx, ...sx }}>
     <Typography
       variant="subtitle1"
       sx={{ fontWeight: 600, mb: 2 }}
@@ -96,15 +97,15 @@ const DetailSection = ({ title, children, sx }: DetailSectionProps) => (
     </Typography>
     {children}
   </Box>
-);
+)
 
 type ChipSectionProps = {
-  title: string;
-  items: string[];
-};
+  title: string
+  items: string[]
+}
 
 const ChipSection = ({ title, items }: ChipSectionProps) => {
-  if (!items.length) return null;
+  if (!items.length) return null
 
   return (
     <Box>
@@ -124,11 +125,11 @@ const ChipSection = ({ title, items }: ChipSectionProps) => {
         ))}
       </Box>
     </Box>
-  );
-};
+  )
+}
 
 const DeliverableItem = ({ item }: { item: PostDeliverable }) => {
-  const countLabel = item.count === 1 ? '1 шт.' : `${item.count} шт.`;
+  const countLabel = item.count === 1 ? '1 шт.' : `${item.count} шт.`
 
   return (
     <Box
@@ -194,14 +195,14 @@ const DeliverableItem = ({ item }: { item: PostDeliverable }) => {
         )}
       </Stack>
     </Box>
-  );
-};
+  )
+}
 
 const ListBlock = ({ items }: { items: string[] }) => {
-  if (!items.length) return null;
+  if (!items.length) return null
 
   return (
-    <Stack spacing={0.75}>
+    <Stack spacing={1}>
       {items.map(item => (
         <Typography
           key={item}
@@ -211,184 +212,217 @@ const ListBlock = ({ items }: { items: string[] }) => {
         </Typography>
       ))}
     </Stack>
-  );
-};
+  )
+}
 
-type PostDetailsCardProps = {
-  post: Post;
-  isCompanyPost?: boolean;
-};
-
-export const PostDetailsCard = ({
-  post,
-  isCompanyPost = false,
-}: PostDetailsCardProps) => {
-  const price = formatPostBudget(post.budget);
-  const budgetDetails = formatPostBudgetDetails(post.budget);
-  const briefItems = formatPostBrief(post.brief);
-  const locationLabel = formatPostLocation(post.location);
-  const bloggerRequirements = formatBloggerRequirements(
-    post.bloggerRequirements
-  );
-  const cooperationDetails = formatCooperationDetails(post.cooperationDetails);
+const LocationValue = ({ locationLabel }: { locationLabel: string }) => {
+  if (locationLabel === '—') {
+    return <Typography variant="body1">{locationLabel}</Typography>
+  }
 
   return (
-    <Stack
-      spacing={2}
-      sx={{ width: '100%' }}
-      direction={isCompanyPost ? 'column' : 'row'}
+    <Link
+      href={getYandexMapsUrl(locationLabel)}
+      target="_blank"
+      rel="noopener noreferrer"
+      underline="hover"
+      color="inherit"
     >
-      {isCompanyPost && (
-        <DetailSection
-          title="Детали объявления"
-          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
+      {locationLabel}
+    </Link>
+  )
+}
+
+const TagsSection = ({ post }: { post: Post }) => {
+  const hasTags =
+    Boolean(post.chips?.length) ||
+    Boolean(post.categories?.length) ||
+    Boolean(post.tags?.length) ||
+    Boolean(post.niche?.length) ||
+    Boolean(post.keyWords?.length)
+
+  if (!hasTags) return null
+
+  return (
+    <DetailSection title="Метки и категории">
+      <Stack spacing={2}>
+        <ChipSection
+          title="Преимущества"
+          items={post.chips ?? []}
+        />
+        <ChipSection
+          title="Категории"
+          items={post.categories ?? []}
+        />
+        <ChipSection
+          title="Теги"
+          items={post.tags ?? []}
+        />
+        <ChipSection
+          title="Ниша"
+          items={post.niche ?? []}
+        />
+        <ChipSection
+          title="Ключевые слова"
+          items={post.keyWords ?? []}
+        />
+      </Stack>
+    </DetailSection>
+  )
+}
+
+const CompanyDetails = ({ post }: { post: Post }) => {
+  const price = formatPostBudget(post.budget)
+  const budgetDetails = formatPostBudgetDetails(post.budget)
+  const locationLabel = formatPostLocation(post.location)
+  const briefItems = formatPostBrief(post.brief)
+  const bloggerRequirements = formatBloggerRequirements(
+    post.bloggerRequirements,
+  )
+  const cooperationDetails = formatCooperationDetails(post.cooperationDetails)
+
+  const hasDeliverables = Boolean(post.deliverables?.length)
+  const hasPlatforms = Boolean(post.platforms?.length)
+  const hasFormats = Boolean(post.placementFormats?.length)
+  const hasContent = hasDeliverables || hasPlatforms || hasFormats
+
+  return (
+    <>
+      <DetailSection title="Детали объявления">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 2.5,
+          }}
         >
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-              gap: 2.5,
-            }}
-          >
-            <DetailRow label="Тип автора">
-              {getPostTypeLabel(post.type)}
-            </DetailRow>
-            <DetailRow label="Формат работы">
-              {post.workFormat ? getWorkFormatLabel(post.workFormat) : '—'}
-            </DetailRow>
-            <DetailRow label="Срочность">
-              {post.urgent ? (
-                <Chip
-                  size="small"
-                  color="error"
-                  icon={<Whatshot />}
-                  label="Срочно"
-                />
-              ) : (
-                'Не срочно'
-              )}
-            </DetailRow>
-            <DetailRow
-              label="Бюджет"
-              highlight={price !== '—'}
-            >
-              {price}
-            </DetailRow>
-            <DetailRow label="Дедлайн">
-              {post.deadline
-                ? format(new Date(post.deadline), 'dd.MM.yyyy')
-                : '—'}
-            </DetailRow>
-            <DetailRow label="Локация">
-              {locationLabel !== '—' ? (
-                <Link
-                  href={getYandexMapsUrl(locationLabel)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  underline="hover"
-                  color="inherit"
-                >
-                  {locationLabel}
-                </Link>
-              ) : (
-                locationLabel
-              )}
-            </DetailRow>
-            <DetailRow label="Опубликовано">
-              {format(new Date(post.createdAt), 'dd.MM.yyyy')}
-            </DetailRow>
-            <DetailRow label="Обновлено">
-              {format(new Date(post.updatedAt), 'dd.MM.yyyy')}
-            </DetailRow>
-          </Box>
-
-          {budgetDetails.length > 1 && (
-            <Box sx={{ mt: 2.5 }}>
-              <ListBlock
-                items={budgetDetails
-                  .filter(item => item.label !== 'Сумма')
-                  .map(item => `${item.label}: ${item.value}`)}
+          <DetailRow label="Формат работы">
+            {post.workFormat ? getWorkFormatLabel(post.workFormat) : '—'}
+          </DetailRow>
+          <DetailRow label="Срочность">
+            {post.urgent ? (
+              <Chip
+                size="small"
+                color="error"
+                icon={<Whatshot />}
+                label="Срочно"
               />
-            </Box>
-          )}
-        </DetailSection>
-      )}
+            ) : (
+              'Не срочно'
+            )}
+          </DetailRow>
+          <DetailRow
+            label="Бюджет"
+            highlight={price !== '—'}
+          >
+            {price}
+          </DetailRow>
+          <DetailRow label="Дедлайн">
+            {post.deadline
+              ? format(new Date(post.deadline), 'dd.MM.yyyy')
+              : '—'}
+          </DetailRow>
+          <DetailRow label="Локация">
+            <LocationValue locationLabel={locationLabel} />
+          </DetailRow>
+          <DetailRow label="Опубликовано">
+            {format(new Date(post.createdAt), 'dd.MM.yyyy')}
+          </DetailRow>
+          <DetailRow label="Обновлено">
+            {format(new Date(post.updatedAt), 'dd.MM.yyyy')}
+          </DetailRow>
+        </Box>
 
-      <DetailSection
-        title="Контент и площадки"
-        sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
-      >
-        <Stack spacing={2}>
-          {post.deliverables?.length ? (
-            <Stack spacing={1}>
-              <Typography
-                variant="caption"
-                sx={{ color: 'info.main', fontWeight: 500 }}
-              >
-                Позиции контента
-              </Typography>
+        {budgetDetails.length > 1 && (
+          <Box sx={{ mt: 2.5 }}>
+            <ListBlock
+              items={budgetDetails
+                .filter(item => item.label !== 'Сумма')
+                .map(item => `${item.label}: ${item.value}`)}
+            />
+          </Box>
+        )}
+      </DetailSection>
+
+      {hasContent && (
+        <DetailSection title="Контент и площадки">
+          <Stack spacing={2}>
+            {hasDeliverables && (
+              <Stack spacing={1}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'info.main', fontWeight: 500 }}
+                >
+                  Позиции контента
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, minmax(0, 1fr))',
+                    },
+                    gap: 1.25,
+                  }}
+                >
+                  {post.deliverables?.map((item, index) => (
+                    <DeliverableItem
+                      key={`${item.platform}-${item.format}-${index}`}
+                      item={item}
+                    />
+                  ))}
+                </Box>
+              </Stack>
+            )}
+
+            {(hasPlatforms || hasFormats) && (
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: 'repeat(2, minmax(0, 1fr))',
-                  },
-                  gap: 1.25,
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  gap: 2,
                 }}
               >
-                {post.deliverables.map((item, index) => (
-                  <DeliverableItem
-                    key={`${item.platform}-${item.format}-${index}`}
-                    item={item}
-                  />
-                ))}
+                {hasPlatforms && (
+                  <DetailRow label="Площадки">
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {post.platforms?.map(platform => (
+                        <Chip
+                          key={platform}
+                          size="small"
+                          variant="outlined"
+                          label={getPlatformLabel(platform)}
+                          sx={getPlatformChipSx(platform)}
+                        />
+                      ))}
+                    </Box>
+                  </DetailRow>
+                )}
+                {hasFormats && (
+                  <DetailRow label="Форматы">
+                    {formatPlacementFormats(post.placementFormats)}
+                  </DetailRow>
+                )}
               </Box>
-            </Stack>
-          ) : (
-            <DetailRow label="Контент">—</DetailRow>
-          )}
+            )}
+          </Stack>
+        </DetailSection>
+      )}
 
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-              gap: 2,
-            }}
-          >
-            <DetailRow label="Площадки">
-              {formatPlatforms(post.platforms)}
-            </DetailRow>
-            <DetailRow label="Форматы">
-              {formatPlacementFormats(post.placementFormats)}
-            </DetailRow>
-          </Box>
-        </Stack>
-      </DetailSection>
-
-      {bloggerRequirements.length > 0 && isCompanyPost && (
-        <DetailSection
-          title="Требования к блогеру"
-          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
-        >
+      {bloggerRequirements.length > 0 && (
+        <DetailSection title="Требования к блогеру">
           <ListBlock items={bloggerRequirements} />
         </DetailSection>
       )}
 
-      {cooperationDetails.length > 0 && isCompanyPost && (
-        <DetailSection
-          title="Условия сотрудничества"
-          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
-        >
+      {cooperationDetails.length > 0 && (
+        <DetailSection title="Условия сотрудничества">
           <ListBlock items={cooperationDetails} />
         </DetailSection>
       )}
 
-      {briefItems.length > 0 && isCompanyPost && (
-        <DetailSection
-          title="Бриф"
-          sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
-        >
+      {briefItems.length > 0 && (
+        <DetailSection title="Бриф">
           <Stack spacing={2}>
             {briefItems.map(item => (
               <Box key={item.label}>
@@ -439,47 +473,133 @@ export const PostDetailsCard = ({
         </DetailSection>
       )}
 
-      <DetailSection
-        title="Метки и категории"
-        sx={{ bgcolor: 'white', borderRadius: '32px', width: '100%' }}
-      >
-        <Stack spacing={2}>
-          <ChipSection
-            title="Преимущества"
-            items={post.chips ?? []}
-          />
-          <ChipSection
-            title="Категории"
-            items={post.categories ?? []}
-          />
-          <ChipSection
-            title="Теги"
-            items={post.tags ?? []}
-          />
-          <ChipSection
-            title="Ниша"
-            items={post.niche ?? []}
-          />
-          <ChipSection
-            title="Ключевые слова"
-            items={post.keyWords ?? []}
-          />
-          {!post.chips?.length &&
-            !post.categories?.length &&
-            !post.tags?.length &&
-            !post.niche?.length &&
-            !post.keyWords?.length && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-              >
-                Не указано
-              </Typography>
-            )}
-        </Stack>
-      </DetailSection>
-    </Stack>
-  );
-};
+      <TagsSection post={post} />
+    </>
+  )
+}
 
-export default PostDetailsCard;
+const CreatorDetails = ({ post }: { post: Post }) => {
+  const price = formatPostBudget(post.budget)
+  const budgetDetails = formatPostBudgetDetails(post.budget)
+  const locationLabel = formatPostLocation(post.location)
+  const portfolioLinks = post.brief?.references ?? []
+  const platforms = (post.platforms ?? []) as Platform[]
+
+  const hasProfileDetails =
+    Boolean(post.workFormat) ||
+    locationLabel !== '—' ||
+    price !== '—' ||
+    Boolean(post.createdAt)
+
+  return (
+    <>
+      {hasProfileDetails && (
+        <DetailSection title="О исполнителе">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gap: 2.5,
+            }}
+          >
+            {post.workFormat && (
+              <DetailRow label="Формат работы">
+                {getWorkFormatLabel(post.workFormat)}
+              </DetailRow>
+            )}
+            {locationLabel !== '—' && (
+              <DetailRow label="Локация">
+                <LocationValue locationLabel={locationLabel} />
+              </DetailRow>
+            )}
+            {price !== '—' && (
+              <DetailRow
+                label="Ставка"
+                highlight
+              >
+                {price}
+              </DetailRow>
+            )}
+            <DetailRow label="Опубликовано">
+              {format(new Date(post.createdAt), 'dd.MM.yyyy')}
+            </DetailRow>
+            <DetailRow label="Обновлено">
+              {format(new Date(post.updatedAt), 'dd.MM.yyyy')}
+            </DetailRow>
+          </Box>
+
+          {budgetDetails.length > 1 && (
+            <Box sx={{ mt: 2.5 }}>
+              <ListBlock
+                items={budgetDetails
+                  .filter(item => item.label !== 'Сумма')
+                  .map(item => `${item.label}: ${item.value}`)}
+              />
+            </Box>
+          )}
+        </DetailSection>
+      )}
+
+      {platforms.length > 0 && (
+        <DetailSection title="Площадки">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {platforms.map(platform => (
+              <Chip
+                key={platform}
+                size="small"
+                variant="outlined"
+                label={getPlatformLabel(platform)}
+                sx={getPlatformChipSx(platform)}
+              />
+            ))}
+          </Box>
+        </DetailSection>
+      )}
+
+      {portfolioLinks.length > 0 && (
+        <DetailSection title="Ссылки">
+          <Stack spacing={0.75}>
+            {portfolioLinks.map(url => (
+              <Link
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="body2"
+                underline="hover"
+              >
+                {url}
+              </Link>
+            ))}
+          </Stack>
+        </DetailSection>
+      )}
+
+      <TagsSection post={post} />
+    </>
+  )
+}
+
+type PostDetailsCardProps = {
+  post: Post
+  isCompanyPost?: boolean
+}
+
+export const PostDetailsCard = ({
+  post,
+  isCompanyPost = false,
+}: PostDetailsCardProps) => (
+  <Stack
+    spacing={1}
+    sx={{ width: '100%' }}
+    direction="column"
+  >
+    {isCompanyPost ? (
+      <CompanyDetails post={post} />
+    ) : (
+      <CreatorDetails post={post} />
+    )}
+  </Stack>
+)
+
+export default PostDetailsCard

@@ -1,106 +1,33 @@
-import { Close } from '@mui/icons-material';
+import { Close } from '@mui/icons-material'
 import {
   Box,
-  Button,
-  CircularProgress,
   Drawer,
   IconButton,
   Stack,
-  TextField,
   Typography,
   useMediaQuery,
   useTheme,
-} from '@mui/material';
-import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
+} from '@mui/material'
 
-import { useSearchMessagesQuery, type ChatMessage } from '@/entities/chat';
+import type { ChatMessage } from '@/entities/chat'
 
-import { ChatMessageBubble } from './ChatMessageBubble';
+import { ChatMessageSearchAutocomplete } from './ChatMessageSearchAutocomplete'
 
 type ChatSearchPanelProps = {
-  open: boolean;
-  onClose: () => void;
-  conversationId: string | null;
-  currentUserId: string | null;
-  query?: string;
-  onQueryChange?: (value: string) => void;
-};
-
-const toMessageSide = (
-  senderId: string,
-  currentUserId: string | null
-): 'incoming' | 'outgoing' =>
-  currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
+  open: boolean
+  onClose: () => void
+  conversationId: string | null
+  onSelectMessage?: (message: ChatMessage) => void
+}
 
 export const ChatSearchPanel = ({
   open,
   onClose,
   conversationId,
-  currentUserId,
-  query: controlledQuery,
-  onQueryChange,
+  onSelectMessage,
 }: ChatSearchPanelProps) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
-  const isControlled =
-    controlledQuery !== undefined && onQueryChange !== undefined;
-  const [internalQuery, setInternalQuery] = useState('');
-  const query = isControlled ? controlledQuery : internalQuery;
-  const setQuery = isControlled ? onQueryChange : setInternalQuery;
-
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [items, setItems] = useState<ChatMessage[]>([]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedQuery(query.trim());
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setPage(1);
-      setItems([]);
-    }, 0);
-  }, [debouncedQuery, conversationId]);
-
-  useEffect(() => {
-    if (!open && !isControlled) {
-      setTimeout(() => {
-        setInternalQuery('');
-        setDebouncedQuery('');
-        setPage(1);
-        setItems([]);
-      }, 0);
-    }
-  }, [open, isControlled]);
-
-  const { data, isLoading, isFetching, error } = useSearchMessagesQuery(
-    conversationId,
-    { q: debouncedQuery, page, limit: 20 }
-  );
-
-  useEffect(() => {
-    if (!data) return;
-
-    setTimeout(() => {
-      setItems(prev => (page === 1 ? data.items : [...prev, ...data.items]));
-    }, 0);
-  }, [data, page]);
-
-  const hasMore = Boolean(data && data.page * data.limit < data.total);
-  const canSearch = debouncedQuery.length >= 2;
-
-  const handleLoadMore = () => {
-    if (hasMore && !isFetching) {
-      setPage(prev => prev + 1);
-    }
-  };
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   return (
     <Drawer
@@ -128,112 +55,23 @@ export const ChatSearchPanel = ({
         </IconButton>
       </Stack>
 
-      <TextField
+      <ChatMessageSearchAutocomplete
         autoFocus
-        fullWidth
-        size="small"
-        value={query}
-        placeholder="Поиск по сообщениям…"
-        onChange={event => setQuery(event.target.value)}
+        conversationId={conversationId}
+        size="medium"
+        label="Поиск"
+        sx={{ width: '100%' }}
+        onSelect={message => {
+          onSelectMessage?.(message)
+          onClose()
+        }}
       />
 
-      <Box
-        sx={{
-          mt: 2,
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        {!canSearch && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: 'center', py: 4 }}
-          >
-            Введите минимум 2 символа
-          </Typography>
-        )}
-
-        {canSearch && isLoading && items.length === 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
-
-        {canSearch && error && (
-          <Typography
-            variant="body2"
-            color="error"
-            sx={{ textAlign: 'center', py: 2 }}
-          >
-            Не удалось выполнить поиск
-          </Typography>
-        )}
-
-        {canSearch && !isLoading && !error && items.length === 0 && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: 'center', py: 4 }}
-          >
-            Ничего не найдено
-          </Typography>
-        )}
-
-        {items.map(message => (
-          <Box key={message.id}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mb: 0.5, display: 'block' }}
-            >
-              {format(new Date(message.createdAt), 'dd.MM.yyyy HH:mm')}
-            </Typography>
-            <ChatMessageBubble
-              messageId={message.id}
-              senderId={message.senderId}
-              actorDisplayName={message.actorDisplayName}
-              actorKind={message.actorKind}
-              createdAt={message.createdAt}
-              currentUserId={currentUserId}
-              text={message.content}
-              media={message.media}
-              highlight={debouncedQuery}
-              editedAt={message.editedAt}
-              isRedirected={message.isRedirected}
-              side={toMessageSide(message.senderId, currentUserId)}
-              isRead={message.isRead}
-            />
-          </Box>
-        ))}
-
-        {hasMore && (
-          <Button
-            variant="outlined"
-            disabled={isFetching}
-            onClick={handleLoadMore}
-          >
-            {isFetching ? 'Загрузка…' : 'Загрузить ещё'}
-          </Button>
-        )}
-
-        <Button
-          sx={{
-            width: 'fit-content',
-            position: 'fixed',
-            bottom: { xs: 16, md: 32 },
-            right: { xs: 16, md: 32 },
-          }}
-          variant="outlined"
-          onClick={onClose}
-        >
-          Закрыть
-        </Button>
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Выберите сообщение из списка, чтобы перейти к нему в чате
+        </Typography>
       </Box>
     </Drawer>
-  );
-};
+  )
+}

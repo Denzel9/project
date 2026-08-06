@@ -1,4 +1,5 @@
 import { type PostListParams } from '@/entities/post';
+import { USER_ROLE } from '@/entities/user';
 
 import { FILTERS_VALUES } from './constants';
 import {
@@ -33,10 +34,78 @@ const trimOptional = (value: string): string | undefined => {
 const getTodayDate = (): string => new Date().toISOString().slice(0, 10);
 
 export const hasActivePostFilters = (draft: PostFilterDraft): boolean =>
-  JSON.stringify(draft) !== JSON.stringify(defaultPostFilterDraft);
+  JSON.stringify(normalizePostFilterDraft(draft)) !==
+  JSON.stringify(defaultPostFilterDraft);
+
+export const normalizePostFilterDraft = (
+  draft: Partial<PostFilterDraft> | PostFilterDraft,
+): PostFilterDraft => ({
+  ...defaultPostFilterDraft,
+  ...draft,
+  chips: draft.chips ?? [],
+  categories: draft.categories ?? [],
+  tags: draft.tags ?? [],
+  niche: draft.niche ?? [],
+  platforms: draft.platforms ?? [],
+  placementFormats: draft.placementFormats ?? [],
+  budget: {
+    ...defaultPostFilterDraft.budget,
+    ...draft.budget,
+  },
+  location: {
+    ...defaultPostFilterDraft.location,
+    ...draft.location,
+  },
+  bloggerRequirements: {
+    ...defaultPostFilterDraft.bloggerRequirements,
+    ...draft.bloggerRequirements,
+    contentStyle: draft.bloggerRequirements?.contentStyle ?? [],
+  },
+  cooperationDetails: {
+    ...defaultPostFilterDraft.cooperationDetails,
+    ...draft.cooperationDetails,
+  },
+});
+
+/** COMPANY looks at creator posts; CREATOR looks at company ads. */
+export const sanitizePostFilterDraftForRole = (
+  draft: PostFilterDraft,
+  role: USER_ROLE | string | null | undefined,
+): PostFilterDraft => {
+  const normalized = normalizePostFilterDraft(draft);
+
+  if (role === USER_ROLE.COMPANY) {
+    return {
+      ...defaultPostFilterDraft,
+      title: normalized.title,
+      createdAt: normalized.createdAt,
+      categories: normalized.categories,
+      tags: normalized.tags,
+      niche: normalized.niche,
+      chips: normalized.chips,
+      platforms: normalized.platforms,
+      workFormat: normalized.workFormat,
+      budget: normalized.budget,
+      location: {
+        city: normalized.location.city,
+        country: normalized.location.country,
+        shootingRequired: '',
+      },
+    };
+  }
+
+  if (role === USER_ROLE.CREATOR) {
+    return {
+      ...normalized,
+      chips: [],
+    };
+  }
+
+  return normalized;
+};
 
 export const postFilterDraftToListParams = (
-  draft: PostFilterDraft
+  draft: PostFilterDraft,
 ): Omit<PostListParams, 'page' | 'limit'> => {
   const title = trimOptional(draft.title);
   const urgent = parseTriState(draft.urgent);
@@ -47,7 +116,7 @@ export const postFilterDraftToListParams = (
   const shootingRequired = parseTriState(location.shootingRequired);
   const verifiedAccount = parseTriState(bloggerRequirements.verifiedAccount);
   const experienceWithAds = parseTriState(
-    bloggerRequirements.experienceWithAds
+    bloggerRequirements.experienceWithAds,
   );
   const exclusivity = parseTriState(cooperationDetails.exclusivity);
   const requiresMarking = parseTriState(cooperationDetails.requiresMarking);
@@ -57,13 +126,13 @@ export const postFilterDraftToListParams = (
   const minFollowers = parseOptionalNumber(bloggerRequirements.minFollowers);
   const maxFollowers = parseOptionalNumber(bloggerRequirements.maxFollowers);
   const minEngagementRate = parseOptionalNumber(
-    bloggerRequirements.minEngagementRate
+    bloggerRequirements.minEngagementRate,
   );
   const exclusivityDays = parseOptionalNumber(
-    cooperationDetails.exclusivityDays
+    cooperationDetails.exclusivityDays,
   );
   const usageDurationDays = parseOptionalNumber(
-    cooperationDetails.usageDurationDays
+    cooperationDetails.usageDurationDays,
   );
 
   const locationCountry = trimOptional(location.country);
@@ -79,6 +148,7 @@ export const postFilterDraftToListParams = (
       placementFormats: draft.placementFormats,
     }),
     ...(draft.niche.length > 0 && { niche: draft.niche }),
+    ...(draft.chips.length > 0 && { chips: draft.chips }),
     ...(budget.type && { budgetType: budget.type }),
     ...(budget.currency && { budgetCurrency: budget.currency }),
     ...(budget.paymentTerms && { paymentTerms: budget.paymentTerms }),

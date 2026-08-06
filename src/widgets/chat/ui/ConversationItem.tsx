@@ -92,6 +92,10 @@ export const ConversationItem = ({
         <Avatar
           alt={peer.displayName}
           src={peer.avatar ?? undefined}
+          sx={{
+            width: 48,
+            height: 48,
+          }}
         />
       </Badge>
 

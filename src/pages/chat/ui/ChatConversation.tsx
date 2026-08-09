@@ -1,4 +1,4 @@
-import { ChatOutlined, KeyboardArrowDown } from '@mui/icons-material';
+import { ChatOutlined, Close, KeyboardArrowDown } from '@mui/icons-material';
 import {
   Box,
   CircularProgress,
@@ -7,19 +7,23 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { format } from 'date-fns';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  formatChatDaySeparatorLabel,
+  isSameChatDay,
+} from '@/entities/chat';
 import { EmptyBlock } from '@/shared';
 import {
   ChatInput,
   ChatMessageBubble,
   ChatPinnedMessagesDialog,
   ChatPinnedMessagesHeader,
-  type MessageSide,
 } from '@/widgets/chat';
 
+import { ChatDaySeparator } from './ChatDaySeparator';
 import { ChatErrorBanner } from './ChatErrorBanner';
+import { ChatSelectionBar } from './ChatSelectionBar';
 import { UnreadMessagesDivider } from './UnreadMessagesDivider';
 
 import type { ChatMessage, ChatMessagePin, ChatPeer } from '@/entities/chat';
@@ -31,8 +35,20 @@ type ChatConversationProps = {
   onDeleteMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => Promise<boolean>;
   onForwardMessage?: (messageId: string) => void;
+  onReplyMessage?: (message: ChatMessage) => void;
+  onMarkUnread?: (messageId: string) => void;
+  onEnterSelection?: (messageId?: string) => void;
+  onToggleSelect?: (messageId: string) => void;
+  onExitSelection?: () => void;
+  onHideSelected?: () => void;
+  onForwardSelected?: () => void;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  replyToMessage?: ChatMessage | null;
+  onClearReply?: () => void;
   isDeletingMessage?: boolean;
   deletingMessageId?: string | null;
+  isHidingMessages?: boolean;
   isEditingMessage?: boolean;
   editingMessageId?: string | null;
   peer?: ChatPeer | null;
@@ -55,12 +71,6 @@ type ChatConversationProps = {
   onFocusMessageHandled?: () => void;
 };
 
-const toMessageSide = (
-  senderId: string,
-  currentUserId: string | null
-): MessageSide =>
-  currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
-
 export const ChatConversation = ({
   messages,
   unreadDividerMessageId = null,
@@ -68,8 +78,20 @@ export const ChatConversation = ({
   onDeleteMessage,
   onEditMessage,
   onForwardMessage,
+  onReplyMessage,
+  onMarkUnread,
+  onEnterSelection,
+  onToggleSelect,
+  onExitSelection,
+  onHideSelected,
+  onForwardSelected,
+  selectionMode = false,
+  selectedIds,
+  replyToMessage = null,
+  onClearReply,
   isDeletingMessage = false,
   deletingMessageId = null,
+  isHidingMessages = false,
   isEditingMessage = false,
   editingMessageId = null,
   peer,
@@ -101,6 +123,23 @@ export const ChatConversation = ({
     null,
   );
   const [jumpError, setJumpError] = useState<string | null>(null);
+
+  const selectedCount = selectedIds?.size ?? 0;
+
+  const messageDayStarts = useMemo(() => {
+    const starts = new Set<string>();
+
+    messages.forEach((message, index) => {
+      if (
+        index === 0 ||
+        !isSameChatDay(message.createdAt, messages[index - 1].createdAt)
+      ) {
+        starts.add(message.id);
+      }
+    });
+
+    return starts;
+  }, [messages]);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current;
@@ -185,8 +224,9 @@ export const ChatConversation = ({
 
   useEffect(() => {
     if (!focusMessageId) return;
-
-    handleJumpToMessage(focusMessageId);
+    setTimeout(() => {
+      handleJumpToMessage(focusMessageId);
+    }, 0);
     onFocusMessageHandled?.();
   }, [focusMessageId, handleJumpToMessage, onFocusMessageHandled]);
 
@@ -316,8 +356,8 @@ export const ChatConversation = ({
         borderColor: 'divider',
         flex: 1,
         minHeight: 0,
-        p: { xs: 2, md: 4 },
-        borderRadius: '32px',
+        p: { xs: 2, md: 2 },
+        borderRadius: '24px',
         bgcolor: 'common.white',
       }}
     >
@@ -359,10 +399,14 @@ export const ChatConversation = ({
           <Box
             ref={messagesContentRef}
             sx={{
-              height: '100%',
+              // minHeight (not height) so bottom padding sits after the last
+              // message when content overflows the scroll area
+              minHeight: '100%',
+              boxSizing: 'border-box',
               gap: 1.25,
               px: { xs: 1.5, md: 2 },
-              py: { xs: 1.5, md: 2 },
+              pt: { xs: 1.5, md: 2 },
+              pb: 3,
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -389,29 +433,33 @@ export const ChatConversation = ({
                     'background-color 200ms ease, box-shadow 200ms ease',
                 }}
               >
+                {messageDayStarts.has(message.id) && (
+                  <ChatDaySeparator
+                    label={formatChatDaySeparatorLabel(message.createdAt)}
+                  />
+                )}
+
                 {unreadDividerMessageId === message.id && (
                   <UnreadMessagesDivider />
                 )}
 
                 <ChatMessageBubble
-                  messageId={message.id}
-                  text={message.content}
-                  media={message.media}
-                  senderId={message.senderId}
-                  actorDisplayName={message.actorDisplayName}
-                  actorKind={message.actorKind}
-                  createdAt={message.createdAt}
-                  editedAt={message.editedAt}
-                  isRedirected={message.isRedirected}
+                  message={message}
                   currentUserId={currentUserId}
-                  side={toMessageSide(message.senderId, currentUserId)}
-                  time={format(new Date(message.createdAt), 'HH:mm')}
-                  isRead={message.isRead}
+                  senderAvatar={peer?.avatar}
+                  senderName={peer?.displayName}
                   isPinned={isMessagePinned(message.id)}
                   onPin={onTogglePinMessage}
                   onDelete={onDeleteMessage}
                   onEdit={onEditMessage}
                   onForward={onForwardMessage}
+                  onReply={onReplyMessage}
+                  onMarkUnread={onMarkUnread}
+                  onEnterSelection={onEnterSelection}
+                  onReplyJump={handleJumpToMessage}
+                  selectionMode={selectionMode}
+                  selected={selectedIds?.has(message.id) ?? false}
+                  onToggleSelect={onToggleSelect}
                   isDeleting={
                     isDeletingMessage && deletingMessageId === message.id
                   }
@@ -431,9 +479,8 @@ export const ChatConversation = ({
             onClick={handleScrollToBottomClick}
             sx={{
               position: 'absolute',
+              right: 16,
               bottom: 16,
-              left: '50%',
-              transform: 'translateX(-50%)',
               bgcolor: 'common.white',
               boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
               '&:hover': {
@@ -448,16 +495,80 @@ export const ChatConversation = ({
       </Box>
 
       <Box sx={{ flexShrink: 0 }}>
-        <ChatInput
-          value={draft}
-          pendingFiles={pendingFiles}
-          isSending={isSending}
-          disabled={!peer}
-          onChange={onDraftChange}
-          onAttachFiles={onAttachFiles}
-          onRemoveFile={onRemoveFile}
-          onSend={onSend}
-        />
+        {selectionMode ? (
+          <ChatSelectionBar
+            selectedCount={selectedCount}
+            isDeleting={isHidingMessages}
+            onClose={() => onExitSelection?.()}
+            onDelete={() => onHideSelected?.()}
+            onForward={() => onForwardSelected?.()}
+          />
+        ) : (
+          <Stack spacing={1}>
+            {replyToMessage && (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'center',
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: '16px',
+                  bgcolor: 'secondary.light',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 3,
+                    alignSelf: 'stretch',
+                    borderRadius: 1,
+                    bgcolor: 'primary.main',
+                    flexShrink: 0,
+                  }}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 600, color: 'primary.main', display: 'block' }}
+                  >
+                    {replyToMessage.actorDisplayName ||
+                      (replyToMessage.senderId === currentUserId
+                        ? 'Вы'
+                        : peer.displayName)}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    noWrap
+                    color="text.secondary"
+                  >
+                    {replyToMessage.content.trim() ||
+                      (replyToMessage.media?.length ? 'Медиа' : 'Сообщение')}
+                  </Typography>
+                </Box>
+                <IconButton
+                  aria-label="Отменить ответ"
+                  size="small"
+                  onClick={onClearReply}
+                >
+                  <Close fontSize="small" />
+                </IconButton>
+              </Stack>
+            )}
+
+            <ChatInput
+              value={draft}
+              pendingFiles={pendingFiles}
+              isSending={isSending}
+              disabled={!peer}
+              onChange={onDraftChange}
+              onAttachFiles={onAttachFiles}
+              onRemoveFile={onRemoveFile}
+              onSend={onSend}
+            />
+          </Stack>
+        )}
       </Box>
 
       <ChatPinnedMessagesDialog

@@ -16,11 +16,11 @@ import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import { MyResponsesViewModeToggle } from './MyResponsesViewModeToggle';
 
-import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils';
 import type {
   MyResponseTableReportControls,
   MyResponseViewMode,
 } from '../model/types';
+import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils';
 
 type CompanyOption = {
   ownerId: string;
@@ -126,6 +126,7 @@ const MyResponsesFilter = ({
           sx={{ width: { xs: '90%', md: '50%' }, minWidth: 0 }}
         >
           <FilterAutocomplete
+            size="small"
             label="Статус"
             value={status}
             options={statusOptions}
@@ -134,6 +135,7 @@ const MyResponsesFilter = ({
           />
 
           <FilterAutocomplete
+            size="small"
             label="Компания"
             value={companyId}
             options={companyAutocompleteOptions}

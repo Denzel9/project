@@ -10,20 +10,17 @@ import {
 } from '@/entities/user';
 import { EmptyBlock } from '@/shared';
 
-export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
+export const Contacts = ({ tabValue, contacts }: { tabValue: number; contacts: Contact[] }) => {
   if (!contacts.length) {
     return (
       <Box
         sx={{
-          bgcolor: 'white',
-          p: { xs: 3, md: 4 },
-          borderRadius: '32px',
           height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          bgcolor: 'white',
           border: '1px solid',
+          borderRadius: '24px',
           borderColor: 'divider',
+          display: tabValue === 2 ? 'block' : 'none',
         }}
       >
         <EmptyBlock title="Нет данных" />
@@ -36,10 +33,13 @@ export const Contacts = ({ contacts }: { contacts: Contact[] }) => {
       direction="column"
       spacing={2}
       sx={{
-        p: { xs: 3, md: 4 },
-        borderRadius: '32px',
+        flex: 1,
+        border: '1px solid',
+        borderColor: 'divider',
         bgcolor: 'white',
-        height: '100%',
+        borderRadius: '24px',
+        p: { xs: 3, md: 4 },
+        display: tabValue === 2 ? 'block' : 'none',
       }}
     >
       {contacts?.map(field => {

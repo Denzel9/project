@@ -1,32 +1,34 @@
 import { Close } from '@mui/icons-material';
-import { Box, IconButton, Stack, Typography } from '@mui/material';
+import { IconButton, Stack, Typography } from '@mui/material';
 
 type TaskAlertBannerProps = {
   message: string;
   details?: string[];
   onClose: () => void;
+  action?: React.ReactNode;
 };
 
 export const TaskAlertBanner = ({
   message,
   details,
   onClose,
+  action,
 }: TaskAlertBannerProps) => (
-  <Box
+  <Stack
+    direction="row"
     sx={{
-      mb: 2,
-      bgcolor: 'error.light',
-      p: { xs: 2, md: 3 },
-      borderRadius: '24px',
-      border: '1px solid',
-      borderColor: 'error.main',
-      display: 'flex',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
+      mb: 1,
       gap: 2,
+      p: { xs: 2, md: 2 },
+      border: '1px solid',
+      borderRadius: '24px',
+      alignItems: 'center',
+      bgcolor: 'error.light',
+      borderColor: 'error.main',
+      justifyContent: 'space-between',
     }}
   >
-    <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+    <Stack spacing={1}>
       <Typography
         variant="h6"
         sx={{ fontWeight: 500, color: 'white' }}
@@ -45,18 +47,19 @@ export const TaskAlertBanner = ({
       ))}
     </Stack>
 
-    <IconButton
-      size="small"
-      aria-label="Скрыть"
-      onClick={onClose}
-      sx={{
-        color: 'white',
-        flexShrink: 0,
-        mt: -0.5,
-        '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
-      }}
-    >
-      <Close fontSize="small" />
-    </IconButton>
-  </Box>
+    <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+      {action}
+
+      <IconButton
+        aria-label="Скрыть"
+        onClick={onClose}
+        sx={{
+          color: 'white',
+          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
+        }}
+      >
+        <Close />
+      </IconButton>
+    </Stack>
+  </Stack>
 );

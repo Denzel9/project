@@ -1,9 +1,13 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { mainAxios } from '@/shared/api'
 import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
-import type { PublicationList, PublicationListParams } from './types'
+import type {
+  Publication,
+  PublicationList,
+  PublicationListParams,
+} from './types'
 
 export const publicationKeys = {
   all: ['publications'] as const,
@@ -86,3 +90,66 @@ export const fetchAllPublications = async (
   fetchAllPages(async (page, limit) =>
     fetchPublicationsList({ ...params, page, limit }),
   )
+
+export type UpdatePublicationDto = {
+  title?: string | null
+  description?: string
+  externalUrl?: string | null
+  platform?: Publication['platform']
+}
+
+const patchPublicationInListCache = (
+  list: PublicationList | undefined,
+  publication: Publication,
+): PublicationList | undefined => {
+  if (!list) return list
+
+  return {
+    ...list,
+    items: list.items.map(item =>
+      item.id === publication.id ? publication : item,
+    ),
+  }
+}
+
+export const useUpdatePublicationMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: UpdatePublicationDto & { id: string }) => {
+      const { data } = await mainAxios.patch<Publication>(
+        `/publications/${id}`,
+        body,
+      )
+      return data
+    },
+    onSuccess: publication => {
+      queryClient.setQueriesData<PublicationList>(
+        { queryKey: publicationKeys.all },
+        old => {
+          if (!old || !('items' in old)) return old
+          return patchPublicationInListCache(old, publication)
+        },
+      )
+
+      queryClient.setQueriesData<{
+        pages: PublicationList[]
+        pageParams: unknown[]
+      }>({ queryKey: [...publicationKeys.all, 'infinite'] }, old => {
+        if (!old?.pages) return old
+
+        return {
+          ...old,
+          pages: old.pages.map(page =>
+            patchPublicationInListCache(page, publication) ?? page,
+          ),
+        }
+      })
+
+      void queryClient.invalidateQueries({ queryKey: publicationKeys.all })
+    },
+  })
+}

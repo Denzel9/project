@@ -1,64 +1,70 @@
 import {
   DownloadOutlined,
   PrintOutlined,
-} from '@mui/icons-material';
+} from '@mui/icons-material'
 import {
+  Button,
   Chip,
   CircularProgress,
   IconButton,
   Stack,
   Tooltip,
   useMediaQuery,
-} from '@mui/material';
-import { useState } from 'react';
+} from '@mui/material'
+import { useMemo, useState } from 'react'
 
 import {
   FilterAutocomplete,
   useScroll,
   type FilterAutocompleteOption,
-} from '@/shared';
+} from '@/shared'
 
-import { SEARCH_MIN } from '../model/constants';
+import { SEARCH_MIN } from '../model/constants'
+import { getPublicationLinkItems } from '../model/utils'
 
-import { PublicationSearchPanel } from './PublicationSearchPanel';
-import { PublicationViewModeToggle } from './PublicationViewModeToggle';
+import { PublicationLinksDialog } from './PublicationLinksDialog'
+import { PublicationSearchPanel } from './PublicationSearchPanel'
+import { PublicationViewModeToggle } from './PublicationViewModeToggle'
 
 import type {
   PublicationTableReportControls,
   PublicationViewMode,
-} from '../model/types';
+} from '../model/types'
 import type {
   PublicationExecutorFilter,
   PublicationPostFilter,
-} from '../model/utils';
+} from '../model/utils'
+import type { Publication } from '@/entities/publication'
 
 type PublicationsFilterProps = {
-  q: string;
-  postId: PublicationPostFilter;
-  executorId: PublicationExecutorFilter;
-  viewMode: PublicationViewMode;
-  postOptions: FilterAutocompleteOption[];
-  executorOptions: FilterAutocompleteOption[];
-  selectedPostOption?: FilterAutocompleteOption | null;
-  selectedExecutorOption?: FilterAutocompleteOption | null;
-  isPostSearchLoading?: boolean;
-  isExecutorSearchLoading?: boolean;
-  hasActiveFilters?: boolean;
-  onQueryChange: (value: string) => void;
-  onPostChange: (value: PublicationPostFilter) => void;
-  onExecutorChange: (value: PublicationExecutorFilter) => void;
-  onPostSearch: (query: string) => void;
-  onExecutorSearch: (query: string) => void;
-  onViewModeChange: (value: PublicationViewMode) => void;
-  onResetFilters: () => void;
-  tableReport?: PublicationTableReportControls;
-};
+  q: string
+  postId: PublicationPostFilter
+  executorId: PublicationExecutorFilter
+  viewMode: PublicationViewMode
+  publications?: Publication[]
+  postOptions: FilterAutocompleteOption[]
+  executorOptions: FilterAutocompleteOption[]
+  selectedPostOption?: FilterAutocompleteOption | null
+  selectedExecutorOption?: FilterAutocompleteOption | null
+  isPostSearchLoading?: boolean
+  isExecutorSearchLoading?: boolean
+  hasActiveFilters?: boolean
+  onQueryChange: (value: string) => void
+  onPostChange: (value: PublicationPostFilter) => void
+  onExecutorChange: (value: PublicationExecutorFilter) => void
+  onPostSearch: (query: string) => void
+  onExecutorSearch: (query: string) => void
+  onViewModeChange: (value: PublicationViewMode) => void
+  onResetFilters: () => void
+  tableReport?: PublicationTableReportControls
+}
 
 export const PublicationsFilter = ({
   q,
   postId,
   executorId,
   viewMode,
+  publications = [],
   postOptions,
   executorOptions,
   selectedPostOption = null,
@@ -75,9 +81,25 @@ export const PublicationsFilter = ({
   onResetFilters,
   tableReport,
 }: PublicationsFilterProps) => {
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
-  const { isScrolled, ref } = useScroll(150);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'))
+  const { isScrolled, ref } = useScroll(150)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isLinksOpen, setIsLinksOpen] = useState(false)
+
+  const linkItems = useMemo(
+    () => getPublicationLinkItems(publications),
+    [publications],
+  )
+
+  const linksButton = (
+    <Button
+      sx={{ px: 2, flexShrink: 0 }}
+      onClick={() => setIsLinksOpen(true)}
+    >
+      Посмотреть ссылки
+      {linkItems.length > 0 ? ` (${linkItems.length})` : ''}
+    </Button>
+  )
 
   return (
     <>
@@ -86,16 +108,18 @@ export const PublicationsFilter = ({
         direction="row"
         className="print-no-print"
         sx={{
-          px: 2,
-          pb: 2,
-          alignItems: 'center',
-          pt: isScrolled ? 4 : 1,
+          p: 2,
           gap: 2,
+          mb: 1,
+          bgcolor: 'white',
+          alignItems: 'center',
+          borderRadius: '24px',
           transition: 'all 0.3s ease',
+          border: '1px solid',
+          borderColor: 'divider',
           justifyContent: 'space-between',
-          bgcolor: isScrolled ? 'white' : 'transparent',
-          borderBottomLeftRadius: isScrolled ? '32px' : '0',
-          borderBottomRightRadius: isScrolled ? '32px' : '0',
+          borderTopLeftRadius: isScrolled ? '0' : '24px',
+          borderTopRightRadius: isScrolled ? '0' : '24px',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
@@ -137,6 +161,8 @@ export const PublicationsFilter = ({
             selectedOption={selectedExecutorOption}
           />
 
+          {linksButton}
+
           {hasActiveFilters && (
             <Chip
               label="Сбросить"
@@ -146,6 +172,8 @@ export const PublicationsFilter = ({
             />
           )}
         </Stack>
+
+        {viewMode === 'table' && linksButton}
 
         {viewMode === 'table' && hasActiveFilters && (
           <Chip
@@ -214,11 +242,17 @@ export const PublicationsFilter = ({
         open={isSearchOpen && isMobile}
         query={q}
         onClose={() => {
-          setIsSearchOpen(false);
-          onQueryChange('');
+          setIsSearchOpen(false)
+          onQueryChange('')
         }}
         onQueryChange={onQueryChange}
       />
+
+      <PublicationLinksDialog
+        open={isLinksOpen}
+        links={linkItems}
+        onClose={() => setIsLinksOpen(false)}
+      />
     </>
-  );
-};
+  )
+}

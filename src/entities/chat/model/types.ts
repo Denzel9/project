@@ -29,6 +29,12 @@ export type ChatMessage = {
   editedAt: string | null
   isRedirected: boolean
   isRead: boolean
+  replyToId?: string | null
+  replyToPreview?: string | null
+  replyToSenderId?: string | null
+  replyToSenderName?: string | null
+  redirectedFromUserId?: string | null
+  redirectedFromDisplayName?: string | null
 }
 
 export type ChatMessagePin = {
@@ -49,7 +55,10 @@ export type ChatConversation = {
   peer: ChatPeer
   lastMessage: ChatMessage | null
   unreadCount: number
+  unreadAnchorMessageId?: string | null
+  isMarkedUnread?: boolean
   isPinned: boolean
+  isNotes: boolean
   updatedAt: string
 }
 
@@ -66,6 +75,11 @@ export type ChatMessagesReadEvent = {
 export type ChatMessageDeletedEvent = {
   conversationId: string
   messageId: string
+}
+
+export type ChatMessagesHiddenEvent = {
+  conversationId: string
+  messageIds: string[]
 }
 
 export type ChatMessageEditedEvent = ChatMessage

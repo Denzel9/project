@@ -35,15 +35,26 @@ export type ApplicationApplicant = {
   companyName?: string
 }
 
+export type ApplicantStatistics = {
+  completedWorks: number
+  cancelledWorks: number
+  sharedCompletedWorks: number
+  sharedPublications: number
+  favoritedByCount: number
+}
+
 export type Application = {
   id: string
   postId: string
   message: string
   status: ApplicationStatus
+  /** false — кандидат скрыл статистику; undefined у старых ответов = показывать если есть stats */
+  attachStatistics?: boolean
   createdAt: string
   updatedAt: string
   post?: ApplicationPostSummary
   applicant?: ApplicationApplicant
+  applicantStatistics?: ApplicantStatistics | null
   createdActorAccountId?: string | null
   createdActorDisplayName?: string | null
   createdActorKind?: 'OWNER' | 'MANAGER' | null
@@ -67,6 +78,7 @@ export type ApplicationStats = {
 export type CreateApplicationDto = {
   postId: string
   message: string
+  attachStatistics?: boolean
 }
 
 export type UpdateApplicationStatusDto = {

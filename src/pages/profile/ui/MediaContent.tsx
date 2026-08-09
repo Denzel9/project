@@ -9,7 +9,7 @@ import { PostItem, PostItemSkeletonList } from '@/widgets';
 import { MEDIA_TAB_VALUES, type MediaContentProps } from '../model/types';
 import { getPostPermissions } from '../model/utils';
 
-export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
+export const MediaContent = ({ tabValue, userId, mediaTabValue }: MediaContentProps) => {
   const { id } = useAuthStore();
 
   const isActive = mediaTabValue === MEDIA_TAB_VALUES.ACTIVE;
@@ -45,7 +45,7 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
 
   if (isInitialLoading) {
     return (
-      <Box>
+      <Box sx={{ display: tabValue === 0 ? 'block' : 'none' }}>
         <PostItemSkeletonList
           count={5}
           isCompact
@@ -55,30 +55,26 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
   }
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{ height: '100%', display: tabValue === 0 ? 'block' : 'none' }}>
       {!isEmpty && (
         <Stack
           spacing={1}
           direction="column"
           sx={{
-            opacity: isPlaceholderData ? 0.72 : 1,
             transition: 'opacity 120ms ease',
+            opacity: isPlaceholderData ? 0.72 : 1,
           }}
         >
           {posts.map(post => (
-            <Box
+            <PostItem
+              isCompact
+              post={post}
               key={post.id}
-              sx={{ bgcolor: 'white', borderRadius: '32px' }}
-            >
-              <PostItem
-                isCompact
-                post={post}
-                isPrivate={isPrivate}
-                permissions={postPermissions}
-                isMyPost={post.owner.id === id}
-                isCompany={Boolean(post.owner.companyProfile?.companyName)}
-              />
-            </Box>
+              isPrivate={isPrivate}
+              permissions={postPermissions}
+              isMyPost={post.owner.id === id}
+              isCompany={Boolean(post.owner.companyProfile?.companyName)}
+            />
           ))}
         </Stack>
       )}
@@ -87,11 +83,10 @@ export const MediaContent = ({ userId, mediaTabValue }: MediaContentProps) => {
         <Box
           sx={{
             height: '100%',
-            display: 'flex',
             bgcolor: 'white',
-            alignItems: 'center',
+            border: '1px solid',
             borderRadius: '32px',
-            justifyContent: 'center',
+            borderColor: 'divider',
           }}
         >
           <EmptyBlock title="Посты не найдены" />

@@ -98,7 +98,11 @@ export const ChatForwardMessageDialog = ({
         direction="row"
         sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
       >
-        <Typography variant="h6">Переслать сообщение</Typography>
+        <Typography variant="h6">
+          {messagePreview?.startsWith('Выбрано сообщений:')
+            ? 'Переслать сообщения'
+            : 'Переслать сообщение'}
+        </Typography>
         <IconButton
           aria-label="Закрыть"
           onClick={handleClose}
@@ -130,6 +134,7 @@ export const ChatForwardMessageDialog = ({
 
       <Box sx={{ mb: 2 }}>
         <ChatContactSearch
+          size="small"
           disabled={isForwarding}
           excludeUserIds={excludeUserIds}
           onSelect={user => {
@@ -160,6 +165,9 @@ export const ChatForwardMessageDialog = ({
 
         {availableConversations.map(conversation => {
           const isSelected = selectedPeerId === conversation.peer.id;
+          const displayName = conversation.isNotes
+            ? 'Заметки'
+            : conversation.peer.displayName;
 
           return (
             <Stack
@@ -187,7 +195,7 @@ export const ChatForwardMessageDialog = ({
               }}
             >
               <Avatar src={conversation.peer.avatar ?? undefined}>
-                {conversation.peer.displayName.charAt(0)}
+                {displayName.charAt(0)}
               </Avatar>
 
               <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -199,7 +207,7 @@ export const ChatForwardMessageDialog = ({
                     color: isSelected ? 'common.white' : 'text.primary',
                   }}
                 >
-                  {conversation.peer.displayName}
+                  {displayName}
                 </Typography>
               </Box>
             </Stack>

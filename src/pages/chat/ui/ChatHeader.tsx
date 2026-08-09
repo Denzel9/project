@@ -1,4 +1,4 @@
-import { ArrowBack, Close, MoreVert, Search } from '@mui/icons-material';
+import { ArrowBack, Close, MoreVert, Search, StickyNote2 } from '@mui/icons-material';
 import {
   Avatar,
   IconButton,
@@ -16,6 +16,7 @@ import { ChatMessageSearchAutocomplete } from '@/widgets/chat';
 
 type ChatHeaderProps = {
   peer?: ChatPeer;
+  isNotes?: boolean;
   isMobile: boolean;
   headerTime?: string;
   hasActiveTasks?: boolean;
@@ -34,6 +35,7 @@ type ChatHeaderProps = {
 
 export const ChatHeader = ({
   peer,
+  isNotes = false,
   headerTime,
   isMobile,
   hasActiveTasks = false,
@@ -81,6 +83,8 @@ export const ChatHeader = ({
     onOpenAddTask?.();
   };
 
+  const displayName = isNotes ? 'Заметки' : peer?.displayName;
+
   return (
     <Stack
       spacing={2}
@@ -89,19 +93,23 @@ export const ChatHeader = ({
         width: '100%',
         flexShrink: 0,
         bgcolor: 'white',
-        p: { xs: 2, md: 4 },
+        p: { xs: 2, md: 2 },
         border: '1px solid',
         alignItems: 'center',
         borderColor: 'divider',
         justifyContent: 'space-between',
-        borderRadius: { xs: '16px', md: '32px' },
+        borderRadius: { xs: '16px', md: '24px' },
       }}
     >
       <Stack
         spacing={2}
         direction="row"
-        onClick={onOpenProfile}
-        sx={{ alignItems: 'center', minWidth: 0, cursor: 'pointer' }}
+        onClick={isNotes ? undefined : onOpenProfile}
+        sx={{
+          alignItems: 'center',
+          minWidth: 0,
+          cursor: isNotes ? 'default' : 'pointer',
+        }}
       >
         {isMobile && (
           <IconButton
@@ -115,11 +123,25 @@ export const ChatHeader = ({
           </IconButton>
         )}
 
-        <Avatar
-          alt={peer?.displayName}
-          sx={{ width: 50, height: 50 }}
-          src={peer?.avatar ?? undefined}
-        />
+        {isNotes ? (
+          <Avatar
+            alt={displayName}
+            sx={{
+              width: 50,
+              height: 50,
+              bgcolor: 'primary.main',
+              color: 'common.white',
+            }}
+          >
+            <StickyNote2 />
+          </Avatar>
+        ) : (
+          <Avatar
+            alt={displayName}
+            sx={{ width: 50, height: 50 }}
+            src={peer?.avatar ?? undefined}
+          />
+        )}
         <Stack
           direction="column"
           sx={{ minWidth: 0 }}
@@ -129,10 +151,12 @@ export const ChatHeader = ({
             noWrap
             sx={{
               transition: 'color 0.2s ease-in-out',
-              ':hover': { color: 'primary.main' },
+              ...(!isNotes && {
+                ':hover': { color: 'primary.main' },
+              }),
             }}
           >
-            {peer?.displayName}
+            {displayName}
           </Typography>
 
           {headerTime && (
@@ -172,14 +196,16 @@ export const ChatHeader = ({
           open={Boolean(menuAnchor)}
           onClose={handleCloseMenu}
         >
-          <MenuItem
-            component="a"
-            target="_blank"
-            rel="noopener noreferrer"
-            href={`${ROUTES.PROFILE}?userId=${peer?.id}`}
-          >
-            Перейти к профилю
-          </MenuItem>
+          {!isNotes && (
+            <MenuItem
+              component="a"
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`${ROUTES.PROFILE}?userId=${peer?.id}`}
+            >
+              Перейти к профилю
+            </MenuItem>
+          )}
 
           <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
 

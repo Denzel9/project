@@ -100,7 +100,6 @@ export const ChatPinnedMessagesHeader = ({
                 color: 'primary.main',
                 fontWeight: 700,
                 letterSpacing: 0.2,
-                textTransform: 'uppercase',
               }}
             >
               Закреплено

@@ -32,12 +32,16 @@ type TaskCommentItemProps = {
   highlight?: string;
   isPending?: boolean;
   isEditing?: boolean;
+  isPinned?: boolean;
   editContent?: string;
   onEditContentChange?: (value: string) => void;
   onStartEdit?: (commentId: string, text: string) => void;
   onSaveEdit?: (commentId: string) => void;
   onCancelEdit?: () => void;
   onDelete?: (commentId: string) => void;
+  onReply?: (comment: TaskComment) => void;
+  onPin?: (commentId: string, isPinned: boolean) => void;
+  onReplyJump?: (commentId: string) => void;
   onOpenGallery?: (media: TaskComment['media'], initialSlide: number) => void;
   showActions?: boolean;
 };
@@ -92,12 +96,16 @@ export const TaskCommentItem = ({
   highlight,
   isPending = false,
   isEditing = false,
+  isPinned = false,
   editContent = '',
   onEditContentChange,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  onReply,
+  onPin,
+  onReplyJump,
   onOpenGallery,
   showActions = true,
 }: TaskCommentItemProps) => {
@@ -107,7 +115,12 @@ export const TaskCommentItem = ({
   const canModify = useIsCommentModifiable(comment, currentUserId, isOwner);
   const canEdit = canModify;
   const canDelete = canModify;
-  const showMenu = showActions && !isEditing && (canEdit || canDelete);
+  const canReply = showActions && !isEditing && Boolean(onReply);
+  const canPin = showActions && !isEditing && Boolean(onPin);
+  const showMenu =
+    showActions &&
+    !isEditing &&
+    (canEdit || canDelete || canReply || canPin);
 
   useEffect(() => {
     if (!showMenu) {
@@ -154,6 +167,16 @@ export const TaskCommentItem = ({
     onDelete?.(comment.id);
   };
 
+  const handleReply = () => {
+    handleCloseMenu();
+    onReply?.(comment);
+  };
+
+  const handlePin = () => {
+    handleCloseMenu();
+    onPin?.(comment.id, !isPinned);
+  };
+
   const handleMediaClick = (index: number) => {
     const item = commentMedia[index];
 
@@ -182,7 +205,7 @@ export const TaskCommentItem = ({
         <Box
           sx={{
             p: 1.5,
-            minWidth: 0,
+            minWidth: 200,
             flex: 1,
             position: 'relative',
             borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
@@ -215,6 +238,14 @@ export const TaskCommentItem = ({
                 open={Boolean(menuAnchor)}
                 onClose={handleCloseMenu}
               >
+                {canReply && (
+                  <MenuItem onClick={handleReply}>Ответить</MenuItem>
+                )}
+                {canPin && (
+                  <MenuItem onClick={handlePin}>
+                    {isPinned ? 'Открепить' : 'Закрепить'}
+                  </MenuItem>
+                )}
                 {canEdit && (
                   <MenuItem
                     disabled={isPending}
@@ -239,6 +270,52 @@ export const TaskCommentItem = ({
                 )}
               </Menu>
             </>
+          )}
+
+          {comment.replyToPreview && (
+            <Box
+              onClick={() => {
+                if (comment.replyToId) {
+                  onReplyJump?.(comment.replyToId);
+                }
+              }}
+              sx={{
+                mb: 1,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: '12px',
+                bgcolor: isOwn ? 'rgba(255,255,255,0.16)' : 'action.hover',
+                borderLeft: '3px solid',
+                borderColor: isOwn ? 'common.white' : 'primary.main',
+                cursor: comment.replyToId && onReplyJump ? 'pointer' : 'default',
+                pr: showMenu ? 4 : 1.25,
+              }}
+            >
+              {comment.replyToSenderName && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    display: 'block',
+                    color: isOwn ? 'common.white' : 'primary.main',
+                  }}
+                >
+                  {comment.replyToSenderName}
+                </Typography>
+              )}
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  opacity: 0.9,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {comment.replyToPreview}
+              </Typography>
+            </Box>
           )}
 
           {comment.actorDisplayName || comment.actorKind ? (

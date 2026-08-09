@@ -82,6 +82,9 @@ export const getNotificationLink = (
     case NOTIFICATION_TYPE.TASK_EXECUTOR_ASSIGNED:
     case NOTIFICATION_TYPE.TASK_COMMENT_CREATED:
     case NOTIFICATION_TYPE.TASK_MEDIA_ADDED:
+    case NOTIFICATION_TYPE.TASK_DEADLINE_SOON:
+    case NOTIFICATION_TYPE.TASK_DEADLINE_TODAY:
+    case NOTIFICATION_TYPE.TASK_DEADLINE_OVERDUE:
       return getTaskLink(payload)
 
     case NOTIFICATION_TYPE.CHAT_MESSAGE: {
@@ -126,6 +129,12 @@ export const getNotificationTypeLabel = (type: NotificationType) => {
       return 'Комментарий к задаче'
     case NOTIFICATION_TYPE.TASK_MEDIA_ADDED:
       return 'Отчёт по задаче'
+    case NOTIFICATION_TYPE.TASK_DEADLINE_SOON:
+      return 'Дедлайн завтра'
+    case NOTIFICATION_TYPE.TASK_DEADLINE_TODAY:
+      return 'Дедлайн сегодня'
+    case NOTIFICATION_TYPE.TASK_DEADLINE_OVERDUE:
+      return 'Просроченная задача'
     case NOTIFICATION_TYPE.CHAT_MESSAGE:
       return 'Сообщение в чате'
     case NOTIFICATION_TYPE.TEAM_INVITE:

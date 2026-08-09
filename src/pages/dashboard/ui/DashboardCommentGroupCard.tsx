@@ -25,6 +25,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -32,11 +33,17 @@ import { Link } from 'react-router';
 
 import {
   isTaskOwner,
+  usePinTaskCommentMutation,
   useSearchTaskCommentsQuery,
+  useTaskCommentPinsQuery,
   useUpdateTaskCommentMutation,
   type TaskComment,
   type TaskCommentMedia,
 } from '@/entities';
+import {
+  formatChatDaySeparatorLabel,
+  isSameChatDay,
+} from '@/entities/chat';
 import { useAuthStore } from '@/features';
 import { useUnreadCommentsDivider } from '@/pages/task/model/hooks/useUnreadCommentsDivider';
 import {
@@ -45,10 +52,12 @@ import {
 } from '@/pages/task/model/lib/commentMedia';
 import { TaskCommentAttachmentsPanel } from '@/pages/task/ui/comment/TaskCommentAttachmentsPanel';
 import { TaskCommentComposer } from '@/pages/task/ui/comment/TaskCommentComposer';
+import { TaskCommentDaySeparator } from '@/pages/task/ui/comment/TaskCommentDaySeparator';
 import { TaskCommentItem } from '@/pages/task/ui/comment/TaskCommentItem';
+import { TaskCommentPinnedHeader } from '@/pages/task/ui/comment/TaskCommentPinnedHeader';
+import { TaskCommentSearchPanel } from '@/pages/task/ui/comment/TaskCommentSearchPanel';
 import { UnreadCommentsDivider } from '@/pages/task/ui/comment/UnreadCommentsDivider';
 import { DeleteCommentDialog } from '@/pages/task/ui/DeleteCommentDialog';
-import { TaskCommentSearchPanel } from '@/pages/task/ui/TaskCommentSearchPanel';
 import { FullScreenGallery } from '@/widgets';
 
 import { DASHBOARD_COMMENT_CARD_COLLAPSE_MS } from '../model/constants';
@@ -172,11 +181,19 @@ export const DashboardCommentGroupCard = ({
   const [editContent, setEditContent] = useState('');
   const [deletingId, setDeletingId] = useState('');
   const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
+  const [replyToComment, setReplyToComment] = useState<TaskComment | null>(
+    null
+  );
 
   const { mutate: updateComment, isPending: isUpdating } =
     useUpdateTaskCommentMutation();
+  const { mutateAsync: pinComment } = usePinTaskCommentMutation();
 
   const isThreadOpen = expanded || embedded;
+
+  const { data: pinnedComments = [] } = useTaskCommentPinsQuery(
+    isThreadOpen ? taskId : null
+  );
 
   const {
     items: sortedComments,
@@ -199,6 +216,43 @@ export const DashboardCommentGroupCard = ({
     isLoading: isRefreshing,
     initialUnreadCount: item.unreadCount,
   });
+
+  const pinnedCommentIds = useMemo(
+    () => new Set(pinnedComments.map(pin => pin.commentId)),
+    [pinnedComments]
+  );
+
+  const commentDayStarts = useMemo(() => {
+    const starts = new Set<string>();
+
+    threadComments.forEach((comment, index) => {
+      if (
+        index === 0 ||
+        !isSameChatDay(threadComments[index - 1].createdAt, comment.createdAt)
+      ) {
+        starts.add(comment.id);
+      }
+    });
+
+    return starts;
+  }, [threadComments]);
+
+  const jumpToComment = useCallback((commentId: string) => {
+    const el = document.getElementById(`comment-${commentId}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  const handlePin = async (commentId: string, nextPinned: boolean) => {
+    try {
+      await pinComment({
+        taskId,
+        commentId,
+        isPinned: nextPinned,
+      });
+    } catch {
+      // ignore
+    }
+  };
 
   const taskTitle = getTaskDisplayTitle(item.task);
   const taskPath = getDashboardTaskPath(item.task);
@@ -630,12 +684,20 @@ export const DashboardCommentGroupCard = ({
         sx={fillHeight || embedded ? flexCollapseSx : undefined}
       >
         {!embedded && <Divider />}
+        {!canSearch && (
+          <TaskCommentPinnedHeader
+            pinnedComments={pinnedComments}
+            onJumpToComment={jumpToComment}
+          />
+        )}
         <Stack
           ref={messagesRef}
           spacing={1.25}
           onScroll={handleMessagesScroll}
           sx={{
-            p: embedded ? 0 : 1.5,
+            px: embedded ? 0 : 1.5,
+            pt: embedded ? 0 : 1.5,
+            pb: embedded ? 2 : 3,
             flex: fillHeight || embedded ? 1 : undefined,
             minHeight: fillHeight || embedded ? 0 : undefined,
             maxHeight: fillHeight || embedded ? undefined : 360,
@@ -739,6 +801,14 @@ export const DashboardCommentGroupCard = ({
                   key={threadItem.comment.id}
                   sx={{ width: '100%' }}
                 >
+                  {commentDayStarts.has(threadItem.comment.id) && (
+                    <TaskCommentDaySeparator
+                      label={formatChatDaySeparatorLabel(
+                        threadItem.comment.createdAt
+                      )}
+                    />
+                  )}
+
                   {unreadDividerCommentId === threadItem.comment.id && (
                     <UnreadCommentsDivider />
                   )}
@@ -749,6 +819,7 @@ export const DashboardCommentGroupCard = ({
                     currentUserId={currentUserId}
                     highlight={highlight}
                     isPending={isUpdating}
+                    isPinned={pinnedCommentIds.has(threadItem.comment.id)}
                     isEditing={editingId === threadItem.comment.id}
                     editContent={editContent}
                     onEditContentChange={setEditContent}
@@ -756,6 +827,9 @@ export const DashboardCommentGroupCard = ({
                     onSaveEdit={handleSaveEdit}
                     onCancelEdit={() => setEditingId(null)}
                     onDelete={handleDelete}
+                    onReply={setReplyToComment}
+                    onPin={(id, next) => void handlePin(id, next)}
+                    onReplyJump={jumpToComment}
                     onOpenGallery={openGallery}
                   />
                 </Box>
@@ -776,12 +850,73 @@ export const DashboardCommentGroupCard = ({
           }}
           onClick={event => event.stopPropagation()}
         >
+          {replyToComment && (
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                mb: 1,
+                alignItems: 'center',
+                px: 1.5,
+                py: 1,
+                borderRadius: '16px',
+                bgcolor: 'secondary.light',
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 3,
+                  alignSelf: 'stretch',
+                  borderRadius: 1,
+                  bgcolor: 'primary.main',
+                  flexShrink: 0,
+                }}
+              />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'primary.main',
+                    display: 'block',
+                  }}
+                >
+                  {replyToComment.actorDisplayName ||
+                    (replyToComment.authorId === currentUserId
+                      ? 'Вы'
+                      : 'Ответ')}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap
+                  color="text.secondary"
+                >
+                  {replyToComment.content.trim() ||
+                    (replyToComment.media?.length ? 'Медиа' : 'Комментарий')}
+                </Typography>
+              </Box>
+              <IconButton
+                size="small"
+                aria-label="Отменить ответ"
+                onClick={() => setReplyToComment(null)}
+              >
+                <Close fontSize="small" />
+              </IconButton>
+            </Stack>
+          )}
+
           <TaskCommentComposer
             taskId={taskId}
             executorId={item.task.executorId}
             isExecutorApprove={item.task.isExecutorApprove}
             placeholder="Написать комментарий…"
-            onSuccess={onCommentSuccess}
+            replyToId={replyToComment?.id}
+            onSuccess={() => {
+              setReplyToComment(null);
+              onCommentSuccess?.();
+            }}
           />
         </Box>
       </Collapse>

@@ -40,7 +40,18 @@ export type DashboardTaskCommentsItem = {
 };
 
 export const getDashboardTaskPath = (task: Task) => {
-  return `${ROUTES.TASK}/${task.id}?taskId=${task.id}`;
+  const postId = task.post?.id || task.postId || null;
+
+  if (!postId || postId === task.id) {
+    return `${ROUTES.MY_TASKS}`;
+  }
+
+  const params = new URLSearchParams({
+    taskId: task.id,
+    userId: task.executorId || 'unassigned',
+  });
+
+  return `${ROUTES.TASK}/${postId}?${params.toString()}`;
 };
 
 export const getDashboardCommentPath = (item: DashboardCommentItem) =>
@@ -96,18 +107,21 @@ export const mapTaskWithCommentsItem = (
   taskMap: Map<string, Task>,
 ): DashboardTaskCommentsItem => {
   const taskId = item.id || '';
-  const mappedTask =
-    taskMap.get(taskId) ??
-    ({
-      id: taskId,
-      title: item.title ?? '',
-      ownerId: item.ownerId ?? '',
-      executorId: item.executorId ?? '',
-      postId: item.postId ?? '',
-      status: item.status ?? TASK_STATUS_ENUM.PREPARING,
-      isExecutorApprove: item.isExecutorApprove ?? undefined,
-      post: item.post,
-    } as Task);
+  const postId = item.postId || item.post?.id || '';
+  const fromMap = taskMap.get(taskId);
+
+  const mappedTask = {
+    ...(fromMap ?? {}),
+    id: taskId,
+    title: item.title ?? fromMap?.title ?? '',
+    ownerId: item.ownerId ?? fromMap?.ownerId ?? '',
+    executorId: item.executorId ?? fromMap?.executorId ?? '',
+    postId: postId || fromMap?.postId || '',
+    status: item.status ?? fromMap?.status ?? TASK_STATUS_ENUM.PREPARING,
+    isExecutorApprove:
+      item.isExecutorApprove ?? fromMap?.isExecutorApprove ?? null,
+    post: item.post ?? fromMap?.post ?? (postId ? { id: postId, title: item.title ?? '' } : null),
+  } as unknown as Task;
 
   return {
     task: mappedTask,

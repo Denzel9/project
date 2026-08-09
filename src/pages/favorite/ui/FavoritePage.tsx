@@ -321,7 +321,7 @@ export const FavoritePage = () => {
 
       <Box
         sx={{
-          gap: 2,
+          gap: 1,
           flex: 1,
           width: '100%',
           display: 'flex',
@@ -402,7 +402,7 @@ export const FavoritePage = () => {
                 flexDirection: 'column',
                 flex: isTableView ? 1 : undefined,
                 minHeight: isTableView ? 0 : undefined,
-                gap: isTableView ? 0 : 2,
+                gap: isTableView ? 0 : 1,
               }}
             >
               {!isTableView &&

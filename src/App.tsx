@@ -6,7 +6,11 @@ import { NotificationsProvider } from './app/providers/NotificationsProvider';
 import { theme } from './app/theme/theme';
 import { Router } from './pages';
 import { queryClient } from './shared';
-import { DatePickerProvider, SnackbarLocal } from './widgets';
+import {
+  CookieConsentBanner,
+  DatePickerProvider,
+  SnackbarLocal,
+} from './widgets';
 
 function App() {
   return (
@@ -17,6 +21,7 @@ function App() {
             <NotificationsProvider>
               <Router />
               <SnackbarLocal />
+              <CookieConsentBanner />
             </NotificationsProvider>
           </AuthProvider>
         </DatePickerProvider>

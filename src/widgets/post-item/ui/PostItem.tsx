@@ -2,6 +2,7 @@ import { MoreVert, Whatshot } from '@mui/icons-material';
 import {
   Box,
   Chip,
+  Divider,
   IconButton,
   Menu,
   MenuItem,
@@ -89,10 +90,11 @@ const PostItem = ({
         display: 'flex',
         bgcolor: 'white',
         p: { md: 4 },
-        borderRadius: '32px',
+        borderRadius: '24px',
         transition: 'all 0.3s ease',
         flexDirection: { xs: 'column', lg: 'row' },
-        border: theme => `1px solid ${theme.palette.secondary.main}`,
+        border: '1px solid',
+        borderColor: 'divider',
         borderLeft: theme =>
           isApplied
             ? `4px solid ${getBorderColor(theme)}`
@@ -205,16 +207,19 @@ const PostItem = ({
                 open={open}
                 onClose={handleClose}
               >
-                {allowedActions.map(action => (
-                  <MenuItem
-                    key={action.key}
-                    onClick={() => {
-                      handleAction(action.key);
-                      handleClose();
-                    }}
-                  >
-                    {action.label}
-                  </MenuItem>
+                {allowedActions.map((action, index) => (
+                  <>
+                    <MenuItem
+                      key={action.key}
+                      onClick={() => {
+                        handleAction(action.key);
+                        handleClose();
+                      }}
+                    >
+                      {action.label}
+                    </MenuItem>
+                    {index < allowedActions.length - 1 && <Divider key={action.key} />}
+                  </>
                 ))}
               </Menu>
             </Box>

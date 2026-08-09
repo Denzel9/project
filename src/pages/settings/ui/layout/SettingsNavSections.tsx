@@ -1,3 +1,4 @@
+import { LogoutOutlined } from '@mui/icons-material';
 import {
   Box,
   List,
@@ -7,10 +8,10 @@ import {
   Typography,
 } from '@mui/material';
 import { useMemo } from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 
 import { USER_ROLE } from '@/entities';
-import { useAuthStore } from '@/features/auth';
+import { useAuthStore, useLogoutMutation } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 
 import { SETTINGS_MENU_SECTIONS } from '../../model/constants';
@@ -27,6 +28,8 @@ export const SettingsNavSections = ({
   variant = 'sidebar',
 }: SettingsNavSectionsProps) => {
   const isDrawer = variant === 'drawer';
+  const navigate = useNavigate();
+  const { mutateAsync: logout } = useLogoutMutation();
   const isPrime = useAuthStore(state => state.isPrime);
   const role = useAuthStore(state => state.role);
   const isManager = role === USER_ROLE.MANAGER;
@@ -57,6 +60,12 @@ export const SettingsNavSections = ({
       }))
       .filter(section => section.items.length > 0);
   }, [isPrime, isManager]);
+
+  const handleLogout = async () => {
+    onItemClick?.();
+    await logout();
+    navigate(ROUTES.AUTH);
+  };
 
   return (
     <>
@@ -117,6 +126,36 @@ export const SettingsNavSections = ({
           </List>
         </Box>
       ))}
+
+      <List
+        disablePadding
+        sx={{ mt: isDrawer ? 1 : 0 }}
+      >
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            mb: 0.5,
+            borderRadius: isDrawer ? 0 : '12px',
+            pl: isDrawer ? 5 : 2,
+            color: 'error.main',
+            '&:hover': {
+              bgcolor: 'secondary.main',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
+            <LogoutOutlined fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Выход"
+            slotProps={{
+              primary: {
+                sx: { fontSize: 14 },
+              },
+            }}
+          />
+        </ListItemButton>
+      </List>
     </>
   );
 };

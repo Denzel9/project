@@ -1,5 +1,6 @@
 import { Share } from '@mui/icons-material';
 import {
+  Divider,
   IconButton,
   Menu,
   MenuItem,
@@ -159,6 +160,8 @@ export const ShareButton = ({
           Отправить в чат
         </MenuItem>
 
+        <Divider />
+
         {SHARE_TARGETS.map(target => (
           <MenuItem
             key={target.id}
@@ -167,6 +170,8 @@ export const ShareButton = ({
             {target.label}
           </MenuItem>
         ))}
+
+        <Divider />
 
         <MenuItem onClick={() => void handleCopyLink()}>
           Скопировать ссылку

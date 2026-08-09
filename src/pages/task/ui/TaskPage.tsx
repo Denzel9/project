@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { TASK_STATUS_ENUM, type Task } from '@/entities';
@@ -13,7 +13,7 @@ import TaskItem from './TaskItem';
 import { TaskSwitcher } from './TaskSwitcher';
 
 export const TaskPage = () => {
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     currentTask,
     setCurrentTask,
@@ -33,6 +33,19 @@ export const TaskPage = () => {
       { replace: true },
     );
   };
+
+  useEffect(() => {
+    if (!currentTask) return;
+
+    const nextUserId = getTaskUserKey(currentTask);
+    const urlUserId =
+      searchParams.get('userId') ?? searchParams.get('inviteId');
+    const urlTaskId = searchParams.get('taskId');
+
+    if (urlTaskId === currentTask.id && urlUserId !== nextUserId) {
+      syncTaskInUrl(currentTask);
+    }
+  }, [currentTask, searchParams]);
 
   const handleChangeTask = (taskId: string) => {
     const task = tasks?.items?.find(item => item.id === taskId);

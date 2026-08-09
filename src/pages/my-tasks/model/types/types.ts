@@ -4,6 +4,7 @@ export type TaskSortField =
   | 'title'
   | 'status'
   | 'customer'
+  | 'manager'
   | 'updatedAt'
   | 'finalDate';
 

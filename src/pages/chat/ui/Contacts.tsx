@@ -34,18 +34,21 @@ export const Contacts = ({
   return (
     <Box
       sx={{
-        p: { xs: 2, md: 4 },
+        p: { xs: 2, md: 2 },
         width: { xs: '100%', md: '30%' },
         bgcolor: 'white',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '32px',
+        borderRadius: '24px',
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
       }}
     >
-      <ChatContactSearch onSelect={onStartChat} />
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+
+        <ChatContactSearch onSelect={onStartChat} size="small" />
+      </Stack>
 
       <Stack
         sx={{

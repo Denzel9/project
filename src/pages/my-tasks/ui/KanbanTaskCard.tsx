@@ -12,6 +12,7 @@ import {
   getUserName,
   UserDisplayName,
   isTaskOverdue,
+  TaskRequestStatusIcons,
   USER_ROLE,
   type Task,
   type TaskStatus,
@@ -116,7 +117,8 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
         sx={{
           p: 2,
           justifyContent: 'space-between',
-          minHeight: 140,
+          minHeight: 170,
+          height: 170,
           overflow: 'hidden',
           bgcolor: 'white',
           borderRadius: '14px',
@@ -150,135 +152,124 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
           <Stack
             spacing={1}
             direction="row"
-            sx={{ alignItems: 'center', minWidth: 0 }}
+            sx={{ alignItems: 'center', }}
           >
-            <Tooltip title={task.title}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  fontWeight: 600,
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {task.title && task.title.length > 25
-                  ? task.title.slice(0, 25) + '...'
-                  : task.title || 'Без названия'}
-              </Typography>
-            </Tooltip>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ whiteSpace: 'nowrap', fontSize: '0.7rem' }}
+            >
+              {formatDistanceToNow(new Date(task.updatedAt), {
+                addSuffix: true,
+                locale: ru,
+              })}
+            </Typography>
 
             {task.urgent && (
               <Whatshot sx={{ fontSize: 18, color: 'error.main' }} />
             )}
 
+            <TaskRequestStatusIcons task={task} />
+
             {dragBlockReason && (
-              <LockOutlined
-                sx={{ fontSize: 16, color: 'text.disabled', flexShrink: 0 }}
-              />
+              <Tooltip title='Задача заблокирована'>
+                <LockOutlined
+                  sx={{ fontSize: 18, color: 'text.disabled', }}
+                />
+              </Tooltip>
             )}
           </Stack>
 
-        <Box
-          component="span"
-          onClick={event => event.stopPropagation()}
-          onMouseDown={event => event.stopPropagation()}
-        >
-          <TaskActionsMenu
-            task={task}
-            size="small"
-          />
-        </Box>
-      </Stack>
+          <Box
+            component="span"
+            onClick={event => event.stopPropagation()}
+            onMouseDown={event => event.stopPropagation()}
+          >
+            <TaskActionsMenu
+              task={task}
+              size="small"
+            />
+          </Box>
+        </Stack>
 
-      <Stack
-        direction="row"
-        spacing={0.25}
-        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            lineHeight: 1.35,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            mb: task.title ? 0.25 : 0,
-          }}
-        >
-          {task.post?.title ?? 'Без названия'}
-        </Typography>
-
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ whiteSpace: 'nowrap', fontSize: '0.7rem' }}
-        >
-          {formatDistanceToNow(new Date(task.updatedAt), {
-            addSuffix: true,
-            locale: ru,
-          })}
-        </Typography>
-      </Stack>
-
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{
-          mt: 1.5,
-          minWidth: 0,
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
         <Stack
-          direction="row"
-          spacing={0.75}
-          sx={{ alignItems: 'center', minWidth: 0 }}
+          direction="column"
+          spacing={.5}
+          sx={{ justifyContent: 'space-between', mt: 1 }}
         >
-          <Avatar
-            src={contact.avatar || undefined}
-            sx={{ width: 26, height: 26, flexShrink: 0 }}
-          />
+          <Typography
+            variant="caption"
+            sx={{
+              lineHeight: 1.35,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              mb: task.title ? 0.25 : 0,
+            }}
+          >
+            {task.post?.title ?? 'Без названия'}
+          </Typography>
 
-          <Box sx={{ minWidth: 0 }}>
+          <Tooltip title={task.title}>
             <Typography
-              variant="caption"
+              variant="body2"
               color="text.secondary"
               sx={{
+                fontWeight: 600,
                 display: 'block',
-                lineHeight: 1.2,
-                fontSize: '0.65rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
-              {contact.label}
+              {task.title && task.title.length > 25
+                ? task.title.slice(0, 25) + '...'
+                : task.title || 'Без названия'}
             </Typography>
+          </Tooltip>
+        </Stack>
 
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            mt: 1.5,
+            minWidth: 0,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={0.75}
+            sx={{ alignItems: 'center', minWidth: 0 }}
+          >
+            <Avatar
+              src={contact.avatar || undefined}
+              sx={{ width: 26, height: 26, flexShrink: 0 }}
+            />
             <UserDisplayName
               variant="body2"
               withBadges={false}
               user={contact.user}
             />
-          </Box>
-        </Stack>
+          </Stack>
 
-        {task.finalDate && (
-          <Tooltip title={overdue ? 'Дедлайн просрочен' : 'Дедлайн'}>
-            <Chip
-              size="small"
-              label={format(new Date(task.finalDate), 'dd.MM.yy')}
-              color={overdue ? 'error' : 'default'}
-              variant={overdue ? 'filled' : 'outlined'}
-              sx={{
-                opacity: 0.75,
-              }}
-            />
-          </Tooltip>
-        )}
-      </Stack>
+          {task.finalDate && (
+            <Tooltip title={overdue ? 'Дедлайн просрочен' : 'Дедлайн'}>
+              <Chip
+                size="small"
+                label={format(new Date(task.finalDate), 'dd.MM.yy')}
+                color={overdue ? 'error' : 'default'}
+                variant={overdue ? 'filled' : 'outlined'}
+                sx={{
+                  opacity: 0.75,
+                }}
+              />
+            </Tooltip>
+          )}
+        </Stack>
       </Stack>
     </Tooltip>
   );

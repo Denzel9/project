@@ -1,4 +1,4 @@
-import { MoreVert, PushPin } from '@mui/icons-material';
+import { MoreVert, PushPin, StickyNote2 } from '@mui/icons-material'
 import {
   Badge,
   Stack,
@@ -8,15 +8,16 @@ import {
   Tooltip,
   Menu,
   MenuItem,
-} from '@mui/material';
-import { format } from 'date-fns';
-import { useState, type MouseEvent } from 'react';
+} from '@mui/material'
+import { useState, type MouseEvent } from 'react'
 
 import {
+  formatConversationListDayLabel,
   getMessagePreview,
+  useMarkConversationDialogUnreadMutation,
   usePinConversationMutation,
   type ChatConversation,
-} from '@/entities/chat';
+} from '@/entities/chat'
 
 export const ConversationItem = ({
   conversation,
@@ -25,44 +26,76 @@ export const ConversationItem = ({
   showActions = true,
   showPinIcon = true,
 }: {
-  conversation: ChatConversation;
-  isSelected: boolean;
-  onSelect: () => void;
-  showActions?: boolean;
-  showPinIcon?: boolean;
+  conversation: ChatConversation
+  isSelected: boolean
+  onSelect: () => void
+  showActions?: boolean
+  showPinIcon?: boolean
 }) => {
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const { peer, lastMessage, updatedAt, unreadCount, isPinned } = conversation;
-  const hasUnread = unreadCount > 0;
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
+  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<null | HTMLElement>(
+    null,
+  )
+  const {
+    peer,
+    lastMessage,
+    updatedAt,
+    unreadCount,
+    isPinned,
+    isNotes,
+    isMarkedUnread = false,
+  } = conversation
+  const displayName = isNotes ? 'Заметки' : peer.displayName
+  const hasMessageUnread = unreadCount > 0
+  const showUnreadDot = !hasMessageUnread && isMarkedUnread
+  const hasUnread = hasMessageUnread || isMarkedUnread
+  const canMarkDialogUnread =
+    Boolean(conversation.id) && !hasMessageUnread && !isMarkedUnread
   const preview = lastMessage
     ? getMessagePreview(
-      lastMessage.content,
-      lastMessage.media ?? [],
-      lastMessage.isRedirected
-    )
-    : 'Нет сообщений';
-  const timeLabel = format(new Date(updatedAt), 'HH:mm');
+        lastMessage.content,
+        lastMessage.media ?? [],
+        lastMessage.isRedirected,
+      )
+    : 'Нет сообщений'
+  const timeLabel = formatConversationListDayLabel(
+    lastMessage?.createdAt ?? updatedAt,
+  )
 
-  const { mutateAsync: pinConversation } =
-    usePinConversationMutation();
+  const { mutateAsync: pinConversation } = usePinConversationMutation()
+  const { mutateAsync: markDialogUnread, isPending: isMarkingUnread } =
+    useMarkConversationDialogUnreadMutation()
 
   const handleTogglePin = (event: MouseEvent) => {
-    event.stopPropagation();
-    event.preventDefault();
+    event.stopPropagation()
+    event.preventDefault()
 
-    pinConversation({
+    void pinConversation({
       conversationId: conversation.id,
       isPinned: !isPinned,
     }).then(() => {
-      setIsMoreMenuOpen(false);
-    });
-  };
+      setIsMoreMenuOpen(false)
+    })
+  }
+
+  const handleMarkUnread = (event: MouseEvent) => {
+    event.stopPropagation()
+    event.preventDefault()
+
+    if (!canMarkDialogUnread || isMarkingUnread) {
+      return
+    }
+
+    void markDialogUnread(conversation.id).then(() => {
+      setIsMoreMenuOpen(false)
+    })
+  }
 
   const handleMore = (event: MouseEvent<HTMLButtonElement>) => {
-    setMoreMenuAnchorEl(event.currentTarget);
-    setIsMoreMenuOpen(true);
-  };
+    event.stopPropagation()
+    setMoreMenuAnchorEl(event.currentTarget)
+    setIsMoreMenuOpen(true)
+  }
 
   return (
     <Stack
@@ -86,24 +119,48 @@ export const ConversationItem = ({
       <Badge
         overlap="circular"
         invisible={!hasUnread}
-        badgeContent={unreadCount > 99 ? '99+' : unreadCount}
+        variant={showUnreadDot ? 'dot' : 'standard'}
+        badgeContent={
+          showUnreadDot ? undefined : unreadCount > 99 ? '99+' : unreadCount
+        }
         color="error"
+        sx={
+          showUnreadDot
+            ? {
+                '& .MuiBadge-badge': {
+                  minWidth: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                },
+              }
+            : undefined
+        }
       >
-        <Avatar
-          alt={peer.displayName}
-          src={peer.avatar ?? undefined}
-          sx={{
-            width: 48,
-            height: 48,
-          }}
-        />
+        {isNotes ? (
+          <Avatar
+            alt={displayName}
+            sx={{
+              width: 48,
+              height: 48,
+              bgcolor: isSelected ? 'common.white' : 'primary.main',
+              color: isSelected ? 'primary.main' : 'common.white',
+            }}
+          >
+            <StickyNote2 />
+          </Avatar>
+        ) : (
+          <Avatar
+            alt={displayName}
+            src={peer.avatar ?? undefined}
+            sx={{
+              width: 48,
+              height: 48,
+            }}
+          />
+        )}
       </Badge>
 
-      <Stack
-        spacing={0.5}
-        direction="column"
-        sx={{ minWidth: 0, flex: 1 }}
-      >
+      <Stack spacing={0.5} direction="column" sx={{ minWidth: 0, flex: 1 }}>
         <Typography
           variant="body1"
           sx={{
@@ -111,7 +168,7 @@ export const ConversationItem = ({
             ...(isSelected && { color: 'common.white' }),
           }}
         >
-          {peer.displayName}
+          {displayName}
         </Typography>
 
         <Typography
@@ -126,10 +183,7 @@ export const ConversationItem = ({
         </Typography>
       </Stack>
 
-      <Stack
-        spacing={0.5}
-        sx={{ alignItems: 'flex-end', flexShrink: 0 }}
-      >
+      <Stack spacing={0.5} sx={{ alignItems: 'flex-end', flexShrink: 0 }}>
         {showActions && (
           <>
             <IconButton
@@ -141,15 +195,32 @@ export const ConversationItem = ({
                 p: 0.5,
               }}
             >
-              <MoreVert sx={{ fontSize: 18, color: isSelected ? 'common.white' : 'action' }} color="action" />
+              <MoreVert
+                sx={{
+                  fontSize: 18,
+                  color: isSelected ? 'common.white' : 'action',
+                }}
+                color="action"
+              />
             </IconButton>
 
             <Menu
               anchorEl={moreMenuAnchorEl}
               open={isMoreMenuOpen}
               onClose={() => setIsMoreMenuOpen(false)}
+              onClick={event => event.stopPropagation()}
             >
-              <MenuItem onClick={handleTogglePin}>{isPinned ? 'Открепить' : 'Закрепить'}</MenuItem>
+              <MenuItem onClick={handleTogglePin}>
+                {isPinned ? 'Открепить' : 'Закрепить'}
+              </MenuItem>
+              {canMarkDialogUnread && (
+                <MenuItem
+                  disabled={isMarkingUnread}
+                  onClick={handleMarkUnread}
+                >
+                  Пометить непрочитанным
+                </MenuItem>
+              )}
             </Menu>
           </>
         )}
@@ -157,7 +228,12 @@ export const ConversationItem = ({
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           {showPinIcon && isPinned && (
             <Tooltip title={isPinned ? 'Открепить' : 'Закрепить'}>
-              <PushPin sx={{ fontSize: 16, color: isSelected ? 'common.white' : 'action' }} />
+              <PushPin
+                sx={{
+                  fontSize: 16,
+                  color: isSelected ? 'common.white' : 'action',
+                }}
+              />
             </Tooltip>
           )}
 
@@ -173,5 +249,5 @@ export const ConversationItem = ({
         </Stack>
       </Stack>
     </Stack>
-  );
-};
+  )
+}

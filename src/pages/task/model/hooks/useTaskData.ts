@@ -25,8 +25,8 @@ const pickFirstActive = (items: Task[]) =>
 
 /**
  * - только postId → первая активная задача
+ * - postId + taskId → задача с id === taskId (приоритет над userId)
  * - postId + userId → первая задача этого исполнителя
- * - postId + userId + taskId → задача исполнителя с id === taskId
  */
 const pickTaskFromList = (
   items: Task[],
@@ -35,21 +35,21 @@ const pickTaskFromList = (
 ) => {
   if (!items.length) return null;
 
-  let pool = items;
+  if (taskId) {
+    const byId = items.find(item => item.id === taskId);
+
+    if (byId) return byId;
+  }
 
   if (userId) {
     const byUser = items.filter(item => matchesUserId(item, userId));
 
     if (byUser.length) {
-      pool = byUser;
+      return pickFirstActive(byUser);
     }
   }
 
-  if (taskId) {
-    return pool.find(item => item.id === taskId) ?? pickFirstActive(pool) ?? null;
-  }
-
-  return pickFirstActive(pool) ?? null;
+  return pickFirstActive(items);
 };
 
 const resolveFreshTask = (task: Task, tasks?: Task[]) =>

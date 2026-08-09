@@ -18,7 +18,6 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import { format } from 'date-fns';
 import {
   useCallback,
   useEffect,
@@ -31,7 +30,9 @@ import { useNavigate } from 'react-router';
 
 import {
   useConversationsQuery,
+  useMarkConversationUnreadMutation,
   useMessagePinsQuery,
+  usePinMessageMutation,
   type ChatConversation,
   type ChatMessage,
 } from '@/entities';
@@ -50,7 +51,6 @@ import {
   getPinnedMessagePreview,
   useChatPeerTasks,
   useSnackbarStore,
-  type MessageSide,
 } from '@/widgets';
 
 import { useDashboardChatThread } from '../model/useDashboardChatThread';
@@ -58,12 +58,6 @@ import { useDashboardChatThread } from '../model/useDashboardChatThread';
 import type { UserSearchItem } from '@/entities/user';
 
 const DASHBOARD_CHATS_LIMIT = 8;
-
-const toMessageSide = (
-  senderId: string,
-  currentUserId: string | null,
-): MessageSide =>
-  currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
 
 export const DashboardChatsPanel = () => {
   const navigate = useNavigate();
@@ -128,8 +122,8 @@ export const DashboardChatsPanel = () => {
 
   const recentConversations = useMemo(() => {
     const sorted = [...(data ?? [])].sort((a: ChatConversation, b: ChatConversation) => {
-      const aHasUnread = a.unreadCount > 0;
-      const bHasUnread = b.unreadCount > 0;
+      const aHasUnread = a.unreadCount > 0 || Boolean(a.isMarkedUnread);
+      const bHasUnread = b.unreadCount > 0 || Boolean(b.isMarkedUnread);
 
       if (aHasUnread !== bHasUnread) {
         return aHasUnread ? -1 : 1;
@@ -183,6 +177,42 @@ export const DashboardChatsPanel = () => {
 
   const { data: pinnedMessages = [] } = useMessagePinsQuery(
     selectedConversationId,
+  );
+  const pinMessageMutation = usePinMessageMutation();
+  const markConversationUnread = useMarkConversationUnreadMutation();
+
+  const pinnedMessageIds = useMemo(
+    () => new Set(pinnedMessages.map(pin => pin.messageId)),
+    [pinnedMessages],
+  );
+
+  const handleTogglePinMessage = useCallback(
+    (messageId: string, nextPinned: boolean) => {
+      if (!selectedConversationId) return;
+
+      pinMessageMutation.mutate({
+        conversationId: selectedConversationId,
+        messageId,
+        isPinned: nextPinned,
+      });
+    },
+    [pinMessageMutation, selectedConversationId],
+  );
+
+  const handleMarkUnread = useCallback(
+    (messageId: string) => {
+      if (!selectedConversationId) return;
+
+      void markConversationUnread
+        .mutateAsync({
+          conversationId: selectedConversationId,
+          messageId,
+        })
+        .then(() => {
+          setSelectedConversationId(null);
+        });
+    },
+    [markConversationUnread, selectedConversationId],
   );
 
   const handleJumpToPinnedMessage = useCallback((messageId: string) => {
@@ -312,8 +342,8 @@ export const DashboardChatsPanel = () => {
         bgcolor: 'white',
         overflow: 'hidden',
         border: '1px solid',
-        borderRadius: '32px',
-        p: { xs: 2, md: 2.5 },
+        borderRadius: '24px',
+        p: 2,
         borderColor: 'divider',
         flexDirection: 'column',
       }}
@@ -527,8 +557,6 @@ export const DashboardChatsPanel = () => {
                 isSelected={false}
                 key={conversation.id}
                 conversation={conversation}
-                showActions={false}
-                showPinIcon={false}
                 onSelect={() => setSelectedConversationId(conversation.id)}
               />
             ))}
@@ -664,17 +692,13 @@ export const DashboardChatsPanel = () => {
                   sx={{ mb: 1 }}
                 >
                   <ChatMessageBubble
-                    messageId={message.id}
-                    senderId={message.senderId}
-                    createdAt={message.createdAt}
-                    editedAt={message.editedAt}
-                    isRedirected={message.isRedirected}
+                    message={message}
                     currentUserId={currentUserId}
-                    text={message.content}
-                    media={message.media}
-                    side={toMessageSide(message.senderId, currentUserId)}
-                    time={format(new Date(message.createdAt), 'HH:mm')}
-                    isRead={message.isRead}
+                    senderAvatar={selectedConversation.peer.avatar}
+                    senderName={selectedConversation.peer.displayName}
+                    isPinned={pinnedMessageIds.has(message.id)}
+                    onPin={handleTogglePinMessage}
+                    onMarkUnread={handleMarkUnread}
                   />
                 </Box>
               ))}

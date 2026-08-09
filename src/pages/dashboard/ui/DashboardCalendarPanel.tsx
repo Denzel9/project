@@ -115,8 +115,8 @@ export const DashboardCalendarPanel = () => {
         bgcolor: 'white',
         overflow: 'hidden',
         border: '1px solid',
-        borderRadius: '32px',
-        p: { xs: 2, md: 2.5 },
+        borderRadius: '24px',
+        p: 2,
         borderColor: 'divider',
         flexDirection: 'column',
       }}

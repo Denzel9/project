@@ -78,11 +78,18 @@ export const Action = ({
   const isApplicationPending = isCreating || isWithdrawing;
   const canWithdraw = currentApplicationStatus === APPLICATION_STATUS_ENUM.NEW;
 
-  const handleApply = (message: string) => {
+  const handleApply = (payload: {
+    message: string;
+    attachStatistics: boolean;
+  }) => {
     if (!requireEmailConfirmed()) return;
 
     createApplication(
-      { postId, message },
+      {
+        postId,
+        message: payload.message,
+        attachStatistics: payload.attachStatistics,
+      },
       {
         onSuccess: application => {
           setIsApplied(true);

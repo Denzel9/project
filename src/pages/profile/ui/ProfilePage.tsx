@@ -1,3 +1,4 @@
+import { HideImageOutlined, } from '@mui/icons-material';
 import {
   Backdrop,
   Box,
@@ -55,31 +56,40 @@ export const ProfilePage = () => {
       direction="column"
       sx={{
         height: '100%',
-        bgcolor: 'white',
         position: 'relative',
-        borderTopLeftRadius: '32px',
-        borderBottomLeftRadius: '32px',
-        borderBottomRightRadius: '32px',
         backgroundColor: 'secondary.light',
       }}
     >
       <Box
         sx={{
           width: '100%',
-          border: '1px solid',
           position: 'relative',
+          border: '1px solid',
           borderColor: 'divider',
           backgroundSize: 'cover',
-          bgcolor: 'secondary.main',
           height: { xs: 250, md: 300 },
-          minHeight: { xs: 250, md: 300 },
           backgroundPosition: 'center ',
           backgroundRepeat: 'no-repeat',
-          borderTopLeftRadius: { xs: 0, md: '32px' },
-          borderBottomLeftRadius: { xs: 0, md: '32px' },
+          minHeight: { xs: 250, md: 300 },
+          borderTopLeftRadius: { xs: 0, md: '24px' },
+          backgroundColor: 'rgba(212, 212, 212, 0.5)',
+          borderBottomLeftRadius: { xs: 0, md: '24px' },
           backgroundImage: `url(${user?.data?.banner})`,
         }}
       >
+        {!user?.data?.banner &&
+          <HideImageOutlined
+            color='info'
+            fontSize='large'
+            sx={{
+              top: '50%',
+              right: '50%',
+              position: 'absolute',
+              transform: 'translate(50%, -50%)'
+            }}
+          />
+        }
+
         <Stack
           direction="row"
           sx={{
@@ -103,7 +113,7 @@ export const ProfilePage = () => {
           flex: 1,
           width: '100%',
           pt: { xs: 0, md: 4 },
-          px: { xs: 0, md: 1 },
+          px: { xs: 0, md: 2 },
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
@@ -133,11 +143,11 @@ export const ProfilePage = () => {
           >
             <ProfileControl
               id={id || ''}
-              shareTitle={getUserName(user?.data) || 'Профиль'}
               tabValue={tabValue}
               mediaTabValue={mediaTabValue}
               handleTabChange={handleTabChange}
               setMediaTabValue={setMediaTabValue}
+              shareTitle={getUserName(user?.data) || 'Профиль'}
               isCompany={user?.data?.role === USER_ROLE.COMPANY}
             />
 

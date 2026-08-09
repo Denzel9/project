@@ -1,8 +1,12 @@
+import { Check, FilterList, Search } from '@mui/icons-material';
 import {
   Autocomplete,
   Avatar,
   Box,
   CircularProgress,
+  IconButton,
+  Menu,
+  MenuItem,
   Stack,
   TextField,
   Typography,
@@ -12,7 +16,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchUsersQuery, type UserSearchItem } from '@/entities/user';
 
 type ChatContactSearchProps = {
-  label?: string;
   placeholder?: string;
   disabled?: boolean;
   size?: 'small' | 'medium';
@@ -21,13 +24,13 @@ type ChatContactSearchProps = {
 };
 
 export const ChatContactSearch = ({
-  label = 'Найти пользователя',
   placeholder = 'Имя или компания',
   disabled = false,
   size = 'medium',
   excludeUserIds,
   onSelect,
 }: ChatContactSearchProps) => {
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserSearchItem | null>(null);
@@ -71,83 +74,121 @@ export const ChatContactSearch = ({
   };
 
   return (
-    <Autocomplete
-      fullWidth
-      size={size}
-      forcePopupIcon={false}
-      disabled={disabled}
-      value={selectedUser}
-      inputValue={inputValue}
-      options={options}
-      loading={isSearching || isOpening}
-      filterOptions={x => x}
-      getOptionLabel={option => option.displayName}
-      isOptionEqualToValue={(option, value) => option.id === value.id}
-      slotProps={{
-        paper: {
-          sx: { borderRadius: '32px' },
-        },
-      }}
-      loadingText={
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 1.5 }}>
-          <CircularProgress size={22} />
-        </Box>
-      }
-      noOptionsText={
-        debouncedQuery.length < 2
-          ? 'Введите минимум 2 символа'
-          : 'Никого не найдено'
-      }
-      onInputChange={(_, value, reason) => {
-        if (reason === 'input' || reason === 'clear') {
-          setInputValue(value);
-        }
-      }}
-      onChange={(_, value) => {
-        void handleSelectUser(value);
-      }}
-      renderOption={(props, option) => {
-        const { key, ...rest } = props;
-        return (
-          <Box
-            component="li"
-            key={key}
-            {...rest}
-            sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}
-          >
-            <Avatar
-              src={option.avatar ?? undefined}
-              sx={{ width: 32, height: 32 }}
-            >
-              {option.displayName.charAt(0)}
-            </Avatar>
-            <Stack
-              spacing={0}
-              sx={{ minWidth: 0 }}
-            >
-              <Typography
-                variant="body2"
-                noWrap
-              >
-                {option.displayName}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-              >
-                {option.role === 'COMPANY' ? 'Компания' : 'Исполнитель'}
-              </Typography>
-            </Stack>
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', width: '100%' }}>
+
+
+      <Autocomplete
+        fullWidth
+        size={size}
+        forcePopupIcon={false}
+        disabled={disabled}
+        value={selectedUser}
+        inputValue={inputValue}
+        options={options}
+        loading={isSearching || isOpening}
+        filterOptions={x => x}
+        getOptionLabel={option => option.displayName}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        slotProps={{
+          paper: {
+            sx: { borderRadius: '32px' },
+          },
+        }}
+        loadingText={
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1.5 }}>
+            <CircularProgress size={22} />
           </Box>
-        );
-      }}
-      renderInput={params => (
-        <TextField
-          {...params}
-          label={label}
-          placeholder={placeholder}
-        />
-      )}
-    />
+        }
+        noOptionsText={
+          debouncedQuery.length < 2
+            ? 'Введите минимум 2 символа'
+            : 'Никого не найдено'
+        }
+        onInputChange={(_, value, reason) => {
+          if (reason === 'input' || reason === 'clear') {
+            setInputValue(value);
+          }
+        }}
+        onChange={(_, value) => {
+          void handleSelectUser(value);
+        }}
+        renderOption={(props, option) => {
+          const { key, ...rest } = props;
+          return (
+            <Box
+              component="li"
+              key={key}
+              {...rest}
+              sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}
+            >
+              <Avatar
+                src={option.avatar ?? undefined}
+                sx={{ width: 32, height: 32 }}
+              >
+                {option.displayName.charAt(0)}
+              </Avatar>
+              <Stack
+                spacing={0}
+                sx={{ minWidth: 0 }}
+              >
+                <Typography
+                  variant="body2"
+                  noWrap
+                >
+                  {option.displayName}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  {option.role === 'COMPANY' ? 'Компания' : 'Исполнитель'}
+                </Typography>
+              </Stack>
+            </Box>
+          );
+        }}
+        renderInput={params => (
+          <TextField
+            {...params}
+            // label={label}
+            placeholder={placeholder}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <IconButton>
+                    <Search />
+                  </IconButton>
+                ),
+              },
+            }}
+          />
+        )}
+      />
+
+      <IconButton onClick={(event) => setMenuAnchorEl(event.currentTarget)}>
+        <FilterList />
+      </IconButton>
+
+      <Menu
+        open={Boolean(menuAnchorEl)}
+        onClose={() => setMenuAnchorEl(null)}
+        anchorEl={menuAnchorEl}
+        sx={{
+          '& .MuiPaper-root': {
+            minWidth: 200,
+            borderRadius: '24px',
+          },
+        }}
+      >
+        <MenuItem sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Typography>Все</Typography>
+          <Check />
+        </MenuItem>
+        <MenuItem sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Typography>Непрочитано</Typography>
+          <Check />
+        </MenuItem>
+      </Menu>
+    </Stack>
   );
 };

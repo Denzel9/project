@@ -99,8 +99,6 @@ export const TaskFormFields = ({
   isEdit,
   status,
   onStartEdit,
-  // TODO
-  // withExecutor,
   onApplyFromPost,
 }: TaskFormFieldsProps) => {
   const { control } = useFormContext<TaskFormType>();

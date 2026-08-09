@@ -1,10 +1,11 @@
 import {
   AccessTime,
+  ArticleOutlined,
   CancelOutlined,
   CheckCircleOutlined,
   Close,
   FavoriteBorder,
-  NoteAltOutlined,
+  HandshakeOutlined,
   OpenInNew,
   Person2Outlined,
   Update,
@@ -43,14 +44,6 @@ type IncomingApplicationDetailsDialogProps = {
   onClose: () => void;
 };
 
-/** TODO: заменить на реальные данные статистики кандидата */
-const APPLICANT_STATS_PLACEHOLDER = {
-  completedWorks: 12,
-  cancelledWorks: 3,
-  cancelledWithNoteWorks: 1,
-  favoritedByCount: 27,
-} as const;
-
 const getStatusColor = (status: Application['status']) => {
   if (status === APPLICATION_STATUS_ENUM.ACCEPTED) return 'success';
   if (status === APPLICATION_STATUS_ENUM.REJECTED) return 'error';
@@ -73,7 +66,7 @@ const StatItem = ({ icon, value, label, accent = 'primary.main' }: StatItemProps
   <Stack
     spacing={1}
     sx={{
-      flex: 1,
+      flex: '1 1 140px',
       minWidth: 0,
       p: 2,
       borderRadius: '20px',
@@ -130,7 +123,10 @@ export const IncomingApplicationDetailsDialog = ({
   const canRespond =
     application.status === APPLICATION_STATUS_ENUM.NEW ||
     application.status === APPLICATION_STATUS_ENUM.VIEWED;
-  const stats = APPLICANT_STATS_PLACEHOLDER;
+  const showStatistics =
+    application.attachStatistics !== false &&
+    Boolean(application.applicantStatistics);
+  const stats = application.applicantStatistics;
 
   useEffect(() => {
     if (!open) return;
@@ -318,35 +314,52 @@ export const IncomingApplicationDetailsDialog = ({
                 Статистика кандидата
               </Typography>
 
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-              >
-                <StatItem
-                  icon={<CheckCircleOutlined fontSize="small" />}
-                  value={stats.completedWorks}
-                  label="Сделанных работ"
-                  accent="success.main"
-                />
-                <StatItem
-                  icon={<CancelOutlined fontSize="small" />}
-                  value={stats.cancelledWorks}
-                  label="Аннулированных работ"
-                  accent="error.main"
-                />
-                <StatItem
-                  icon={<NoteAltOutlined fontSize="small" />}
-                  value={stats.cancelledWithNoteWorks}
-                  label="Аннулированных с примечанием"
-                  accent="warning.main"
-                />
-                <StatItem
-                  icon={<FavoriteBorder fontSize="small" />}
-                  value={stats.favoritedByCount}
-                  label="Добавили в избранное"
-                  accent="primary.main"
-                />
-              </Stack>
+              {showStatistics && stats ? (
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  sx={{ flexWrap: { sm: 'wrap' } }}
+                >
+                  <StatItem
+                    icon={<CheckCircleOutlined fontSize="small" />}
+                    value={stats.completedWorks}
+                    label="Сделанных работ"
+                    accent="success.main"
+                  />
+                  <StatItem
+                    icon={<CancelOutlined fontSize="small" />}
+                    value={stats.cancelledWorks}
+                    label="Аннулированных работ"
+                    accent="error.main"
+                  />
+                  <StatItem
+                    icon={<HandshakeOutlined fontSize="small" />}
+                    value={stats.sharedCompletedWorks}
+                    label="Совместных выполненных задач"
+                    accent="info.main"
+                  />
+                  <StatItem
+                    icon={<ArticleOutlined fontSize="small" />}
+                    value={stats.sharedPublications}
+                    label="Совместных публикаций"
+                    accent="warning.main"
+                  />
+                  <StatItem
+                    icon={<FavoriteBorder fontSize="small" />}
+                    value={stats.favoritedByCount}
+                    label="Добавили в избранное"
+                    accent="primary.main"
+                  />
+                </Stack>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ px: 2, py: 1 }}
+                >
+                  Кандидат не прикрепил статистику к этому отклику
+                </Typography>
+              )}
             </Box>
 
             <Stack

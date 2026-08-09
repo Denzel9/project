@@ -74,6 +74,7 @@ const TASK_FIELD_LABELS: Record<string, string> = {
   videoCount: 'Кол-во видео',
   urgent: 'Срочность',
   status: 'Статус',
+  assignee: 'Ответственный',
   deliverables: 'Материалы',
   location: 'Локация',
   bloggerRequirements: 'Требования к блогеру',
@@ -856,6 +857,10 @@ export const normalizeTaskComment = (
   actorAccountId: comment.actorAccountId ?? null,
   actorDisplayName: comment.actorDisplayName ?? null,
   actorKind: comment.actorKind ?? null,
+  replyToId: comment.replyToId ?? null,
+  replyToPreview: comment.replyToPreview ?? null,
+  replyToSenderId: comment.replyToSenderId ?? null,
+  replyToSenderName: comment.replyToSenderName ?? null,
 })
 
 export const toTaskCommentMedia = (
@@ -916,10 +921,18 @@ export const normalizeTaskWithCommentsItem = (
     title: raw.title ?? embedded?.title ?? null,
     ownerId: raw.ownerId ?? embedded?.ownerId,
     executorId: raw.executorId ?? embedded?.executorId ?? null,
-    postId: raw.postId ?? embedded?.postId,
+    postId: raw.postId ?? embedded?.postId ?? embedded?.post?.id,
     status: raw.status ?? embedded?.status,
     isExecutorApprove: raw.isExecutorApprove ?? embedded?.isExecutorApprove,
-    post: raw.post ?? embedded?.post,
+    post:
+      raw.post ??
+      embedded?.post ??
+      (raw.postId || embedded?.postId
+        ? {
+            id: (raw.postId ?? embedded?.postId) as string,
+            title: raw.title ?? embedded?.title ?? '',
+          }
+        : undefined),
     recipient,
     lastComment: {
       preview: lastCommentPreview,

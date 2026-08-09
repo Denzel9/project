@@ -49,12 +49,12 @@ export const UserCard = ({
         zIndex: 3,
         top: '16px',
         bgcolor: 'white',
-        borderRadius: '32px',
+        borderRadius: '24px',
+        border: '1px solid',
+        borderColor: 'divider',
         maxWidth: { xs: '100%', md: '350px' },
         minWidth: { xs: '100%', md: '350px' },
         position: { xs: 'relative', md: 'sticky' },
-        border: '1px solid',
-        borderColor: 'divider',
       }}
     >
       <Box
@@ -75,7 +75,7 @@ export const UserCard = ({
         >
           <Avatar
             src={user?.avatar || ''}
-            sx={{ width: '200px', height: '200px' }}
+            sx={{ width: '200px', height: '200px', border: '1px solid', borderColor: 'divider' }}
           />
 
           {user?.id === userId ? (

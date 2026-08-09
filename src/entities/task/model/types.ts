@@ -94,6 +94,22 @@ export type TaskComment = {
   actorAccountId?: string | null
   actorDisplayName?: string | null
   actorKind?: 'OWNER' | 'MANAGER' | null
+  replyToId?: string | null
+  replyToPreview?: string | null
+  replyToSenderId?: string | null
+  replyToSenderName?: string | null
+}
+
+export type TaskCommentPin = {
+  commentId: string
+  content: string
+  mediaCount: number
+  pinnedAt: string
+  pinnedById?: string
+  createdAt: string
+  authorId: string
+  actorDisplayName?: string | null
+  actorKind?: 'OWNER' | 'MANAGER' | null
 }
 
 export type TaskMediaKind = 'MAIN' | 'REPORT'
@@ -554,6 +570,7 @@ export type UpdateTaskDto = {
   urgent?: boolean
   postId?: string
   executorId?: string | null
+  assigneeAccountId?: string
   isExecutorApprove?: boolean | null
   isCompanyAction?: boolean
   location?: PostLocation | null
@@ -586,6 +603,7 @@ export type CreateTaskDto = {
 export type CreateTaskCommentDto = {
   content?: string
   media?: TaskCommentMedia[]
+  replyToId?: string
 }
 
 export type UpdateTaskCommentDto = {

@@ -1,4 +1,4 @@
-import { OpenInNewOutlined } from '@mui/icons-material';
+import { LinkOutlined, OpenInNewOutlined } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -48,6 +48,7 @@ import {
   sortPublications,
 } from '../model/utils';
 
+import { AttachPublicationLinkDialog } from './AttachPublicationLinkDialog';
 import { PublicationColumnFilterButton } from './PublicationColumnFilterButton';
 
 import type {
@@ -93,6 +94,9 @@ export const PublicationTable = ({
   const [galleryItems, setGalleryItems] = useState<MediaItemType[] | null>(
     null
   );
+  const [attachLinkPublicationId, setAttachLinkPublicationId] = useState<
+    string | null
+  >(null);
   const [internalPage, setInternalPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<PublicationSortOrder>('desc');
   const [sortField, setSortField] = useState<PublicationSortField>('createdAt');
@@ -304,12 +308,12 @@ export const PublicationTable = ({
               <col
                 style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.publishedAt }}
               />
+              <col style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.media }} />
               {!forPrint && (
                 <col
                   style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.actions }}
                 />
               )}
-              <col style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.media }} />
             </colgroup>
 
             <TableHead>
@@ -464,13 +468,13 @@ export const PublicationTable = ({
                   </Stack>
                 </TableCell>
 
+                <TableCell sx={mediaCellSx}>Медиа</TableCell>
+
                 {!forPrint && (
                   <TableCell
                     sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.actions)}
                   />
                 )}
-
-                <TableCell sx={mediaCellSx}>Медиа</TableCell>
               </TableRow>
 
               {showColumnFilters && columnFilters && isFilterRowOpen && (
@@ -565,12 +569,12 @@ export const PublicationTable = ({
                       onChange={columnFilters.onCreatedDateChange}
                     />
                   </TableCell>
+                  <TableCell sx={mediaCellSx} />
                   {!forPrint && (
                     <TableCell
                       sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.actions)}
                     />
                   )}
-                  <TableCell sx={mediaCellSx} />
                 </TableRow>
               )}
             </TableHead>
@@ -774,30 +778,6 @@ export const PublicationTable = ({
                       )}
                     </TableCell>
 
-                    {!forPrint && (
-                      <TableCell
-                        sx={columnCellSx(
-                          PUBLICATION_TABLE_COLUMN_WIDTHS.actions
-                        )}
-                        onClick={event => event.stopPropagation()}
-                        onMouseDown={event => event.stopPropagation()}
-                      >
-                        {publication.externalUrl ? (
-                          <Tooltip title="Открыть публикацию">
-                            <IconButton
-                              size="small"
-                              href={publication.externalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="Открыть публикацию"
-                            >
-                              <OpenInNewOutlined fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ) : null}
-                      </TableCell>
-                    )}
-
                     <TableCell sx={mediaCellSx}>
                       {previewMedia.length > 0 ? (
                         forPrint ? (
@@ -827,6 +807,42 @@ export const PublicationTable = ({
                         </Typography>
                       )}
                     </TableCell>
+
+                    {!forPrint && (
+                      <TableCell
+                        sx={columnCellSx(
+                          PUBLICATION_TABLE_COLUMN_WIDTHS.actions
+                        )}
+                        onClick={event => event.stopPropagation()}
+                        onMouseDown={event => event.stopPropagation()}
+                      >
+                        {publication.externalUrl ? (
+                          <Tooltip title="Открыть публикацию">
+                            <IconButton
+                              size="small"
+                              href={publication.externalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Открыть публикацию"
+                            >
+                              <OpenInNewOutlined fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Прикрепить ссылку">
+                            <IconButton
+                              size="small"
+                              aria-label="Прикрепить ссылку"
+                              onClick={() =>
+                                setAttachLinkPublicationId(publication.id)
+                              }
+                            >
+                              <LinkOutlined fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })
@@ -861,6 +877,14 @@ export const PublicationTable = ({
           items={galleryItems ?? []}
           isOpen={Boolean(galleryItems?.length)}
           onClose={() => setGalleryItems(null)}
+        />
+      )}
+
+      {!forPrint && (
+        <AttachPublicationLinkDialog
+          open={Boolean(attachLinkPublicationId)}
+          publicationId={attachLinkPublicationId}
+          onClose={() => setAttachLinkPublicationId(null)}
         />
       )}
     </>

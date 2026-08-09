@@ -1,12 +1,14 @@
-import { Close } from '@mui/icons-material';
+import { Close, HelpOutlineOutlined } from '@mui/icons-material';
 import {
   Box,
   Button,
   Checkbox,
   Dialog,
+  FormControlLabel,
   IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -15,7 +17,10 @@ type ApplyDialogProps = {
   open: boolean;
   isPending?: boolean;
   onClose: () => void;
-  onSubmit: (message: string) => void;
+  onSubmit: (payload: {
+    message: string;
+    attachStatistics: boolean;
+  }) => void;
 };
 
 export const ApplyDialog = ({
@@ -25,10 +30,11 @@ export const ApplyDialog = ({
   onSubmit,
 }: ApplyDialogProps) => {
   const [message, setMessage] = useState('');
-  const [isAttachedStatistic, setIsAttachedStatistic] = useState(false);
+  const [isAttachedStatistic, setIsAttachedStatistic] = useState(true);
 
   const handleClose = () => {
     setMessage('');
+    setIsAttachedStatistic(true);
     onClose();
   };
 
@@ -37,7 +43,10 @@ export const ApplyDialog = ({
 
     if (!trimmed) return;
 
-    onSubmit(trimmed);
+    onSubmit({
+      message: trimmed,
+      attachStatistics: isAttachedStatistic,
+    });
   };
 
   return (
@@ -75,33 +84,49 @@ export const ApplyDialog = ({
         <Typography variant="h6">Откликнуться</Typography>
 
         <Typography
+          sx={{ mt: 1 }}
           variant="body2"
           color="text.secondary"
-          sx={{ mt: 1 }}
         >
-          Напишите сообщение автору поста
+          Напишите сообщение автору обьявления
         </Typography>
 
         <TextField
           multiline
-          minRows={4}
           fullWidth
+          minRows={4}
+          sx={{ mt: 3 }}
           value={message}
           disabled={isPending}
-          placeholder="Готов обсудить сотрудничество..."
-          sx={{ mt: 3 }}
           onChange={e => setMessage(e.target.value)}
+          placeholder="Готов обсудить сотрудничество..."
         />
 
-        <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: 'center' }}>
-          <Checkbox
-            checked={isAttachedStatistic}
-            onChange={() => setIsAttachedStatistic(!isAttachedStatistic)}
-          />
-          <Typography variant="body2">
-            Прикрепить статистику
-          </Typography>
-        </Stack>
+        <FormControlLabel
+          sx={{ mt: 1 }}
+          control={
+            <Checkbox
+              checked={isAttachedStatistic}
+              disabled={isPending}
+              onChange={() => setIsAttachedStatistic(!isAttachedStatistic)}
+            />
+          }
+          label={
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center' }}
+            >
+              <Typography variant="body2">Прикрепить статистику</Typography>
+              <Tooltip title="Владелец поста увидит ваши показатели: выполненные и аннулированные работы, совместные задачи и публикации, сколько раз вас добавили в избранное">
+                <HelpOutlineOutlined
+                  color="info"
+                  fontSize="small"
+                />
+              </Tooltip>
+            </Stack>
+          }
+        />
 
         <Stack
           direction="row"

@@ -28,6 +28,7 @@ import type {
   TaskActivityFeedList,
   TaskActivityFeedParams,
   TaskComment,
+  TaskCommentPin,
   TaskCommentAttachmentList,
   TaskCommentAttachmentsParams,
   TaskCommentList,
@@ -68,6 +69,8 @@ export const taskKeys = {
     [...taskKeys.all, 'comments', taskId, params ?? {}] as const,
   searchComments: (taskId: string, params: SearchTaskCommentsParams) =>
     [...taskKeys.all, 'comments', taskId, 'search', params] as const,
+  commentPins: (taskId: string) =>
+    [...taskKeys.all, 'comments', taskId, 'pins'] as const,
   commentAttachments: (
     taskId: string,
     params?: TaskCommentAttachmentsParams,
@@ -199,20 +202,31 @@ export const removeTaskMediaFromCache = (
 }
 
 const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
-  const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(task.id))
+  const cachedTask =
+    queryClient.getQueryData<Task>(taskKeys.detail(task.id)) ??
+    findTaskInCache(queryClient, task.id)
   const postId =
-    task.postId || task.post?.id || cachedTask?.postId || cachedTask?.post?.id
+    task.postId ||
+    task.post?.id ||
+    cachedTask?.postId ||
+    cachedTask?.post?.id
   const previousPostId = cachedTask?.postId || cachedTask?.post?.id
-  const mergedTask = {
+  const mergedTask: Task = {
     ...cachedTask,
     ...task,
-    postId: postId ?? task.postId,
+    postId: postId ?? task.postId ?? cachedTask?.postId ?? '',
+    executor: task.executorId
+      ? (task.executor ?? cachedTask?.executor ?? null)
+      : null,
+    owner: task.owner ?? cachedTask?.owner,
+    post: task.post ?? cachedTask?.post,
   }
 
   queryClient.setQueryData(taskKeys.detail(task.id), mergedTask)
+  patchTaskInPostTasksCaches(queryClient, task.id, () => mergedTask)
 
   void queryClient.invalidateQueries({ queryKey: taskKeys.detail(task.id) })
-
+  void queryClient.invalidateQueries({ queryKey: [...taskKeys.all, 'list'] })
   void queryClient.invalidateQueries({
     queryKey: [...taskKeys.all, 'allActivities'],
   })
@@ -225,6 +239,11 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
     void queryClient.invalidateQueries({
       queryKey: postTasksQueryPrefix(id),
     })
+  }
+
+  // Fallback: postId unknown — still refresh all post-task lists
+  if (!postIds.size) {
+    void queryClient.invalidateQueries({ queryKey: postTasksQueryRoot })
   }
 
   const hasParticipantChanged =
@@ -1129,6 +1148,45 @@ export const useUpdateTaskCommentMutation = () => {
       })
       queryClient.invalidateQueries({
         queryKey: [...taskKeys.all, 'withComments'],
+      })
+    },
+  })
+}
+
+export const useTaskCommentPinsQuery = (taskId: string | null) =>
+  useQuery({
+    queryKey: taskKeys.commentPins(taskId ?? ''),
+    queryFn: async () => {
+      const { data } = await mainAxios.get<TaskCommentPin[]>(
+        `/tasks/${taskId}/comments/pins`,
+        { params: { limit: 50 } },
+      )
+      return data
+    },
+    enabled: Boolean(taskId),
+  })
+
+export const usePinTaskCommentMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      commentId,
+      isPinned,
+    }: {
+      taskId: string
+      commentId: string
+      isPinned: boolean
+    }) => {
+      await mainAxios.patch(
+        `/tasks/${taskId}/comments/${commentId}/pin`,
+        { isPinned },
+      )
+    },
+    onSuccess: (_data, { taskId }) => {
+      queryClient.invalidateQueries({
+        queryKey: taskKeys.commentPins(taskId),
       })
     },
   })

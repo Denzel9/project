@@ -19,6 +19,13 @@ import {
   getEmailConfirmErrorMessage,
 } from '@/features/auth';
 import { ROUTES } from '@/shared';
+import {
+  hasPreparingMedia,
+  patchPhotoByLocalId,
+  prepareLocalMediaFile,
+  revokeLocalPhotoUrl,
+  type LocalMediaFile,
+} from '@/shared/lib/media';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 import { useActions } from '../hooks/useActions';
@@ -46,13 +53,6 @@ import { MainInfo } from './MainInfo';
 import { ProductInfo } from './ProductInfo';
 
 import type { Photo } from '@/entities/photo';
-import {
-  hasPreparingMedia,
-  patchPhotoByLocalId,
-  prepareLocalMediaFile,
-  revokeLocalPhotoUrl,
-  type LocalMediaFile,
-} from '@/shared/lib/media';
 
 const isLocalPreview = (photo: Photo) =>
   Boolean(photo.localId) || photo.url.startsWith('blob:');
@@ -89,7 +89,9 @@ export const ApplicationForm = ({
     resolver: yupResolver(schema),
   });
 
-  const { handleSubmit, setValue, getValues } = methods;
+  const { handleSubmit, setValue, getValues, formState: { errors } } = methods;
+
+  console.log(errors);
 
   const {
     menuOptions,

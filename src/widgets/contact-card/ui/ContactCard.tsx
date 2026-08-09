@@ -38,7 +38,8 @@ import { ContactRow } from './ContactRow';
 
 type ContactCardProps = {
   taskId: string;
-  contact?: User;
+  contact?: User | Partial<User>;
+  isContactLoading?: boolean;
   isMyPost?: boolean;
   withTitle?: boolean;
   status?: TaskStatus;
@@ -51,7 +52,7 @@ const cardSx = {
   height: 'fit-content',
   bgcolor: 'white',
   borderRadius: '32px',
-  p: { xs: 2.5, md: 3 },
+  p: 2,
   border: '1px solid',
   borderColor: 'divider',
 } as const;
@@ -62,6 +63,7 @@ export const ContactCard = ({
   contact,
   withTitle = false,
   isMyPost = false,
+  isContactLoading = false,
   isExecutorApprove,
   roleLabel: roleLabelProp,
 }: ContactCardProps) => {
@@ -76,6 +78,24 @@ export const ContactCard = ({
   const isAwaitingExecutorApproval = isExecutorApprove === null && isMyPost;
 
   if (!contact) {
+    if (isContactLoading) {
+      return (
+        <Box sx={cardSx}>
+          <Stack
+            spacing={1.5}
+            sx={{ alignItems: 'center', py: 3 }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Загрузка контакта…
+            </Typography>
+          </Stack>
+        </Box>
+      );
+    }
+
     return (
       <Box sx={cardSx}>
         {status !== TASK_STATUS_ENUM.ANNULLED ? (
@@ -216,7 +236,7 @@ export const ContactCard = ({
         >
           <UserDisplayName
             user={contact}
-            variant="h6"
+            variant="subtitle1"
           />
         </Box>
       </Stack>

@@ -1,11 +1,8 @@
-import { CallMade } from '@mui/icons-material';
 import {
   Box,
   Button,
   Grid,
-  IconButton,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -61,7 +58,6 @@ export const MyTasks = () => {
   const [reportTasks, setReportTasks] = useState<Task[] | null>(null);
   const [pendingPrint, setPendingPrint] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isContentExpanded, setIsContentExpanded] = useState(false);
 
   const { role, isPrime } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
@@ -537,7 +533,7 @@ export const MyTasks = () => {
           <Box
             sx={{
               top: 0,
-              zIndex: isContentExpanded ? 0 : 1000,
+              zIndex: 1000,
               flexShrink: 0,
               position: 'sticky',
             }}
@@ -601,7 +597,9 @@ export const MyTasks = () => {
               width: '100%',
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: '32px',
+              borderRadius: '24px',
+              border: viewMode !== 'grid' ? '1px solid' : 'none',
+              borderColor: 'divider',
               ...(isFullHeightView && {
                 flex: 1,
                 minHeight: 0,
@@ -611,75 +609,31 @@ export const MyTasks = () => {
             <Box
               ref={contentRef}
               sx={{
+                flex: 1,
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                flex: 1,
-                position: isContentExpanded ? 'absolute' : 'relative',
-                top: isContentExpanded ? 0 : undefined,
-                left: isContentExpanded ? 0 : undefined,
-                right: isContentExpanded ? 0 : undefined,
-                bottom: isContentExpanded ? 0 : undefined,
-                zIndex: isContentExpanded ? 1000 : undefined,
-                ...(viewMode !== 'kanban' && {
-                  bgcolor: 'white',
-                  borderRadius: { xs: '16px', md: '32px' },
-                  p: { xs: 1.5, md: 2 },
-                }),
+                position: 'relative',
                 ...(isFullHeightView
                   ? {
                     flex: 1,
                     minHeight: 0,
                   }
                   : {}),
-                ...(isContentExpanded && {
-                  overflow: 'auto',
-                }),
               }}
             >
-              <Tooltip title={isContentExpanded ? 'Свернуть область задач' : 'Развернуть область задач'}>
-                <IconButton
-                  className="print-no-print"
-                  size="small"
-                  aria-label={
-                    isContentExpanded
-                      ? 'Свернуть область задач'
-                      : 'Развернуть область задач'
-                  }
-                  onClick={() => setIsContentExpanded(prev => !prev)}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    left: 8,
-                    zIndex: 1000,
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    boxShadow: 1,
-                  }}
-                >
-                  <CallMade
-                    fontSize="small"
-                    sx={{
-                      transform: isContentExpanded
-                        ? 'rotate(90deg)'
-                        : 'rotate(270deg)',
-                    }}
-                  />
-                </IconButton>
-              </Tooltip>
-
               {viewMode === 'grid' && (
                 <>
                   <Grid
                     container
                     spacing={1}
-                    sx={{ width: '100%' }}
+                    sx={{ width: '100%', }}
                   >
                     {filteredTasks.map(task => (
                       <Grid
                         key={task.id}
                         size={{ xs: 12, sm: 6, md: 4 }}
+                        sx={{ bgcolor: 'white', borderRadius: '24px' }}
                       >
                         <TaskItem
                           task={task}

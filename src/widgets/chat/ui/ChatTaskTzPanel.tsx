@@ -34,12 +34,6 @@ type ChatTaskTzPanelProps = {
   currentUserId: string | null;
 };
 
-const toMessageSide = (
-  senderId: string,
-  currentUserId: string | null
-): 'incoming' | 'outgoing' =>
-  currentUserId && senderId === currentUserId ? 'outgoing' : 'incoming';
-
 const ALL_TASKS_VALUE = 'all';
 
 export const ChatTaskTzPanel = ({
@@ -119,18 +113,8 @@ export const ChatTaskTzPanel = ({
       </Typography>
       <ChatMessageBubble
         fullWidth
-        messageId={item.message.id}
-        senderId={item.message.senderId}
-        actorDisplayName={item.message.actorDisplayName}
-        actorKind={item.message.actorKind}
-        createdAt={item.message.createdAt}
+        message={item.message}
         currentUserId={currentUserId}
-        text={item.message.content}
-        media={item.message.media}
-        editedAt={item.message.editedAt}
-        isRedirected={item.message.isRedirected}
-        side={toMessageSide(item.message.senderId, currentUserId)}
-        isRead={item.message.isRead}
       />
     </Box>
   );

@@ -76,7 +76,6 @@ const ResponseRowActions = ({
       <Stack
         direction="row"
         spacing={0.5}
-        sx={{ flexWrap: 'wrap', gap: 0.5 }}
         onClick={event => event.stopPropagation()}
       >
         {canWithdraw && (

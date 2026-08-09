@@ -104,7 +104,9 @@ export const TaskPostBrief = ({ post }: TaskPostBriefProps) => {
     <Box
       sx={{
         p: 2,
+        border: '1px solid',
         borderRadius: '20px',
+        borderColor: 'divider',
         bgcolor: 'secondary.light',
       }}
     >
@@ -118,10 +120,11 @@ export const TaskPostBrief = ({ post }: TaskPostBriefProps) => {
           spacing={0.5}
           onClick={handleToggle}
           sx={{
-            alignItems: 'center',
-            cursor: 'pointer',
             minWidth: 0,
+
+            cursor: 'pointer',
             userSelect: 'none',
+            alignItems: 'center',
           }}
         >
           <IconButton

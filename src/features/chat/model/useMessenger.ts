@@ -11,6 +11,7 @@ import {
   incrementConversationUnreadCount,
   markConversationReadInCache,
   removeMessageFromCache,
+  setConversationUnreadCount,
   sortConversationsByUnread,
   updateConversationLastMessage,
   updateMessageInCache,
@@ -19,7 +20,9 @@ import {
   useCreateConversationMutation,
   useDeleteMessageMutation,
   useEditMessageMutation,
+  useHideMessagesMutation,
   useMarkConversationReadMutation,
+  useMarkConversationUnreadMutation,
   useMessagePinsQuery,
   useMessagesQuery,
   usePinMessageMutation,
@@ -27,6 +30,7 @@ import {
   type ChatConversation,
   type ChatMessage,
   type ChatMessageMedia,
+  type ChatMessagesHiddenEvent,
   type ChatPeer,
 } from '@/entities/chat'
 import { getUserName, useGetUserByIdQuery } from '@/entities/user'
@@ -101,6 +105,27 @@ const getEditMessageError = (error: unknown) => {
   return getErrorMessage(error) ?? 'Не удалось изменить сообщение'
 }
 
+const normalizeIncomingMessage = (
+  message: ChatMessage,
+  overrides?: Partial<ChatMessage>,
+): ChatMessage => ({
+  ...message,
+  media: message.media ?? [],
+  editedAt: message.editedAt ?? null,
+  isRedirected: message.isRedirected ?? false,
+  isRead: message.isRead ?? false,
+  replyToId: message.replyToId ?? null,
+  replyToPreview: message.replyToPreview ?? null,
+  replyToSenderId: message.replyToSenderId ?? null,
+  replyToSenderName: message.replyToSenderName ?? null,
+  redirectedFromUserId: message.redirectedFromUserId ?? null,
+  redirectedFromDisplayName: message.redirectedFromDisplayName ?? null,
+  actorAccountId: message.actorAccountId ?? null,
+  actorDisplayName: message.actorDisplayName ?? null,
+  actorKind: message.actorKind ?? null,
+  ...overrides,
+})
+
 export const useMessenger = () => {
   const queryClient = useQueryClient()
   const theme = useTheme()
@@ -128,12 +153,21 @@ export const useMessenger = () => {
   const [forwardingMessageId, setForwardingMessageId] = useState<string | null>(
     null,
   )
+  const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [unreadHoldConversationId, setUnreadHoldConversationId] = useState<
+    string | null
+  >(null)
 
   const handledRecipientRef = useRef<string | null>(null)
   const selectedConversationIdRef = useRef<string | null>(null)
   const currentUserIdRef = useRef<string | null>(null)
   const prevRawErrorRef = useRef<string | null>(null)
   const openingUnreadCountRef = useRef(0)
+  const openingUnreadAnchorRef = useRef<string | null>(null)
+  const autoReadDoneForRef = useRef<string | null>(null)
+  const unreadHoldConversationIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId
@@ -142,6 +176,10 @@ export const useMessenger = () => {
   useEffect(() => {
     currentUserIdRef.current = currentUserId
   }, [currentUserId])
+
+  useEffect(() => {
+    unreadHoldConversationIdRef.current = unreadHoldConversationId
+  }, [unreadHoldConversationId])
 
   const {
     data: conversations = [],
@@ -153,14 +191,19 @@ export const useMessenger = () => {
     data: historyMessages = [],
     isLoading: messagesLoading,
     error: messagesError,
-  } = useMessagesQuery(selectedConversationId)
+  } = useMessagesQuery(selectedConversationId, {
+    // Never mark read as a GET side-effect: open/hold logic owns read state.
+    markRead: false,
+  })
 
   const { data: pinnedMessages = [] } =
     useMessagePinsQuery(selectedConversationId)
 
   const createConversation = useCreateConversationMutation()
   const markConversationRead = useMarkConversationReadMutation()
+  const markConversationUnread = useMarkConversationUnreadMutation()
   const deleteMessageMutation = useDeleteMessageMutation()
+  const hideMessagesMutation = useHideMessagesMutation()
   const editMessageMutation = useEditMessageMutation()
   const pinMessageMutation = usePinMessageMutation()
 
@@ -182,7 +225,10 @@ export const useMessenger = () => {
         peer: pendingPeer,
         lastMessage: null,
         unreadCount: 0,
+        unreadAnchorMessageId: null,
+        isMarkedUnread: false,
         isPinned: false,
+        isNotes: false,
         updatedAt: new Date().toISOString(),
       }
     }
@@ -205,6 +251,45 @@ export const useMessenger = () => {
     [pinnedMessageIds],
   )
 
+  const clearReplyTo = useCallback(() => {
+    setReplyToMessage(null)
+  }, [])
+
+  const setReplyTo = useCallback((message: ChatMessage) => {
+    setReplyToMessage(message)
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+  }, [])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  const exitSelection = useCallback(() => {
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+  }, [])
+
+  const enterSelection = useCallback((messageId?: string) => {
+    setReplyToMessage(null)
+    setSelectionMode(true)
+    setSelectedIds(messageId ? new Set([messageId]) : new Set())
+  }, [])
+
+  const toggleSelect = useCallback((messageId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+
+      if (next.has(messageId)) {
+        next.delete(messageId)
+      } else {
+        next.add(messageId)
+      }
+
+      return next
+    })
+  }, [])
+
   const onTogglePinMessage = useCallback(
     (messageId: string, nextPinned: boolean) => {
       if (!selectedConversationId) return
@@ -225,11 +310,18 @@ export const useMessenger = () => {
         ?.find(item => item.id === conversationId)
 
       openingUnreadCountRef.current = conversation?.unreadCount ?? 0
+      openingUnreadAnchorRef.current =
+        conversation?.unreadAnchorMessageId ?? null
+      autoReadDoneForRef.current = null
+      setUnreadHoldConversationId(null)
       setUnreadDividerMessageId(null)
       setPendingPeer(null)
       setSelectedConversationId(conversationId)
       setLiveMessages([])
       setPendingFiles([])
+      setReplyToMessage(null)
+      setSelectionMode(false)
+      setSelectedIds(new Set())
       setSocketError(null)
       setIsErrorDismissed(false)
       chatSocket.joinConversation(conversationId)
@@ -239,12 +331,18 @@ export const useMessenger = () => {
 
   const openDraftChat = useCallback((peer: ChatPeer) => {
     openingUnreadCountRef.current = 0
+    openingUnreadAnchorRef.current = null
+    autoReadDoneForRef.current = null
+    setUnreadHoldConversationId(null)
     setUnreadDividerMessageId(null)
     setSelectedConversationId(null)
     setPendingPeer(peer)
     setLiveMessages([])
     setPendingFiles([])
     setDraft('')
+    setReplyToMessage(null)
+    setSelectionMode(false)
+    setSelectedIds(new Set())
     setSocketError(null)
     setIsErrorDismissed(false)
   }, [])
@@ -288,7 +386,15 @@ export const useMessenger = () => {
       return
     }
 
+    const openingAnchorId = openingUnreadAnchorRef.current
     const openingUnreadCount = openingUnreadCountRef.current
+
+    if (openingAnchorId && messages.some(message => message.id === openingAnchorId)) {
+      setUnreadDividerMessageId(openingAnchorId)
+      openingUnreadAnchorRef.current = null
+      openingUnreadCountRef.current = 0
+      return
+    }
 
     if (openingUnreadCount > 0 && messages.length > 0) {
       setUnreadDividerMessageId(
@@ -299,6 +405,7 @@ export const useMessenger = () => {
         ),
       )
       openingUnreadCountRef.current = 0
+      openingUnreadAnchorRef.current = null
     }
   }, [selectedConversationId, messagesLoading, currentUserId, messages])
 
@@ -307,13 +414,25 @@ export const useMessenger = () => {
       return
     }
 
+    if (unreadHoldConversationId === selectedConversationId) {
+      return
+    }
+
+    if (autoReadDoneForRef.current === selectedConversationId) {
+      return
+    }
+
+    autoReadDoneForRef.current = selectedConversationId
+
     markConversationReadInCache(
       queryClient,
       selectedConversationId,
       currentUserId,
     )
 
-    if (!isSocketConnected) {
+    if (isSocketConnected) {
+      chatSocket.markRead(selectedConversationId)
+    } else {
       markConversationRead.mutate(selectedConversationId)
     }
   }, [
@@ -323,6 +442,7 @@ export const useMessenger = () => {
     isSocketConnected,
     queryClient,
     markConversationRead,
+    unreadHoldConversationId,
   ])
 
   useEffect(() => {
@@ -334,16 +454,15 @@ export const useMessenger = () => {
       const isActiveConversation = message.conversationId === activeConversationId
       const isIncoming = Boolean(userId && message.senderId !== userId)
 
-      const normalizedMessage: ChatMessage = {
-        ...message,
-        media: message.media ?? [],
-        editedAt: message.editedAt ?? null,
-        isRedirected: message.isRedirected ?? false,
+      const isUnreadHold =
+        unreadHoldConversationIdRef.current === message.conversationId
+
+      const normalizedMessage = normalizeIncomingMessage(message, {
         isRead:
-          isActiveConversation && isIncoming
+          isActiveConversation && isIncoming && !isUnreadHold
             ? true
             : (message.isRead ?? false),
-      }
+      })
 
       appendMessageToCache(
         queryClient,
@@ -357,7 +476,7 @@ export const useMessenger = () => {
       )
 
       if (isActiveConversation) {
-        if (isIncoming) {
+        if (isIncoming && !isUnreadHold) {
           chatSocket.markRead(normalizedMessage.conversationId)
 
           if (userId) {
@@ -367,6 +486,13 @@ export const useMessenger = () => {
               userId,
             )
           }
+        }
+
+        if (isIncoming && isUnreadHold) {
+          incrementConversationUnreadCount(
+            queryClient,
+            normalizedMessage.conversationId,
+          )
         }
 
         setLiveMessages(prev => {
@@ -432,16 +558,38 @@ export const useMessenger = () => {
       setLiveMessages(prev =>
         prev.filter(message => message.id !== event.messageId),
       )
+      setSelectedIds(prev => {
+        if (!prev.has(event.messageId)) return prev
+        const next = new Set(prev)
+        next.delete(event.messageId)
+        return next
+      })
+    }
+
+    const handleMessagesHidden = (event: ChatMessagesHiddenEvent) => {
+      removeMessageFromCache(
+        queryClient,
+        event.conversationId,
+        event.messageIds,
+      )
+
+      const hiddenIds = new Set(event.messageIds)
+
+      setLiveMessages(prev =>
+        prev.filter(message => !hiddenIds.has(message.id)),
+      )
+      setSelectedIds(prev => {
+        if (![...hiddenIds].some(id => prev.has(id))) return prev
+        const next = new Set(prev)
+        for (const id of hiddenIds) {
+          next.delete(id)
+        }
+        return next
+      })
     }
 
     const handleMessageEdited = (message: ChatMessage) => {
-      const normalizedMessage: ChatMessage = {
-        ...message,
-        media: message.media ?? [],
-        editedAt: message.editedAt ?? null,
-        isRedirected: message.isRedirected ?? false,
-        isRead: message.isRead ?? false,
-      }
+      const normalizedMessage = normalizeIncomingMessage(message)
 
       updateMessageInCache(queryClient, normalizedMessage)
 
@@ -483,6 +631,7 @@ export const useMessenger = () => {
     chatSocket.onMessage(handleMessage)
     chatSocket.onMessagesRead(handleMessagesRead)
     chatSocket.onMessageDeleted(handleMessageDeleted)
+    chatSocket.onMessagesHidden(handleMessagesHidden)
     chatSocket.onMessageEdited(handleMessageEdited)
     chatSocket.onError(handleError)
     chatSocket.onConnect(handleConnect)
@@ -612,7 +761,7 @@ export const useMessenger = () => {
   const sendTextMessage = useCallback(
     async (
       content: string,
-      options?: { media?: ChatMessageMedia[] },
+      options?: { media?: ChatMessageMedia[]; replyToId?: string },
     ) => {
       const trimmed = content.trim()
       const media = options?.media
@@ -638,6 +787,7 @@ export const useMessenger = () => {
           conversationId,
           content: trimmed || undefined,
           ...(media?.length ? { media } : {}),
+          ...(options?.replyToId ? { replyToId: options.replyToId } : {}),
         })
 
         return true
@@ -685,10 +835,12 @@ export const useMessenger = () => {
         conversationId,
         content: hasContent ? content : undefined,
         media,
+        ...(replyToMessage?.id ? { replyToId: replyToMessage.id } : {}),
       })
 
       setDraft('')
       setPendingFiles([])
+      setReplyToMessage(null)
     } catch (error) {
       setSocketError(getErrorMessage(error) ?? 'Не удалось отправить сообщение')
     } finally {
@@ -700,6 +852,7 @@ export const useMessenger = () => {
     isSocketConnected,
     pendingFiles,
     pendingPeer,
+    replyToMessage,
     selectedConversationId,
   ])
 
@@ -721,12 +874,90 @@ export const useMessenger = () => {
           messageId,
         })
         setLiveMessages(prev => prev.filter(message => message.id !== messageId))
+        setSelectedIds(prev => {
+          if (!prev.has(messageId)) return prev
+          const next = new Set(prev)
+          next.delete(messageId)
+          return next
+        })
       } catch (error) {
         setSocketError(getErrorMessage(error) ?? 'Не удалось удалить сообщение')
         setIsErrorDismissed(false)
       }
     },
     [deleteMessageMutation, selectedConversationId],
+  )
+
+  const hideMessagesSelected = useCallback(async () => {
+    if (!selectedConversationId || selectedIds.size === 0) {
+      return
+    }
+
+    const messageIds = [...selectedIds]
+
+    try {
+      setSocketError(null)
+      await hideMessagesMutation.mutateAsync({
+        conversationId: selectedConversationId,
+        messageIds,
+      })
+      const hidden = new Set(messageIds)
+      setLiveMessages(prev => prev.filter(message => !hidden.has(message.id)))
+      exitSelection()
+    } catch (error) {
+      setSocketError(getErrorMessage(error) ?? 'Не удалось скрыть сообщения')
+      setIsErrorDismissed(false)
+    }
+  }, [
+    exitSelection,
+    hideMessagesMutation,
+    selectedConversationId,
+    selectedIds,
+  ])
+
+  const markUnread = useCallback(
+    async (messageId: string) => {
+      if (!selectedConversationId || !currentUserId) {
+        return
+      }
+
+      const conversationId = selectedConversationId
+
+      try {
+        setSocketError(null)
+        // Hold until the next explicit open so auto-read cannot immediately
+        // clear the unread state while still in this chat.
+        setUnreadHoldConversationId(conversationId)
+        autoReadDoneForRef.current = conversationId
+
+        const result = await markConversationUnread.mutateAsync({
+          conversationId,
+          messageId,
+        })
+
+        setConversationUnreadCount(
+          queryClient,
+          conversationId,
+          result.unreadCount,
+          result.unreadAnchorMessageId,
+        )
+      } catch (error) {
+        setUnreadHoldConversationId(prev =>
+          prev === conversationId ? null : prev,
+        )
+        autoReadDoneForRef.current = null
+        setSocketError(
+          getErrorMessage(error) ?? 'Не удалось пометить как непрочитанное',
+        )
+        setIsErrorDismissed(false)
+      }
+    },
+    [
+      currentUserId,
+      markConversationUnread,
+      queryClient,
+      selectedConversationId,
+    ],
   )
 
   const editMessage = useCallback(
@@ -759,25 +990,45 @@ export const useMessenger = () => {
     [editMessageMutation, selectedConversationId],
   )
 
+  const getForwardDisplayName = useCallback(
+    (message: ChatMessage) => {
+      if (message.actorDisplayName) {
+        return message.actorDisplayName
+      }
+
+      if (message.redirectedFromDisplayName) {
+        return message.redirectedFromDisplayName
+      }
+
+      if (currentUserId && message.senderId === currentUserId) {
+        return 'Вы'
+      }
+
+      return selectedConversation?.peer.displayName ?? 'Пользователь'
+    },
+    [currentUserId, selectedConversation?.peer.displayName],
+  )
+
   const forwardMessage = useCallback(
-    async (messageId: string, targetPeerId: string) => {
+    async (messageIdOrIds: string | string[], targetPeerId: string) => {
       if (!selectedConversationId) {
         return { success: false, error: 'Чат не выбран' }
       }
 
-      const messageToForward = messages.find(message => message.id === messageId)
+      const messageIds = Array.isArray(messageIdOrIds)
+        ? messageIdOrIds
+        : [messageIdOrIds]
 
-      if (!messageToForward) {
+      if (!messageIds.length) {
         return { success: false, error: 'Сообщение не найдено' }
       }
 
-      const content = messageToForward.content
-      const media = messageToForward.media ?? []
-      const hasContent = Boolean(content.trim())
-      const hasMedia = media.length > 0
+      const messagesToForward = messageIds
+        .map(id => messages.find(message => message.id === id))
+        .filter((message): message is ChatMessage => Boolean(message))
 
-      if (!hasContent && !hasMedia) {
-        return { success: false, error: 'Нечего пересылать' }
+      if (!messagesToForward.length) {
+        return { success: false, error: 'Сообщение не найдено' }
       }
 
       if (!isSocketConnected) {
@@ -790,7 +1041,7 @@ export const useMessenger = () => {
 
       try {
         setIsForwardingMessage(true)
-        setForwardingMessageId(messageId)
+        setForwardingMessageId(messagesToForward[0].id)
         setSocketError(null)
 
         const existing = conversations.find(
@@ -809,13 +1060,28 @@ export const useMessenger = () => {
         }
 
         chatSocket.joinConversation(targetConversationId)
-        chatSocket.sendMessage({
-          conversationId: targetConversationId,
-          ...(hasContent ? { content } : {}),
-          ...(hasMedia ? { media } : {}),
-          isRedirected: true,
-        })
 
+        for (const messageToForward of messagesToForward) {
+          const content = messageToForward.content
+          const media = messageToForward.media ?? []
+          const hasContent = Boolean(content.trim())
+          const hasMedia = media.length > 0
+
+          if (!hasContent && !hasMedia) {
+            continue
+          }
+
+          chatSocket.sendMessage({
+            conversationId: targetConversationId,
+            ...(hasContent ? { content } : {}),
+            ...(hasMedia ? { media } : {}),
+            isRedirected: true,
+            redirectedFromUserId: messageToForward.senderId,
+            redirectedFromDisplayName: getForwardDisplayName(messageToForward),
+          })
+        }
+
+        exitSelection()
         return { success: true }
       } catch (error) {
         const message = getForwardMessageError(error)
@@ -830,6 +1096,8 @@ export const useMessenger = () => {
     [
       conversations,
       createConversation,
+      exitSelection,
+      getForwardDisplayName,
       isSocketConnected,
       messages,
       selectedConversationId,
@@ -912,12 +1180,25 @@ export const useMessenger = () => {
     sendMessage,
     sendTextMessage,
     deleteMessage,
+    hideMessagesSelected,
+    markUnread,
     editMessage,
     forwardMessage,
-    isDeletingMessage: deleteMessageMutation.isPending,
+    replyToMessage,
+    setReplyTo,
+    clearReplyTo,
+    selectionMode,
+    selectedIds,
+    enterSelection,
+    toggleSelect,
+    clearSelection,
+    exitSelection,
+    isDeletingMessage:
+      deleteMessageMutation.isPending || hideMessagesMutation.isPending,
     deletingMessageId: deleteMessageMutation.isPending
       ? deleteMessageMutation.variables?.messageId ?? null
       : null,
+    isHidingMessages: hideMessagesMutation.isPending,
     isEditingMessage: editMessageMutation.isPending,
     editingMessageId: editMessageMutation.isPending
       ? editMessageMutation.variables?.messageId ?? null

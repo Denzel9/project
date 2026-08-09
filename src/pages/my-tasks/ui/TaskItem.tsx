@@ -4,7 +4,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Link } from 'react-router';
 
-import { isTaskOverdue, type Task } from '@/entities';
+import { isTaskOverdue, TaskRequestStatusIcons, type Task } from '@/entities';
 import {
   executorToUserPartial,
   getUserName,
@@ -101,6 +101,8 @@ export const TaskItem = ({
             {task.urgent && (
               <Whatshot sx={{ fontSize: 16, color: 'error.main', flexShrink: 0 }} />
             )}
+
+            <TaskRequestStatusIcons task={task} fontSize={16} spacing={0.5} />
           </Stack>
 
           <Typography
@@ -202,7 +204,6 @@ export const TaskItem = ({
         color: 'inherit',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'white',
         borderRadius: '24px',
         textDecoration: 'none',
         border: '1px solid',
@@ -235,7 +236,9 @@ export const TaskItem = ({
             color={accentColor}
           />
 
-          {task.urgent && <Whatshot color="error" />}
+          {task.urgent && <Whatshot color="error" sx={{ fontSize: 20 }} />}
+
+          <TaskRequestStatusIcons task={task} />
         </Stack>
 
         <Stack

@@ -3,7 +3,11 @@ import { format, isValid } from 'date-fns';
 import { TASK_STATUS_LABELS, type Task } from '@/entities';
 import { downloadCsv } from '@/shared/lib/export';
 
-import { getTaskCustomerName, getTaskTitle } from '../utils/utils';
+import {
+  getTaskCustomerName,
+  getTaskManagerName,
+  getTaskTitle,
+} from '../utils/utils';
 
 const formatExportDateTime = (value?: string | null) => {
   if (!value) return '—';
@@ -36,6 +40,7 @@ export const exportTasksReport = (tasks: Task[]) => {
     'Название',
     'Статус',
     'Заказчик',
+    'Менеджер',
     'Обновлено',
     'Дедлайн',
     'Срочная',
@@ -46,6 +51,7 @@ export const exportTasksReport = (tasks: Task[]) => {
     getTaskTitle(task),
     TASK_STATUS_LABELS[task.status],
     getTaskCustomerName(task) || '—',
+    getTaskManagerName(task) || '—',
     formatExportDateTime(task.updatedAt),
     formatExportDate(task.finalDate),
     task.urgent ? 'Да' : 'Нет',

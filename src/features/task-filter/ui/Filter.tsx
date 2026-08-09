@@ -179,17 +179,17 @@ export const MyTaskFilter = ({
         direction="column"
         className="print-no-print"
         sx={{
-          p: 4,
+          p: 2,
           mb: 1,
           bgcolor: 'white',
-          borderRadius: '32px',
+          borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
           transition: 'box-shadow 0.3s ease',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
-        <Stack
+        {viewMode !== 'table' && <Stack
           direction="row"
           spacing={2}
           sx={{
@@ -227,28 +227,25 @@ export const MyTaskFilter = ({
               </TextField>
             )}
 
-            {viewMode !== 'table' && (
-              <>
-                <FilterAutocomplete
-                  label="Пост"
-                  size="small"
-                  value={postId}
-                  onChange={setPostId}
-                  options={postOptions}
-                  sx={{ width: 250, flex: '0 0 250px' }}
-                />
 
-                <FilterAutocomplete
-                  size="small"
-                  value={executorId}
-                  options={partnerOptions}
-                  onChange={setExecutorId}
-                  loading={isPartnersLoading}
-                  sx={{ width: 250, flex: '0 0 250px' }}
-                  label={isCompany ? 'Исполнитель' : 'Компания'}
-                />
-              </>
-            )}
+            <FilterAutocomplete
+              label="Пост"
+              size="small"
+              value={postId}
+              onChange={setPostId}
+              options={postOptions}
+              sx={{ width: 250, flex: '0 0 250px' }}
+            />
+
+            <FilterAutocomplete
+              size="small"
+              value={executorId}
+              options={partnerOptions}
+              onChange={setExecutorId}
+              loading={isPartnersLoading}
+              sx={{ width: 250, flex: '0 0 250px' }}
+              label={isCompany ? 'Исполнитель' : 'Компания'}
+            />
 
             {hasActiveSelectFilters && (
               <Chip
@@ -298,9 +295,9 @@ export const MyTaskFilter = ({
               tableReport={tableReport}
             />
           </Stack>
-        </Stack>
+        </Stack>}
 
-        <Divider />
+        {viewMode !== 'table' && <Divider />}
 
         <Stack
           direction="row"
@@ -339,7 +336,7 @@ export const MyTaskFilter = ({
               </span>
             </Tooltip>
 
-            <Tooltip
+            {viewMode !== 'table' && <Tooltip
               title={
                 isUrgentActive
                   ? 'Показать все задачи'
@@ -355,7 +352,7 @@ export const MyTaskFilter = ({
               >
                 <Whatshot color={isUrgentActive ? 'error' : 'action'} />
               </IconButton>
-            </Tooltip>
+            </Tooltip>}
           </Stack>
 
           <Stack
@@ -379,9 +376,14 @@ export const MyTaskFilter = ({
             )}
 
             <TaskViewModeToggle />
+
+            {viewMode === 'table' && <TaskFilterActionsMenu
+              isCompany={isCompany}
+              tableReport={tableReport}
+            />}
           </Stack>
         </Stack>
-      </Stack>
+      </Stack >
 
       <Popover
         anchorEl={columnsAnchorEl}

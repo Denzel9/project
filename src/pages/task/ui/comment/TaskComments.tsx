@@ -21,14 +21,20 @@ import {
   useTheme,
 } from '@mui/material';
 import { format } from 'date-fns';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  formatChatDaySeparatorLabel,
+  isSameChatDay,
+} from '@/entities/chat';
 import {
   canEditTaskComment,
   uploadTaskCommentMediaBatch,
   useAllTaskCommentsQuery,
   useCreateTaskCommentMutation,
+  usePinTaskCommentMutation,
   useSearchTaskCommentsQuery,
+  useTaskCommentPinsQuery,
   useUpdateTaskCommentMutation,
   validateChatMediaFile,
   type TaskComment,
@@ -42,10 +48,12 @@ import { FullScreenGallery } from '@/widgets';
 import { useUnreadCommentsDivider } from '../../model/hooks/useUnreadCommentsDivider';
 import { hasCommentText, toGalleryItems } from '../../model/lib/commentMedia';
 import { DeleteCommentDialog } from '../DeleteCommentDialog';
-import { TaskCommentSearchPanel } from '../TaskCommentSearchPanel';
 
 import { TaskCommentAttachmentsPanel } from './TaskCommentAttachmentsPanel';
+import { TaskCommentDaySeparator } from './TaskCommentDaySeparator';
 import { TaskCommentItem } from './TaskCommentItem';
+import { TaskCommentPinnedHeader } from './TaskCommentPinnedHeader';
+import { TaskCommentSearchPanel } from './TaskCommentSearchPanel';
 import { UnreadCommentsDivider } from './UnreadCommentsDivider';
 
 type TaskCommentsProps = {
@@ -89,15 +97,45 @@ export const TaskComments = ({
     ReturnType<typeof toGalleryItems>
   >([]);
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0);
+  const [replyToComment, setReplyToComment] = useState<TaskComment | null>(
+    null
+  );
 
   const { data: comments = [], isLoading: isCommentsLoading } =
     useAllTaskCommentsQuery(taskId);
+  const { data: pinnedComments = [] } = useTaskCommentPinsQuery(taskId);
+  const { mutateAsync: pinComment } = usePinTaskCommentMutation();
   const unreadDividerCommentId = useUnreadCommentsDivider({
     taskId,
     comments,
     currentUserId,
     isLoading: isCommentsLoading,
   });
+
+  const pinnedCommentIds = useMemo(
+    () => new Set(pinnedComments.map(pin => pin.commentId)),
+    [pinnedComments]
+  );
+
+  const commentDayStarts = useMemo(() => {
+    const starts = new Set<string>();
+
+    comments.forEach((comment, index) => {
+      if (
+        index === 0 ||
+        !isSameChatDay(comments[index - 1].createdAt, comment.createdAt)
+      ) {
+        starts.add(comment.id);
+      }
+    });
+
+    return starts;
+  }, [comments]);
+
+  const jumpToComment = useCallback((commentId: string) => {
+    const el = document.getElementById(`comment-${commentId}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
   const { mutateAsync: createComment, isPending: isCreating } =
     useCreateTaskCommentMutation();
   const { mutate: updateComment, isPending: isUpdating } =
@@ -129,6 +167,14 @@ export const TaskComments = ({
       setSearchItems([]);
     }, 0);
   }, [debouncedQuery, taskId]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setReplyToComment(null);
+      setEditingId(null);
+      setEditContent('');
+    }, 0);
+  }, [taskId]);
 
   const canSearch = isDesktopSearch && debouncedQuery.length >= 2;
 
@@ -271,11 +317,13 @@ export const TaskComments = ({
         body: {
           ...(hasContent ? { content: trimmed } : { content: '' }),
           media,
+          ...(replyToComment ? { replyToId: replyToComment.id } : {}),
         },
       });
 
       setContent('');
       setPendingFiles([]);
+      setReplyToComment(null);
     } catch {
       setSendError('Не удалось отправить комментарий');
     } finally {
@@ -328,6 +376,20 @@ export const TaskComments = ({
     setIsOpenDeleteDialog(true);
   };
 
+  const handlePin = async (commentId: string, nextPinned: boolean) => {
+    if (disabled) return;
+
+    try {
+      await pinComment({
+        taskId,
+        commentId,
+        isPinned: nextPinned,
+      });
+    } catch {
+      // keep silent — list stays unchanged until invalidate
+    }
+  };
+
   const handleCloseMenu = () => setMenuAnchor(null);
 
   const handleOpenAttachments = () => {
@@ -357,8 +419,7 @@ export const TaskComments = ({
         direction="row"
         spacing={1.5}
         sx={{
-          px: { xs: 2.5, md: 3 },
-          py: 2,
+          p: 2,
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '1px solid',
@@ -390,8 +451,8 @@ export const TaskComments = ({
 
         {canUseCommentTools && (
           <Stack
+            spacing={1}
             direction="row"
-            spacing={0.5}
             sx={{ alignItems: 'center' }}
           >
             {isSearchOpen && !isMobile && (
@@ -435,13 +496,19 @@ export const TaskComments = ({
 
       <Box
         sx={{
-          px: { xs: 2, md: 3 },
-          py: 2,
+          p: 2,
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
         }}
       >
+        {!canSearch && (
+          <TaskCommentPinnedHeader
+            pinnedComments={pinnedComments}
+            onJumpToComment={jumpToComment}
+          />
+        )}
+
         <Stack
           ref={commentsListRef}
           spacing={1.5}
@@ -453,7 +520,9 @@ export const TaskComments = ({
             minHeight: 320,
             maxHeight: 480,
             overflowY: 'auto',
-            p: comments.length ? 1.5 : 0,
+            px: comments.length ? 1.5 : 0,
+            pt: comments.length ? 1.5 : 0,
+            pb: comments.length ? 3 : 0,
             borderRadius: '20px',
             bgcolor: comments.length ? 'grey.50' : 'transparent',
             border: comments.length ? '1px solid' : 'none',
@@ -583,6 +652,12 @@ export const TaskComments = ({
                 key={comment.id}
                 sx={{ width: '100%' }}
               >
+                {commentDayStarts.has(comment.id) && (
+                  <TaskCommentDaySeparator
+                    label={formatChatDaySeparatorLabel(comment.createdAt)}
+                  />
+                )}
+
                 {unreadDividerCommentId === comment.id && (
                   <UnreadCommentsDivider />
                 )}
@@ -592,6 +667,7 @@ export const TaskComments = ({
                   isOwner={isOwner}
                   currentUserId={currentUserId}
                   isPending={isPending}
+                  isPinned={pinnedCommentIds.has(comment.id)}
                   isEditing={editingId === comment.id}
                   editContent={editContent}
                   onEditContentChange={setEditContent}
@@ -599,6 +675,9 @@ export const TaskComments = ({
                   onSaveEdit={handleSaveEdit}
                   onCancelEdit={() => setEditingId(null)}
                   onDelete={handleDelete}
+                  onReply={disabled ? undefined : setReplyToComment}
+                  onPin={disabled ? undefined : (id, next) => void handlePin(id, next)}
+                  onReplyJump={jumpToComment}
                   onOpenGallery={openGallery}
                   showActions={!disabled}
                 />
@@ -617,23 +696,81 @@ export const TaskComments = ({
         )}
 
         {canUseCommentTools && (
-          <ChatInput
-            value={content}
-            onChange={setContent}
-            isSending={isPending}
-            disabled={disabled}
-            executorId={contact?.id}
-            pendingFiles={pendingFiles}
-            onAttachFiles={addPendingFiles}
-            onRemoveFile={removePendingFile}
-            placeholder={
-              disabled
-                ? 'Комментарии недоступны'
-                : 'Написать комментарий…'
-            }
-            onSend={() => void handleCreate()}
-            isExecutorApprove={isExecutorApprove}
-          />
+          <Stack spacing={1}>
+            {replyToComment && (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'center',
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: '16px',
+                  bgcolor: 'secondary.light',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 3,
+                    alignSelf: 'stretch',
+                    borderRadius: 1,
+                    bgcolor: 'primary.main',
+                    flexShrink: 0,
+                  }}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      color: 'primary.main',
+                      display: 'block',
+                    }}
+                  >
+                    {replyToComment.actorDisplayName ||
+                      (replyToComment.authorId === currentUserId
+                        ? 'Вы'
+                        : 'Ответ')}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    noWrap
+                    color="text.secondary"
+                  >
+                    {replyToComment.content.trim() ||
+                      (replyToComment.media?.length ? 'Медиа' : 'Комментарий')}
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  aria-label="Отменить ответ"
+                  onClick={() => setReplyToComment(null)}
+                >
+                  <Close fontSize="small" />
+                </IconButton>
+              </Stack>
+            )}
+
+            <ChatInput
+              value={content}
+              onChange={setContent}
+              isSending={isPending}
+              disabled={disabled}
+              executorId={contact?.id}
+              pendingFiles={pendingFiles}
+              onAttachFiles={addPendingFiles}
+              onRemoveFile={removePendingFile}
+              placeholder={
+                disabled
+                  ? 'Комментарии недоступны'
+                  : 'Написать комментарий…'
+              }
+              onSend={() => void handleCreate()}
+              isExecutorApprove={isExecutorApprove}
+            />
+          </Stack>
         )}
       </Box>
 

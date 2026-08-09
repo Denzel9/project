@@ -2,9 +2,10 @@ import { Box, Stack, Typography, alpha } from '@mui/material';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
-import type {
-  TaskAnnulmentInitiator,
-  TaskAnnulmentStatus,
+import {
+  TASK_REQUEST_INITIATOR_LABELS,
+  type TaskAnnulmentInitiator,
+  type TaskAnnulmentStatus,
 } from '@/entities/task';
 
 export type RequestHistoryItem = {
@@ -21,12 +22,6 @@ const STATUS_LABELS: Record<TaskAnnulmentStatus, string> = {
   PENDING: 'Ожидает',
   CONFIRMED: 'Подтверждён',
   REJECTED: 'Отклонён',
-};
-
-const INITIATOR_LABELS: Record<TaskAnnulmentInitiator, string> = {
-  CUSTOMER: 'Заказчик',
-  EXECUTOR: 'Исполнитель',
-  MUTUAL: 'Договорённость сторон',
 };
 
 const STATUS_PALETTE: Record<
@@ -132,7 +127,7 @@ export const RequestHistoryListItem = ({
             locale: ru,
           })}
           {' · '}
-          Инициатор: {INITIATOR_LABELS[item.initiator]}
+          Инициатор: {TASK_REQUEST_INITIATOR_LABELS[item.initiator]}
         </Typography>
 
         {item.proposedFinalDate && (

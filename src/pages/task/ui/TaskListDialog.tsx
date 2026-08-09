@@ -81,52 +81,54 @@ export const TaskListDialog = ({
           </Typography>
         )}
 
-        {tasks.map(task => {
-          const isActive = currentTaskId === task.id;
+        <Stack spacing={1} direction='column' sx={{ overflowY: 'auto' }}>
+          {tasks.map(task => {
+            const isActive = currentTaskId === task.id;
 
-          return (
-            <Stack
-              key={task.id}
-              direction="row"
-              spacing={1.5}
-              onClick={() => handleSelect(task.id)}
-              sx={{
-                p: 1.5,
-                cursor: 'pointer',
-                borderRadius: '12px',
-                alignItems: 'center',
-                bgcolor: isActive ? 'primary.light' : 'transparent',
-                '&:hover': {
-                  bgcolor: isActive ? 'primary.light' : 'action.hover',
-                },
-              }}
-            >
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography
-                  variant="body1"
-                  noWrap
-                  sx={{
-                    fontWeight: isActive ? 600 : 500,
-                    color: isActive ? 'common.white' : 'text.primary',
-                  }}
-                >
-                  {task.title || 'Без названия'}
-                </Typography>
-              </Box>
-
-              <Chip
-                size="small"
-                color={getTaskStatusColor(task.status)}
-                label={TASK_STATUS_LABELS[task.status]}
+            return (
+              <Stack
+                key={task.id}
+                direction="row"
+                spacing={1.5}
+                onClick={() => handleSelect(task.id)}
                 sx={{
-                  height: 22,
-                  flexShrink: 0,
-                  '& .MuiChip-label': { px: 0.75, fontSize: 11 },
+                  p: 1.5,
+                  cursor: 'pointer',
+                  borderRadius: '12px',
+                  alignItems: 'center',
+                  bgcolor: isActive ? 'primary.light' : 'transparent',
+                  '&:hover': {
+                    bgcolor: isActive ? 'primary.light' : 'action.hover',
+                  },
                 }}
-              />
-            </Stack>
-          );
-        })}
+              >
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="body1"
+                    noWrap
+                    sx={{
+                      fontWeight: isActive ? 600 : 500,
+                      color: isActive ? 'common.white' : 'text.primary',
+                    }}
+                  >
+                    {task.title || 'Без названия'}
+                  </Typography>
+                </Box>
+
+                <Chip
+                  size="small"
+                  color={getTaskStatusColor(task.status)}
+                  label={TASK_STATUS_LABELS[task.status]}
+                  sx={{
+                    height: 22,
+                    flexShrink: 0,
+                    '& .MuiChip-label': { px: 0.75, fontSize: 11 },
+                  }}
+                />
+              </Stack>
+            );
+          })}
+        </Stack>
       </Box>
     </Dialog>
   );

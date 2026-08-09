@@ -171,12 +171,12 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
         );
       },
       [
-        currentUserId,
-        filterParams,
-        queryClient,
-        setSnackbarOpen,
         tasks,
         updateTask,
+        queryClient,
+        filterParams,
+        currentUserId,
+        setSnackbarOpen,
       ],
     );
 
@@ -188,15 +188,15 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
           width: '100%',
           display: 'flex',
           bgcolor: 'white',
-          borderRadius: { xs: '16px', md: '32px' },
           p: { xs: 1.5, md: 2 },
+          borderRadius: { xs: '16px', md: '24px' },
         }}
       >
         <DndProvider backend={HTML5Backend}>
           <Stack
-            ref={scrollContainerRef}
+            spacing={1}
             direction="row"
-            spacing={2}
+            ref={scrollContainerRef}
             sx={{
               pb: 1,
               flex: 1,
@@ -210,8 +210,8 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
             {columns.map(column => (
               <Box
                 key={column.status}
-                data-kanban-column={column.status}
                 sx={{ flexShrink: 0 }}
+                data-kanban-column={column.status}
               >
                 <KanbanColumn
                   column={column}

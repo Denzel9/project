@@ -29,6 +29,9 @@ export const getTaskCustomerName = (task: Task) =>
     getUserName(task.owner as Partial<User>)) ||
   [task.executor?.name, task.executor?.lastName].filter(Boolean).join(' ');
 
+export const getTaskManagerName = (task: Task) =>
+  task.assigneeDisplayName?.trim() || '';
+
 const compareStrings = (left: string, right: string) =>
   left.localeCompare(right, 'ru', { sensitivity: 'base' });
 
@@ -76,6 +79,14 @@ export const sortTasks = (
           compareStrings(
             getTaskCustomerName(left),
             getTaskCustomerName(right),
+          ) * direction
+        );
+
+      case 'manager':
+        return (
+          compareStrings(
+            getTaskManagerName(left),
+            getTaskManagerName(right),
           ) * direction
         );
 

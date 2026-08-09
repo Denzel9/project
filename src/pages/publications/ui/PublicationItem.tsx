@@ -1,16 +1,21 @@
-import { OpenInNewOutlined, ScheduleOutlined } from '@mui/icons-material';
-import { Box, Button, Chip, Divider, Stack, Typography } from '@mui/material';
-import { formatDistanceToNow } from 'date-fns';
-import { ru } from 'date-fns/locale';
-import { Link } from 'react-router';
+import {
+  LinkOutlined,
+  OpenInNewOutlined,
+  ScheduleOutlined,
+} from '@mui/icons-material'
+import { Box, Button, Chip, Divider, Stack, Typography } from '@mui/material'
+import { formatDistanceToNow } from 'date-fns'
+import { ru } from 'date-fns/locale'
+import { useState } from 'react'
+import { Link } from 'react-router'
 
-import { getPlatformChipSx, getPlatformLabel } from '@/entities/post';
+import { getPlatformChipSx, getPlatformLabel } from '@/entities/post'
 import {
   executorToUserPartial,
   UserDisplayName,
   type User,
-} from '@/entities/user';
-import { Media } from '@/widgets';
+} from '@/entities/user'
+import { Media } from '@/widgets'
 
 import {
   getPublicationGalleryMediaItems,
@@ -19,25 +24,29 @@ import {
   getPublicationPostTitle,
   getPublicationTaskPath,
   getPublicationTitle,
-} from '../model/utils';
+} from '../model/utils'
 
-import type { Publication } from '@/entities/publication';
+import { AttachPublicationLinkDialog } from './AttachPublicationLinkDialog'
+
+import type { Publication } from '@/entities/publication'
 
 type PublicationItemProps = {
-  publication: Publication;
-};
+  publication: Publication
+}
 
 export const PublicationItem = ({ publication }: PublicationItemProps) => {
-  const title = getPublicationTitle(publication);
-  const postTitle = getPublicationPostTitle(publication);
-  const postPath = getPublicationPostPath(publication);
-  const taskPath = getPublicationTaskPath(publication);
-  const mediaItems = getPublicationGalleryMediaItems(publication);
+  const [isAttachLinkOpen, setIsAttachLinkOpen] = useState(false)
+  const title = getPublicationTitle(publication)
+  const postTitle = getPublicationPostTitle(publication)
+  const postPath = getPublicationPostPath(publication)
+  const taskPath = getPublicationTaskPath(publication)
+  const mediaItems = getPublicationGalleryMediaItems(publication)
   const participantUser = publication.executor
     ? executorToUserPartial(publication.executor)
-    : (publication.owner as Partial<User>);
+    : (publication.owner as Partial<User>)
+  const externalUrl = publication.externalUrl?.trim() || null
 
-  const platformChips = getPublicationPlatforms(publication);
+  const platformChips = getPublicationPlatforms(publication)
 
   return (
     <Box
@@ -161,9 +170,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               />
             ))}
           </Stack>
-
         </Stack>
-
 
         <Box
           sx={{
@@ -184,12 +191,51 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               <ScheduleOutlined
                 sx={{ fontSize: 18, color: 'text.secondary' }}
               />
+              <Typography variant="body2" color="text.secondary">
+                Создано:
+              </Typography>
               <Typography variant="body2">
-                {formatDistanceToNow(new Date(publication.publishedAt), {
+                {formatDistanceToNow(new Date(publication.createdAt), {
                   addSuffix: true,
                   locale: ru,
                 })}
               </Typography>
+            </Stack>
+
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ flexShrink: 0 }}
+              >
+                Ссылка:
+              </Typography>
+              {externalUrl ? (
+                <Typography
+                  component="a"
+                  href={externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="body2"
+                  onClick={event => event.stopPropagation()}
+                  sx={{
+                    color: 'info.main',
+                    textDecoration: 'none',
+                    wordBreak: 'break-all',
+                    '&:hover': { color: 'primary.main' },
+                  }}
+                >
+                  {externalUrl}
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="text.disabled">
+                  не указана
+                </Typography>
+              )}
             </Stack>
 
             <Stack
@@ -217,32 +263,57 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
           <Stack
             direction="row"
             spacing={1}
-            sx={{ flexWrap: 'wrap', gap: 1 }}
+            sx={{
+              gap: 1,
+              alignItems: 'stretch',
+              flexWrap: 'nowrap',
+            }}
           >
             <Button
               component={Link}
               to={taskPath}
               variant="outlined"
               size="small"
+              sx={{ flex: 1, whiteSpace: 'nowrap' }}
             >
               К задаче
             </Button>
 
-            {publication.externalUrl && (
+            {externalUrl ? (
               <Button
-                href={publication.externalUrl}
+                href={externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="contained"
                 size="small"
                 endIcon={<OpenInNewOutlined />}
+                sx={{ flex: 1, whiteSpace: 'nowrap' }}
               >
                 Открыть публикацию
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<LinkOutlined />}
+                onClick={event => {
+                  event.stopPropagation()
+                  setIsAttachLinkOpen(true)
+                }}
+                sx={{ flex: 1, whiteSpace: 'nowrap' }}
+              >
+                Прикрепить ссылку
               </Button>
             )}
           </Stack>
         </Box>
       </Stack>
+
+      <AttachPublicationLinkDialog
+        open={isAttachLinkOpen}
+        publicationId={publication.id}
+        onClose={() => setIsAttachLinkOpen(false)}
+      />
     </Box>
-  );
-};
+  )
+}

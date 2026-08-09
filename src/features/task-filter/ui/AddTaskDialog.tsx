@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   Dialog,
+  MenuItem,
   Stack,
   Tab,
   Tabs,
@@ -22,6 +23,11 @@ import { useRequireEmailConfirmed } from '@/features';
 import { FilterAutocomplete, ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
+import {
+  EXECUTOR_UNASSIGNED_ID,
+  useExecutorPickerOptions,
+} from '../model/useExecutorPickerOptions';
+
 type AddTaskDialogProps = {
   open: boolean;
   onClose: () => void;
@@ -29,10 +35,12 @@ type AddTaskDialogProps = {
 
 export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
   const [postId, setPostId] = useState<string | null>(null);
+  const [executorId, setExecutorId] = useState(EXECUTOR_UNASSIGNED_ID);
   const [tab, setTab] = useState(0);
   const [postTitle, setPostTitle] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [newTaskId, setNewTaskId] = useState<string | undefined>(undefined);
+  const [newPostId, setNewPostId] = useState<string | undefined>(undefined);
 
   const navigate = useNavigate();
 
@@ -40,9 +48,13 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   const { data: posts, isLoading: isPostsLoading } = useMyPostOptionsQuery(open);
+  const { options: executorOptions, isLoading: isExecutorsLoading } =
+    useExecutorPickerOptions(open);
 
-  const { mutateAsync: createPost } = useCreatePostMutation();
-  const { mutateAsync: createTask } = useCreateTaskMutation();
+  const { mutateAsync: createPost, isPending: isCreatingPost } =
+    useCreatePostMutation();
+  const { mutateAsync: createTask, isPending: isCreatingTask } =
+    useCreateTaskMutation();
 
   const handleCreatePost = async () => {
     if (!requireEmailConfirmed()) return;
@@ -65,11 +77,13 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
 
     const res = await createTask({
       postId,
+      ...(executorId !== EXECUTOR_UNASSIGNED_ID && { executorId }),
     });
 
     if (res.id) {
       setSnackbarOpen(true, 'Задача успешно создана');
       setNewTaskId(res.id);
+      setNewPostId(res.postId || postId);
     }
   };
 
@@ -77,9 +91,11 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     onClose();
     setTab(0);
     setPostId(null);
+    setExecutorId(EXECUTOR_UNASSIGNED_ID);
     setPostTitle('');
     setIsPrivate(false);
     setNewTaskId(undefined);
+    setNewPostId(undefined);
   };
 
   const postOptions = useMemo(
@@ -90,6 +106,8 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
       })) ?? [],
     [posts]
   );
+
+  const isPending = isCreatingPost || isCreatingTask;
 
   return (
     <Dialog
@@ -118,23 +136,49 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
           onChange={(_, value) => setTab(value)}
           sx={{ mb: 3 }}
         >
-          <Tab label="Имеющийся пост" />
-          <Tab label="Новый пост" />
+          <Tab
+            label="Имеющийся пост"
+            disabled={isPending}
+          />
+          <Tab
+            label="Новый пост"
+            disabled={isPending}
+          />
         </Tabs>
       )}
 
       {tab === 0 && !newTaskId && (
-        <FilterAutocomplete
-          label="Объявление"
-          value={postId ?? 'all'}
-          options={postOptions}
-          loading={isPostsLoading}
-          placeholder="Выберите объявление"
-          onChange={id => setPostId(id === 'all' ? null : id)}
-        />
+        <Stack spacing={2}>
+          <FilterAutocomplete
+            label="Объявление"
+            value={postId ?? 'all'}
+            options={postOptions}
+            loading={isPostsLoading}
+            placeholder="Выберите объявление"
+            onChange={id => setPostId(id === 'all' ? null : id)}
+          />
+
+          <TextField
+            select
+            fullWidth
+            label="Исполнитель"
+            value={executorId}
+            disabled={isPending || isExecutorsLoading}
+            onChange={event => setExecutorId(event.target.value)}
+          >
+            {executorOptions.map(option => (
+              <MenuItem
+                key={option.id}
+                value={option.id}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
       )}
 
-      {tab === 1 && (
+      {tab === 1 && !newTaskId && (
         <Stack
           direction="column"
           spacing={2}
@@ -144,8 +188,28 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             fullWidth
             label="Название поста"
             value={postTitle}
+            disabled={isPending}
             onChange={e => setPostTitle(e.target.value)}
           />
+
+          <TextField
+            select
+            fullWidth
+            label="Исполнитель"
+            value={executorId}
+            disabled={isPending || isExecutorsLoading}
+            onChange={event => setExecutorId(event.target.value)}
+            helperText="Исполнитель будет назначен при создании задачи"
+          >
+            {executorOptions.map(option => (
+              <MenuItem
+                key={option.id}
+                value={option.id}
+              >
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <Stack
             direction="row"
@@ -154,6 +218,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
           >
             <Checkbox
               checked={isPrivate}
+              disabled={isPending}
               onChange={() => setIsPrivate(!isPrivate)}
             />
             <Typography
@@ -178,7 +243,8 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
         <Button
           variant="outlined"
           color="primary"
-          onClick={onClose}
+          disabled={isPending}
+          onClick={handleClose}
         >
           {newTaskId ? 'Закрыть' : 'Отменить'}
         </Button>
@@ -187,10 +253,16 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
           <Button
             variant="contained"
             color="primary"
-            onClick={tab === 0 ? handleCreateTask : handleCreatePost}
-            disabled={(!postTitle && tab === 1) || (!postId && tab === 0)}
+            loading={isPending}
+            disabled={
+              isPending ||
+              (tab === 1 ? !postTitle.trim() : !postId)
+            }
+            onClick={() =>
+              void (tab === 0 ? handleCreateTask() : handleCreatePost())
+            }
           >
-            Добавить задачу
+            {tab === 0 ? 'Добавить задачу' : 'Создать пост'}
           </Button>
         )}
 
@@ -200,7 +272,11 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             color="primary"
             onClick={() =>
               navigate(
-                `${ROUTES.TASK}/${newTaskId}?taskId=${newTaskId}&inviteId=${newTaskId}`
+                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${
+                  executorId !== EXECUTOR_UNASSIGNED_ID
+                    ? `&userId=${executorId}`
+                    : '&userId=unassigned'
+                }`
               )
             }
           >

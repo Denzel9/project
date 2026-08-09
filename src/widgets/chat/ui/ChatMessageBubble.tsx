@@ -1,9 +1,12 @@
 import { Done, DoneAll, Forward, MoreVert } from '@mui/icons-material'
 import {
   Alert,
+  Avatar,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
+  Divider,
   IconButton,
   Menu,
   MenuItem,
@@ -16,7 +19,7 @@ import { format } from 'date-fns'
 import { useMemo, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router'
 
-import { parseChatTaskTzMessage } from '@/entities/chat'
+import { parseChatTaskTzMessage, type ChatMessage } from '@/entities/chat'
 import { ROUTES, MarkdownContent } from '@/shared'
 import { ActionActorCaption } from '@/shared/ui/action-actor-caption/ActionActorCaption'
 import { FullScreenImageViewer, getMediaKind } from '@/widgets/media'
@@ -25,33 +28,29 @@ import { useIsMessageDeletable } from '../model/hooks/useIsMessageDeletable'
 
 import { ChatMediaAlbum } from './ChatMediaAlbum'
 
-import type { MessageSide } from '../model/types/types'
-import type { ChatMessageActorKind, ChatMessageMedia } from '@/entities/chat'
-
 type ChatMessageBubbleProps = {
-  messageId: string
-  senderId: string
-  actorDisplayName?: string | null
-  actorKind?: ChatMessageActorKind | null
-  createdAt: string
-  editedAt?: string | null
-  isRedirected?: boolean
+  message: ChatMessage
   currentUserId: string | null
-  text: string
-  media?: ChatMessageMedia[]
-  side: MessageSide
-  time?: string
-  isRead?: boolean
+  senderAvatar?: string | null
+  senderName?: string | null
   isPinned?: boolean
   highlight?: string
   isDeleting?: boolean
   isEditing?: boolean
   fullWidth?: boolean
   isHighlighted?: boolean
+  selectionMode?: boolean
+  selected?: boolean
+  onToggleSelect?: (messageId: string) => void
   onDelete?: (messageId: string) => void
   onEdit?: (messageId: string, content: string) => Promise<boolean>
   onForward?: (messageId: string) => void
   onPin?: (messageId: string, nextPinned: boolean) => void
+  onReply?: (message: ChatMessage) => void
+  onCopy?: (messageId: string) => void
+  onMarkUnread?: (messageId: string) => void
+  onEnterSelection?: (messageId: string) => void
+  onReplyJump?: (messageId: string) => void
 }
 
 const escapeRegExp = (value: string) =>
@@ -174,42 +173,73 @@ const MetaRow = ({
 )
 
 export const ChatMessageBubble = ({
-  messageId,
-  senderId,
-  actorDisplayName = null,
-  actorKind = null,
-  createdAt,
-  editedAt = null,
-  isRedirected = false,
+  message,
   currentUserId,
-  text,
-  media = [],
-  side,
-  time,
-  isRead = false,
+  senderAvatar = null,
+  senderName = null,
   isPinned = false,
   highlight,
   isHighlighted = false,
   isDeleting = false,
   isEditing: isSavingEdit = false,
   fullWidth = false,
+  selectionMode = false,
+  selected = false,
+  onToggleSelect,
   onDelete,
   onEdit,
   onForward,
   onPin,
+  onReply,
+  onCopy,
+  onMarkUnread,
+  onEnterSelection,
+  onReplyJump,
 }: ChatMessageBubbleProps) => {
+  const {
+    id: messageId,
+    senderId,
+    actorDisplayName = null,
+    actorKind = null,
+    createdAt,
+    editedAt = null,
+    isRedirected = false,
+    redirectedFromDisplayName = null,
+    replyToId = null,
+    replyToPreview = null,
+    replyToSenderName = null,
+    content: text,
+    media = [],
+    isRead = false,
+  } = message
+
   const navigate = useNavigate()
-  const isOutgoing = side === 'outgoing'
-  const canModify = useIsMessageDeletable(createdAt, senderId, currentUserId)
+  const isOutgoing = Boolean(currentUserId && senderId === currentUserId)
+  const time = format(new Date(createdAt), 'HH:mm')
+  const canEditByWindow = useIsMessageDeletable(createdAt, senderId, currentUserId)
   const hasText = Boolean(text.trim())
   const hasResponse = text === 'Новый отклик'
   const taskTzMessage = useMemo(() => parseChatTaskTzMessage(text), [text])
   const isTaskTzMessage = Boolean(taskTzMessage)
   const canEdit =
-    canModify && !hasResponse && !isRedirected && Boolean(onEdit)
-  const canDelete = canModify && Boolean(onDelete)
+    canEditByWindow && !hasResponse && !isRedirected && Boolean(onEdit)
+  // Hide-for-me: any message can be deleted when handler is provided
+  const canDelete = Boolean(onDelete)
   const canForward = !hasResponse && Boolean(onForward)
-  const showMenu = canEdit || canDelete || canForward || Boolean(onPin)
+  const canReply = !hasResponse && Boolean(onReply)
+  const canCopy = hasText || media.length > 0
+  const canSelect = Boolean(onEnterSelection)
+  const canMarkUnread = Boolean(onMarkUnread)
+  const showMenu =
+    !selectionMode &&
+    (canEdit ||
+      canDelete ||
+      canForward ||
+      canReply ||
+      canCopy ||
+      canSelect ||
+      canMarkUnread ||
+      Boolean(onPin))
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0)
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
@@ -264,6 +294,36 @@ export const ChatMessageBubble = ({
     onPin?.(messageId, !isPinned)
   }
 
+  const handleReply = () => {
+    handleCloseMenu()
+    onReply?.(message)
+  }
+
+  const handleCopy = async () => {
+    handleCloseMenu()
+    const payload = text.trim() || media[0]?.url || ''
+
+    if (!payload) return
+
+    try {
+      await navigator.clipboard.writeText(payload)
+    } catch {
+      // ignore clipboard failures
+    }
+
+    onCopy?.(messageId)
+  }
+
+  const handleEnterSelection = () => {
+    handleCloseMenu()
+    onEnterSelection?.(messageId)
+  }
+
+  const handleMarkUnread = () => {
+    handleCloseMenu()
+    onMarkUnread?.(messageId)
+  }
+
   const handleStartEdit = () => {
     handleCloseMenu()
     setDraftContent(text)
@@ -295,9 +355,19 @@ export const ChatMessageBubble = ({
     }
   }
 
+  const handleBubbleClick = () => {
+    if (selectionMode && onToggleSelect) {
+      onToggleSelect(messageId)
+    }
+  }
+
   const editedTimeLabel = editedAt
     ? format(new Date(editedAt), 'HH:mm')
     : null
+
+  const forwardedLabel = redirectedFromDisplayName
+    ? `Переслано от ${redirectedFromDisplayName}`
+    : 'Переслано'
 
   const actionsMenu = (
     <Menu
@@ -310,14 +380,25 @@ export const ChatMessageBubble = ({
         paper: {
           sx: {
             borderRadius: '14px',
-            minWidth: 160,
+            minWidth: 180,
             boxShadow: '0 8px 28px rgba(15, 23, 42, 0.12)',
           },
         },
       }}
     >
+      {canReply && onReply && (
+        <MenuItem onClick={handleReply}>Ответить</MenuItem>
+      )}
       {canEdit && onEdit && (
         <MenuItem onClick={handleStartEdit}>Редактировать</MenuItem>
+      )}
+      {(canReply || canEdit) &&
+        (canCopy || canSelect || canForward || onPin) && <Divider />}
+      {canCopy && (
+        <MenuItem onClick={() => void handleCopy()}>Копировать</MenuItem>
+      )}
+      {canSelect && onEnterSelection && (
+        <MenuItem onClick={handleEnterSelection}>Выбрать</MenuItem>
       )}
       {canForward && onForward && (
         <MenuItem onClick={handleForward}>Переслать</MenuItem>
@@ -327,6 +408,12 @@ export const ChatMessageBubble = ({
           {isPinned ? 'Открепить' : 'Закрепить'}
         </MenuItem>
       )}
+      {(canReply || canEdit || canCopy || canSelect || canForward || onPin) &&
+        (canMarkUnread || canDelete) && <Divider />}
+      {canMarkUnread && onMarkUnread && (
+        <MenuItem onClick={handleMarkUnread}>Пометить непрочитанным</MenuItem>
+      )}
+      {canMarkUnread && canDelete && <Divider />}
       {canDelete && onDelete && (
         <MenuItem disabled={isDeleting} onClick={handleDelete}>
           {isDeleting ? (
@@ -340,10 +427,14 @@ export const ChatMessageBubble = ({
 
   return (
     <Box
+      onClick={handleBubbleClick}
       sx={{
-        display: 'flex',
+        gap: 1,
         width: '100%',
+        display: 'flex',
+        alignItems: 'end',
         px: fullWidth ? 0 : 0.5,
+        cursor: selectionMode ? 'pointer' : 'default',
         justifyContent: fullWidth
           ? 'flex-start'
           : isOutgoing
@@ -351,11 +442,38 @@ export const ChatMessageBubble = ({
             : 'flex-start',
       }}
     >
+      {selectionMode && (
+        <Checkbox
+          checked={selected}
+          onClick={event => event.stopPropagation()}
+          onChange={() => onToggleSelect?.(messageId)}
+          size="small"
+          sx={{ mt: 1.5, p: 0.5, flexShrink: 0 }}
+        />
+      )}
+
+      {!isOutgoing && !selectionMode && (
+        <Avatar
+          alt={senderName ?? undefined}
+          src={senderAvatar ?? undefined}
+          sx={{ width: 32, height: 32, flexShrink: 0 }}
+        />
+      )}
       <Box
         sx={{
-          p: 2,
+          pt: 1,
           position: 'relative',
-          width: fullWidth ? '100%' : undefined,
+          pr: showMenu && !isEditing ? 3 : 0,
+          p: 2,
+          alignItems: 'start',
+          justifyContent: 'space-between',
+          bgcolor: isHighlighted
+            ? 'primary.light'
+            : selected
+              ? theme => alpha(theme.palette.primary.main, isOutgoing ? 0.85 : 0.12)
+              : isOutgoing
+                ? 'primary.main'
+                : theme => alpha(theme.palette.common.white, 0.96),
           maxWidth: fullWidth
             ? '100%'
             : isTaskTzMessage && hasMedia
@@ -365,25 +483,81 @@ export const ChatMessageBubble = ({
                 : hasMedia
                   ? { xs: '82%', sm: '52%' }
                   : { xs: '82%', sm: '64%' },
-          minWidth: fullWidth ? 0 : isMediaOnly ? 140 : 120,
+          minWidth: fullWidth ? 0 : 200,
           transition:
             'background-color 200ms ease, box-shadow 200ms ease',
           borderRadius: isOutgoing
             ? '18px 18px 6px 18px'
             : '18px 18px 18px 6px',
-          bgcolor: isHighlighted ? 'primary.light' : isOutgoing
-            ? 'primary.main'
-            : theme => alpha(theme.palette.common.white, 0.96),
           color: isOutgoing ? 'common.white' : 'text.primary',
           border: isOutgoing ? 'none' : '1px solid',
           borderColor: isOutgoing
             ? 'transparent'
-            : 'divider',
+            : selected
+              ? 'primary.main'
+              : 'divider',
           boxShadow: isOutgoing
             ? '0 4px 14px rgba(61, 122, 120, 0.22)'
             : '0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04)',
+
         }}
       >
+        {replyToPreview && (
+          <Box
+            onClick={event => {
+              event.stopPropagation()
+              if (replyToId) {
+                onReplyJump?.(replyToId)
+              }
+            }}
+            sx={{
+              mb: 0.75,
+              px: 1,
+              py: 0.5,
+              borderRadius: '10px',
+              borderLeft: '3px solid',
+              borderColor: isOutgoing
+                ? 'rgba(255,255,255,0.7)'
+                : 'primary.main',
+              bgcolor: isOutgoing
+                ? 'rgba(255,255,255,0.12)'
+                : 'action.hover',
+              cursor: replyToId && onReplyJump ? 'pointer' : 'default',
+            }}
+          >
+            {replyToSenderName && (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  fontWeight: 600,
+                  fontSize: '0.6875rem',
+                  lineHeight: 1.2,
+                  mb: 0.25,
+                  opacity: isOutgoing ? 0.9 : 1,
+                  color: isOutgoing ? 'common.white' : 'primary.main',
+                }}
+              >
+                {replyToSenderName}
+              </Typography>
+            )}
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                fontSize: '0.75rem',
+                lineHeight: 1.3,
+                opacity: isOutgoing ? 0.85 : 0.75,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {replyToPreview}
+            </Typography>
+          </Box>
+        )}
+
         {isRedirected && (
           <Stack
             direction="row"
@@ -393,7 +567,6 @@ export const ChatMessageBubble = ({
               mb: 0.5,
               px: isMediaOnly ? 0.75 : 0,
               pt: isMediaOnly ? 0.5 : 0,
-              pr: showMenu ? 3.5 : 0,
               opacity: isOutgoing ? 0.85 : 0.6,
             }}
           >
@@ -412,73 +585,73 @@ export const ChatMessageBubble = ({
                 fontStyle: 'italic',
               }}
             >
-              Переслано
+              {forwardedLabel}
             </Typography>
           </Stack>
         )}
 
-        {actorDisplayName && (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <Box
-              sx={{
-                mb: hasMedia || hasText ? 0.75 : 0,
-                px: isMediaOnly ? 0.75 : 0,
-                pt: isMediaOnly ? 0.35 : 0,
-                pr: showMenu ? 3.5 : 0,
-                '& .MuiTypography-root': {
-                  color: isOutgoing ? 'rgba(255,255,255,0.85)' : undefined,
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  lineHeight: 1.2,
-                },
-                '& .MuiTypography-root:first-of-type': {
-                  color: isOutgoing
-                    ? 'rgba(255,255,255,0.7)'
-                    : 'primary.main',
-                  fontWeight: 500,
-                },
-              }}
-            >
-              <ActionActorCaption
-                actor={{ actorDisplayName, actorKind }}
-                direction="row"
-                spacing={0.5}
-              />
-            </Box>
-            {showMenu && !isEditing && (
-              <>
-                <IconButton
-                  aria-label="Действия с сообщением"
-                  onClick={handleOpenMenu}
-                  size="small"
-                  sx={{
-                    zIndex: 2,
-                    width: 28,
-                    height: 28,
-                    color: isOutgoing || isMediaOnly ? 'common.white' : 'text.secondary',
-                    opacity: 0.75,
-                    '&:hover': {
-                      opacity: 1,
-                      bgcolor:
-                        isMediaOnly || isOutgoing
-                          ? 'rgba(0, 0, 0, 0.4)'
-                          : 'action.hover',
-                    },
-                  }}
-                >
-                  <MoreVert sx={{ fontSize: 16 }} />
-                </IconButton>
-                {actionsMenu}
-              </>
-            )}
-          </Stack>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: actorDisplayName ? 'space-between' : 'flex-end',
+            mb: hasMedia || hasText ? 0.75 : 0,
+            px: isMediaOnly ? 0.75 : 0,
+            pt: isMediaOnly ? 0.35 : 0,
+            '& .MuiTypography-root': {
+              color: isOutgoing ? 'rgba(255,255,255,0.85)' : undefined,
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              lineHeight: 1.2,
+            },
+            '& .MuiTypography-root:first-of-type': {
+              color: isOutgoing
+                ? 'rgba(255,255,255,0.7)'
+                : 'primary.main',
+              fontWeight: 500,
+            },
+          }}
+        >
+          <ActionActorCaption
+            actor={{ actorDisplayName, actorKind }}
+            direction="row"
+            spacing={0.5}
+          />
 
-        )}
+          {showMenu && !isEditing && (
+            <>
+              <IconButton
+                aria-label="Действия с сообщением"
+                onClick={handleOpenMenu}
+                size="small"
+                sx={{
+                  zIndex: 2,
+                  width: 28,
+                  height: 28,
+                  color: isOutgoing || isMediaOnly ? 'common.white' : 'text.secondary',
+                  opacity: 0.75,
+                  '&:hover': {
+                    opacity: 1,
+                    bgcolor:
+                      isMediaOnly || isOutgoing
+                        ? 'rgba(0, 0, 0, 0.4)'
+                        : 'action.hover',
+                  },
+                }}
+              >
+                <MoreVert sx={{ fontSize: 16 }} />
+              </IconButton>
+              {actionsMenu}
+            </>
+          )}
+        </Stack>
 
         {hasMedia && (
           <Box
             sx={{
-              mt: 2,
+              mt: actorDisplayName || replyToPreview || isRedirected ? 0 : 0,
               position: 'relative',
               mb: hasText || isEditing ? 1 : 0,
             }}
@@ -487,11 +660,11 @@ export const ChatMessageBubble = ({
 
             {showMetaOverlay && (
               <MetaRow
-                time={time}
-                editedTimeLabel={editedTimeLabel}
-                isOutgoing={isOutgoing}
-                isRead={isRead}
                 overlay
+                time={time}
+                isRead={isRead}
+                isOutgoing={isOutgoing}
+                editedTimeLabel={editedTimeLabel}
               />
             )}
           </Box>
@@ -520,7 +693,16 @@ export const ChatMessageBubble = ({
           </Stack>
         )}
 
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'start', justifyContent: 'space-between', width: '100%' }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            mt: 1,
+            width: '100%',
+            alignItems: 'start',
+            justifyContent: 'space-between',
+          }}
+        >
           {isEditing ? (
             <Stack spacing={1} sx={{ flex: 1, minWidth: 0, mt: hasMedia ? 0 : 0.25 }}>
               <TextField
@@ -598,7 +780,6 @@ export const ChatMessageBubble = ({
                     fontSize: '0.875rem',
                     lineHeight: 1.45,
                     color: isOutgoing ? 'common.white' : 'text.primary',
-                    pr: showMenu ? 2.5 : 0,
                     '& p, & li, & h1, & h2, & strong': {
                       color: isOutgoing ? 'common.white' : 'text.primary',
                     },
@@ -635,41 +816,13 @@ export const ChatMessageBubble = ({
                     lineHeight: 1.45,
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
-                    pr: showMenu && !hasMedia ? 2.5 : 0,
                     fontSize: '0.9375rem',
                   }}
                 >
                   {renderHighlightedText(text, highlight)}
                 </Typography>
               )}
-            </>
-          )}
-
-          {showMenu && !isEditing && !actorDisplayName && (
-            <>
-              <IconButton
-                aria-label="Действия с сообщением"
-                onClick={handleOpenMenu}
-                size="small"
-                sx={{
-                  zIndex: 2,
-                  width: 28,
-                  height: 28,
-                  color: isOutgoing || isMediaOnly ? 'common.white' : 'text.secondary',
-                  opacity: 0.75,
-                  '&:hover': {
-                    opacity: 1,
-                    bgcolor:
-                      isMediaOnly || isOutgoing
-                        ? 'rgba(0, 0, 0, 0.4)'
-                        : 'action.hover',
-                  },
-                }}
-              >
-                <MoreVert sx={{ fontSize: 16 }} />
-              </IconButton>
-              {actionsMenu}
-            </>
+              text              </>
           )}
         </Stack>
 

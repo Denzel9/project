@@ -45,7 +45,7 @@ export const ChatPage = () => {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [addingTaskId, setAddingTaskId] = useState<string | null>(null);
   const [addTaskError, setAddTaskError] = useState<string | null>(null);
-  const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
+  const [forwardMessageIds, setForwardMessageIds] = useState<string[]>([]);
   const [forwardError, setForwardError] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -65,14 +65,25 @@ export const ChatPage = () => {
     sendMessage,
     sendTextMessage,
     deleteMessage,
+    hideMessagesSelected,
+    markUnread,
     editMessage,
     forwardMessage,
+    replyToMessage,
+    setReplyTo,
+    clearReplyTo,
+    selectionMode,
+    selectedIds,
+    enterSelection,
+    toggleSelect,
+    exitSelection,
     pendingFiles,
     currentUserId,
     conversations,
     isSendingMedia,
     isDeletingMessage,
     deletingMessageId,
+    isHidingMessages,
     isEditingMessage,
     editingMessageId,
     isForwardingMessage,
@@ -219,43 +230,70 @@ export const ChatPage = () => {
     navigate(`${ROUTES.PROFILE}?userId=${selectedConversation?.peer?.id}`);
   };
 
-  const forwardingMessage = useMemo(
-    () => messages.find(message => message.id === forwardMessageId) ?? null,
-    [forwardMessageId, messages],
+  const forwardingMessages = useMemo(
+    () =>
+      forwardMessageIds
+        .map(id => messages.find(message => message.id === id))
+        .filter((message): message is ChatMessage => Boolean(message)),
+    [forwardMessageIds, messages],
   );
 
-  const forwardMessagePreview = forwardingMessage
-    ? getMessagePreview(
-      forwardingMessage.content,
-      forwardingMessage.media ?? [],
-      forwardingMessage.isRedirected,
-    )
-    : null;
+  const forwardMessagePreview = useMemo(() => {
+    if (!forwardingMessages.length) {
+      return null;
+    }
+
+    if (forwardingMessages.length === 1) {
+      const message = forwardingMessages[0];
+      return getMessagePreview(
+        message.content,
+        message.media ?? [],
+        message.isRedirected,
+      );
+    }
+
+    return `Выбрано сообщений: ${forwardingMessages.length}`;
+  }, [forwardingMessages]);
 
   const handleForwardMessage = useCallback((messageId: string) => {
     setForwardError(null);
-    setForwardMessageId(messageId);
+    setForwardMessageIds([messageId]);
   }, []);
+
+  const handleForwardSelected = useCallback(() => {
+    if (!selectedIds.size) {
+      return;
+    }
+
+    setForwardError(null);
+    setForwardMessageIds([...selectedIds]);
+  }, [selectedIds]);
 
   const handleConfirmForward = useCallback(
     async (peerId: string) => {
-      if (!forwardMessageId) {
+      if (!forwardMessageIds.length) {
         return false;
       }
 
       setForwardError(null);
-      const result = await forwardMessage(forwardMessageId, peerId);
+      const result = await forwardMessage(forwardMessageIds, peerId);
 
       if (!result.success) {
         setForwardError(result.error ?? 'Не удалось переслать сообщение');
         return false;
       }
 
-      setForwardMessageId(null);
-      setSnackbarOpen(true, 'Сообщение успешно переслано', 'success');
+      setForwardMessageIds([]);
+      setSnackbarOpen(
+        true,
+        forwardMessageIds.length > 1
+          ? 'Сообщения успешно пересланы'
+          : 'Сообщение успешно переслано',
+        'success',
+      );
       return true;
     },
-    [forwardMessage, forwardMessageId, setSnackbarOpen],
+    [forwardMessage, forwardMessageIds, setSnackbarOpen],
   );
 
   const showContacts = !isMobile || !mobileShowChat;
@@ -363,6 +401,7 @@ export const ChatPage = () => {
               isMobile={isMobile}
               headerTime={headerTime}
               peer={selectedConversation?.peer}
+              isNotes={selectedConversation?.isNotes}
               hasActiveTasks={canAddPhotoReport}
               hasTaskTzMessages={hasTaskTzMessages}
               isSearchOpen={isSearchOpen}
@@ -399,8 +438,20 @@ export const ChatPage = () => {
                 onDeleteMessage={messageId => void deleteMessage(messageId)}
                 onEditMessage={editMessage}
                 onForwardMessage={handleForwardMessage}
+                onReplyMessage={setReplyTo}
+                onMarkUnread={messageId => void markUnread(messageId)}
+                onEnterSelection={enterSelection}
+                onToggleSelect={toggleSelect}
+                onExitSelection={exitSelection}
+                onHideSelected={() => void hideMessagesSelected()}
+                onForwardSelected={handleForwardSelected}
+                selectionMode={selectionMode}
+                selectedIds={selectedIds}
+                replyToMessage={replyToMessage}
+                onClearReply={clearReplyTo}
                 isDeletingMessage={isDeletingMessage}
                 deletingMessageId={deletingMessageId}
+                isHidingMessages={isHidingMessages}
                 isEditingMessage={isEditingMessage}
                 editingMessageId={editingMessageId}
                 onDraftChange={setDraft}
@@ -459,13 +510,17 @@ export const ChatPage = () => {
           />
 
           <ChatForwardMessageDialog
-            open={Boolean(forwardMessageId)}
+            open={forwardMessageIds.length > 0}
             conversations={conversations}
             currentConversationId={selectedConversationId}
             currentPeerId={selectedConversation?.peer?.id}
             messagePreview={forwardMessagePreview}
             isForwarding={
-              isForwardingMessage && forwardingMessageId === forwardMessageId
+              isForwardingMessage &&
+              Boolean(
+                forwardingMessageId &&
+                  forwardMessageIds.includes(forwardingMessageId),
+              )
             }
             error={forwardError}
             onForward={handleConfirmForward}
@@ -475,7 +530,7 @@ export const ChatPage = () => {
               }
 
               setForwardError(null);
-              setForwardMessageId(null);
+              setForwardMessageIds([]);
             }}
           />
         </>

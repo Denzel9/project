@@ -5,6 +5,7 @@ import type {
   ChatMessageDeletedEvent,
   ChatMessageEditedEvent,
   ChatMessageMedia,
+  ChatMessagesHiddenEvent,
   ChatMessagesReadEvent,
 } from '@/entities/chat'
 
@@ -13,6 +14,9 @@ type SendMessagePayload = {
   content?: string
   media?: ChatMessageMedia[]
   isRedirected?: boolean
+  replyToId?: string
+  redirectedFromUserId?: string
+  redirectedFromDisplayName?: string
 }
 
 type SocketErrorPayload = {
@@ -32,6 +36,9 @@ class ChatSocketService {
     | null = null
   private onMessageDeletedCallback:
     | ((event: ChatMessageDeletedEvent) => void)
+    | null = null
+  private onMessagesHiddenCallback:
+    | ((event: ChatMessagesHiddenEvent) => void)
     | null = null
   private onMessageEditedCallback:
     | ((message: ChatMessageEditedEvent) => void)
@@ -81,6 +88,7 @@ class ChatSocketService {
     this.socket.off('message')
     this.socket.off('messages_read')
     this.socket.off('message_deleted')
+    this.socket.off('messages_hidden')
     this.socket.off('message_edited')
     this.socket.off('error')
 
@@ -94,6 +102,10 @@ class ChatSocketService {
 
     this.socket.on('message_deleted', (event: ChatMessageDeletedEvent) => {
       this.onMessageDeletedCallback?.(event)
+    })
+
+    this.socket.on('messages_hidden', (event: ChatMessagesHiddenEvent) => {
+      this.onMessagesHiddenCallback?.(event)
     })
 
     this.socket.on('message_edited', (message: ChatMessageEditedEvent) => {
@@ -149,6 +161,13 @@ class ChatSocketService {
         ...(hasContent ? { content: payload.content!.trim() } : {}),
         ...(hasMedia ? { media: payload.media } : {}),
         ...(payload.isRedirected ? { isRedirected: true } : {}),
+        ...(payload.replyToId ? { replyToId: payload.replyToId } : {}),
+        ...(payload.redirectedFromUserId
+          ? { redirectedFromUserId: payload.redirectedFromUserId }
+          : {}),
+        ...(payload.redirectedFromDisplayName
+          ? { redirectedFromDisplayName: payload.redirectedFromDisplayName }
+          : {}),
       })
     }
 
@@ -185,6 +204,10 @@ class ChatSocketService {
     this.onMessageDeletedCallback = callback
   }
 
+  onMessagesHidden(callback: (event: ChatMessagesHiddenEvent) => void) {
+    this.onMessagesHiddenCallback = callback
+  }
+
   onMessageEdited(callback: (message: ChatMessageEditedEvent) => void) {
     this.onMessageEditedCallback = callback
   }
@@ -205,6 +228,7 @@ class ChatSocketService {
     this.onMessageCallback = null
     this.onMessagesReadCallback = null
     this.onMessageDeletedCallback = null
+    this.onMessagesHiddenCallback = null
     this.onMessageEditedCallback = null
     this.onErrorCallback = null
     this.onConnectCallback = null
@@ -214,6 +238,7 @@ class ChatSocketService {
       this.socket.off('message')
       this.socket.off('messages_read')
       this.socket.off('message_deleted')
+      this.socket.off('messages_hidden')
       this.socket.off('message_edited')
       this.socket.off('error')
       this.socket.off('connect')

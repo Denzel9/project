@@ -36,6 +36,7 @@ export const EmptyBlock = ({
     <Stack
       spacing={2}
       sx={{
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
         ...sx,

@@ -146,8 +146,8 @@ export const CalendarPage = () => {
         <Grid
           size={{ xs: 12, lg: 7, xl: 8 }}
           sx={{
-            display: 'flex',
             minHeight: 0,
+            display: 'flex',
             height: { lg: 'calc(100vh - 220px)' },
             maxHeight: { lg: 'calc(100vh - 220px)' },
           }}

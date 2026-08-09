@@ -5,6 +5,7 @@ import {
   Close,
   FilterList,
   ForumOutlined,
+  OpenInNew,
   Search,
 } from '@mui/icons-material';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 
 import { useTasksWithCommentsInfiniteQuery, type Task } from '@/entities';
 import { TaskCommentComposer } from '@/pages/task/ui/comment/TaskCommentComposer';
@@ -34,6 +36,7 @@ import {
   canCommentOnTask,
   getCommentPreview,
   getDashboardTaskOptions,
+  getDashboardTaskPath,
   getTaskDisplayTitle,
   mapTaskWithCommentsItem,
 } from '../model/utils';
@@ -215,8 +218,8 @@ export const DashboardCommentsPanel = () => {
         bgcolor: 'white',
         overflow: 'hidden',
         border: '1px solid',
-        borderRadius: '32px',
-        p: { xs: 2, md: 2.5 },
+        borderRadius: '24px',
+        p: 2,
         borderColor: 'divider',
         flexDirection: 'column',
       }}
@@ -302,6 +305,36 @@ export const DashboardCommentsPanel = () => {
                   sx={{ width: 180 }}
                 />
               )}
+
+              <Tooltip
+                title={
+                  selectedItem.task.postId || selectedItem.task.post?.id
+                    ? 'Перейти в задачу'
+                    : 'Не удалось определить пост задачи'
+                }
+              >
+                <span>
+                  <IconButton
+                    component={
+                      selectedItem.task.postId || selectedItem.task.post?.id
+                        ? Link
+                        : 'button'
+                    }
+                    to={
+                      selectedItem.task.postId || selectedItem.task.post?.id
+                        ? getDashboardTaskPath(selectedItem.task)
+                        : undefined
+                    }
+                    aria-label="Перейти в задачу"
+                    disabled={
+                      !selectedItem.task.postId &&
+                      !selectedItem.task.post?.id
+                    }
+                  >
+                    <OpenInNew />
+                  </IconButton>
+                </span>
+              </Tooltip>
 
               <Tooltip title="Поиск по комментариям">
                 <IconButton

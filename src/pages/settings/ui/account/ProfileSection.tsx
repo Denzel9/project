@@ -221,6 +221,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
               multiline: true,
               fullWidth: true,
               label: 'Биография',
+              helperText: 'Переносы строк сохраняются и отображаются в профиле',
             }}
           />
         </FormBlockRowItem>

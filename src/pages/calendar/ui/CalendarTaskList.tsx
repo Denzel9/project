@@ -216,7 +216,7 @@ export const CalendarTaskList = ({
       {!isLoading && dayEvents.length === 0 && (
         <Box
           sx={{
-            flex: 1,
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -225,16 +225,9 @@ export const CalendarTaskList = ({
             px: 2,
           }}
         >
-          <EmptyBlock title="На этот день задач нет" />
+          <EmptyBlock title="На этот день задач нет" buttonText={`Перейти к ${nearestDayLabel}`} buttonOnClick={() => onSelectDate(dayjs(nearestDayKey))} />
 
-          {nearestDayKey && nearestDayLabel && (
-            <Button
-              variant="outlined"
-              onClick={() => onSelectDate(dayjs(nearestDayKey))}
-            >
-              Перейти к {nearestDayLabel}
-            </Button>
-          )}
+
         </Box>
       )}
 

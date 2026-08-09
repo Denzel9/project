@@ -3,7 +3,6 @@ import {
   Autocomplete,
   Avatar,
   Box,
-  Button,
   Chip,
   Collapse,
   IconButton,
@@ -27,6 +26,7 @@ import { useNavigate } from 'react-router';
 import {
   TASK_STATUS_LABELS,
   isTaskOverdue,
+  TaskRequestStatusIcons,
   useTasksQuery,
   type TaskStatus,
 } from '@/entities';
@@ -57,7 +57,12 @@ import {
   headerCellSx as getHeaderCellSx,
 } from '../model/styles';
 import { FILTER_AUTOCOMPLETE_SLOT_PROPS } from '../model/utils/taskTableColumnStyles';
-import { getTaskPath, getTaskTitle, sortTasks } from '../model/utils/utils';
+import {
+  getTaskManagerName,
+  getTaskPath,
+  getTaskTitle,
+  sortTasks,
+} from '../model/utils/utils';
 
 import { ColumnDateFilter } from './ColumnDateFilter';
 import { ColumnFilterButton } from './ColumnFilterButton';
@@ -385,7 +390,10 @@ export const TaskTable = ({
       setInternalPage(0);
     }
     setSortOrder(
-      field === 'title' || field === 'customer' || field === 'status'
+      field === 'title' ||
+        field === 'customer' ||
+        field === 'manager' ||
+        field === 'status'
         ? 'asc'
         : 'desc',
     );
@@ -395,7 +403,7 @@ export const TaskTable = ({
     sortField === field ? sortOrder : false;
 
   const showColumnFilters = Boolean(columnFilters) && !forPrint;
-  const showActions = !forPrint && querySource !== 'dashboard';
+  const showActions = !forPrint && querySource !== 'dashboard' && isCompany;
 
   useLayoutEffect(() => {
     const row = headerRowRef.current;
@@ -568,8 +576,7 @@ export const TaskTable = ({
               bgcolor: 'white',
               overflow: 'hidden',
               flexDirection: 'column',
-              borderRadius: { xs: '16px', md: '32px' },
-              border: theme => `1px solid ${theme.palette.secondary.main}`,
+              borderRadius: { xs: '16px', md: '24px' },
             }),
       }}
     >
@@ -604,6 +611,7 @@ export const TaskTable = ({
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.title }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.status }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.customer }} />
+            <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.manager }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.updatedAt }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.finalDate }} />
             {showActions && (
@@ -721,6 +729,20 @@ export const TaskTable = ({
               </TableCell>
 
               <TableCell
+                sortDirection={getSortDirection('manager')}
+                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
+              >
+                <TaskTableHeaderWithFilter
+                  field="manager"
+                  label="Менеджер"
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  forPrint={forPrint}
+                  onSort={handleSort}
+                />
+              </TableCell>
+
+              <TableCell
                 sortDirection={getSortDirection('updatedAt')}
                 sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}
               >
@@ -768,29 +790,7 @@ export const TaskTable = ({
                 />
               </TableCell>
 
-              {showActions && (
-                <TableCell
-                  sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.actions, {
-                    actions: true,
-                  })}
-                >
-                  {isCompany && (
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      onClick={() => setIsAddTaskOpen(true)}
-                      sx={{
-                        px: 1.5,
-                        whiteSpace: 'nowrap',
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      Добавить задачу
-                    </Button>
-                  )}
-                </TableCell>
-              )}
+              {showActions && <TableCell />}
             </TableRow>
 
             {showColumnFilters && columnFilters && (
@@ -975,6 +975,8 @@ export const TaskTable = ({
                   )}
                 </TableCell>
 
+                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)} />
+
                 <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}>
                   {renderFilterCellContent(
                     <ColumnDateFilter
@@ -1015,6 +1017,13 @@ export const TaskTable = ({
               const columnConfig = getTaskConfig(task.status);
               const statusColor = columnConfig?.color ?? 'primary';
               const overdue = isTaskOverdue(task);
+              const managerName = getTaskManagerName(task);
+              const managerInitials = managerName
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(part => part.charAt(0).toUpperCase())
+                .join('');
 
               return (
                 <TableRow
@@ -1032,11 +1041,11 @@ export const TaskTable = ({
                 >
                   <TableCell sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.title, { first: true })}>
                     <Stack
-                      spacing={0.25}
+                      spacing={1}
                       direction="row"
-                      sx={{ alignItems: 'center', minWidth: 0 }}
+                      sx={{ alignItems: 'end', }}
                     >
-                      <Stack spacing={0} sx={{ minWidth: 0, flex: 1 }}>
+                      <Stack spacing={0} sx={{ flex: 1, }}>
                         {querySource !== 'dashboard' && task.post?.title && (
                           <Typography
                             variant="caption"
@@ -1048,7 +1057,7 @@ export const TaskTable = ({
                               lineHeight: 1.2,
                             }}
                           >
-                            {task.post.title}
+                            {task.post.title?.length > 20 ? task.post.title?.slice(0, 20) + '...' : task.post.title}
                           </Typography>
                         )}
                         <Tooltip title={getTaskTitle(task)}>
@@ -1061,12 +1070,13 @@ export const TaskTable = ({
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {getTaskTitle(task)}
+                            {getTaskTitle(task)?.length > 25 ? getTaskTitle(task)?.slice(0, 25) + '...' : getTaskTitle(task)}
                             {forPrint && task.urgent ? ' (срочная)' : ''}
                           </Typography>
                         </Tooltip>
                       </Stack>
-                      {!forPrint && task.urgent && <Whatshot color="error" />}
+                      {!forPrint && task.urgent && <Whatshot color="error" sx={{ fontSize: 20 }} />}
+                      {!forPrint && <TaskRequestStatusIcons task={task} />}
                     </Stack>
                   </TableCell>
 
@@ -1122,6 +1132,38 @@ export const TaskTable = ({
                         }}
                       />
                     </Stack>
+                  </TableCell>
+
+                  <TableCell
+                    sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
+                  >
+                    {managerName ? (
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: 'center', minWidth: 0 }}
+                      >
+                        {!forPrint && (
+                          <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
+                            {managerInitials || '?'}
+                          </Avatar>
+                        )}
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          title={managerName}
+                        >
+                          {managerName}
+                        </Typography>
+                      </Stack>
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        color="info"
+                      >
+                        —
+                      </Typography>
+                    )}
                   </TableCell>
 
                   <TableCell
@@ -1196,8 +1238,6 @@ export const TaskTable = ({
           </TableBody>
         </Table>
       </TableContainer>
-
-
 
       {showPagination && (
         <TablePagination

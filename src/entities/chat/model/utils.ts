@@ -1,3 +1,6 @@
+import { format, isSameDay, isToday, isYesterday, startOfDay } from 'date-fns'
+import { ru } from 'date-fns/locale'
+
 import { validateMediaFile } from '@/shared/lib/media'
 
 import { getChatTaskTzPreview } from './taskTzMessage'
@@ -127,12 +130,16 @@ export const sortConversationsByUnread = (
   conversations: ChatConversation[],
 ): ChatConversation[] =>
   [...conversations].sort((a, b) => {
+    if (a.isNotes !== b.isNotes) {
+      return a.isNotes ? -1 : 1
+    }
+
     if (a.isPinned !== b.isPinned) {
       return a.isPinned ? -1 : 1
     }
 
-    const aHasUnread = a.unreadCount > 0
-    const bHasUnread = b.unreadCount > 0
+    const aHasUnread = a.unreadCount > 0 || Boolean(a.isMarkedUnread)
+    const bHasUnread = b.unreadCount > 0 || Boolean(b.isMarkedUnread)
 
     if (aHasUnread !== bHasUnread) {
       return aHasUnread ? -1 : 1
@@ -140,3 +147,56 @@ export const sortConversationsByUnread = (
 
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   })
+
+const capitalizeRu = (value: string) =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : value
+
+/** Чип в ленте чата: «Пятница, 26 июня» */
+export const formatChatDaySeparatorLabel = (dateInput: string | Date) => {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+
+  if (isToday(date)) return 'Сегодня'
+  if (isYesterday(date)) return 'Вчера'
+
+  return capitalizeRu(format(date, 'EEEE, d MMMM', { locale: ru }))
+}
+
+export const getChatDayKey = (dateInput: string | Date) =>
+  format(
+    startOfDay(dateInput instanceof Date ? dateInput : new Date(dateInput)),
+    'yyyy-MM-dd',
+  )
+
+export const isSameChatDay = (
+  left: string | Date,
+  right: string | Date,
+) =>
+  isSameDay(
+    left instanceof Date ? left : new Date(left),
+    right instanceof Date ? right : new Date(right),
+  )
+
+/**
+ * Сокращённый день последнего сообщения в списке диалогов:
+ * сегодня / вчера / пт / 26.06
+ */
+export const formatConversationListDayLabel = (dateInput: string | Date) => {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+
+  if (isToday(date)) return 'сегодня'
+  if (isYesterday(date)) return 'вчера'
+
+  const now = new Date()
+  const diffMs = startOfDay(now).getTime() - startOfDay(date).getTime()
+  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000))
+
+  if (diffDays > 0 && diffDays < 7) {
+    return format(date, 'EEE', { locale: ru })
+  }
+
+  if (date.getFullYear() === now.getFullYear()) {
+    return format(date, 'd MMM', { locale: ru })
+  }
+
+  return format(date, 'dd.MM.yy')
+}

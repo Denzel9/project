@@ -610,6 +610,7 @@ export const PublicationsPage = () => {
               postId={postId}
               executorId={executorId}
               viewMode={viewMode}
+              publications={visiblePublications}
               postOptions={postOptions}
               executorOptions={executorOptions}
               selectedPostOption={selectedPostOption}

@@ -108,11 +108,42 @@ export const getPublicationPostPath = (publication: Publication) =>
 
 export const getPublicationPlatforms = (publication: Publication) => [
   ...new Set(
-    (publication.deliverables ?? [])
-      .map(item => item.platform)
-      .filter(Boolean),
+    [
+      publication.platform,
+      ...(publication.deliverables ?? []).map(item => item.platform),
+    ].filter((platform): platform is NonNullable<typeof platform> =>
+      Boolean(platform),
+    ),
   ),
 ]
+
+export type PublicationLinkItem = {
+  id: string
+  title: string
+  url: string
+  platformLabel: string
+}
+
+export const getPublicationLinkItems = (
+  publications: Publication[],
+): PublicationLinkItem[] =>
+  publications.flatMap(publication => {
+    const url = publication.externalUrl?.trim()
+    if (!url) return []
+
+    const platforms = getPublicationPlatforms(publication)
+
+    return [
+      {
+        id: publication.id,
+        title: getPublicationTitle(publication),
+        url,
+        platformLabel: platforms.length
+          ? platforms.map(getPlatformLabel).join(', ')
+          : 'Площадка не указана',
+      },
+    ]
+  })
 
 export const getPublicationGalleryMediaItems = (publication: Publication) =>
   publication.media

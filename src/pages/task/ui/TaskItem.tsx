@@ -1,8 +1,6 @@
 import {
-  Avatar,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Stack,
   Typography,
@@ -15,6 +13,7 @@ import {
   useGetUserByIdQuery,
   canEditTaskFields,
   canEditTaskStatus,
+  executorToUserPartial,
   getIsCompanyAction,
   isTaskExecutor,
   isTaskOverdue,
@@ -27,8 +26,9 @@ import {
   useRejectTaskDeadlineExtensionMutation,
   type TaskStatus,
   type UpdateTaskDto,
-  type TaskAnnulmentInitiator,
+  type User,
   TASK_STATUS_ENUM,
+  TASK_REQUEST_INITIATOR_LABELS,
   TaskActivityType,
   type Task,
 } from '@/entities';
@@ -44,15 +44,18 @@ import {
   type TaskFormType,
 } from '@/features';
 import { sendTaskTzToChat } from '@/features/chat';
-import { getActionActorParts, scrollMainToTop } from '@/shared';
+import { scrollMainToTop } from '@/shared';
 import { useSnackbarStore, ContactCard } from '@/widgets';
 
 import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
 
 import { Activity } from './activity/Activity';
 import { TaskComments } from './comment/TaskComments';
+import { RequestDeadlineExtensionDialog } from './RequestDeadlineExtensionDialog';
 import { SendTzPreviewDialog } from './SendTzPreviewDialog';
 import { TaskAlertBanner } from './TaskAlertBanner';
+import { TaskAssigneeCard } from './TaskAssigneeCard';
+import { TaskPendingRequestBanner } from './TaskPendingRequestBanner';
 import { TaskResultDropzone } from './TaskResultDropzone';
 import { TaskStatusStepper } from './TaskStatusStepper';
 
@@ -65,12 +68,6 @@ const finalStatuses = [
 ];
 
 const CANCELLED_STATUSES = [TASK_STATUS_ENUM.ANNULLED] as const;
-
-const ANNULMENT_INITIATOR_LABELS: Record<TaskAnnulmentInitiator, string> = {
-  CUSTOMER: 'Заказчик',
-  EXECUTOR: 'Исполнитель',
-  MUTUAL: 'Договорённость сторон',
-};
 
 type TaskItemProps = {
   task: Task;
@@ -86,7 +83,6 @@ export const TaskItem = ({
   isPostLoading = false,
 }: TaskItemProps) => {
   const currentUserId = useAuthStore(state => state.id);
-  const accountId = useAuthStore(state => state.accountId);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -115,6 +111,7 @@ export const TaskItem = ({
   const [hiddenOverdueForTaskId, setHiddenOverdueForTaskId] = useState<
     string | null
   >(null);
+  const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
   const [activityType, setActivityType] = useState<
     TaskActivityType | undefined
   >(undefined);
@@ -187,30 +184,11 @@ export const TaskItem = ({
   const activityItems = data?.items ?? [];
   const hasMoreActivities = activityTotal > activityItems.length;
 
-  const { data: contact } = useGetUserByIdQuery(
-    (isOwner ? task?.executorId : task?.ownerId) || ''
-  );
-
-  const assignee = getActionActorParts({
-    actorDisplayName: task?.assigneeDisplayName,
-    actorKind: task?.assigneeKind,
-  });
-
-  const visibleAssignee =
-    assignee &&
-      task?.assigneeAccountId &&
-      task.assigneeAccountId !== accountId
-      ? assignee
-      : null;
-
-  const assigneeInitials = visibleAssignee?.name
-    ? visibleAssignee.name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(part => part.charAt(0).toUpperCase())
-      .join('')
-    : '?';
+  const contactUserId = (isOwner ? task?.executorId : task?.ownerId) || '';
+  const { data: contact } = useGetUserByIdQuery(contactUserId || null);
+  const resolvedContact =
+    contact?.data ??
+    (isOwner ? (executorToUserPartial(task?.executor) as User | undefined) : undefined);
 
   useEffect(() => {
     if (!task) return;
@@ -331,18 +309,18 @@ export const TaskItem = ({
     (task.annulment?.status === 'CONFIRMED' ? task.annulment : null);
   const annulmentBannerDetails = confirmedAnnulment
     ? [
-        `Инициатор: ${ANNULMENT_INITIATOR_LABELS[confirmedAnnulment.initiator]}`,
-        confirmedAnnulment.reason.trim()
-          ? `Причина: ${confirmedAnnulment.reason.trim()}`
-          : null,
-        `Дата: ${format(
-          new Date(
-            confirmedAnnulment.confirmedAt ?? confirmedAnnulment.requestedAt,
-          ),
-          'd MMMM yyyy, HH:mm',
-          { locale: ru },
-        )}`,
-      ].filter((item): item is string => Boolean(item))
+      `Инициатор: ${TASK_REQUEST_INITIATOR_LABELS[confirmedAnnulment.initiator]}`,
+      confirmedAnnulment.reason.trim()
+        ? `Причина: ${confirmedAnnulment.reason.trim()}`
+        : null,
+      `Дата: ${format(
+        new Date(
+          confirmedAnnulment.confirmedAt ?? confirmedAnnulment.requestedAt,
+        ),
+        'd MMMM yyyy, HH:mm',
+        { locale: ru },
+      )}`,
+    ].filter((item): item is string => Boolean(item))
     : undefined;
   const canRespondToAnnulment =
     Boolean(pendingAnnulment) &&
@@ -357,6 +335,13 @@ export const TaskItem = ({
     Boolean(pendingDeadlineExtension) &&
     pendingDeadlineExtension?.requestedById !== currentUserId &&
     (task.ownerId === currentUserId || task.executorId === currentUserId);
+  const canRequestDeadlineExtension = Boolean(
+    task.status !== TASK_STATUS_ENUM.ANNULLED &&
+    task.status !== TASK_STATUS_ENUM.COMPLETED &&
+    task.executorId &&
+    !pendingDeadlineExtension &&
+    (isOwner || isTaskExecutor(task, currentUserId)),
+  );
 
   const handleConfirmAnnulment = async () => {
     try {
@@ -429,133 +414,56 @@ export const TaskItem = ({
       )}
 
       {pendingAnnulment && (
-        <Box
-          sx={{
-            mb: 2,
-            bgcolor: 'info.light',
-            p: { xs: 2, md: 3 },
-            borderRadius: '24px',
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 500 }}
-          >
-            {canRespondToAnnulment
+        <TaskPendingRequestBanner
+          title={
+            canRespondToAnnulment
               ? 'Запрошено аннулирование задачи'
-              : 'Ожидается подтверждение аннулирования'}
-          </Typography>
-          {pendingAnnulment.reason && (
-            <Typography
-              variant="body2"
-              sx={{ mt: 1 }}
-            >
-              Причина: {pendingAnnulment.reason}
-            </Typography>
-          )}
-          {canRespondToAnnulment && (
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{ mt: 2 }}
-            >
-              <Button
-                variant="outlined"
-                disabled={isRejectingAnnulment || isConfirmingAnnulment}
-                onClick={() => void handleRejectAnnulment()}
-              >
-                Отклонить
-              </Button>
-              <Button
-                variant="contained"
-                loading={isConfirmingAnnulment}
-                disabled={isRejectingAnnulment || isConfirmingAnnulment}
-                onClick={() => void handleConfirmAnnulment()}
-              >
-                Подтвердить
-              </Button>
-            </Stack>
-          )}
-        </Box>
+              : 'Ожидается подтверждение аннулирования'
+          }
+          initiator={pendingAnnulment.initiator}
+          reason={pendingAnnulment.reason}
+          canRespond={canRespondToAnnulment}
+          isConfirming={isConfirmingAnnulment}
+          isRejecting={isRejectingAnnulment}
+          onConfirm={() => void handleConfirmAnnulment()}
+          onReject={() => void handleRejectAnnulment()}
+        />
       )}
 
       {pendingDeadlineExtension && (
-        <Box
-          sx={{
-            mb: 2,
-            bgcolor: 'info.light',
-            p: { xs: 2, md: 3 },
-            borderRadius: '24px',
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 500, }}
-          >
-            {canRespondToDeadlineExtension
+        <TaskPendingRequestBanner
+          title={
+            canRespondToDeadlineExtension
               ? 'Запрошен перенос дедлайна'
-              : 'Ожидается подтверждение переноса дедлайна'}
-          </Typography>
-          {pendingDeadlineExtension.proposedFinalDate && (
-            <Typography
-              variant="body2"
-              sx={{ mt: 1, }}
-            >
-              Новая дата:{' '}
-              {format(
-                new Date(pendingDeadlineExtension.proposedFinalDate),
-                'dd.MM.yyyy',
-                { locale: ru }
-              )}
-            </Typography>
-          )}
-          {pendingDeadlineExtension.reason && (
-            <Typography
-              variant="body2"
-              sx={{ mt: 1, }}
-            >
-              Причина: {pendingDeadlineExtension.reason}
-            </Typography>
-          )}
-          {canRespondToDeadlineExtension && (
-            <Stack
-              direction="row"
-              spacing={2}
-              sx={{ mt: 2 }}
-            >
-              <Button
-                variant="outlined"
-                disabled={
-                  isRejectingDeadlineExtension || isConfirmingDeadlineExtension
-                }
-                onClick={() => void handleRejectDeadlineExtension()}
-              >
-                Отклонить
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                loading={isConfirmingDeadlineExtension}
-                disabled={
-                  isRejectingDeadlineExtension || isConfirmingDeadlineExtension
-                }
-                onClick={() => void handleConfirmDeadlineExtension()}
-              >
-                Подтвердить
-              </Button>
-            </Stack>
-          )}
-        </Box>
+              : 'Ожидается подтверждение переноса дедлайна'
+          }
+          reason={pendingDeadlineExtension.reason}
+          onReject={handleRejectDeadlineExtension}
+          canRespond={canRespondToDeadlineExtension}
+          isRejecting={isRejectingDeadlineExtension}
+          onConfirm={handleConfirmDeadlineExtension}
+          isConfirming={isConfirmingDeadlineExtension}
+          initiator={pendingDeadlineExtension.initiator}
+          proposedFinalDate={pendingDeadlineExtension.proposedFinalDate}
+        />
       )}
 
       {isOverdue && !isOverdueBannerHidden && (
         <TaskAlertBanner
           message="Задача просрочена"
           onClose={() => setHiddenOverdueForTaskId(task.id)}
+          action={
+            canRequestDeadlineExtension ? (
+              <Button
+                sx={{ px: 2 }}
+                color="secondary"
+                size="small"
+                onClick={() => setIsDeadlineDialogOpen(true)}
+              >
+                Перенести дедлайн
+              </Button>
+            ) : undefined
+          }
         />
       )}
 
@@ -570,7 +478,10 @@ export const TaskItem = ({
           >
             <Stack
               spacing={1}
-              sx={{ flex: 1, minWidth: 0, width: '100%' }}
+              sx={{
+                flex: 1, minWidth: 0, width: '100%', top: { lg: 16 },
+                position: { lg: 'sticky' },
+              }}
             >
               {Boolean(
                 reportFiles.length ||
@@ -599,7 +510,7 @@ export const TaskItem = ({
                   bgcolor: 'white',
                   border: '1px solid',
                   borderRadius: '32px',
-                  p: { xs: 2.5, md: 3 },
+                  p: { xs: 2.5, md: 2 },
                   borderColor: 'divider',
                 }}
               >
@@ -635,16 +546,18 @@ export const TaskItem = ({
 
                 {(Boolean(canEditMedia || images.length || files.length)) && (
                   <Box sx={{ mb: 3 }}>
-                    {Boolean(images.length || files.length || isEdit) && <Gallery
-                      files={files}
-                      images={images}
-                      setFiles={setFiles}
-                      setImages={setImages}
-                      canUpload={canEditMedia && isEdit}
-                      setDeletedFiles={handleRemoveImage}
-                      canDeleteImage={() => canEditMedia && isEdit}
-                      onRetryPrepare={handleRetryLocal}
-                    />}
+                    {Boolean(images.length || files.length || isEdit) &&
+                      <Gallery
+                        files={files}
+                        images={images}
+                        setFiles={setFiles}
+                        setImages={setImages}
+                        canUpload={canEditMedia && isEdit}
+                        setDeletedFiles={handleRemoveImage}
+                        canDeleteImage={() => canEditMedia && isEdit}
+                        onRetryPrepare={handleRetryLocal}
+                      />
+                    }
 
                     {Boolean(files.length) && isEdit && (
                       <Stack
@@ -706,99 +619,40 @@ export const TaskItem = ({
             <Stack
               spacing={1}
               sx={{
-                width: { xs: '100%', lg: '30%' },
-                flexShrink: 0,
-                position: { lg: 'sticky' },
                 top: { lg: 16 },
+                position: { lg: 'sticky' },
+                width: { xs: '100%', lg: '30%' },
               }}
             >
-              {visibleAssignee && (
-                <Box
-                  sx={{
-                    height: 'fit-content',
-                    bgcolor: 'white',
-                    borderRadius: '32px',
-                    p: { xs: 2.5, md: 3 },
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Chip
-                    size="small"
-                    label="Ответственный"
-                    sx={{
-                      mb: 2,
-                      fontWeight: 600,
-                      bgcolor: 'info.light',
-                      color: 'primary.main',
-                    }}
-                  />
-
-                  <Stack
-                    spacing={1.25}
-                    sx={{ alignItems: 'center', textAlign: 'center' }}
-                  >
-                    <Avatar
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        fontWeight: 700,
-                        fontSize: 18,
-                        bgcolor:
-                          task.assigneeKind === 'MANAGER'
-                            ? 'primary.main'
-                            : 'info.main',
-                        color: 'common.white',
-                      }}
-                    >
-                      {assigneeInitials}
-                    </Avatar>
-
-                    {visibleAssignee.kindLabel && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          letterSpacing: 0.4,
-                          textTransform: 'uppercase',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {visibleAssignee.kindLabel}
-                      </Typography>
-                    )}
-
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: 600, lineHeight: 1.3 }}
-                    >
-                      {visibleAssignee.name}
-                    </Typography>
-                  </Stack>
-                </Box>
-              )}
+              <TaskAssigneeCard
+                taskId={task.id}
+                assigneeKind={task.assigneeKind}
+                assigneeAccountId={task.assigneeAccountId}
+                assigneeDisplayName={task.assigneeDisplayName}
+              />
 
               <ContactCard
                 withTitle
                 status={status}
                 taskId={task.id}
                 isMyPost={isOwner}
-                contact={contact?.data}
+                contact={resolvedContact}
+                isContactLoading={Boolean(contactUserId) && !resolvedContact}
                 isExecutorApprove={task.isExecutorApprove}
               />
 
               <Activity
                 total={activityTotal}
                 ownerId={task.ownerId}
-                executorId={task.executorId}
-                activityType={activityType}
                 activities={activityItems}
+                activityType={activityType}
                 hasMore={hasMoreActivities}
+                executorId={task.executorId}
+                annulments={task.annulments}
                 isLoading={isLoadingActivities}
                 setActivityType={setActivityType}
-                onLoadMore={() => setActivityLimit(prev => prev + 20)}
-                annulments={task.annulments}
                 deadlineExtensions={task.deadlineExtensions}
+                onLoadMore={() => setActivityLimit(prev => prev + 20)}
               />
             </Stack>
           </Stack>
@@ -806,12 +660,13 @@ export const TaskItem = ({
           <TaskComments
             taskId={task.id}
             isOwner={isOwner}
-            contact={contact?.data}
+            contact={resolvedContact}
             isExecutorApprove={task.isExecutorApprove}
             disabled={isCancelled || status === TASK_STATUS_ENUM.COMPLETED}
           />
         </Stack>
-      )}
+      )
+      }
 
       <SendTzPreviewDialog
         open={isSendTzPreviewOpen}
@@ -820,7 +675,14 @@ export const TaskItem = ({
         onClose={() => setIsSendTzPreviewOpen(false)}
         onConfirm={() => void handleSendTzToExecutor()}
       />
-    </Box>
+
+      <RequestDeadlineExtensionDialog
+        open={isDeadlineDialogOpen && Boolean(task.id)}
+        taskId={task.id}
+        currentFinalDate={task.finalDate}
+        onClose={() => setIsDeadlineDialogOpen(false)}
+      />
+    </Box >
   );
 };
 

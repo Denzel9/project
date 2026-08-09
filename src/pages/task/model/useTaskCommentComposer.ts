@@ -6,7 +6,10 @@ import {
   validateChatMediaFile,
 } from '@/entities';
 
-export const useTaskCommentComposer = (taskId: string) => {
+export const useTaskCommentComposer = (
+  taskId: string,
+  replyToId?: string | null
+) => {
   const [content, setContent] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isSendingMedia, setIsSendingMedia] = useState(false);
@@ -67,6 +70,7 @@ export const useTaskCommentComposer = (taskId: string) => {
         body: {
           ...(hasContent ? { content: trimmed } : { content: '' }),
           media,
+          ...(replyToId ? { replyToId } : {}),
         },
       });
 
@@ -78,7 +82,7 @@ export const useTaskCommentComposer = (taskId: string) => {
     } finally {
       setIsSendingMedia(false);
     }
-  }, [content, createComment, pendingFiles, reset, taskId]);
+  }, [content, createComment, pendingFiles, replyToId, reset, taskId]);
 
   return {
     content,

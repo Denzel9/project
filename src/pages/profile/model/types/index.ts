@@ -1,4 +1,5 @@
 export type MediaContentProps = {
+    tabValue: number;
     userId?: string;
     mediaTabValue: MediaTabValue;
 };

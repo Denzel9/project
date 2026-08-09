@@ -10,6 +10,7 @@ type TaskCommentComposerProps = {
   isExecutorApprove?: boolean | null;
   placeholder?: string;
   showCancel?: boolean;
+  replyToId?: string | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 };
@@ -20,6 +21,7 @@ export const TaskCommentComposer = ({
   isExecutorApprove,
   placeholder = 'Написать комментарий…',
   showCancel = false,
+  replyToId,
   onSuccess,
   onCancel,
 }: TaskCommentComposerProps) => {
@@ -32,7 +34,7 @@ export const TaskCommentComposer = ({
     send,
     isSending,
     error,
-  } = useTaskCommentComposer(taskId);
+  } = useTaskCommentComposer(taskId, replyToId);
 
   const handleSend = async () => {
     const success = await send();

@@ -157,7 +157,7 @@ export const FilterAutocomplete = ({
       }
       slotProps={{
         paper: {
-          sx: { borderRadius: '32px' },
+          sx: { borderRadius: '24px' },
         },
       }}
       sx={[{ minWidth: 0, }, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}

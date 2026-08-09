@@ -38,7 +38,8 @@ export const TaskStatusStepper = ({ status }: TaskStatusStepperProps) => {
         mb: 1,
         bgcolor: 'white',
         border: '1px solid',
-        p: { xs: 2, md: 3 },
+        px: { xs: 2, md: 2 },
+        py: 4,
         borderRadius: '32px',
         borderColor: 'divider',
         '& .MuiStepLabel-label': {

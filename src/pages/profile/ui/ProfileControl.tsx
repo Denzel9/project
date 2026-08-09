@@ -64,7 +64,7 @@ export const ProfileControl = ({
         p: { xs: 3, md: 4 },
         alignItems: 'start',
         border: '1px solid',
-        borderRadius: '32px',
+        borderRadius: '24px',
         mt: { xs: 2, md: 20 },
         borderColor: 'divider',
         justifyContent: 'space-between',
@@ -79,7 +79,7 @@ export const ProfileControl = ({
           value={tabValue}
           onChange={handleTabChange}
         >
-          <Tab label="Объявления" />
+          <Tab label={isCompany ? "Объявления" : 'Посты'} />
           <Tab label={isCompany ? 'О компании' : 'Обо мне'} />
           <Tab label="Контакты" />
         </Tabs>

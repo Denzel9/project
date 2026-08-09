@@ -18,38 +18,22 @@ type ContentProps = {
 export const Content = ({ tabValue, user, mediaTabValue }: ContentProps) => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
-      <Box
-        sx={{
-          display: tabValue === 0 ? 'block' : 'none',
-          height: '100%',
-        }}
-      >
-        <MediaContent
-          userId={user?.id}
-          mediaTabValue={mediaTabValue}
-        />
-      </Box>
+      <MediaContent
+        tabValue={tabValue}
+        userId={user?.id}
+        mediaTabValue={mediaTabValue}
+      />
 
-      <Box
-        sx={{
-          display: tabValue === 1 ? 'block' : 'none',
-          height: '100%',
-        }}
-      >
-        <AboutMe
-          person={user?.person}
-          aboutMe={user?.aboutMe || ''}
-        />
-      </Box>
+      <AboutMe
+        tabValue={tabValue}
+        person={user?.person}
+        aboutMe={user?.aboutMe || ''}
+      />
 
-      <Box
-        sx={{
-          display: tabValue === 2 ? 'block' : 'none',
-          height: '100%',
-        }}
-      >
-        <Contacts contacts={user?.contacts || []} />
-      </Box>
+      <Contacts
+        tabValue={tabValue}
+        contacts={user?.contacts || []}
+      />
     </Box>
   );
 };

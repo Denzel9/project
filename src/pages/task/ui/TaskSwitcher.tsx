@@ -1,7 +1,8 @@
-import { Add, Circle, ListAlt } from '@mui/icons-material';
+import { Add, Circle, } from '@mui/icons-material';
 import {
   Avatar,
   Box,
+  Button,
   Chip,
   Divider,
   IconButton,
@@ -26,6 +27,7 @@ import { useAuthStore, useRequireEmailConfirmed } from '@/features';
 import { useSnackbarStore } from '@/widgets';
 
 import { CreateTaskDialog } from './CreateTaskDialog';
+import { ExecutorListDialog } from './ExecutorListDialog';
 import { TaskListDialog } from './TaskListDialog';
 import { TaskSwitcherMoreMenu } from './TaskSwitcherMoreMenu';
 
@@ -68,6 +70,7 @@ export const TaskSwitcher = ({
   onTaskCreated,
 }: TaskSwitcherProps) => {
   const [isTaskListOpen, setIsTaskListOpen] = useState(false);
+  const [isExecutorListOpen, setIsExecutorListOpen] = useState(false);
   const [isCancelledListOpen, setIsCancelledListOpen] = useState(false);
   const [createDialogExecutorKey, setCreateDialogExecutorKey] = useState<
     string | null
@@ -85,17 +88,58 @@ export const TaskSwitcher = ({
     currentTask && !isCancelledSelected
       ? getExecutorKey(currentTask)
       : '';
-  const executorTasks = selectedExecutorKey
-    ? (groupedTasks[selectedExecutorKey] ?? [])
-    : [];
+  const executorTasks = useMemo(() => {
+    const tasks = selectedExecutorKey
+      ? (groupedTasks[selectedExecutorKey] ?? [])
+      : [];
+
+    return [...tasks].sort((a, b) => {
+      const aAwaiting = isTaskAwaitingUserAction(a, currentUserId) ? 0 : 1;
+      const bAwaiting = isTaskAwaitingUserAction(b, currentUserId) ? 0 : 1;
+
+      if (aAwaiting !== bAwaiting) {
+        return aAwaiting - bAwaiting;
+      }
+
+      const aCompleted = a.status === TASK_STATUS_ENUM.COMPLETED ? 1 : 0;
+      const bCompleted = b.status === TASK_STATUS_ENUM.COMPLETED ? 1 : 0;
+
+      if (aCompleted !== bCompleted) {
+        return aCompleted - bCompleted;
+      }
+
+      return 0;
+    });
+  }, [currentUserId, groupedTasks, selectedExecutorKey]);
+
+  const executorEntries = useMemo(
+    () =>
+      Object.entries(groupedTasks).sort(([, tasksA], [, tasksB]) =>
+        getExecutorName(tasksA[0]).localeCompare(
+          getExecutorName(tasksB[0]),
+          'ru',
+          { sensitivity: 'base' }
+        )
+      ),
+    [groupedTasks]
+  );
 
   const executorOptions = useMemo(
     () =>
-      Object.entries(groupedTasks).map(([executorKey, tasks]) => ({
+      executorEntries.map(([executorKey, tasks]) => ({
         id: executorKey,
         label: getExecutorName(tasks[0]),
       })),
-    [groupedTasks]
+    [executorEntries]
+  );
+
+  const executorListItems = useMemo(
+    () =>
+      executorEntries.map(([id, tasks]) => ({
+        id,
+        tasks,
+      })),
+    [executorEntries]
   );
 
   const handleOpenCreateDialog = (
@@ -138,13 +182,12 @@ export const TaskSwitcher = ({
   return (
     <Box
       sx={{
-        py: 1.5,
+        p: 2,
         mb: 1,
         bgcolor: 'white',
         border: '1px solid',
         borderRadius: '32px',
         borderColor: 'divider',
-        px: { xs: 1.5, md: 2 },
       }}
     >
       <Stack
@@ -163,7 +206,7 @@ export const TaskSwitcher = ({
             '&::-webkit-scrollbar': { height: 4 },
           }}
         >
-          {Object.entries(groupedTasks).map(([executorKey, tasks]) => {
+          {executorEntries.map(([executorKey, tasks]) => {
             const representative = tasks[0];
             const isSelected = selectedExecutorKey === executorKey;
 
@@ -250,6 +293,15 @@ export const TaskSwitcher = ({
             );
           })}
         </Stack>
+
+        <Button
+          size="small"
+          sx={{ px: 2 }}
+          aria-label="Список исполнителей"
+          onClick={() => setIsExecutorListOpen(true)}
+        >
+          Все исполнители
+        </Button>
 
         {Boolean(cancelledTasks.length) && (
           <>
@@ -346,23 +398,31 @@ export const TaskSwitcher = ({
                         )}
                       </Stack>
                     }
-                    sx={{ height: 32, maxWidth: '100%' }}
+                    sx={{ height: 32, maxWidth: '100%', '& .MuiChip-label': { pl: '12px', pr: '6px' } }}
                   />
                 );
               })}
             </Stack>
           )}
 
-          <Tooltip title="Список задач">
-            <IconButton
-              aria-label="Список задач"
-              onClick={() => setIsTaskListOpen(true)}
-            >
-              <ListAlt />
-            </IconButton>
-          </Tooltip>
+          <Button
+            size='small'
+            sx={{ px: 2 }}
+            aria-label="Список задач"
+            onClick={() => setIsTaskListOpen(true)}
+          >
+            Все задачи
+          </Button>
         </Stack>
       )}
+
+      <ExecutorListDialog
+        open={isExecutorListOpen}
+        executors={executorListItems}
+        currentExecutorId={selectedExecutorKey || undefined}
+        onSelectExecutor={onSelectExecutor}
+        onClose={() => setIsExecutorListOpen(false)}
+      />
 
       <TaskListDialog
         open={isTaskListOpen}

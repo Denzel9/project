@@ -58,13 +58,13 @@ export const PageLayout = ({
         sx={{
           bgcolor: 'white',
           border: '1px solid',
-          p: { xs: 2, md: 4 },
+          p: { xs: 2, md: 2 },
           alignItems: 'center',
           borderColor: 'divider',
           justifyContent: 'space-between',
-          borderTopLeftRadius: { xs: '16px', md: '32px' },
-          borderBottomLeftRadius: { xs: '16px', md: '32px' },
-          borderBottomRightRadius: { xs: '16px', md: '32px' },
+          borderTopLeftRadius: { xs: '16px', md: '24px' },
+          borderBottomLeftRadius: { xs: '16px', md: '24px' },
+          borderBottomRightRadius: { xs: '16px', md: '24px' },
           ...(isScreenHeight && { flexShrink: 0 }),
         }}
       >

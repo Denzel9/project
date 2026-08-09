@@ -97,7 +97,7 @@ export const Activity = ({
         bgcolor: 'white',
         overflow: 'hidden',
         maxHeight: '560px',
-        p: { xs: 2.5, md: 3 },
+        p: 2,
         borderRadius: '32px',
         flexDirection: 'column',
         border: '1px solid',

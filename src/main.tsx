@@ -1,9 +1,11 @@
-import { createRoot } from 'react-dom/client'
+import { Box } from '@mui/material'
 import * as Sentry from '@sentry/react'
+import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
-import { registerSW } from 'virtual:pwa-register'
 
 import './index.css'
+import { registerSW } from 'virtual:pwa-register'
+
 import App from './App.tsx'
 import { initSentry } from './shared/lib/sentry'
 import { useSnackbarStore } from './widgets/snackbar/model/store'
@@ -36,9 +38,9 @@ const updateSW = registerSW({
 createRoot(document.getElementById('root')!).render(
   <Sentry.ErrorBoundary
     fallback={
-      <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
+      <Box style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
         Что-то пошло не так. Обновите страницу или попробуйте позже.
-      </div>
+      </Box>
     }
   >
     <BrowserRouter>

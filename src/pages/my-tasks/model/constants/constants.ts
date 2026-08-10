@@ -1,6 +1,9 @@
 export const TASK_TABLE_PAGE_SIZE = 20;
 export const KANBAN_COLUMN_PAGE_SIZE = 20;
 
+/** Минимальная ширина таблицы — на узких экранах скролл, а не сжатие колонок */
+export const TASK_TABLE_MIN_WIDTH = 1040;
+
 export const TASK_TABLE_COLUMN_WIDTHS = {
   title: '20%',
   status: '10%',

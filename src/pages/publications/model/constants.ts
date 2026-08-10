@@ -2,6 +2,9 @@ export const PUBLICATION_TABLE_PAGE_SIZE = 20
 
 export const PUBLICATION_VIEW_MODE_KEY = 'publications-view-mode'
 
+/** Минимальная ширина таблицы — на узких экранах скролл, а не сжатие колонок */
+export const PUBLICATION_TABLE_MIN_WIDTH = 1040
+
 export const PUBLICATION_TABLE_COLUMN_WIDTHS = {
   title: '15%',
   post: '15%',

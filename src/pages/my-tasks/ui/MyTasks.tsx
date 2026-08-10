@@ -105,8 +105,9 @@ export const MyTasks = () => {
     }
   }, [isSearchOpen]);
 
+  // Поле поиска может быть всегда видно (mobile / table) без флага isSearchOpen
   const searchQ =
-    isSearchOpen && debouncedQuery.length >= 2 ? debouncedQuery : undefined;
+    debouncedQuery.length >= 2 ? debouncedQuery : undefined;
 
   const executorIdFromUrl = useMemo(() => {
     const value = new URLSearchParams(location.search).get('executorId');
@@ -568,6 +569,7 @@ export const MyTasks = () => {
               display: 'flex',
               bgcolor: 'white',
               border: '1px solid',
+              alignItems: 'center',
               borderRadius: '32px',
               borderColor: 'divider',
               justifyContent: 'center',

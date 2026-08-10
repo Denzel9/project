@@ -39,6 +39,7 @@ import { ColumnDateFilter } from '@/pages/my-tasks/ui/ColumnDateFilter';
 
 import {
   PUBLICATION_TABLE_COLUMN_WIDTHS,
+  PUBLICATION_TABLE_MIN_WIDTH,
   PUBLICATION_TABLE_PAGE_SIZE,
 } from '../model/constants';
 import {
@@ -298,12 +299,17 @@ export const PublicationTable = ({
               : {
                 flex: 1,
                 minHeight: 0,
+                overflow: 'auto',
               }),
           }}
         >
           <Table
             stickyHeader={!forPrint}
-            sx={{ tableLayout: 'fixed', width: '100%' }}
+            sx={{
+              tableLayout: 'fixed',
+              width: '100%',
+              ...(!forPrint && { minWidth: PUBLICATION_TABLE_MIN_WIDTH }),
+            }}
           >
             <colgroup>
               <col style={{ width: PUBLICATION_TABLE_COLUMN_WIDTHS.title }} />

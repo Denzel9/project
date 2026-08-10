@@ -1,4 +1,11 @@
-import { Chip, Stack, type SxProps, type Theme } from '@mui/material';
+import {
+  Chip,
+  MenuItem,
+  Stack,
+  TextField,
+  type SxProps,
+  type Theme,
+} from '@mui/material';
 import { useMemo } from 'react';
 
 import { getTaskStatsCount, USER_ROLE, useTaskStatsQuery } from '@/entities';
@@ -93,57 +100,102 @@ export const FastButtonGroup = ({
   const getCount = (value: FastButtonValueType) =>
     getTaskStatsCount(value, stats);
 
+  const visibleSelectOptions = fastButtonOptions.filter(value => {
+    if (value === 'urgent') return false;
+
+    const count = getCount(value);
+    return count > 0 || fastButtonValue === value;
+  });
+
   return (
-    <Stack
-      spacing={1}
-      direction="row"
-      sx={{
-        width: 'fit-content',
-        alignItems: 'center',
-        scrollbarWidth: 'none',
-        pb: { xs: 0.5, md: 0 },
-        flexWrap: { xs: 'nowrap', md: 'nowrap' },
-        overflowX: { xs: 'auto', md: 'visible' },
-        '&::-webkit-scrollbar': { display: 'none' },
-      }}
-    >
-      {primaryOptions.map((value, index) => {
-        const count = getCount(value);
-        const isActive = fastButtonValue === value;
+    <>
+      <TextField
+        select
+        size="small"
+        label="Быстрый фильтр"
+        value={fastButtonValue ?? 'all'}
+        onChange={event => {
+          const next = event.target.value;
+          setFastButtonValue(
+            next === 'all' ? null : (next as FastButtonValueType),
+          );
+        }}
+        sx={{
+          display: { xs: 'flex', md: 'none' },
+          minWidth: 160,
+          flex: 1,
+          maxWidth: 240,
+        }}
+      >
+        <MenuItem value="all">Все</MenuItem>
+        {visibleSelectOptions.map(value => {
+          const count = getCount(value);
+          const label = getFastButtonLabel(value);
 
-        if (count <= 0 && !isActive) return null;
+          return (
+            <MenuItem
+              key={value}
+              value={value}
+            >
+              {count > 0 ? `${label} · ${count}` : label}
+            </MenuItem>
+          );
+        })}
+      </TextField>
 
-        return (
-          <FastChip
-            key={value}
-            count={count}
-            label={getFastButtonLabel(value)}
-            isActive={isActive}
-            onClick={() => handleFastButtonClick(value)}
-            sx={{ ml: isSearchOpen ? (index > 0 ? '-30px !important' : 0) : 0 }}
-          />
-        );
-      })}
+      <Stack
+        spacing={1}
+        direction="row"
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          width: 'fit-content',
+          alignItems: 'center',
+          scrollbarWidth: 'none',
+          flexWrap: 'nowrap',
+          overflowX: 'visible',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        {primaryOptions.map((value, index) => {
+          const count = getCount(value);
+          const isActive = fastButtonValue === value;
 
-      {menuOptions.map((value, index) => {
-        if (value === 'urgent') return null;
+          if (count <= 0 && !isActive) return null;
 
-        const count = getCount(value);
-        const isActive = fastButtonValue === value;
+          return (
+            <FastChip
+              key={value}
+              count={count}
+              label={getFastButtonLabel(value)}
+              isActive={isActive}
+              onClick={() => handleFastButtonClick(value)}
+              sx={{
+                ml: isSearchOpen ? (index > 0 ? '-30px !important' : 0) : 0,
+              }}
+            />
+          );
+        })}
 
-        if (count <= 0 && !isActive) return null;
+        {menuOptions.map((value, index) => {
+          if (value === 'urgent') return null;
 
-        return (
-          <FastChip
-            key={value}
-            count={count}
-            label={getFastButtonLabel(value)}
-            isActive={isActive}
-            onClick={() => handleFastButtonClick(value)}
-            sx={{ ml: isSearchOpen ? '-30px !important' : 0, zIndex: index }}
-          />
-        );
-      })}
-    </Stack>
+          const count = getCount(value);
+          const isActive = fastButtonValue === value;
+
+          if (count <= 0 && !isActive) return null;
+
+          return (
+            <FastChip
+              key={value}
+              count={count}
+              label={getFastButtonLabel(value)}
+              isActive={isActive}
+              onClick={() => handleFastButtonClick(value)}
+              sx={{ ml: isSearchOpen ? '-30px !important' : 0, zIndex: index }}
+            />
+          );
+        })}
+      </Stack>
+    </>
   );
 };

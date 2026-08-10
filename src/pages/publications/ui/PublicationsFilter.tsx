@@ -1,11 +1,13 @@
 import {
   DownloadOutlined,
   PrintOutlined,
+  Tune,
 } from '@mui/icons-material'
 import {
   Button,
   Chip,
   CircularProgress,
+  Drawer,
   IconButton,
   Stack,
   Tooltip,
@@ -24,6 +26,7 @@ import { getPublicationLinkItems } from '../model/utils'
 
 import { PublicationLinksDialog } from './PublicationLinksDialog'
 import { PublicationSearchPanel } from './PublicationSearchPanel'
+import { PublicationsMobileFilter } from './PublicationsMobileFilter'
 import { PublicationViewModeToggle } from './PublicationViewModeToggle'
 
 import type {
@@ -85,6 +88,12 @@ export const PublicationsFilter = ({
   const { isScrolled, ref } = useScroll(150)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isLinksOpen, setIsLinksOpen] = useState(false)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
+
+  const isGridMode = viewMode === 'grid'
+  const isTableMode = viewMode === 'table'
+
+  const hasMobileDrawerFilters = postId !== 'all' || executorId !== 'all'
 
   const linkItems = useMemo(
     () => getPublicationLinkItems(publications),
@@ -131,7 +140,7 @@ export const PublicationsFilter = ({
             minWidth: 0,
             maxWidth: { xs: '100%', md: '50%' },
             flexWrap: { xs: 'wrap', md: 'nowrap' },
-            display: viewMode === 'table' ? 'none' : 'flex',
+            display: isTableMode ? 'none' : { xs: 'none', md: 'flex' },
             alignItems: 'center',
           }}
         >
@@ -173,9 +182,32 @@ export const PublicationsFilter = ({
           )}
         </Stack>
 
-        {viewMode === 'table' && linksButton}
+        {isGridMode && (
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              alignItems: 'center',
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {linksButton}
+            {hasActiveFilters && (
+              <Chip
+                label="Сбросить"
+                variant="outlined"
+                onClick={onResetFilters}
+                sx={{ flexShrink: 0 }}
+              />
+            )}
+          </Stack>
+        )}
 
-        {viewMode === 'table' && hasActiveFilters && (
+        {isTableMode && linksButton}
+
+        {isTableMode && hasActiveFilters && (
           <Chip
             label="Сбросить"
             variant="outlined"
@@ -190,10 +222,10 @@ export const PublicationsFilter = ({
           sx={{
             alignItems: 'center',
             flexShrink: 0,
-            ml: viewMode === 'table' && !hasActiveFilters ? 'auto' : undefined,
+            ml: isTableMode && !hasActiveFilters ? 'auto' : undefined,
           }}
         >
-          {viewMode === 'table' && tableReport && (
+          {isTableMode && tableReport && (
             <>
               <Tooltip title="Печать">
                 <IconButton
@@ -235,8 +267,54 @@ export const PublicationsFilter = ({
             viewMode={viewMode}
             onChange={onViewModeChange}
           />
+
+          {isGridMode && (
+            <IconButton
+              onClick={() => setIsMobileFilterOpen(true)}
+              sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+              color={
+                isMobileFilterOpen || hasMobileDrawerFilters
+                  ? 'primary'
+                  : 'default'
+              }
+            >
+              <Tune />
+            </IconButton>
+          )}
         </Stack>
       </Stack>
+
+      {isGridMode && (
+        <Drawer
+          anchor="right"
+          open={isMobileFilterOpen}
+          onClose={() => setIsMobileFilterOpen(false)}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': {
+              p: { xs: 2, sm: 3 },
+              width: { xs: '100%', sm: '80%' },
+            },
+          }}
+        >
+          <PublicationsMobileFilter
+            open={isMobileFilterOpen}
+            onClose={() => setIsMobileFilterOpen(false)}
+            postId={postId}
+            executorId={executorId}
+            postOptions={postOptions}
+            executorOptions={executorOptions}
+            selectedPostOption={selectedPostOption}
+            selectedExecutorOption={selectedExecutorOption}
+            isPostSearchLoading={isPostSearchLoading}
+            isExecutorSearchLoading={isExecutorSearchLoading}
+            onPostChange={onPostChange}
+            onExecutorChange={onExecutorChange}
+            onPostSearch={onPostSearch}
+            onExecutorSearch={onExecutorSearch}
+          />
+        </Drawer>
+      )}
 
       <PublicationSearchPanel
         open={isSearchOpen && isMobile}

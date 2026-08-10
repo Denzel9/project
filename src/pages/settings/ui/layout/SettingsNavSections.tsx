@@ -82,7 +82,7 @@ export const SettingsNavSections = ({
               mb: 1,
               display: 'block',
               letterSpacing: '0.08em',
-              color: 'text.secondary',
+              color: 'info',
             }}
           >
             {section.title}
@@ -102,7 +102,7 @@ export const SettingsNavSections = ({
                     mb: 0.5,
                     borderRadius: isDrawer ? 0 : '12px',
                     pl: isDrawer ? 5 : 2,
-                    color: 'text.primary',
+                    color: isDrawer ? 'info.main' : 'text.primary',
                     textDecoration: 'none',
                     bgcolor: isActive ? 'secondary.light' : 'transparent',
                     '&:hover': {

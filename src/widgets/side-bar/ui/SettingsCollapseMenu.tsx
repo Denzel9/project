@@ -59,7 +59,7 @@ export const SettingsCollapseMenu = ({
         <ListItemIcon
           sx={{
             minWidth: 40,
-            color: isSettingsActive ? 'primary.main' : 'secondary.dark',
+            color: 'info.main',
             svg: { width: 24, height: 24 },
           }}
         >
@@ -69,14 +69,14 @@ export const SettingsCollapseMenu = ({
         <ListItemText
           primary="Настройки"
           sx={{
-            color: isSettingsActive ? 'primary.main' : 'secondary.dark',
+            color: 'info.main',
           }}
         />
 
         {isOpen ? (
-          <ExpandLess sx={{ color: 'secondary.dark' }} />
+          <ExpandLess sx={{ color: 'info.main' }} />
         ) : (
-          <ExpandMore sx={{ color: 'secondary.dark' }} />
+          <ExpandMore sx={{ color: 'info.main' }} />
         )}
       </ListItemButton>
 

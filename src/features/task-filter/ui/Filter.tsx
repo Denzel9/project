@@ -20,9 +20,10 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { type Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { TASK_STATUS_LABELS } from '@/entities';
 import {
@@ -61,7 +62,10 @@ export const MyTaskFilter = ({
   tableReport?: TaskTableReportControls;
 }) => {
   const { isScrolled, ref } = useScroll(150);
+
   const isManagerAccount = useIsManagerAccount();
+
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const {
     postId,
@@ -87,6 +91,14 @@ export const MyTaskFilter = ({
     setIsSearchOpen,
     setSearchQuery,
   } = useMyTaskFilterStore();
+
+  // На mobile поле поиска всегда видно, без кнопки-тоггла —
+  // иначе isSearchOpen=false и запрос q не уходит.
+  useEffect(() => {
+    if (isMobile && !isSearchOpen) {
+      setIsSearchOpen(true);
+    }
+  }, [isMobile, isSearchOpen, setIsSearchOpen]);
 
   const { data: executorsData, isLoading: isExecutorsLoading } =
     usePartnerExecutorsQuery({ sort: 'name' }, { enabled: isCompany });
@@ -162,7 +174,11 @@ export const MyTaskFilter = ({
   ]);
 
   const hasMobileDrawerFilters =
-    status !== 'all' || postId !== 'all' || executorId !== 'all';
+    (viewMode === 'grid' && status !== 'all') ||
+    postId !== 'all' ||
+    executorId !== 'all' ||
+    updatedDate !== null ||
+    extraFilter === 'urgent';
 
   const handleResetSelectFilters = () => {
     setStatus('all');
@@ -178,6 +194,7 @@ export const MyTaskFilter = ({
 
   const isTableMode = viewMode === 'table';
   const isGridMode = viewMode === 'grid';
+  const isDrawerFilterMode = viewMode === 'grid' || viewMode === 'kanban';
 
   return (
     <>
@@ -199,7 +216,7 @@ export const MyTaskFilter = ({
       >
         {viewMode !== 'table' && <Stack
           direction="row"
-          spacing={2}
+          spacing={!['grid', 'kanban'].includes(viewMode) ? 2 : 0}
           sx={{
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -212,7 +229,7 @@ export const MyTaskFilter = ({
               alignItems: 'center',
               scrollbarWidth: 'none',
               '&::-webkit-scrollbar': { display: 'none' },
-              ...(isGridMode && { display: { xs: 'none', md: 'flex' } }),
+              ...(isDrawerFilterMode && { display: { xs: 'none', md: 'flex' } }),
             }}
           >
             {isGridMode && (
@@ -269,9 +286,9 @@ export const MyTaskFilter = ({
           <Stack
             spacing={1}
             direction="row"
-            sx={{ alignItems: 'center', justifyContent: isTableMode ? 'space-between' : 'flex-end', width: '100%' }}
+            sx={{ alignItems: 'center', justifyContent: isTableMode ? 'space-between' : 'flex-end', width: '100%', minHeight: 40 }}
           >
-            {(isSearchOpen || isTableMode) && (
+            {(isSearchOpen || isTableMode || isMobile) && (
               <TextField
                 size="small"
                 label="Поиск"
@@ -279,13 +296,13 @@ export const MyTaskFilter = ({
                 value={searchQuery}
                 onChange={event => setSearchQuery(event.target.value)}
                 sx={{
-                  width: { xs: 160, sm: 220, md: isTableMode ? 500 : 250 },
+                  width: { xs: '100%', sm: 220, md: isTableMode ? 500 : 250 },
                   transition: 'width .5s ease-in-out',
                 }}
               />
             )}
 
-            {!isTableMode && <Tooltip title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
+            {!isTableMode && <Tooltip sx={{ display: { xs: 'none', md: 'block' } }} title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
               <IconButton
                 size="small"
                 color={isSearchOpen ? 'primary' : 'default'}
@@ -299,7 +316,7 @@ export const MyTaskFilter = ({
               </IconButton>
             </Tooltip>}
 
-            {isGridMode && (
+            {isDrawerFilterMode && (
               <>
                 <IconButton
                   size="small"
@@ -331,9 +348,9 @@ export const MyTaskFilter = ({
                     onClose={() => setIsMobileFilterOpen(false)}
                     isCompany={isCompany}
                     postOptions={postOptions}
+                    showStatus={isGridMode}
                   />
                 </Drawer>
-
               </>
             )}
 
@@ -379,29 +396,41 @@ export const MyTaskFilter = ({
                   size="small"
                   color={updatedDate ? 'primary' : 'default'}
                   onClick={event => setAnchorEl(event.currentTarget)}
+                  sx={
+                    isDrawerFilterMode
+                      ? { display: { xs: 'none', md: 'inline-flex' } }
+                      : undefined
+                  }
                 >
                   <CalendarMonthOutlined fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>
 
-            {viewMode !== 'table' && <Tooltip
-              title={
-                isUrgentActive
-                  ? 'Показать все задачи'
-                  : 'Только срочные задачи'
-              }
-            >
-              <IconButton
-                size="small"
-                aria-pressed={isUrgentActive}
-                onClick={() =>
-                  setExtraFilter(isUrgentActive ? null : 'urgent')
+            {viewMode !== 'table' && (
+              <Tooltip
+                title={
+                  isUrgentActive
+                    ? 'Показать все задачи'
+                    : 'Только срочные задачи'
                 }
               >
-                <Whatshot color={isUrgentActive ? 'error' : 'action'} />
-              </IconButton>
-            </Tooltip>}
+                <IconButton
+                  size="small"
+                  aria-pressed={isUrgentActive}
+                  onClick={() =>
+                    setExtraFilter(isUrgentActive ? null : 'urgent')
+                  }
+                  sx={
+                    isDrawerFilterMode
+                      ? { display: { xs: 'none', md: 'inline-flex' } }
+                      : undefined
+                  }
+                >
+                  <Whatshot color={isUrgentActive ? 'error' : 'action'} />
+                </IconButton>
+              </Tooltip>
+            )}
           </Stack>
 
           <Stack

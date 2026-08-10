@@ -49,6 +49,7 @@ import { EmptyBlock, scrollMainToTop } from '@/shared';
 import {
   TASK_TABLE_PAGE_SIZE,
   TASK_TABLE_COLUMN_WIDTHS,
+  TASK_TABLE_MIN_WIDTH,
   COLUMN_FILTER_SEARCH_DEBOUNCE_MS,
   COLUMN_FILTER_SEARCH_MIN,
 } from '../model/constants/constants';
@@ -617,21 +618,20 @@ export const TaskTable = ({
               maxHeight: 'none',
               overflow: 'visible',
             }
-            : embedded
-              ? {
-                flex: 1,
-                minHeight: 0,
-                overflow: 'auto',
-              }
-              : {
-                flex: 1,
-                minHeight: 0,
-              }),
+            : {
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+            }),
         }}
       >
         <Table
           stickyHeader={!forPrint}
-          sx={{ tableLayout: 'fixed', width: '100%' }}
+          sx={{
+            tableLayout: 'fixed',
+            width: '100%',
+            ...(!forPrint && { minWidth: TASK_TABLE_MIN_WIDTH }),
+          }}
         >
           <colgroup>
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.title }} />

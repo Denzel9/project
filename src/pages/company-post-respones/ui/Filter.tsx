@@ -1,4 +1,9 @@
-import { CalendarMonthOutlined, DownloadOutlined, PrintOutlined, Tune } from '@mui/icons-material';
+import {
+  CalendarMonthOutlined,
+  DownloadOutlined,
+  PrintOutlined,
+  Tune,
+} from '@mui/icons-material'
 import {
   CircularProgress,
   Drawer,
@@ -8,9 +13,9 @@ import {
   Stack,
   TextField,
   Tooltip,
-} from '@mui/material';
-import { type Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
+} from '@mui/material'
+import { type Dayjs } from 'dayjs'
+import { useMemo, useState } from 'react'
 
 import {
   APPLICATION_STATUS_LABELS,
@@ -18,26 +23,27 @@ import {
   mapPartnerUserToRow,
   normalizePartnerUser,
   usePartnerApplicantsQuery,
-} from '@/entities';
-import { FilterAutocomplete, useScroll } from '@/shared';
-import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
+} from '@/entities'
+import { FilterAutocomplete, useScroll } from '@/shared'
+import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
-import { useMyPostFilterStore } from '../model/store';
+import { useMyPostFilterStore } from '../model/store'
 
-import { MyPostSideBarFilter } from './MyPostSideBarFilter';
-import { MyPostViewModeToggle } from './MyPostViewModeToggle';
+import { MyPostViewModeToggle } from './MyPostViewModeToggle'
+import { PostsResponsesMobileFilter } from './PostsResponsesMobileFilter'
 
-import type { ApplicationTableReportControls } from '../model/types';
-import type { ApplicationStatusFilter } from '../model/utils';
+import type { ApplicationTableReportControls } from '../model/types'
+import type { ApplicationStatusFilter } from '../model/utils'
 
 type MyPostFilterProps = {
-  tableReport?: ApplicationTableReportControls;
-};
+  tableReport?: ApplicationTableReportControls
+}
 
 const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
-  const { isScrolled, ref } = useScroll(150);
+  const { isScrolled, ref } = useScroll(150)
 
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
   const {
     postId,
@@ -47,71 +53,65 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
     posts,
     status,
     setStatus,
-    q,
     updatedDate,
     setUpdatedDate,
     viewMode,
-    isOpenFilter,
-    setIsOpenFilter,
-  } = useMyPostFilterStore();
+  } = useMyPostFilterStore()
 
   const { data: applicantsData, isLoading: isApplicantsLoading } =
-    usePartnerApplicantsQuery({ sort: 'name' });
+    usePartnerApplicantsQuery({ sort: 'name' })
 
   const postOptions = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, string>()
 
     posts?.items.forEach(application => {
-      const id = application.post?.id;
-      const title = application.post?.title;
+      const id = application.post?.id
+      const title = application.post?.title
 
       if (id && title) {
-        map.set(id, title);
+        map.set(id, title)
       }
-    });
+    })
 
     return Array.from(map.entries()).map(([id, title]) => ({
       id,
       label: title,
-    }));
-  }, [posts]);
+    }))
+  }, [posts])
 
   const userOptions = useMemo(() => {
     const fromApi = (applicantsData?.items ?? [])
       .map(normalizePartnerUser)
       .map(mapPartnerUserToRow)
-      .map(item => ({ id: item.id, label: item.name }));
+      .map(item => ({ id: item.id, label: item.name }))
 
-    if (fromApi.length) return fromApi;
+    if (fromApi.length) return fromApi
 
-    const map = new Map<string, string>();
+    const map = new Map<string, string>()
 
     posts?.items.forEach(application => {
-      const applicant = application.applicant;
+      const applicant = application.applicant
 
-      if (!applicant?.id) return;
+      if (!applicant?.id) return
 
-      map.set(applicant.id, getPartnerName(applicant));
-    });
+      map.set(applicant.id, getPartnerName(applicant))
+    })
 
-    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
-  }, [applicantsData?.items, posts]);
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }))
+  }, [applicantsData?.items, posts])
 
-  const hasActiveSidebarFilters =
-    status !== 'all' ||
-    postId !== 'all' ||
-    userId !== 'all' ||
-    Boolean(q.trim());
+  const hasMobileDrawerFilters =
+    status !== 'all' || postId !== 'all' || userId !== 'all'
 
   const handleDateChange = (date: Dayjs | null) => {
-    setUpdatedDate(date ? date.format('YYYY-MM-DD') : null);
-    setAnchorEl(null);
-  };
+    setUpdatedDate(date ? date.format('YYYY-MM-DD') : null)
+    setAnchorEl(null)
+  }
 
   const handleClearDate = () => {
-    setUpdatedDate(null);
-    setAnchorEl(null);
-  };
+    setUpdatedDate(null)
+    setAnchorEl(null)
+  }
 
   return (
     <>
@@ -139,6 +139,7 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
             minWidth: 0,
             mr: 2,
             alignItems: 'center',
+            display: { xs: 'none', md: 'flex' },
           }}
         >
           <TextField
@@ -193,18 +194,19 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
         <Stack
           direction="row"
           spacing={1}
-          sx={{ alignItems: 'center' }}
+          sx={{
+            alignItems: 'center',
+            flexShrink: 0,
+            width: { xs: '100%', md: 'auto' },
+            justifyContent: { xs: 'flex-end', md: 'flex-start' },
+          }}
         >
           <IconButton
-            onClick={() => setIsOpenFilter(!isOpenFilter)}
-            sx={{
-              display: { xs: 'block', md: 'none' },
-            }}
-            color={
-              isOpenFilter || hasActiveSidebarFilters ? 'primary' : 'default'
-            }
+            color={updatedDate ? 'primary' : 'default'}
+            onClick={event => setAnchorEl(event.currentTarget)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
           >
-            <Tune />
+            <CalendarMonthOutlined />
           </IconButton>
 
           {viewMode === 'table' && tableReport && (
@@ -246,6 +248,18 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
           )}
 
           <MyPostViewModeToggle />
+
+          <IconButton
+            onClick={() => setIsMobileFilterOpen(true)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+            color={
+              isMobileFilterOpen || hasMobileDrawerFilters
+                ? 'primary'
+                : 'default'
+            }
+          >
+            <Tune />
+          </IconButton>
         </Stack>
       </Stack>
 
@@ -270,20 +284,24 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
 
       <Drawer
         anchor="right"
-        open={isOpenFilter}
-        onClose={() => setIsOpenFilter(false)}
+        open={isMobileFilterOpen}
+        onClose={() => setIsMobileFilterOpen(false)}
         sx={{
+          display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            p: { xs: 2, md: 4 },
-            width: { xs: '100%', sm: '80%', md: '25%' },
-            display: { xs: 'block', md: 'none' },
+            p: { xs: 2, sm: 3 },
+            width: { xs: '100%', sm: '80%' },
           },
         }}
       >
-        <MyPostSideBarFilter />
+        <PostsResponsesMobileFilter
+          open={isMobileFilterOpen}
+          onClose={() => setIsMobileFilterOpen(false)}
+          postOptions={postOptions}
+        />
       </Drawer>
     </>
-  );
-};
+  )
+}
 
-export default MyPostFilter;
+export default MyPostFilter

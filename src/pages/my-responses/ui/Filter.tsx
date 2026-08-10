@@ -1,48 +1,57 @@
-import { CalendarMonthOutlined, Close, DownloadOutlined, PrintOutlined, Search } from '@mui/icons-material';
+import {
+  CalendarMonthOutlined,
+  Close,
+  DownloadOutlined,
+  PrintOutlined,
+  Search,
+  Tune,
+} from '@mui/icons-material'
 import {
   CircularProgress,
+  Drawer,
   IconButton,
   Popover,
   Stack,
   TextField,
   Tooltip,
-} from '@mui/material';
-import { type Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
+} from '@mui/material'
+import { type Dayjs } from 'dayjs'
+import { useMemo, useState } from 'react'
 
-import { APPLICATION_STATUS_LABELS } from '@/entities';
-import { FilterAutocomplete, useScroll } from '@/shared';
-import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
+import { APPLICATION_STATUS_LABELS } from '@/entities'
+import { FilterAutocomplete, useScroll } from '@/shared'
+import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
-import { MyResponsesViewModeToggle } from './MyResponsesViewModeToggle';
+import { MyResponsesMobileFilter } from './MyResponsesMobileFilter'
+import { MyResponsesViewModeToggle } from './MyResponsesViewModeToggle'
 
 import type {
   MyResponseTableReportControls,
   MyResponseViewMode,
-} from '../model/types';
-import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils';
+} from '../model/types'
+import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils'
 
 type CompanyOption = {
-  ownerId: string;
-  companyName: string;
-};
+  ownerId: string
+  companyName: string
+}
 
 type MyResponsesFilterProps = {
-  status: ApplicationStatusFilter;
-  companyId: CompanyFilter;
-  onStatusChange: (value: ApplicationStatusFilter) => void;
-  onCompanyChange: (value: CompanyFilter) => void;
-  updatedDate: string | null;
-  onUpdatedDateChange: (value: string | null) => void;
-  companyOptions: CompanyOption[];
-  searchQuery: string;
-  isSearchOpen: boolean;
-  onSearchQueryChange: (value: string) => void;
-  onSearchOpenChange: (open: boolean) => void;
-  viewMode: MyResponseViewMode;
-  onViewModeChange: (value: MyResponseViewMode) => void;
-  tableReport?: MyResponseTableReportControls;
-};
+  status: ApplicationStatusFilter
+  companyId: CompanyFilter
+  onStatusChange: (value: ApplicationStatusFilter) => void
+  onCompanyChange: (value: CompanyFilter) => void
+  updatedDate: string | null
+  onUpdatedDateChange: (value: string | null) => void
+  companyOptions: CompanyOption[]
+  searchQuery: string
+  isSearchOpen: boolean
+  onSearchQueryChange: (value: string) => void
+  onSearchOpenChange: (open: boolean) => void
+  viewMode: MyResponseViewMode
+  onViewModeChange: (value: MyResponseViewMode) => void
+  tableReport?: MyResponseTableReportControls
+}
 
 const MyResponsesFilter = ({
   status,
@@ -60,9 +69,10 @@ const MyResponsesFilter = ({
   onViewModeChange,
   tableReport,
 }: MyResponsesFilterProps) => {
-  const { isScrolled, ref } = useScroll(150);
+  const { isScrolled, ref } = useScroll(150)
 
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
   const statusOptions = useMemo(
     () =>
@@ -70,8 +80,8 @@ const MyResponsesFilter = ({
         id,
         label,
       })),
-    []
-  );
+    [],
+  )
 
   const companyAutocompleteOptions = useMemo(
     () =>
@@ -79,28 +89,30 @@ const MyResponsesFilter = ({
         id: ownerId,
         label: companyName,
       })),
-    [companyOptions]
-  );
+    [companyOptions],
+  )
 
   const handleDateChange = (date: Dayjs | null) => {
-    onUpdatedDateChange(date ? date.format('YYYY-MM-DD') : null);
-    setAnchorEl(null);
-  };
+    onUpdatedDateChange(date ? date.format('YYYY-MM-DD') : null)
+    setAnchorEl(null)
+  }
 
   const handleClearDate = () => {
-    onUpdatedDateChange(null);
-    setAnchorEl(null);
-  };
+    onUpdatedDateChange(null)
+    setAnchorEl(null)
+  }
 
   const handleToggleSearch = () => {
     if (isSearchOpen) {
-      onSearchOpenChange(false);
-      onSearchQueryChange('');
-      return;
+      onSearchOpenChange(false)
+      onSearchQueryChange('')
+      return
     }
 
-    onSearchOpenChange(true);
-  };
+    onSearchOpenChange(true)
+  }
+
+  const hasMobileFilters = status !== 'all' || companyId !== 'all'
 
   return (
     <>
@@ -108,22 +120,27 @@ const MyResponsesFilter = ({
         ref={ref}
         direction="row"
         sx={{
-          px: 2,
-          pb: 2,
+          p: 2,
+
+          mb: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: '24px',
           alignItems: 'center',
-          pt: isScrolled ? 4 : 1,
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
-          bgcolor: isScrolled ? 'white' : 'transparent',
-          borderBottomLeftRadius: isScrolled ? '32px' : '0',
-          borderBottomRightRadius: isScrolled ? '32px' : '0',
+          bgcolor: 'white',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
         <Stack
           spacing={2}
           direction="row"
-          sx={{ width: { xs: '90%', md: '50%' }, minWidth: 0 }}
+          sx={{
+            width: { xs: 'auto', md: '50%' },
+            minWidth: 0,
+            display: { xs: 'none', md: 'flex' },
+          }}
         >
           <FilterAutocomplete
             size="small"
@@ -154,8 +171,21 @@ const MyResponsesFilter = ({
         <Stack
           direction="row"
           spacing={1}
-          sx={{ alignItems: 'center', flexShrink: 0 }}
+          sx={{
+            alignItems: 'center',
+            flexShrink: 0,
+            width: { xs: '100%', md: 'auto' },
+            justifyContent: { xs: 'flex-end', md: 'flex-start' },
+          }}
         >
+          <IconButton
+            color={updatedDate ? 'primary' : 'default'}
+            onClick={event => setAnchorEl(event.currentTarget)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+          >
+            <CalendarMonthOutlined />
+          </IconButton>
+
           {isSearchOpen && (
             <TextField
               autoFocus
@@ -214,6 +244,16 @@ const MyResponsesFilter = ({
             viewMode={viewMode}
             onChange={onViewModeChange}
           />
+
+          <IconButton
+            onClick={() => setIsMobileFilterOpen(true)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+            color={
+              isMobileFilterOpen || hasMobileFilters ? 'primary' : 'default'
+            }
+          >
+            <Tune />
+          </IconButton>
         </Stack>
       </Stack>
 
@@ -235,8 +275,31 @@ const MyResponsesFilter = ({
           onClear={handleClearDate}
         />
       </Popover>
-    </>
-  );
-};
 
-export default MyResponsesFilter;
+      <Drawer
+        anchor="right"
+        open={isMobileFilterOpen}
+        onClose={() => setIsMobileFilterOpen(false)}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
+            width: { xs: '100%', sm: '80%' },
+          },
+        }}
+      >
+        <MyResponsesMobileFilter
+          open={isMobileFilterOpen}
+          onClose={() => setIsMobileFilterOpen(false)}
+          status={status}
+          companyId={companyId}
+          onStatusChange={onStatusChange}
+          onCompanyChange={onCompanyChange}
+          companyOptions={companyOptions}
+        />
+      </Drawer>
+    </>
+  )
+}
+
+export default MyResponsesFilter

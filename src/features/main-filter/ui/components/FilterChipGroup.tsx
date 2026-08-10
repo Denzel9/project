@@ -27,7 +27,7 @@ export const FilterChipGroup = <T extends string>({
       {label && (
         <Typography
           variant="body2"
-          color="text.secondary"
+          color='info'
         >
           {label}
         </Typography>

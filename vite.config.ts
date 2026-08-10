@@ -45,13 +45,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: [
         'Mark.png',
         'Primary.png',
         'pwa-192.png',
         'pwa-512.png',
         'robots.txt',
+        'push-handler.js',
       ],
       manifest: {
         name: 'Nikssens',
@@ -89,6 +90,8 @@ export default defineConfig({
         globIgnores: ['**/stats.html'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
+        importScripts: ['/push-handler.js'],
+        offlineGoogleAnalytics: false,
       },
       devOptions: {
         enabled: false,

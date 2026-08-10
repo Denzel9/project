@@ -320,9 +320,14 @@ export const MyTasks = () => {
 
   const isLoading = isTableView ? isTableLoading : isInfiniteLoading;
 
-  const hasMultipleTasksForOnePost = listTasks.some(
-    task => task.postId === listTasks[0]?.postId,
-  );
+  const hasMultipleTasksForOnePost = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const task of listTasks) {
+      if (!task.postId) continue
+      counts.set(task.postId, (counts.get(task.postId) ?? 0) + 1)
+    }
+    return [...counts.values()].some(count => count > 1)
+  }, [listTasks])
 
   useEffect(() => {
     if (isPrime) return;
@@ -725,6 +730,7 @@ export const MyTasks = () => {
                       tasks={printTasks}
                       paginated={false}
                       forPrint
+                      isCompany={isCompany}
                     />
                   </Box>
                 </>
@@ -733,7 +739,6 @@ export const MyTasks = () => {
           </Box>
         )}
 
-        {/* TODO PRIME: merge tasks by post */}
         <ConfirmDialog
           withButtons={false}
           isOpen={isOpenPrimeRecommendation}
@@ -746,8 +751,8 @@ export const MyTasks = () => {
             variant="body1"
             sx={{ mt: 2 }}
           >
-            Prime-аккаунт позволяет объединить задачи по одному объявлению в
-            одну.
+            С Prime задачи по одному объявлению можно вести как одну группу
+            коллабораций — удобнее, когда на пост несколько исполнителей.
           </Typography>
 
           <Stack

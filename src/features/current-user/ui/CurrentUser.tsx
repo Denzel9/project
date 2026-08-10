@@ -123,7 +123,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   if (isButton) {
     return (
       <>
-        <IconButton onClick={handleClick}>
+        <IconButton onClick={handleClick} color={'primary'}>
           <ManageAccounts />
         </IconButton>
 

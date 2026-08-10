@@ -325,7 +325,6 @@ export const FavoritePage = () => {
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          minHeight: isTableView ? 0 : undefined,
         }}
       >
         {isError && (
@@ -396,12 +395,12 @@ export const FavoritePage = () => {
           (visibleItems.length > 0 || Boolean(reportItems?.length)) && (
             <Box
               sx={{
+                gap: 1,
+                flex: 1,
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                flex: isTableView ? 1 : undefined,
                 minHeight: isTableView ? 0 : undefined,
-                gap: isTableView ? 0 : 1,
               }}
             >
               {!isTableView &&
@@ -444,23 +443,23 @@ export const FavoritePage = () => {
                 </Grid>
               )}
 
+              <FavoritesPrintHeader
+                title={printTitle}
+                total={printItems.length}
+              />
+
               {(isTableView || reportItems) && (
                 <>
-                  <FavoritesPrintHeader
-                    title={printTitle}
-                    total={printItems.length}
-                  />
+
 
                   {isTableView && (
                     <Box
                       className="print-no-print"
                       sx={{
                         flex: 1,
-                        minHeight: 0,
                         display: 'flex',
                         flexDirection: 'column',
                         width: '100%',
-                        overflow: 'hidden',
                       }}
                     >
                       <FavoritesTable

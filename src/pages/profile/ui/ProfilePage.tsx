@@ -120,7 +120,7 @@ export const ProfilePage = () => {
       >
         <Stack
           direction={{ xs: 'column', md: 'row' }}
-          spacing={{ xs: 4, md: 1 }}
+          spacing={{ xs: 3, md: 1 }}
           sx={{
             width: '100%',
             height: '100%',

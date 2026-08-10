@@ -106,7 +106,7 @@ export const Media = ({
           <BigMedia
             items={items}
             thumbsSwiper={showThumbnails ? thumbsSwiper : null}
-            handleClickOpen={handleOpenFullscreen}
+            handleClickOpen={() => isMobile ? undefined : handleOpenFullscreen()}
             onActiveIndexChange={setActiveIndex}
           />
 

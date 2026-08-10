@@ -62,7 +62,8 @@ export const PageLayout = ({
           alignItems: 'center',
           borderColor: 'divider',
           justifyContent: 'space-between',
-          borderTopLeftRadius: { xs: '16px', md: '24px' },
+          borderTopLeftRadius: { xs: 0, md: '24px' },
+          borderTopColor: { xs: 'transparent', md: 'divider' },
           borderBottomLeftRadius: { xs: '16px', md: '24px' },
           borderBottomRightRadius: { xs: '16px', md: '24px' },
           ...(isScreenHeight && { flexShrink: 0 }),
@@ -104,7 +105,6 @@ export const PageLayout = ({
           flexDirection: 'column',
           ...(isScreenHeight && {
             minHeight: 0,
-            overflow: 'hidden',
           }),
           '@media print': {
             height: 'auto',

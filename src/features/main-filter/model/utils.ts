@@ -108,7 +108,7 @@ export const sanitizePostFilterDraftForRole = (
 export const postFilterDraftToListParams = (
   draft: PostFilterDraft,
 ): Omit<PostListParams, 'page' | 'limit'> => {
-  const title = trimOptional(draft.title);
+  const q = trimOptional(draft.title);
   const urgent = parseTriState(draft.urgent);
   const createdDate = draft.createdAt || undefined;
   const deadlineDate = draft.deadline || undefined;
@@ -140,7 +140,7 @@ export const postFilterDraftToListParams = (
   const locationCity = trimOptional(location.city);
 
   return {
-    ...(title && { title }),
+    ...(q && { q }),
     ...(urgent !== undefined && { urgent }),
     ...(createdDate && { createdDate }),
     ...(draft.categories.length > 0 && { categories: draft.categories }),

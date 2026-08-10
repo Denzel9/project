@@ -4,50 +4,53 @@ import {
   DownloadOutlined,
   PrintOutlined,
   Search,
-} from '@mui/icons-material';
+  Tune,
+} from '@mui/icons-material'
 import {
   CircularProgress,
+  Drawer,
   IconButton,
   MenuItem,
   Stack,
   TextField,
   Tooltip,
-} from '@mui/material';
-import { useState } from 'react';
+} from '@mui/material'
+import { useState } from 'react'
 
-import { USER_ROLE } from '@/entities';
+import { USER_ROLE } from '@/entities'
 import {
   useDeleteFavoriteGroupMutation,
   useFavoriteGroupsQuery,
   type FavoriteGroup,
   type FavoriteType,
-} from '@/entities/favorite';
-import { useAuthStore } from '@/features';
-import { useScroll } from '@/shared';
-import { useSnackbarStore } from '@/widgets';
+} from '@/entities/favorite'
+import { useAuthStore } from '@/features'
+import { useScroll } from '@/shared'
+import { useSnackbarStore } from '@/widgets'
 
-import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog';
-import { FavoriteViewModeToggle } from './FavoriteViewModeToggle';
+import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog'
+import { FavoriteMobileFilter } from './FavoriteMobileFilter'
+import { FavoriteViewModeToggle } from './FavoriteViewModeToggle'
 
 import type {
   FavoriteTableReportControls,
   FavoriteViewMode,
-} from '../model/types';
-import type { FavoriteGroupFilter } from '../model/utils';
+} from '../model/types'
+import type { FavoriteGroupFilter } from '../model/utils'
 
 type FavoriteFilterProps = {
-  value: FavoriteGroupFilter;
-  favoriteType: FavoriteType;
-  onChange: (value: FavoriteGroupFilter) => void;
-  onTypeChange: (value: FavoriteType) => void;
-  searchQuery: string;
-  isSearchOpen: boolean;
-  onSearchQueryChange: (value: string) => void;
-  onSearchOpenChange: (open: boolean) => void;
-  viewMode: FavoriteViewMode;
-  onViewModeChange: (value: FavoriteViewMode) => void;
-  tableReport?: FavoriteTableReportControls;
-};
+  value: FavoriteGroupFilter
+  favoriteType: FavoriteType
+  onChange: (value: FavoriteGroupFilter) => void
+  onTypeChange: (value: FavoriteType) => void
+  searchQuery: string
+  isSearchOpen: boolean
+  onSearchQueryChange: (value: string) => void
+  onSearchOpenChange: (open: boolean) => void
+  viewMode: FavoriteViewMode
+  onViewModeChange: (value: FavoriteViewMode) => void
+  tableReport?: FavoriteTableReportControls
+}
 
 const FavoriteFilter = ({
   value,
@@ -62,76 +65,79 @@ const FavoriteFilter = ({
   onViewModeChange,
   tableReport,
 }: FavoriteFilterProps) => {
-  const { isScrolled, ref } = useScroll(150);
-
-  const { role } = useAuthStore();
-
-  const { setSnackbarOpen } = useSnackbarStore();
+  const { isScrolled, ref } = useScroll(150)
+  const { role } = useAuthStore()
+  const { setSnackbarOpen } = useSnackbarStore()
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
   const { data: groups, isLoading } = useFavoriteGroupsQuery(
-    favoriteType === 'POST'
-  );
+    favoriteType === 'POST',
+  )
 
   const { mutateAsync: deleteGroup, isPending } =
-    useDeleteFavoriteGroupMutation();
+    useDeleteFavoriteGroupMutation()
 
   const [groupToDelete, setGroupToDelete] = useState<FavoriteGroup | null>(
-    null
-  );
+    null,
+  )
 
   const handleDeleteSuccess = (group: FavoriteGroup) => {
     if (value === group.id) {
-      onChange('all');
+      onChange('all')
     }
 
     setSnackbarOpen?.(
       true,
       group.count > 0
         ? 'Подборка удалена. Посты остались в избранном.'
-        : 'Подборка удалена.'
-    );
-  };
+        : 'Подборка удалена.',
+    )
+  }
 
   const handleDeleteGroup = async (group: FavoriteGroup) => {
-    await deleteGroup(group.id);
-    handleDeleteSuccess(group);
-  };
+    await deleteGroup(group.id)
+    handleDeleteSuccess(group)
+  }
 
   const handleDeleteClick = async (group: FavoriteGroup) => {
     if (group.count > 0) {
-      setGroupToDelete(group);
-      return;
+      setGroupToDelete(group)
+      return
     }
 
-    await handleDeleteGroup(group);
-  };
+    await handleDeleteGroup(group)
+  }
 
   const handleConfirmDelete = async () => {
-    if (!groupToDelete) return;
+    if (!groupToDelete) return
 
-    await handleDeleteGroup(groupToDelete);
-    setGroupToDelete(null);
-  };
+    await handleDeleteGroup(groupToDelete)
+    setGroupToDelete(null)
+  }
 
   const handleTypeChange = (nextType: FavoriteType) => {
-    onTypeChange(nextType);
+    onTypeChange(nextType)
 
     if (nextType !== 'POST' && value !== 'all') {
-      onChange('all');
+      onChange('all')
     }
-  };
+  }
 
   const handleToggleSearch = () => {
     if (isSearchOpen) {
-      onSearchOpenChange(false);
-      onSearchQueryChange('');
-      return;
+      onSearchOpenChange(false)
+      onSearchQueryChange('')
+      return
     }
 
-    onSearchOpenChange(true);
-  };
+    onSearchOpenChange(true)
+  }
 
-  const isCompany = role === USER_ROLE.COMPANY;
+  const isCompany = role === USER_ROLE.COMPANY
+  const hasMobileFilters =
+    Boolean(searchQuery.trim()) ||
+    favoriteType !== 'POST' ||
+    value !== 'all'
 
   return (
     <>
@@ -154,19 +160,18 @@ const FavoriteFilter = ({
         <Stack
           direction="row"
           spacing={1}
-          sx={{ width: { xs: '100%', md: '50%' }, minWidth: 0 }}
+          sx={{
+            width: { xs: '100%', md: '50%' },
+            minWidth: 0,
+            display: { xs: 'none', md: 'flex' },
+          }}
         >
           <TextField
             select
             size="small"
             label="Категория"
             value={favoriteType}
-            sx={{
-              width: {
-                xs: '100%',
-                md: '50%',
-              },
-            }}
+            sx={{ width: { md: '50%' } }}
             onChange={e => handleTypeChange(e.target.value as FavoriteType)}
           >
             <MenuItem value="POST">Посты</MenuItem>
@@ -182,7 +187,7 @@ const FavoriteFilter = ({
               value={value}
               label="Подборки"
               disabled={isLoading}
-              sx={{ width: { xs: '100%', md: '50%' } }}
+              sx={{ width: { md: '50%' } }}
               onChange={e => onChange(e.target.value as FavoriteGroupFilter)}
             >
               <MenuItem value="all">Все</MenuItem>
@@ -206,8 +211,8 @@ const FavoriteFilter = ({
                     disabled={isPending}
                     onMouseDown={e => e.stopPropagation()}
                     onClick={e => {
-                      e.stopPropagation();
-                      void handleDeleteClick(group);
+                      e.stopPropagation()
+                      void handleDeleteClick(group)
                     }}
                   >
                     <Delete fontSize="small" />
@@ -221,7 +226,12 @@ const FavoriteFilter = ({
         <Stack
           direction="row"
           spacing={1}
-          sx={{ alignItems: 'center', flexShrink: 0 }}
+          sx={{
+            alignItems: 'center',
+            flexShrink: 0,
+            width: { xs: '100%', md: 'auto' },
+            justifyContent: { xs: 'flex-end', md: 'flex-start' },
+          }}
         >
           {isSearchOpen && (
             <TextField
@@ -231,15 +241,21 @@ const FavoriteFilter = ({
               variant="outlined"
               value={searchQuery}
               onChange={event => onSearchQueryChange(event.target.value)}
-              sx={{ width: { xs: 160, sm: 220, md: 300 } }}
+              sx={{
+                width: { xs: 160, sm: 220, md: 300 },
+                display: { xs: 'none', md: 'block' },
+              }}
             />
           )}
 
-          <IconButton onClick={handleToggleSearch}>
+          <IconButton
+            onClick={handleToggleSearch}
+            sx={{ display: { xs: 'none', md: 'inline-flex' } }}
+          >
             {isSearchOpen ? <Close /> : <Search />}
           </IconButton>
 
-          {viewMode === 'table' && tableReport && (
+          {tableReport && (
             <>
               <Tooltip title="Печать">
                 <IconButton
@@ -281,6 +297,16 @@ const FavoriteFilter = ({
             viewMode={viewMode}
             onChange={onViewModeChange}
           />
+
+          <IconButton
+            onClick={() => setIsMobileFilterOpen(true)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+            color={
+              isMobileFilterOpen || hasMobileFilters ? 'primary' : 'default'
+            }
+          >
+            <Tune />
+          </IconButton>
         </Stack>
       </Stack>
 
@@ -290,8 +316,35 @@ const FavoriteFilter = ({
         onClose={() => setGroupToDelete(null)}
         onConfirm={() => void handleConfirmDelete()}
       />
-    </>
-  );
-};
 
-export default FavoriteFilter;
+      <Drawer
+        anchor="right"
+        open={isMobileFilterOpen}
+        onClose={() => setIsMobileFilterOpen(false)}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
+            width: { xs: '100%', sm: '80%' },
+          },
+        }}
+      >
+        <FavoriteMobileFilter
+          open={isMobileFilterOpen}
+          onClose={() => setIsMobileFilterOpen(false)}
+          value={value}
+          favoriteType={favoriteType}
+          onChange={onChange}
+          onTypeChange={onTypeChange}
+          searchQuery={searchQuery}
+          onSearchQueryChange={value => {
+            onSearchOpenChange(Boolean(value.trim()))
+            onSearchQueryChange(value)
+          }}
+        />
+      </Drawer>
+    </>
+  )
+}
+
+export default FavoriteFilter

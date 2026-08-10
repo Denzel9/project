@@ -15,7 +15,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { BASE_COLOR } from '@/app/index';
 import { usePostApplicationsQuery } from '@/entities/application';
-import { getApplicationsCountLabel, POST_STATUS_ENUM } from '@/entities/post';
+import { getApplicationsCountLabel, POST_STATUS_ENUM, formatPostLocation } from '@/entities/post';
 import { UserDisplayName, UserStatsRow, type User } from '@/entities/user';
 import { ROUTES, ShareButton } from '@/shared/index';
 import { Media } from '@/widgets';
@@ -123,7 +123,7 @@ const PostItem = ({
           width: '100%',
           display: 'flex',
           alignItems: 'start',
-          p: { xs: 3, md: 0 },
+          p: { xs: 2, md: 0 },
           flexDirection: 'column',
           justifyContent: 'space-between',
         }}
@@ -279,15 +279,20 @@ const PostItem = ({
               )}
             </Typography>
 
-            {/* // TODO: Add location !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              {typeof item === 'number' && item % 2 === 0 && (
+            {(() => {
+              const locationLabel = formatPostLocation(post.location)
+              if (!locationLabel || locationLabel === '—') return null
+
+              return (
                 <Typography
-                  variant="body1"
-                  sx={{ mt: 4 }}
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 2 }}
                 >
-                  Moscow, Russia
+                  {locationLabel}
                 </Typography>
-              )} */}
+              )
+            })()}
           </Box>
         </Box>
 

@@ -246,7 +246,7 @@ export const DashboardUpcomingTasksTable = ({
         sx={{
           mb: 1.5,
           justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
+          alignItems: 'center',
         }}
       >
         <Stack
@@ -270,28 +270,24 @@ export const DashboardUpcomingTasksTable = ({
             <AssignmentOutlined fontSize="small" />
           </Box>
 
-          <Stack
-            spacing={0}
-            sx={{ minWidth: 0 }}
-          >
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
-            >
-              <Typography variant="h6">Текущие задачи</Typography>
 
-              {!listState.isLoading &&
-                !listState.isError &&
-                listState.total > 0 && (
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={String(listState.total)}
-                    sx={{ display: { xs: 'none', md: 'flex' } }}
-                  />
-                )}
-            </Stack>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
+          >
+            <Typography variant="h6">Текущие задачи</Typography>
+
+            {!listState.isLoading &&
+              !listState.isError &&
+              listState.total > 0 && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={String(listState.total)}
+                  sx={{ display: { xs: 'none', md: 'flex' } }}
+                />
+              )}
           </Stack>
         </Stack>
 

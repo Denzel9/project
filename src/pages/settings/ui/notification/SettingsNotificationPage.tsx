@@ -6,6 +6,7 @@ import {
   Collapse,
   FormControlLabel,
   Stack,
+  Switch,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,6 +16,12 @@ import {
   NOTIFICATION_TYPE,
   type NotificationType,
 } from '@/entities/notification';
+import {
+  disableWebPush,
+  enableWebPush,
+  usePushStatusQuery,
+  usePushVapidQuery,
+} from '@/entities/push';
 import { USER_ROLE } from '@/entities/user';
 import {
   useUpdateUserConfigMutation,
@@ -230,6 +237,12 @@ export const SettingsNotificationPage = () => {
   const { isAuth, role } = useAuthStore();
   const { setSnackbarOpen } = useSnackbarStore();
   const isManager = role === USER_ROLE.MANAGER;
+  const [pushPending, setPushPending] = useState(false);
+
+  const { data: vapid } = usePushVapidQuery({ enabled: isAuth });
+  const { data: pushStatus, refetch: refetchPushStatus } = usePushStatusQuery({
+    enabled: isAuth,
+  });
 
   const visibleGroups = useMemo(
     () =>
@@ -367,6 +380,45 @@ export const SettingsNotificationPage = () => {
       >
         Уведомления
       </Typography>
+
+      {vapid?.enabled && (
+        <SettingsRow
+          title="Push в браузере"
+          description="Системные уведомления, когда вкладка закрыта. Типы совпадают с «В приложении»."
+          action={
+            <Switch
+              checked={Boolean(pushStatus?.subscribed)}
+              disabled={pushPending}
+              onChange={async (_, checked) => {
+                setPushPending(true);
+                try {
+                  if (checked) {
+                    if (!vapid.publicKey) {
+                      throw new Error('VAPID ключ не настроен');
+                    }
+                    await enableWebPush(vapid.publicKey);
+                    setSnackbarOpen(true, 'Push-уведомления включены', 'success');
+                  } else {
+                    await disableWebPush();
+                    setSnackbarOpen(true, 'Push-уведомления выключены', 'info');
+                  }
+                  await refetchPushStatus();
+                } catch (error) {
+                  setSnackbarOpen(
+                    true,
+                    error instanceof Error
+                      ? error.message
+                      : 'Не удалось изменить push',
+                    'error',
+                  );
+                } finally {
+                  setPushPending(false);
+                }
+              }}
+            />
+          }
+        />
+      )}
 
       <ChannelSection
         title="В приложении"

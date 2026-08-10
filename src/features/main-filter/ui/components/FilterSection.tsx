@@ -17,6 +17,7 @@ export const FilterSection = ({
     {title && (
       <Typography
         variant="subtitle1"
+        color="info"
         sx={{ mb: description ? 0.5 : 1.5, fontWeight: 600 }}
       >
         {title}

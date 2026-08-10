@@ -2,6 +2,7 @@ import {
   CalendarMonthOutlined,
   Close,
   Search,
+  Tune,
   ViewColumn,
   Whatshot,
 } from '@mui/icons-material';
@@ -10,6 +11,7 @@ import {
   Checkbox,
   Chip,
   Divider,
+  Drawer,
   FormControlLabel,
   IconButton,
   MenuItem,
@@ -41,6 +43,7 @@ import {
   type TaskTableReportControls,
 } from './components/TaskFilterActionsMenu';
 import { TaskViewModeToggle } from './components/TaskViewModeToggle';
+import { MyTasksMobileFilter } from './MyTasksMobileFilter';
 
 import type { TaskStatusFilter } from '../model/utils';
 
@@ -121,6 +124,7 @@ export const MyTaskFilter = ({
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [columnsAnchorEl, setColumnsAnchorEl] =
     useState<HTMLButtonElement | null>(null);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const handleDateChange = (date: Dayjs | null) => {
     setUpdatedDate(date ? date.format('YYYY-MM-DD') : null);
@@ -157,6 +161,9 @@ export const MyTaskFilter = ({
     isManagerAccount,
   ]);
 
+  const hasMobileDrawerFilters =
+    status !== 'all' || postId !== 'all' || executorId !== 'all';
+
   const handleResetSelectFilters = () => {
     setStatus('all');
     setPostId('all');
@@ -170,6 +177,7 @@ export const MyTaskFilter = ({
   };
 
   const isTableMode = viewMode === 'table';
+  const isGridMode = viewMode === 'grid';
 
   return (
     <>
@@ -204,9 +212,10 @@ export const MyTaskFilter = ({
               alignItems: 'center',
               scrollbarWidth: 'none',
               '&::-webkit-scrollbar': { display: 'none' },
+              ...(isGridMode && { display: { xs: 'none', md: 'flex' } }),
             }}
           >
-            {viewMode === 'grid' && (
+            {isGridMode && (
               <TextField
                 select
                 label="Статус"
@@ -289,6 +298,46 @@ export const MyTaskFilter = ({
                 )}
               </IconButton>
             </Tooltip>}
+
+            {isGridMode && (
+              <>
+                <IconButton
+                  size="small"
+                  onClick={() => setIsMobileFilterOpen(true)}
+                  sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+                  color={
+                    isMobileFilterOpen || hasMobileDrawerFilters
+                      ? 'primary'
+                      : 'default'
+                  }
+                >
+                  <Tune fontSize="small" />
+                </IconButton>
+
+                <Drawer
+                  anchor="right"
+                  open={isMobileFilterOpen}
+                  onClose={() => setIsMobileFilterOpen(false)}
+                  sx={{
+                    display: { xs: 'block', md: 'none' },
+                    '& .MuiDrawer-paper': {
+                      p: { xs: 2, sm: 3 },
+                      width: { xs: '100%', sm: '80%' },
+                    },
+                  }}
+                >
+                  <MyTasksMobileFilter
+                    open={isMobileFilterOpen}
+                    onClose={() => setIsMobileFilterOpen(false)}
+                    isCompany={isCompany}
+                    postOptions={postOptions}
+                  />
+                </Drawer>
+
+              </>
+            )}
+
+
 
             <TaskFilterActionsMenu
               isCompany={isCompany}

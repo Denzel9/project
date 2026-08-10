@@ -41,6 +41,7 @@ import {
   getDashboardPeriodRange,
   getTaskConfig,
   toDashboardTasksQueryParams,
+  useIsManagerAccount,
   useMyTaskFilterStore,
 } from '@/features';
 import { EmptyBlock, scrollMainToTop } from '@/shared';
@@ -94,6 +95,7 @@ export const TaskTable = ({
   onListStateChange,
 }: TaskTableProps) => {
   const navigate = useNavigate();
+  const isManagerAccount = useIsManagerAccount();
   const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
   const assigneeAccountId = useMyTaskFilterStore(
     state => state.assigneeAccountId
@@ -105,6 +107,11 @@ export const TaskTable = ({
     () => getDashboardPeriodRange(period),
     [period]
   );
+
+  // Дашборд: только владелец. Страница задач: владелец и менеджер.
+  const showManagerColumn =
+    Boolean(isCompany) &&
+    (querySource !== 'dashboard' || !isManagerAccount);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const headerRowRef = useRef<HTMLTableRowElement>(null);
@@ -439,7 +446,7 @@ export const TaskTable = ({
     observer.observe(row);
 
     return () => observer.disconnect();
-  }, [forPrint, showColumnFilters, showActions, isCompany]);
+  }, [forPrint, showColumnFilters, showActions, showManagerColumn, isCompany]);
   const statusFilterOptions = useMemo(
     () =>
       Object.entries(TASK_STATUS_LABELS).map(([id, label]) => ({ id, label })),
@@ -630,7 +637,9 @@ export const TaskTable = ({
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.title }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.status }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.customer }} />
-            <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.manager }} />
+            {showManagerColumn && (
+              <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.manager }} />
+            )}
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.updatedAt }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.finalDate }} />
             {showActions && (
@@ -750,19 +759,21 @@ export const TaskTable = ({
                 />
               </TableCell>
 
-              <TableCell
-                sortDirection={getSortDirection('manager')}
-                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
-              >
-                <TaskTableHeaderWithFilter
-                  field="manager"
-                  label="Менеджер"
-                  sortField={sortField}
-                  sortOrder={sortOrder}
-                  forPrint={forPrint}
-                  onSort={handleSort}
-                />
-              </TableCell>
+              {showManagerColumn && (
+                <TableCell
+                  sortDirection={getSortDirection('manager')}
+                  sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
+                >
+                  <TaskTableHeaderWithFilter
+                    field="manager"
+                    label="Менеджер"
+                    sortField={sortField}
+                    sortOrder={sortOrder}
+                    forPrint={forPrint}
+                    onSort={handleSort}
+                  />
+                </TableCell>
+              )}
 
               <TableCell
                 sortDirection={getSortDirection('updatedAt')}
@@ -997,7 +1008,11 @@ export const TaskTable = ({
                   )}
                 </TableCell>
 
-                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)} />
+                {showManagerColumn && (
+                  <TableCell
+                    sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
+                  />
+                )}
 
                 <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}>
                   {renderFilterCellContent(
@@ -1156,37 +1171,41 @@ export const TaskTable = ({
                     </Stack>
                   </TableCell>
 
-                  <TableCell
-                    sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
-                  >
-                    {managerName ? (
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{ alignItems: 'center', minWidth: 0 }}
-                      >
-                        {!forPrint && (
-                          <Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
-                            {managerInitials || '?'}
-                          </Avatar>
-                        )}
+                  {showManagerColumn && (
+                    <TableCell
+                      sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
+                    >
+                      {managerName ? (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{ alignItems: 'center', minWidth: 0 }}
+                        >
+                          {!forPrint && (
+                            <Avatar
+                              sx={{ width: 28, height: 28, fontSize: 12 }}
+                            >
+                              {managerInitials || '?'}
+                            </Avatar>
+                          )}
+                          <Typography
+                            variant="body2"
+                            noWrap
+                            title={managerName}
+                          >
+                            {managerName}
+                          </Typography>
+                        </Stack>
+                      ) : (
                         <Typography
                           variant="body2"
-                          noWrap
-                          title={managerName}
+                          color="info"
                         >
-                          {managerName}
+                          —
                         </Typography>
-                      </Stack>
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        color="info"
-                      >
-                        —
-                      </Typography>
-                    )}
-                  </TableCell>
+                      )}
+                    </TableCell>
+                  )}
 
                   <TableCell
                     sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}

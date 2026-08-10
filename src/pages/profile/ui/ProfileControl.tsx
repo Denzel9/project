@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router';
 import { useFavoriteUserIds } from '@/entities/favorite';
 import { useRequireEmailConfirmed } from '@/features/auth';
 import { ROUTES, ShareButton } from '@/shared';
-import { UserFavoriteButton } from '@/widgets';
+import { UserFavoriteButton, useSnackbarStore } from '@/widgets';
 
 import { MEDIA_TAB_VALUES } from '../model/types';
 
@@ -47,10 +47,30 @@ export const ProfileControl = ({
   const navigate = useNavigate();
   const { favoriteUserIds } = useFavoriteUserIds();
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const handleCreatePost = () => {
     if (!requireEmailConfirmed()) return;
     navigate(ROUTES.MANAGE_APPLICATION);
+  };
+
+  const handleReport = () => {
+    setAnchorEl(null);
+    if (!id) return;
+
+    const subject = encodeURIComponent(`Жалоба на профиль ${id}`);
+    const body = encodeURIComponent(
+      `Профиль: ${window.location.origin}${ROUTES.PROFILE}/${id}\n\nОпишите причину жалобы:\n`,
+    );
+    window.open(
+      `mailto:support@nikssens.com?subject=${subject}&body=${body}`,
+      '_blank',
+    );
+    setSnackbarOpen(
+      true,
+      'Откроется почтовый клиент — опишите причину жалобы',
+      'info',
+    );
   };
 
   return (
@@ -111,8 +131,7 @@ export const ProfileControl = ({
                 anchorEl={anchorEl}
                 onClose={() => setAnchorEl(null)}
               >
-                <MenuItem>
-                  {/* TODO: add report action */}
+                <MenuItem onClick={handleReport}>
                   <Typography>Пожаловаться</Typography>
                 </MenuItem>
               </Menu>

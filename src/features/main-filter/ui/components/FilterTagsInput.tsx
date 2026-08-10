@@ -10,6 +10,7 @@ import {
 import { useState, type KeyboardEvent } from 'react';
 
 type FilterTagsInputProps = {
+  size?: 'small' | 'medium';
   label: string;
   value: string[];
   onChange: (value: string[]) => void;
@@ -17,6 +18,7 @@ type FilterTagsInputProps = {
 };
 
 export const FilterTagsInput = ({
+  size = 'small',
   label,
   value,
   onChange,
@@ -47,7 +49,7 @@ export const FilterTagsInput = ({
   return (
     <Stack spacing={1}>
       <TextField
-        size="small"
+        size={size}
         fullWidth
         value={input}
         label={label}

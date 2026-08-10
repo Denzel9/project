@@ -30,7 +30,6 @@ import {
   getEmploymentTypeLabel,
 } from '@/entities';
 import { useAuthStore } from '@/features/auth';
-import { DatePicker } from '@/shared';
 
 import { useMainFilterStore } from '../model/store';
 import {
@@ -42,9 +41,12 @@ import {
   type PostFilterLocation,
   type TriStateFilter,
 } from '../model/types';
-import { sanitizePostFilterDraftForRole } from '../model/utils';
+import {
+  sanitizePostFilterDraftForRole,
+} from '../model/utils';
 
 import { FilterChipGroup } from './components/FilterChipGroup';
+import { FilterDateField } from './components/FilterDateField';
 import { FilterSection } from './components/FilterSection';
 import { FilterTagsInput } from './components/FilterTagsInput';
 
@@ -191,16 +193,15 @@ export const SideBarFilter = () => {
           <FilterSection>
             <Stack spacing={2}>
               <TextField
-                size="small"
                 fullWidth
-                label="Название"
+                label="Поиск"
+                placeholder="Название, компания или имя"
                 value={draft.title}
                 onChange={event => setField('title', event.target.value)}
               />
 
               {showCompanyAdFilters && (
                 <TextField
-                  size="small"
                   fullWidth
                   select
                   label="Срочность"
@@ -220,7 +221,7 @@ export const SideBarFilter = () => {
                 </TextField>
               )}
 
-              <DatePicker
+              <FilterDateField
                 label="Дата создания"
                 value={draft.createdAt}
                 onChange={value => setField('createdAt', value)}
@@ -231,18 +232,21 @@ export const SideBarFilter = () => {
           <FilterSection title="Категории и теги">
             <Stack spacing={2}>
               <FilterTagsInput
+                size="medium"
                 label="Категории"
                 value={draft.categories}
                 placeholder="Введите и нажмите Enter"
                 onChange={value => setField('categories', value)}
               />
               <FilterTagsInput
+                size="medium"
                 label="Теги"
                 value={draft.tags}
                 placeholder="Введите и нажмите Enter"
                 onChange={value => setField('tags', value)}
               />
               <FilterTagsInput
+                size="medium"
                 label="Ниша"
                 value={draft.niche}
                 placeholder="beauty, food, tech..."
@@ -287,7 +291,6 @@ export const SideBarFilter = () => {
                 spacing={2}
               >
                 <TextField
-                  size="small"
                   fullWidth
                   select
                   label="Формат работы"
@@ -311,7 +314,6 @@ export const SideBarFilter = () => {
                 </TextField>
 
                 <TextField
-                  size="small"
                   fullWidth
                   select
                   label="Тип занятости"
@@ -340,7 +342,6 @@ export const SideBarFilter = () => {
           <FilterSection title={budgetSectionTitle}>
             <Stack spacing={2}>
               <TextField
-                size="small"
                 fullWidth
                 select
                 label={budgetTypeLabel}
@@ -363,7 +364,6 @@ export const SideBarFilter = () => {
               </TextField>
 
               <TextField
-                size="small"
                 fullWidth
                 select
                 label="Валюта"
@@ -381,7 +381,6 @@ export const SideBarFilter = () => {
               </TextField>
 
               <TextField
-                size="small"
                 fullWidth
                 select
                 label="Условия оплаты"
@@ -408,14 +407,10 @@ export const SideBarFilter = () => {
 
           {showCompanyAdFilters && (
             <FilterSection title="Сроки">
-              <TextField
-                size="small"
-                fullWidth
-                type="date"
+              <FilterDateField
                 label="Дедлайн"
                 value={draft.deadline}
-                slotProps={{ inputLabel: { shrink: true } }}
-                onChange={event => setField('deadline', event.target.value)}
+                onChange={value => setField('deadline', value)}
               />
             </FilterSection>
           )}
@@ -427,7 +422,6 @@ export const SideBarFilter = () => {
                 spacing={2}
               >
                 <TextField
-                  size="small"
                   fullWidth
                   label="Страна"
                   value={draft.location.country}
@@ -436,7 +430,6 @@ export const SideBarFilter = () => {
                   }
                 />
                 <TextField
-                  size="small"
                   fullWidth
                   label="Город"
                   value={draft.location.city}
@@ -446,7 +439,6 @@ export const SideBarFilter = () => {
 
               {showCompanyAdFilters && (
                 <TextField
-                  size="small"
                   fullWidth
                   select
                   label="Съёмка на месте"
@@ -474,11 +466,10 @@ export const SideBarFilter = () => {
             <FilterSection title="Требования к блогеру">
               <Stack spacing={2}>
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
+                  direction={{ xs: 'row', sm: 'row' }}
                   spacing={2}
                 >
                   <TextField
-                    size="small"
                     fullWidth
                     type="number"
                     label="Подписчики от"
@@ -490,7 +481,6 @@ export const SideBarFilter = () => {
                     }
                   />
                   <TextField
-                    size="small"
                     fullWidth
                     type="number"
                     label="Подписчики до"
@@ -504,7 +494,6 @@ export const SideBarFilter = () => {
                 </Stack>
 
                 <TextField
-                  size="small"
                   fullWidth
                   type="number"
                   label="ER от, %"
@@ -530,7 +519,6 @@ export const SideBarFilter = () => {
                   spacing={2}
                 >
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="Верификация"
@@ -553,7 +541,6 @@ export const SideBarFilter = () => {
                   </TextField>
 
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="Опыт рекламы"
@@ -583,11 +570,10 @@ export const SideBarFilter = () => {
             <FilterSection title="Условия сотрудничества">
               <Stack spacing={2}>
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
+                  direction='column'
                   spacing={2}
                 >
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="Эксклюзив"
@@ -609,7 +595,6 @@ export const SideBarFilter = () => {
                   </TextField>
 
                   <TextField
-                    size="small"
                     fullWidth
                     type="number"
                     label="Срок эксклюзива, дней"
@@ -623,11 +608,10 @@ export const SideBarFilter = () => {
                 </Stack>
 
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
+                  direction='column'
                   spacing={2}
                 >
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="Права на использование"
@@ -651,7 +635,6 @@ export const SideBarFilter = () => {
                   </TextField>
 
                   <TextField
-                    size="small"
                     fullWidth
                     type="number"
                     label="Срок использования, дней"
@@ -665,11 +648,10 @@ export const SideBarFilter = () => {
                 </Stack>
 
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
+                  direction='column'
                   spacing={2}
                 >
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="Маркировка рекламы"
@@ -692,7 +674,6 @@ export const SideBarFilter = () => {
                   </TextField>
 
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="Договор"
@@ -715,7 +696,6 @@ export const SideBarFilter = () => {
                   </TextField>
 
                   <TextField
-                    size="small"
                     fullWidth
                     select
                     label="NDA"

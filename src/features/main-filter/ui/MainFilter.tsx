@@ -61,6 +61,7 @@ export const MainFilter = () => {
     <Chip
       key={value}
       label={label}
+      size={isMobile ? "small" : "medium"}
       sx={{ cursor: 'pointer', flexShrink: 0 }}
       onClick={() => handleFilter(value)}
       color={filters.includes(value) ? 'primary' : 'default'}
@@ -111,7 +112,7 @@ export const MainFilter = () => {
                 label="Сбросить"
                 variant="outlined"
                 onClick={resetAllFilters}
-                sx={{ flexShrink: 0 }}
+                sx={{ flexShrink: 0, display: { xs: 'none', md: 'flex' }, }}
               />
             )}
           </Box>
@@ -119,7 +120,7 @@ export const MainFilter = () => {
           <Stack
             direction="row"
             spacing={1}
-            sx={{ alignItems: 'center', flexShrink: 0 }}
+            sx={{ alignItems: 'center', }}
           >
             {isSearchOpen && !isMobile && (
               <TextField
@@ -133,7 +134,7 @@ export const MainFilter = () => {
               />
             )}
 
-            <IconButton onClick={() => setIsSearchOpen(!isSearchOpen)}>
+            <IconButton onClick={() => setIsSearchOpen(!isSearchOpen)} sx={{ display: { xs: 'none', md: 'block' } }}>
               {isSearchOpen ? <Close /> : <Search />}
             </IconButton>
 

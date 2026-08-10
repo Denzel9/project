@@ -35,6 +35,8 @@ import {
 } from '../model/constants';
 import { getMyResponseStatusColor, sortMyResponses } from '../model/utils';
 
+import { MyResponseDetailsDialog } from './MyResponseDetailsDialog';
+
 import type { MyResponseSortField, MyResponseSortOrder } from '../model/types';
 
 type MyResponsesTableProps = {
@@ -142,6 +144,9 @@ export const MyResponsesTable = ({
   const [internalPage, setInternalPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<MyResponseSortOrder>('desc');
   const [sortField, setSortField] = useState<MyResponseSortField>('createdAt');
+  const [selectedApplicationId, setSelectedApplicationId] = useState<
+    string | null
+  >(null);
 
   const isControlledPagination =
     controlledPage !== undefined && onPageChange !== undefined;
@@ -152,6 +157,19 @@ export const MyResponsesTable = ({
     () => sortMyResponses(applications, sortField, sortOrder),
     [applications, sortField, sortOrder]
   );
+
+  const selectedApplication = useMemo(
+    () =>
+      applications.find(application => application.id === selectedApplicationId) ??
+      null,
+    [applications, selectedApplicationId]
+  );
+
+  const selectedTaskId = useMemo(() => {
+    const postId = selectedApplication?.post?.id ?? '';
+    if (!postId) return null;
+    return taskByPostId?.get(postId)?.id ?? null;
+  }, [selectedApplication, taskByPostId]);
 
   const paginationCount = serverPagination
     ? (total ?? sortedApplications.length)
@@ -343,8 +361,8 @@ export const MyResponsesTable = ({
                   hover={!forPrint}
                   sx={{ cursor: forPrint ? 'default' : 'pointer' }}
                   onClick={() => {
-                    if (forPrint || !postId) return;
-                    navigate(`${ROUTES.POST}/${postId}`);
+                    if (forPrint) return;
+                    setSelectedApplicationId(application.id);
                   }}
                 >
                   <TableCell
@@ -474,6 +492,17 @@ export const MyResponsesTable = ({
             borderTop: theme => `1px solid ${theme.palette.divider}`,
             flexShrink: 0,
           }}
+        />
+      )}
+
+      {selectedApplication && (
+        <MyResponseDetailsDialog
+          open
+          application={selectedApplication}
+          taskId={selectedTaskId}
+          withdrawingId={withdrawingId}
+          onClose={() => setSelectedApplicationId(null)}
+          onWithdraw={onWithdraw}
         />
       )}
     </Box>

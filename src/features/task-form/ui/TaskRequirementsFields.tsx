@@ -109,7 +109,10 @@ export const TaskRequirementsFields = ({
         </RequirementCard>
       )}
 
-      {(finalDate || (isEdit && status === TASK_STATUS_ENUM.PREPARING)) && (
+      {(finalDate ||
+        (isEdit &&
+          (status === TASK_STATUS_ENUM.PREPARING ||
+            status === TASK_STATUS_ENUM.REVISION))) && (
         <RequirementCard
           icon="deadline"
           isEdit={isEdit}

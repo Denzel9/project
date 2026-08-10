@@ -74,6 +74,7 @@ type TaskItemProps = {
   post?: Post;
   isLoading: boolean;
   isPostLoading?: boolean;
+  editRequestId?: number;
 };
 
 export const TaskItem = ({
@@ -81,6 +82,7 @@ export const TaskItem = ({
   post,
   isLoading,
   isPostLoading = false,
+  editRequestId = 0,
 }: TaskItemProps) => {
   const currentUserId = useAuthStore(state => state.id);
 
@@ -102,6 +104,7 @@ export const TaskItem = ({
   } = useRejectTaskDeadlineExtensionMutation();
 
   const [isEdit, setIsEdit] = useState(false);
+  const [seenEditRequestId, setSeenEditRequestId] = useState(editRequestId);
   const [status, setStatus] = useState<TaskStatus>('PREPARING');
   const [isSendingTz, setIsSendingTz] = useState(false);
   const [isSendTzPreviewOpen, setIsSendTzPreviewOpen] = useState(false);
@@ -116,6 +119,14 @@ export const TaskItem = ({
     TaskActivityType | undefined
   >(undefined);
   const [activityLimit, setActivityLimit] = useState(20);
+
+  if (editRequestId !== seenEditRequestId) {
+    setSeenEditRequestId(editRequestId);
+
+    if (editRequestId > seenEditRequestId) {
+      setIsEdit(true);
+    }
+  }
 
   const { data: conversations } = useConversationsQuery(undefined, {
     enabled: Boolean(task?.executorId),
@@ -490,18 +501,19 @@ export const TaskItem = ({
               ) && (
                   <TaskResultDropzone
                     status={status}
-                    postId={task.postId ?? task.post?.id ?? post?.id}
-                    postTitle={post?.title ?? task.post?.title}
                     files={reportFiles}
                     images={reportImages}
+                    deadline={task.finalDate}
                     setFiles={setReportFiles}
                     setImages={setReportImages}
                     isSaving={isReportMediaSaving}
                     canUpload={canEditReportMedia}
                     onSave={handleSaveReportMedia}
                     onCancel={handleCancelReportMedia}
-                    onRemoveUploaded={handleRemoveReportImage}
                     onRetryLocal={handleRetryReportLocal}
+                    onRemoveUploaded={handleRemoveReportImage}
+                    postTitle={post?.title ?? task.post?.title}
+                    postId={task.postId ?? task.post?.id ?? post?.id}
                   />
                 )}
 
@@ -626,6 +638,8 @@ export const TaskItem = ({
             >
               <TaskAssigneeCard
                 taskId={task.id}
+                ownerId={task.ownerId}
+                executorId={task.executorId}
                 assigneeKind={task.assigneeKind}
                 assigneeAccountId={task.assigneeAccountId}
                 assigneeDisplayName={task.assigneeDisplayName}

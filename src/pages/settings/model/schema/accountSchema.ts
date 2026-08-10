@@ -11,10 +11,14 @@ export const accountSchema = yup.object().shape({
   contacts: yup.array().of(yup.object().shape({
     value: yup
       .string()
-      .required('Обязательно для заполнения')
-      .test('value', 'Неверное значение', (value, { parent: { type } }) =>
-        validateContactValue(value, type)
-      ),
+      .default('')
+      .optional()
+      .nullable()
+      .test('value', 'Неверное значение', (value, { parent: { type } }) => {
+        if (!value) return true;
+
+        return validateContactValue(value, type);
+      }),
     label: yup.string().optional().nullable(),
     type: yup
       .mixed<ContactType>()

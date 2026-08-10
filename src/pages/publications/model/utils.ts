@@ -117,10 +117,40 @@ export const getPublicationPlatforms = (publication: Publication) => [
   ),
 ]
 
+export const getPublicationPlatformLinks = (
+  publication: Publication,
+): Partial<Record<Platform, string>> => {
+  const fromMap: Partial<Record<Platform, string>> = {}
+
+  if (publication.platformLinks) {
+    for (const [key, value] of Object.entries(publication.platformLinks)) {
+      const trimmed = value?.trim()
+      if (!trimmed) continue
+      fromMap[key as Platform] = trimmed
+    }
+  }
+
+  if (Object.keys(fromMap).length > 0) return fromMap
+
+  const externalUrl = publication.externalUrl?.trim()
+  if (!externalUrl) return {}
+
+  const platforms = getPublicationPlatforms(publication)
+  const key = platforms[0] ?? publication.platform ?? 'OTHER'
+
+  return { [key]: externalUrl }
+}
+
+export const publicationHasLink = (publication: Publication) =>
+  Object.values(getPublicationPlatformLinks(publication)).some(url =>
+    Boolean(url?.trim()),
+  )
+
 export type PublicationLinkItem = {
   id: string
   title: string
   url: string
+  platform: Platform
   platformLabel: string
 }
 
@@ -128,21 +158,22 @@ export const getPublicationLinkItems = (
   publications: Publication[],
 ): PublicationLinkItem[] =>
   publications.flatMap(publication => {
-    const url = publication.externalUrl?.trim()
-    if (!url) return []
+    const links = getPublicationPlatformLinks(publication)
+    const entries = Object.entries(links).filter(
+      (entry): entry is [Platform, string] => Boolean(entry[1]?.trim()),
+    )
 
-    const platforms = getPublicationPlatforms(publication)
+    if (!entries.length) return []
 
-    return [
-      {
-        id: publication.id,
-        title: getPublicationTitle(publication),
-        url,
-        platformLabel: platforms.length
-          ? platforms.map(getPlatformLabel).join(', ')
-          : 'Площадка не указана',
-      },
-    ]
+    const title = getPublicationTitle(publication)
+
+    return entries.map(([platform, url]) => ({
+      id: `${publication.id}:${platform}`,
+      title,
+      url,
+      platform,
+      platformLabel: getPlatformLabel(platform),
+    }))
   })
 
 export const getPublicationGalleryMediaItems = (publication: Publication) =>

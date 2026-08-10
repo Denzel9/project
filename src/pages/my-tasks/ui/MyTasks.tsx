@@ -131,6 +131,7 @@ export const MyTasks = () => {
   const {
     columnFilters,
     taskId: taskIdFilter,
+    taskQuery: taskQueryFilter,
     deadlineDate: deadlineDateFilter,
     hasActiveFilters: hasActiveColumnFilters,
     resetFilters: resetColumnFilters,
@@ -147,6 +148,15 @@ export const MyTasks = () => {
     },
     updatedDate: { value: updatedDate, onChange: setUpdatedDate },
   });
+
+  const resolvedSearchQ = useMemo(() => {
+    if (taskIdFilter !== 'all') return undefined;
+
+    const fromColumn = taskQueryFilter.trim();
+    if (fromColumn) return fromColumn;
+
+    return searchQ || undefined;
+  }, [taskIdFilter, taskQueryFilter, searchQ]);
 
   useEffect(() => {
     if (executorIdFromUrl) {
@@ -198,7 +208,7 @@ export const MyTasks = () => {
       assigneeAccountId,
       fastButtonValue: executorIdFromUrl ? null : fastButtonValue,
       isCompany,
-      q: searchQ,
+      q: resolvedSearchQ,
       taskId: taskIdFilter,
       deadlineDate: deadlineDateFilter,
     }),
@@ -214,7 +224,7 @@ export const MyTasks = () => {
       assigneeAccountId,
       fastButtonValue,
       isCompany,
-      searchQ,
+      resolvedSearchQ,
       taskIdFilter,
       deadlineDateFilter,
     ],
@@ -240,7 +250,7 @@ export const MyTasks = () => {
         fastButtonValue,
         extraFilter ?? '',
         updatedDate ?? '',
-        searchQ ?? '',
+        resolvedSearchQ ?? '',
         taskIdFilter,
         deadlineDateFilter ?? '',
       ].join('|'),
@@ -252,7 +262,7 @@ export const MyTasks = () => {
       fastButtonValue,
       extraFilter,
       updatedDate,
-      searchQ,
+      resolvedSearchQ,
       taskIdFilter,
       deadlineDateFilter,
     ],
@@ -406,7 +416,7 @@ export const MyTasks = () => {
       onlyMyTasks,
       assigneeAccountId,
       isCompany,
-      q: searchQ,
+      q: resolvedSearchQ,
       taskId: taskIdFilter,
       deadlineDate: deadlineDateFilter,
     }),
@@ -421,7 +431,7 @@ export const MyTasks = () => {
       onlyMyTasks,
       assigneeAccountId,
       isCompany,
-      searchQ,
+      resolvedSearchQ,
       taskIdFilter,
       deadlineDateFilter,
     ],
@@ -532,9 +542,8 @@ export const MyTasks = () => {
         {showFilter && (
           <Box
             sx={{
-              top: 0,
+              top: 8,
               zIndex: 1000,
-              flexShrink: 0,
               position: 'sticky',
             }}
           >

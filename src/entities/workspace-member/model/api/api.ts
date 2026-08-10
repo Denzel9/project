@@ -1,33 +1,24 @@
-import { useMutation, useQuery, } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { mainAxios, queryClient } from '@/shared/api';
+import { mainAxios, queryClient } from '@/shared/api'
 
-import type { InviteUserRequest, ProfileMember, WorkspaceMember } from '../types/types';
+import type {
+  InviteUserRequest,
+  ProfileMember,
+  WorkspaceMember,
+} from '../types/types'
 
-import type { AuthSessionUser } from '@/features/auth/model/types/types';
+import type { AuthSessionUser } from '@/features/auth/model/types/types'
 
-const POSTS_KEY = ['posts'] as const;
-const APPLICATIONS_KEY = ['applications'] as const;
-const WORKSPACE_MEMBERS_KEY = ['workspace-members'] as const;
-const PROFILE_MEMBERS_KEY = ['profile-members'] as const;
-const USER_CONFIG_KEY = ['user-config'] as const;
-
-const invalidateProfileScopedQueries = () => {
-  void queryClient.invalidateQueries({ queryKey: POSTS_KEY });
-  void queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
-  void queryClient.invalidateQueries({ queryKey: ['tasks'] });
-  void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
-  void queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
-  void queryClient.invalidateQueries({ queryKey: USER_CONFIG_KEY });
-  void queryClient.invalidateQueries({ queryKey: ['billing'] });
-};
+const WORKSPACE_MEMBERS_KEY = ['workspace-members'] as const
+const PROFILE_MEMBERS_KEY = ['profile-members'] as const
 
 export const useGetProfilesQuery = () =>
   useQuery({
     queryKey: ['profiles'],
     queryFn: async () =>
       await mainAxios.get<WorkspaceMember[]>('auth/profiles'),
-  });
+  })
 
 export const useGetProfileMembersQuery = (enabled = true) =>
   useQuery({
@@ -36,48 +27,46 @@ export const useGetProfileMembersQuery = (enabled = true) =>
     queryFn: async () => {
       const { data } = await mainAxios.get<ProfileMember[]>(
         'auth/profile-members',
-      );
-      return data;
+      )
+      return data
     },
-  });
+  })
 
+/** Только API. Полный сброс сессии — через useSwitchActiveProfile / applySwitchedProfileSession. */
 export const useSwitchProfileMutation = () =>
   useMutation({
     mutationFn: async (id: string) =>
       await mainAxios.post<{ user: AuthSessionUser }>('auth/switch-profile', {
         userId: id,
       }),
-    onSuccess: invalidateProfileScopedQueries,
-  });
+  })
 
 export const useAddInviteMutation = () =>
   useMutation({
     mutationFn: async (body: InviteUserRequest) =>
       await mainAxios.post<WorkspaceMember>('auth/invites', body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
-      queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY })
+      void queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY })
     },
-  });
+  })
 
 export const useAcceptInviteMutation = () =>
   useMutation({
     mutationFn: async (token: string) =>
       await mainAxios.post<WorkspaceMember>('auth/invites/accept', { token }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
-      queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY })
+      void queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY })
     },
-  });
+  })
 
 export const useDeleteMembershipMutation = () =>
   useMutation({
     mutationFn: async (id: string) =>
       await mainAxios.delete<WorkspaceMember>(`auth/memberships/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY });
-      queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY });
+      void queryClient.invalidateQueries({ queryKey: WORKSPACE_MEMBERS_KEY })
+      void queryClient.invalidateQueries({ queryKey: PROFILE_MEMBERS_KEY })
     },
-  });
-
-
+  })

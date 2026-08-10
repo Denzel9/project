@@ -17,6 +17,7 @@ import {
 import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
 import { toTaskCommentMedia, normalizeTaskWithCommentsItem, getCommentsTailPage, normalizeTaskComment } from './utils'
+import { TASK_STATUS_ENUM } from './types'
 
 import type {
   CreateTaskCommentDto,
@@ -201,7 +202,11 @@ export const removeTaskMediaFromCache = (
   patchTaskInPostTasksCaches(queryClient, taskId, patchTask)
 }
 
-const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
+const invalidateTaskRelatedQueries = async (
+  queryClient: QueryClient,
+  task: Task,
+  options?: { statusChanged?: boolean },
+) => {
   const cachedTask =
     queryClient.getQueryData<Task>(taskKeys.detail(task.id)) ??
     findTaskInCache(queryClient, task.id)
@@ -230,6 +235,23 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
   void queryClient.invalidateQueries({
     queryKey: [...taskKeys.all, 'allActivities'],
   })
+  void queryClient.invalidateQueries({
+    queryKey: [...taskKeys.all, 'calendar'],
+  })
+  void queryClient.invalidateQueries({
+    queryKey: [...taskKeys.all, 'search'],
+  })
+
+  // После смены статуса сразу refetch activities — кнопки «чей ход» зависят от last actor
+  if (options?.statusChanged) {
+    await queryClient.refetchQueries({
+      queryKey: [...taskKeys.all, 'activities', task.id],
+    })
+  } else {
+    void queryClient.invalidateQueries({
+      queryKey: [...taskKeys.all, 'activities', task.id],
+    })
+  }
 
   const postIds = new Set(
     [postId, previousPostId].filter((id): id is string => Boolean(id)),
@@ -269,6 +291,14 @@ const invalidateTaskRelatedQueries = (queryClient: QueryClient, task: Task) => {
   void queryClient.invalidateQueries({
     queryKey: [...taskKeys.all, 'stats'],
   })
+
+  // Backend may create a publication when task becomes COMPLETED
+  if (
+    task.status === TASK_STATUS_ENUM.COMPLETED &&
+    cachedTask?.status !== TASK_STATUS_ENUM.COMPLETED
+  ) {
+    void queryClient.invalidateQueries({ queryKey: ['publications'] })
+  }
 }
 
 export const serializeTaskListParams = (
@@ -456,11 +486,13 @@ export const useUpdateTaskMutation = () => {
       const { data } = await mainAxios.patch<Task>(`/tasks/${id}`, body)
       return data
     },
-    onSuccess: (task, { id, body }) => {
+    onSuccess: async (task, { id, body }) => {
       const cachedTask = queryClient.getQueryData<Task>(taskKeys.detail(id))
       const previousPostId = cachedTask?.postId || cachedTask?.post?.id
+      const statusChanged =
+        Boolean(body.status) && cachedTask?.status !== task.status
 
-      invalidateTaskRelatedQueries(queryClient, task)
+      await invalidateTaskRelatedQueries(queryClient, task, { statusChanged })
 
       if (
         body.postId &&

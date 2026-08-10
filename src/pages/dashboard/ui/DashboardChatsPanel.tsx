@@ -186,14 +186,29 @@ export const DashboardChatsPanel = () => {
     [pinnedMessages],
   );
 
+  const pinnedByMessageId = useMemo(() => {
+    const map = new Map<string, (typeof pinnedMessages)[number]>();
+
+    pinnedMessages.forEach(pin => {
+      map.set(pin.messageId, pin);
+    });
+
+    return map;
+  }, [pinnedMessages]);
+
   const handleTogglePinMessage = useCallback(
-    (messageId: string, nextPinned: boolean) => {
+    (
+      messageId: string,
+      nextPinned: boolean,
+      scope?: 'PERSONAL' | 'SHARED',
+    ) => {
       if (!selectedConversationId) return;
 
       pinMessageMutation.mutate({
         conversationId: selectedConversationId,
         messageId,
         isPinned: nextPinned,
+        ...(nextPinned && scope ? { scope } : {}),
       });
     },
     [pinMessageMutation, selectedConversationId],
@@ -697,6 +712,10 @@ export const DashboardChatsPanel = () => {
                     senderAvatar={selectedConversation.peer.avatar}
                     senderName={selectedConversation.peer.displayName}
                     isPinned={pinnedMessageIds.has(message.id)}
+                    canUnpin={
+                      pinnedByMessageId.get(message.id)?.pinnedById ===
+                      currentUserId
+                    }
                     onPin={handleTogglePinMessage}
                     onMarkUnread={handleMarkUnread}
                   />

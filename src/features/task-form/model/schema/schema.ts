@@ -18,8 +18,8 @@ const deliverableSchema = yup.object({
 export const schema = yup.object().shape({
   title: sectionField(),
   description: sectionField().max(
-    10000,
-    'Описание не должно превышать 10000 символов',
+    2500,
+    'Описание не должно превышать 2500 символов',
   ),
   dosAndDonts: sectionField(),
   cta: sectionField(),

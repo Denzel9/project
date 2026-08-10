@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { TASK_STATUS_ENUM, type Task } from '@/entities';
@@ -14,6 +14,7 @@ import { TaskSwitcher } from './TaskSwitcher';
 
 export const TaskPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [editRequestId, setEditRequestId] = useState(0);
   const {
     currentTask,
     setCurrentTask,
@@ -107,6 +108,7 @@ export const TaskPage = () => {
         onSelectTask={handleChangeTask}
         onSelectExecutor={handleChangeExecutor}
         onTaskCreated={handleTaskCreated}
+        onEditTask={() => setEditRequestId(value => value + 1)}
       />
 
       {currentTask && (
@@ -116,6 +118,7 @@ export const TaskPage = () => {
           task={currentTask}
           isLoading={isLoading}
           isPostLoading={isPostLoading}
+          editRequestId={editRequestId}
         />
       )}
     </PageLayout>

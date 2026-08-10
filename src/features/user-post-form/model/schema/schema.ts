@@ -1,16 +1,24 @@
 import * as yup from 'yup'
 
-import { BudgetTypeEnum, WorkFormatEnum } from '@/entities/post'
+import { BudgetTypeEnum, EmploymentTypeEnum, WorkFormatEnum } from '@/entities/post'
 
 export const schema = yup.object().shape({
   title: yup.string().default('').required('Обязательно для заполнения'),
-  description: yup.string().default('').required('Обязательно для заполнения'),
+  description: yup
+    .string()
+    .default('')
+    .max(1000, 'Максимум 1000 символов')
+    .required('Обязательно для заполнения'),
   chips: yup.array().of(yup.string()).default([]),
   isPrivate: yup.boolean().default(false),
   workFormat: yup
     .string()
     .default(WorkFormatEnum.REMOTE)
     .required('Обязательно для заполнения'),
+  employmentType: yup
+    .string()
+    .oneOf(['', ...Object.values(EmploymentTypeEnum)])
+    .default(''),
 
   keyWords: yup.array().of(yup.string()).default([]),
   categories: yup.array().of(yup.string()).default([]),

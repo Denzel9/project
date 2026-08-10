@@ -27,6 +27,7 @@ export type Publication = {
   title: string | null
   description: string
   externalUrl?: string | null
+  platformLinks?: Partial<Record<Platform, string>> | null
   platform?: Platform | null
   brief?: PostBrief | null
   deliverables?: PostDeliverable[] | null

@@ -222,7 +222,7 @@ export const HomePage = () => {
 
       <Box
         sx={{
-          top: 0,
+          top: 8,
           zIndex: 1000,
           position: 'sticky',
         }}

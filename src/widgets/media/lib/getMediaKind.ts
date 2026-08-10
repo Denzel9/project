@@ -22,4 +22,26 @@ export const isGalleryMedia = (mimeType?: string, src = '') => {
   return kind === 'image' || kind === 'video'
 }
 
-export const getFileNameFromKey = (key: string) => key.split('/').pop() ?? 'Документ'
+export const getFileNameFromKey = (key: string) => {
+  const base = key.split('/').pop()?.split('?')[0] ?? ''
+  if (!base) return 'Документ'
+
+  // Storage keys are `uuid.ext` — don't show UUID as a human filename
+  const nameWithoutExt = base.replace(/\.[^.]+$/, '')
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      nameWithoutExt,
+    )
+
+  return isUuid ? 'Документ' : base
+}
+
+export const getMediaDisplayName = (
+  fileName?: string | null,
+  keyOrUrl?: string,
+) => {
+  const trimmed = fileName?.trim()
+  if (trimmed) return trimmed
+  if (keyOrUrl) return getFileNameFromKey(keyOrUrl)
+  return 'Документ'
+}

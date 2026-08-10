@@ -20,6 +20,8 @@ import { ROUTES } from '@/shared/config/routes';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
 
+import { MyResponseDetailsDialog } from './MyResponseDetailsDialog';
+
 type MyResponseItemProps = {
   isFavorite?: boolean;
   withdrawingId?: string | null;
@@ -103,6 +105,7 @@ export const MyResponseItem = ({
   withdrawingId = null,
 }: MyResponseItemProps) => {
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const isWithdrawing = withdrawingId === application.id;
 
   const post = application.post;
@@ -121,6 +124,15 @@ export const MyResponseItem = ({
   return (
     <>
       <Stack
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsDetailsOpen(true)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsDetailsOpen(true);
+          }
+        }}
         sx={{
           height: '100%',
           overflow: 'hidden',
@@ -128,6 +140,7 @@ export const MyResponseItem = ({
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
+          cursor: 'pointer',
           transition: 'box-shadow 0.2s ease',
           ':hover': {
             boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
@@ -188,6 +201,7 @@ export const MyResponseItem = ({
                 <Link
                   to={`${ROUTES.POST}/${post?.id}`}
                   style={{ textDecoration: 'none', color: 'inherit' }}
+                  onClick={event => event.stopPropagation()}
                 >
                   <Typography
                     variant="subtitle1"
@@ -209,6 +223,7 @@ export const MyResponseItem = ({
                   <Link
                     to={`${ROUTES.PROFILE}?userId=${post?.ownerId}`}
                     style={{ textDecoration: 'none', color: 'inherit' }}
+                    onClick={event => event.stopPropagation()}
                   >
                     <UserDisplayName
                       user={companyUser}
@@ -308,7 +323,10 @@ export const MyResponseItem = ({
             </Box>
           </Stack>
 
-          <Box sx={{ flexShrink: 0, pt: 1.5 }}>
+          <Box
+            sx={{ flexShrink: 0, pt: 1.5 }}
+            onClick={event => event.stopPropagation()}
+          >
             <Divider sx={{ mb: 1.5 }} />
 
             <Stack
@@ -367,6 +385,15 @@ export const MyResponseItem = ({
           </Box>
         </Stack>
       </Stack>
+
+      <MyResponseDetailsDialog
+        open={isDetailsOpen}
+        application={application}
+        taskId={taskId}
+        withdrawingId={withdrawingId}
+        onClose={() => setIsDetailsOpen(false)}
+        onWithdraw={onWithdraw}
+      />
 
       <WithdrawDialog
         open={isWithdrawOpen}

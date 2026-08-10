@@ -2,6 +2,7 @@ import { MoreVert } from '@mui/icons-material';
 import {
   Avatar,
   Box,
+  Button,
   Chip,
   IconButton,
   Menu,
@@ -10,11 +11,11 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 
 import { USER_ROLE } from '@/entities';
-import { MemberRole } from '@/entities/workspace-member';
-import { useAuthStore } from '@/features';
-import { getActionActorParts } from '@/shared';
+import { useAuthStore, useRequireEmailConfirmed } from '@/features/auth';
+import { getActionActorParts, ROUTES } from '@/shared';
 
 import { ChangeAssigneeDialog } from './ChangeAssigneeDialog';
 
@@ -22,6 +23,8 @@ import type { Task } from '@/entities';
 
 type TaskAssigneeCardProps = {
   taskId: string;
+  ownerId: string;
+  executorId?: string | null;
   assigneeKind?: Task['assigneeKind'];
   assigneeAccountId?: Task['assigneeAccountId'];
   assigneeDisplayName?: Task['assigneeDisplayName'];
@@ -29,6 +32,8 @@ type TaskAssigneeCardProps = {
 
 export const TaskAssigneeCard = ({
   taskId,
+  ownerId,
+  executorId,
   assigneeKind,
   assigneeAccountId,
   assigneeDisplayName,
@@ -36,13 +41,32 @@ export const TaskAssigneeCard = ({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const role = useAuthStore(state => state.role);
-  const membershipRole = useAuthStore(state => state.membershipRole);
+  const navigate = useNavigate();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
-  const canChangeAssignee =
-    role === USER_ROLE.COMPANY &&
-    (membershipRole === MemberRole.OWNER ||
-      membershipRole === MemberRole.ADMIN);
+  const role = useAuthStore(state => state.role);
+  const currentUserId = useAuthStore(state => state.id);
+  const accountId = useAuthStore(state => state.accountId);
+
+  const canAssignAssignee =
+    role === USER_ROLE.COMPANY || role === USER_ROLE.MANAGER;
+
+  const hasAssignee = Boolean(
+    assigneeAccountId || assigneeDisplayName?.trim(),
+  );
+
+  const chatRecipientId =
+    currentUserId === ownerId
+      ? executorId || null
+      : currentUserId === executorId
+        ? ownerId
+        : null;
+
+  const canWrite =
+    hasAssignee &&
+    Boolean(chatRecipientId) &&
+    chatRecipientId !== currentUserId &&
+    accountId !== assigneeAccountId;
 
   const assignee = getActionActorParts({
     actorDisplayName: assigneeDisplayName,
@@ -59,6 +83,18 @@ export const TaskAssigneeCard = ({
     : '?';
 
   const closeMenu = () => setMenuAnchor(null);
+
+  const handleWrite = () => {
+    if (!canWrite || !chatRecipientId) return;
+    if (!requireEmailConfirmed()) return;
+
+    navigate(`${ROUTES.CHAT}?recipientId=${chatRecipientId}`);
+  };
+
+  const openAssignDialog = () => {
+    closeMenu();
+    setIsDialogOpen(true);
+  };
 
   return (
     <>
@@ -91,7 +127,7 @@ export const TaskAssigneeCard = ({
             }}
           />
 
-          {canChangeAssignee && (
+          {canAssignAssignee && hasAssignee && (
             <IconButton
               size="small"
               aria-label="Действия ответственного"
@@ -106,51 +142,86 @@ export const TaskAssigneeCard = ({
             open={Boolean(menuAnchor)}
             onClose={closeMenu}
           >
-            <MenuItem
-              onClick={() => {
-                closeMenu();
-                setIsDialogOpen(true);
-              }}
-            >
+            <MenuItem onClick={openAssignDialog}>
               Сменить ответственного
             </MenuItem>
           </Menu>
         </Stack>
 
         <Stack
-          sx={{ alignItems: 'center', textAlign: 'center' }}
+          direction="row"
+          spacing={1}
+          sx={{ justifyContent: 'space-between', alignItems: 'end' }}
         >
-          <Avatar
-            sx={{
-              mb: 2,
-              width: 56,
-              height: 56,
-              fontSize: 18,
-              fontWeight: 700,
-              bgcolor:
-                assigneeKind === 'MANAGER' ? 'primary.main' : 'info.main',
-              color: 'common.white',
-            }}
-          >
-            {initials}
-          </Avatar>
+          {hasAssignee ? (
+            <>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: 'end', textAlign: 'center' }}
+              >
+                <Avatar
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    bgcolor:
+                      assigneeKind === 'MANAGER'
+                        ? 'primary.main'
+                        : 'info.main',
+                    color: 'common.white',
+                  }}
+                >
+                  {initials}
+                </Avatar>
 
-          {assignee?.kindLabel && (
-            <Typography
-              color="info"
-              variant="caption"
-              sx={{ fontWeight: 600 }}
+                <Stack
+                  direction="column"
+                  spacing={0}
+                  sx={{ justifyContent: 'start', alignItems: 'start' }}
+                >
+                  {assignee?.kindLabel && (
+                    <Typography
+                      color="info"
+                      variant="caption"
+                      sx={{ fontWeight: 600 }}
+                    >
+                      {assignee.kindLabel}
+                    </Typography>
+                  )}
+
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    {assignee?.name || 'Не назначен'}
+                  </Typography>
+                </Stack>
+              </Stack>
+
+              {canWrite && (
+                <Button
+                  size="small"
+                  sx={{ px: 2 }}
+                  variant="contained"
+                  onClick={handleWrite}
+                >
+                  Написать
+                </Button>
+              )}
+            </>
+          ) : canAssignAssignee ? (
+            <Button
+              size="small"
+              sx={{ px: 2 }}
+              variant="contained"
+              onClick={openAssignDialog}
             >
-              {assignee.kindLabel}
+              Назначить ответственного
+            </Button>
+          ) : (
+            <Typography variant="body2" color="info">
+              Ответственный ещё не назначен
             </Typography>
           )}
-
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600 }}
-          >
-            {assignee?.name || 'Не назначен'}
-          </Typography>
         </Stack>
       </Box>
 

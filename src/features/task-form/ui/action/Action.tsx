@@ -121,7 +121,7 @@ export const Action = ({
 
   const transitionOptions = useMemo(
     () => ({
-      lastStatusActorId: lastActivitiesStatus?.actorId ?? null,
+      lastStatusActorId: lastActivitiesStatus?.actorId,
     }),
     [lastActivitiesStatus?.actorId],
   );

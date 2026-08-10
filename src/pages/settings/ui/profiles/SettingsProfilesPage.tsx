@@ -11,15 +11,12 @@ import { ru } from 'date-fns/locale';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
-import { prefetchUserConfig } from '@/entities/user-config';
 import {
   ProfileRoleLabels,
   isManagedProfile,
   useGetProfilesQuery,
-  useSwitchProfileMutation,
 } from '@/entities/workspace-member';
-import { mapAuthSessionUser, useAuthStore } from '@/features/auth';
-import { queryClient } from '@/shared/api';
+import { useAuthStore, useSwitchActiveProfile } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 import { useSnackbarStore } from '@/widgets';
 
@@ -34,10 +31,10 @@ const formatAddedAt = (value?: string) => {
 
 export const SettingsProfilesPage = () => {
   const navigate = useNavigate();
-  const { id, setAuth } = useAuthStore();
+  const { id } = useAuthStore();
   const { setSnackbarOpen } = useSnackbarStore();
   const { data, isLoading, isError } = useGetProfilesQuery();
-  const { mutateAsync: switchProfile, isPending } = useSwitchProfileMutation();
+  const { switchActiveProfile, isPending } = useSwitchActiveProfile();
 
   const managedProfiles = useMemo(
     () => (data?.data ?? []).filter(isManagedProfile),
@@ -47,20 +44,11 @@ export const SettingsProfilesPage = () => {
   const handleSwitch = async (userId: string) => {
     if (!userId || userId === id) return;
 
-    const res = await switchProfile(userId);
-    const user = res.data.user;
-    if (!user?.id) return;
+    const switched = await switchActiveProfile(userId);
 
-    setAuth(mapAuthSessionUser(user));
-
-    try {
-      await prefetchUserConfig(queryClient);
-    } catch {
-      // конфиг подтянется позже
-    }
+    if (!switched) return;
 
     setSnackbarOpen?.(true, 'Профиль успешно переключён');
-    navigate(ROUTES.INDEX);
   };
 
   return (
@@ -78,111 +66,98 @@ export const SettingsProfilesPage = () => {
       </Box>
 
       {isLoading && (
-        <Stack spacing={1}>
-          {[1, 2, 3].map(item => (
-            <Skeleton
-              key={item}
-              variant="rounded"
-              height={88}
-              sx={{ borderRadius: '16px' }}
-            />
-          ))}
+        <Stack spacing={1.5}>
+          <Skeleton variant="rounded" height={88} />
+          <Skeleton variant="rounded" height={88} />
         </Stack>
       )}
 
-      {!isLoading && (isError || managedProfiles.length === 0) && (
-        <Box
-          sx={{
-            py: 8,
-            px: 3,
-            textAlign: 'center',
-            bgcolor: 'secondary.light',
-            borderRadius: '24px',
-          }}
-        >
-          <Typography
-            variant="body1"
-            color="text.secondary"
-          >
-            Пока нет доступных профилей.
-            <br />
-            Дождитесь приглашения к управлению.
-          </Typography>
-        </Box>
+      {isError && (
+        <Typography color="error" variant="body2">
+          Не удалось загрузить профили
+        </Typography>
       )}
 
-      {!isLoading && !isError && managedProfiles.length > 0 && (
-        <Stack spacing={1.5}>
-          {managedProfiles.map(profile => {
-            const isActive = profile.userId === id;
-            const roleLabel = profile.role
-              ? ProfileRoleLabels[profile.role]
-              : '';
+      {!isLoading && !isError && managedProfiles.length === 0 && (
+        <Typography color="text.secondary" variant="body2">
+          Пока нет доступных профилей. Примите приглашение к управлению
+          компанией или исполнителем.
+        </Typography>
+      )}
 
-            return (
-              <Box
-                key={profile.userId ?? profile.id}
+      <Stack spacing={1.5}>
+        {managedProfiles.map(profile => {
+          const isActive = profile.userId === id;
+          const roleLabel = profile.role
+            ? ProfileRoleLabels[profile.role]
+            : 'Профиль';
+
+          return (
+            <Box
+              key={profile.id}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                border: '1px solid',
+                borderColor: isActive ? 'primary.main' : 'divider',
+                bgcolor: 'background.paper',
+              }}
+            >
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
                 sx={{
-                  p: 2.5,
-                  borderRadius: '16px',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: isActive ? 'secondary.light' : 'transparent',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 2,
-                  alignItems: 'center',
+                  alignItems: { sm: 'center' },
                   justifyContent: 'space-between',
                 }}
               >
-                <Stack spacing={0.5} sx={{ minWidth: 0, flex: 1 }}>
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    sx={{ alignItems: 'center', flexWrap: 'wrap' }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: 600 }}
-                    >
-                      {profile.displayName || roleLabel || 'Без названия'}
+                <Box sx={{ minWidth: 0 }}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }} noWrap>
+                      {profile.displayName || roleLabel}
                     </Typography>
-                    {roleLabel && (
-                      <Chip
-                        size="small"
-                        label={roleLabel}
-                      />
-                    )}
                     {isActive && (
-                      <Chip
-                        size="small"
-                        color="primary"
-                        label="Активный"
-                      />
+                      <Chip size="small" color="primary" label="Активный" />
                     )}
                   </Stack>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
+                  <Typography variant="body2" color="text.secondary">
+                    {roleLabel}
+                    {profile.actorName ? ` · ${profile.actorName}` : ''}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
                     Добавлен: {formatAddedAt(profile.createdAt)}
                   </Typography>
-                </Stack>
+                </Box>
 
-                <Button
-                  variant={isActive ? 'outlined' : 'contained'}
-                  disabled={isActive || isPending}
-                  onClick={() => handleSwitch(profile.userId || '')}
-                >
-                  {isActive ? 'Текущий' : 'Переключиться'}
-                </Button>
-              </Box>
-            );
-          })}
-        </Stack>
-      )}
+                <Stack direction="row" spacing={1}>
+                  {!isActive && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      disabled={isPending}
+                      onClick={() => void handleSwitch(profile.userId || '')}
+                    >
+                      Переключить
+                    </Button>
+                  )}
+                  {isActive && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => navigate(ROUTES.INDEX)}
+                    >
+                      На главную
+                    </Button>
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
+          );
+        })}
+      </Stack>
     </Stack>
   );
 };
 
 export default SettingsProfilesPage;
+

@@ -247,6 +247,7 @@ export const BriefSection = () => {
         <RHFInput
           name="briefTaskDescription"
           control={control}
+          maxLength={2500}
           props={{
             fullWidth: true,
             multiline: true,

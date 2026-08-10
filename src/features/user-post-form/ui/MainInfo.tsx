@@ -10,7 +10,12 @@ import {
 import { Controller, useFormContext, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 
-import { WorkFormatEnum, getWorkFormatLabel } from '@/entities/post'
+import {
+  EmploymentTypeEnum,
+  WorkFormatEnum,
+  getEmploymentTypeLabel,
+  getWorkFormatLabel,
+} from '@/entities/post'
 import { useAuthStore } from '@/features/auth'
 import { RHFInput, RHFSwitch } from '@/shared/ui/rhf'
 
@@ -117,30 +122,66 @@ export const MainInfo = ({
           ))}
         </Box>
 
-        <Controller
-          name="workFormat"
-          control={control}
-          render={({ field, fieldState }) => (
-            <TextField
-              select
-              label="Формат работы"
-              error={!!fieldState?.error}
-              value={field.value || ''}
-              helperText={fieldState?.error?.message}
-              onChange={field.onChange}
-              sx={{ width: { lg: '50%', xs: '100%' }, mb: 4 }}
-            >
-              {Object.values(WorkFormatEnum).map(option => (
-                <MenuItem
-                  key={option}
-                  value={option}
-                >
-                  {getWorkFormatLabel(option)}
-                </MenuItem>
-              ))}
-            </TextField>
-          )}
-        />
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            width: '100%',
+            mb: 4,
+          }}
+        >
+          <Controller
+            name="workFormat"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                select
+                label="Формат работы"
+                error={!!fieldState?.error}
+                value={field.value || ''}
+                helperText={fieldState?.error?.message}
+                onChange={field.onChange}
+                sx={{ flex: 1, width: { xs: '100%', sm: 'auto' } }}
+              >
+                {Object.values(WorkFormatEnum).map(option => (
+                  <MenuItem
+                    key={option}
+                    value={option}
+                  >
+                    {getWorkFormatLabel(option)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+
+          <Controller
+            name="employmentType"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                select
+                label="Тип занятости"
+                error={!!fieldState?.error}
+                value={field.value || ''}
+                helperText={fieldState?.error?.message}
+                onChange={field.onChange}
+                sx={{ flex: 1, width: { xs: '100%', sm: 'auto' } }}
+              >
+                <MenuItem value="">Не указано</MenuItem>
+                {Object.values(EmploymentTypeEnum).map(option => (
+                  <MenuItem
+                    key={option}
+                    value={option}
+                  >
+                    {getEmploymentTypeLabel(option)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+        </Box>
 
         <Box sx={{ mb: 2 }}>
           <RHFSwitch

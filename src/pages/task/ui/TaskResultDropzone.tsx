@@ -56,6 +56,7 @@ import type { Photo } from '@/entities/photo';
 const ACCEPT = 'image/*,video/*';
 
 type TaskResultDropzoneProps = {
+  deadline: string | null;
   files: LocalMediaFile[];
   images: Photo[];
   postId?: string | null;
@@ -121,6 +122,7 @@ const getStatusHint = (
 };
 
 export const TaskResultDropzone = ({
+  deadline,
   files,
   images,
   postId,
@@ -203,10 +205,10 @@ export const TaskResultDropzone = ({
             prev.map(image =>
               image.localId === localId
                 ? {
-                    ...image,
-                    uploadStatus: 'error',
-                    uploadError: error.message,
-                  }
+                  ...image,
+                  uploadStatus: 'error',
+                  uploadError: error.message,
+                }
                 : image,
             ),
           );
@@ -359,13 +361,21 @@ export const TaskResultDropzone = ({
                       variant="h6"
                       sx={{ fontWeight: 600, color: 'info.main' }}
                     >
-                      Результат работы
+                      Результаты работы
                     </Typography>
                     {hasMedia && (
                       <Chip
                         size="small"
                         label={formatFileCount(mediaCount)}
                         sx={{ bgcolor: 'secondary.light', fontWeight: 500 }}
+                      />
+                    )}
+
+                    {status !== TASK_STATUS_ENUM.CHECKING && deadline && (
+                      <Chip
+                        size="small"
+                        color="warning"
+                        label={`Прекрепить до ${new Date(deadline ?? '').toLocaleDateString()}`}
                       />
                     )}
 
@@ -474,7 +484,7 @@ export const TaskResultDropzone = ({
                   </Box>
 
                   {image.uploadStatus === 'preparing' ||
-                  image.uploadStatus === 'uploading' ? (
+                    image.uploadStatus === 'uploading' ? (
                     <Box
                       sx={{
                         position: 'absolute',
@@ -493,7 +503,7 @@ export const TaskResultDropzone = ({
                         size={28}
                         variant={
                           image.uploadStatus === 'uploading' &&
-                          image.uploadProgress
+                            image.uploadProgress
                             ? 'determinate'
                             : 'indeterminate'
                         }

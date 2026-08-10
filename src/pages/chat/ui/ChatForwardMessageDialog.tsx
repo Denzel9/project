@@ -16,6 +16,8 @@ import {
   sortConversationsByUnread,
   type ChatConversation,
 } from '@/entities/chat';
+import { USER_ROLE } from '@/entities/user';
+import { useAuthStore } from '@/features/auth';
 import { ChatContactSearch } from '@/features/chat';
 
 type ChatForwardMessageDialogProps = {
@@ -42,6 +44,8 @@ export const ChatForwardMessageDialog = ({
   onForward,
 }: ChatForwardMessageDialogProps) => {
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
+  const role = useAuthStore(state => state.role);
+  const canSearchContacts = role !== USER_ROLE.MANAGER;
 
   const availableConversations = useMemo(
     () =>
@@ -133,14 +137,16 @@ export const ChatForwardMessageDialog = ({
       )}
 
       <Box sx={{ mb: 2 }}>
-        <ChatContactSearch
-          size="small"
-          disabled={isForwarding}
-          excludeUserIds={excludeUserIds}
-          onSelect={user => {
-            setSelectedPeerId(user.id);
-          }}
-        />
+        {canSearchContacts && (
+          <ChatContactSearch
+            size="small"
+            disabled={isForwarding}
+            excludeUserIds={excludeUserIds}
+            onSelect={user => {
+              setSelectedPeerId(user.id);
+            }}
+          />
+        )}
       </Box>
 
       <Box

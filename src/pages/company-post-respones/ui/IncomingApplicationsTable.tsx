@@ -28,16 +28,19 @@ import {
 } from '@/entities/application';
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { applicantToUserPartial, UserDisplayName } from '@/entities/user';
+import { useAuthStore } from '@/features/auth';
 import { ROUTES, scrollMainToTop } from '@/shared';
-import { ConfirmDialog, useSnackbarStore } from '@/widgets';
+import {
+  ConfirmDialog,
+  IncomingApplicationDetailsDialog,
+  useSnackbarStore,
+} from '@/widgets';
 
 import {
   APPLICATION_TABLE_COLUMN_WIDTHS,
   APPLICATION_TABLE_PAGE_SIZE,
 } from '../model/constants';
 import { getApplicationStatusColor, sortApplications } from '../model/utils';
-
-import { IncomingApplicationDetailsDialog } from './IncomingApplicationDetailsDialog';
 
 import type {
   ApplicationSortField,
@@ -62,6 +65,7 @@ const ApplicationRowActions = ({
 }) => {
   const [isOpenRejectDialog, setIsOpenRejectDialog] = useState(false);
   const { setSnackbarOpen } = useSnackbarStore();
+  const isPrime = useAuthStore(state => state.isPrime);
   const { mutateAsync: updateStatus, isPending } =
     useUpdateApplicationStatusMutation();
 
@@ -76,7 +80,9 @@ const ApplicationRowActions = ({
     });
     setSnackbarOpen?.(
       true,
-      'Задача создана и переведена в статус «Подготовка»'
+      isPrime
+        ? 'Задача создана и переведена в статус «Подготовка»'
+        : 'Отклик принят'
     );
   };
 
@@ -119,12 +125,14 @@ const ApplicationRowActions = ({
             direction="row"
             spacing={1}
           >
-            <IconButton
-              component={Link}
-              to={`${ROUTES.TASK}/${application.post?.id}?inviteId=${application.id}`}
-            >
-              <Task />
-            </IconButton>
+            {isPrime && (
+              <IconButton
+                component={Link}
+                to={`${ROUTES.TASK}/${application.post?.id}?inviteId=${application.id}`}
+              >
+                <Task />
+              </IconButton>
+            )}
             <IconButton
               component={Link}
               to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
@@ -280,10 +288,9 @@ export const IncomingApplicationsTable = ({
         bgcolor: 'white',
         overflow: forPrint ? 'visible' : 'hidden',
         flexDirection: 'column',
-        borderRadius: forPrint ? 0 : { xs: '16px', md: '32px' },
-        border: forPrint
-          ? 'none'
-          : theme => `1px solid ${theme.palette.secondary.main}`,
+        borderRadius: forPrint ? 0 : { xs: '16px', md: '24px' },
+        border: forPrint ? 'none' : `1px solid`,
+        borderColor: 'divider',
       }}
     >
       <TableContainer

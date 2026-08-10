@@ -50,7 +50,10 @@ export const postKeys = {
 const getPostListNextPageParam = (lastPage: PostList) =>
   lastPage.page * lastPage.limit < lastPage.total ? lastPage.page + 1 : undefined
 
-export const usePostsQuery = (params?: PostListParams) =>
+export const usePostsQuery = (
+  params?: PostListParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: postKeys.list(params),
     queryFn: async () => {
@@ -59,6 +62,7 @@ export const usePostsQuery = (params?: PostListParams) =>
       })
       return data
     },
+    enabled: options?.enabled ?? true,
   })
 
 export const useMyPostOptionsQuery = (enabled = true) =>

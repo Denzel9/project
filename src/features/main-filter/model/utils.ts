@@ -85,6 +85,7 @@ export const sanitizePostFilterDraftForRole = (
       chips: normalized.chips,
       platforms: normalized.platforms,
       workFormat: normalized.workFormat,
+      employmentType: normalized.employmentType,
       budget: normalized.budget,
       location: {
         city: normalized.location.city,
@@ -154,6 +155,7 @@ export const postFilterDraftToListParams = (
     ...(budget.paymentTerms && { paymentTerms: budget.paymentTerms }),
     ...(deadlineDate && { deadlineDate }),
     ...(draft.workFormat && { workFormat: draft.workFormat }),
+    ...(draft.employmentType && { employmentType: draft.employmentType }),
     ...(locationCountry && { locationCountry }),
     ...(locationCity && { locationCity }),
     ...(shootingRequired !== undefined && { shootingRequired }),

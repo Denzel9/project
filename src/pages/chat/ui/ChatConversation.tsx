@@ -52,6 +52,8 @@ type ChatConversationProps = {
   isEditingMessage?: boolean;
   editingMessageId?: string | null;
   peer?: ChatPeer | null;
+  canSendMessages?: boolean;
+  sendBlockedReason?: string | null;
   draft: string;
   pendingFiles: File[];
   isSending?: boolean;
@@ -66,7 +68,12 @@ type ChatConversationProps = {
 
   pinnedMessages: ChatMessagePin[];
   isMessagePinned: (messageId: string) => boolean;
-  onTogglePinMessage: (messageId: string, nextPinned: boolean) => void;
+  canUnpinMessage: (messageId: string) => boolean;
+  onTogglePinMessage: (
+    messageId: string,
+    nextPinned: boolean,
+    scope?: 'PERSONAL' | 'SHARED',
+  ) => void;
   focusMessageId?: string | null;
   onFocusMessageHandled?: () => void;
 };
@@ -95,6 +102,8 @@ export const ChatConversation = ({
   isEditingMessage = false,
   editingMessageId = null,
   peer,
+  canSendMessages = true,
+  sendBlockedReason = null,
   draft,
   pendingFiles,
   isSending = false,
@@ -108,6 +117,7 @@ export const ChatConversation = ({
   onDismissError,
   pinnedMessages,
   isMessagePinned,
+  canUnpinMessage,
   onTogglePinMessage,
   focusMessageId = null,
   onFocusMessageHandled,
@@ -449,6 +459,7 @@ export const ChatConversation = ({
                   senderAvatar={peer?.avatar}
                   senderName={peer?.displayName}
                   isPinned={isMessagePinned(message.id)}
+                  canUnpin={canUnpinMessage(message.id)}
                   onPin={onTogglePinMessage}
                   onDelete={onDeleteMessage}
                   onEdit={onEditMessage}
@@ -557,11 +568,26 @@ export const ChatConversation = ({
               </Stack>
             )}
 
+            {!canSendMessages && sendBlockedReason && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ px: 0.5, pb: 0.5 }}
+              >
+                {sendBlockedReason}
+              </Typography>
+            )}
+
             <ChatInput
               value={draft}
               pendingFiles={pendingFiles}
               isSending={isSending}
-              disabled={!peer}
+              disabled={!peer || !canSendMessages}
+              placeholder={
+                !canSendMessages && sendBlockedReason
+                  ? sendBlockedReason
+                  : undefined
+              }
               onChange={onDraftChange}
               onAttachFiles={onAttachFiles}
               onRemoveFile={onRemoveFile}
@@ -583,7 +609,7 @@ export const ChatConversation = ({
         autoHideDuration={3000}
         onClose={() => setJumpError(null)}
         message={jumpError}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       />
     </Stack>
   );

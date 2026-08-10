@@ -193,10 +193,10 @@ export const MyResponses = () => {
     !isInitialLoading && !feedIsError && !visibleApplications.length;
   const showFilter = Boolean(
     applications.length ||
-      tableApplications.length ||
-      !isFilterEmpty ||
-      isSearchOpen ||
-      isTableView
+    tableApplications.length ||
+    !isFilterEmpty ||
+    isSearchOpen ||
+    isTableView
   );
   const tableReportDisabled = feedIsLoading || isEmpty;
   const printApplications = reportApplications ?? visibleApplications;
@@ -361,7 +361,7 @@ export const MyResponses = () => {
         <Box
           className="print-no-print"
           sx={{
-            top: 0,
+            top: 8,
             zIndex: 1000,
             position: 'sticky',
             flexShrink: 0,
@@ -442,13 +442,13 @@ export const MyResponses = () => {
             description={emptyDescription}
             {...(hasActiveFilters
               ? {
-                  buttonText: 'Сбросить фильтры',
-                  buttonOnClick: handleResetFilters,
-                }
+                buttonText: 'Сбросить фильтры',
+                buttonOnClick: handleResetFilters,
+              }
               : {
-                  buttonText: 'На главную',
-                  buttonOnClick: () => navigate(ROUTES.INDEX),
-                })}
+                buttonText: 'На главную',
+                buttonOnClick: () => navigate(ROUTES.INDEX),
+              })}
           />
         </Box>
       )}

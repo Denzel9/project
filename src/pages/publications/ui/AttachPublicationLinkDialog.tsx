@@ -8,13 +8,21 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { getPlatformLabel, type Platform } from '@/entities/post'
 import { useUpdatePublicationMutation } from '@/entities/publication'
+
+import {
+  getPublicationPlatformLinks,
+  getPublicationPlatforms,
+} from '../model/utils'
+
+import type { Publication } from '@/entities/publication'
 
 type AttachPublicationLinkDialogProps = {
   open: boolean
-  publicationId: string | null
+  publication: Publication | null
   onClose: () => void
 }
 
@@ -29,18 +37,30 @@ const isValidHttpUrl = (value: string) => {
 
 export const AttachPublicationLinkDialog = ({
   open,
-  publicationId,
+  publication,
   onClose,
 }: AttachPublicationLinkDialogProps) => {
-  const [url, setUrl] = useState('')
+  const platforms = useMemo((): Platform[] => {
+    if (!publication) return []
+    const fromPublication = getPublicationPlatforms(publication)
+    return fromPublication.length > 0 ? fromPublication : ['OTHER']
+  }, [publication])
+
+  const [urls, setUrls] = useState<Partial<Record<Platform, string>>>({})
   const [error, setError] = useState<string | null>(null)
   const { mutateAsync, isPending } = useUpdatePublicationMutation()
 
   useEffect(() => {
-    if (!open) return
-    setUrl('')
+    if (!open || !publication) return
+
+    const existing = getPublicationPlatformLinks(publication)
+    const next: Partial<Record<Platform, string>> = {}
+    for (const platform of platforms) {
+      next[platform] = existing[platform] ?? ''
+    }
+    setUrls(next)
     setError(null)
-  }, [open, publicationId])
+  }, [open, publication, platforms])
 
   const handleClose = () => {
     if (isPending) return
@@ -48,26 +68,30 @@ export const AttachPublicationLinkDialog = ({
   }
 
   const handleSubmit = async () => {
-    const trimmed = url.trim()
+    if (!publication) return
 
-    if (!publicationId) return
-
-    if (!trimmed) {
-      setError('Введите ссылку')
-      return
-    }
-
-    if (!isValidHttpUrl(trimmed)) {
-      setError('Укажите корректный URL (http:// или https://)')
-      return
+    for (const platform of platforms) {
+      const trimmed = urls[platform]?.trim() ?? ''
+      if (trimmed && !isValidHttpUrl(trimmed)) {
+        setError(
+          `Некорректный URL для «${getPlatformLabel(platform)}» (http:// или https://)`,
+        )
+        return
+      }
     }
 
     try {
       setError(null)
-      await mutateAsync({ id: publicationId, externalUrl: trimmed })
+      await mutateAsync({
+        id: publication.id,
+        links: platforms.map(platform => ({
+          platform,
+          url: urls[platform]?.trim() || null,
+        })),
+      })
       onClose()
     } catch {
-      setError('Не удалось сохранить ссылку')
+      setError('Не удалось сохранить ссылки')
     }
   }
 
@@ -104,29 +128,32 @@ export const AttachPublicationLinkDialog = ({
       </IconButton>
 
       <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Прикрепить ссылку</Typography>
+        <Typography variant="h6">Ссылки на публикацию</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Одна ссылка на каждую площадку
+        </Typography>
 
         <Stack spacing={2} sx={{ mt: 3 }}>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Ссылка на публикацию"
-            placeholder="https://"
-            value={url}
-            onChange={event => {
-              setUrl(event.target.value)
-              if (error) setError(null)
-            }}
-            error={Boolean(error)}
-            helperText={error}
-            disabled={isPending}
-            onKeyDown={event => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                void handleSubmit()
-              }
-            }}
-          />
+          {platforms.map(platform => (
+            <TextField
+              key={platform}
+              fullWidth
+              label={getPlatformLabel(platform)}
+              placeholder="https://"
+              value={urls[platform] ?? ''}
+              onChange={event => {
+                setUrls(prev => ({ ...prev, [platform]: event.target.value }))
+                if (error) setError(null)
+              }}
+              disabled={isPending}
+            />
+          ))}
+
+          {error && (
+            <Typography variant="body2" color="error">
+              {error}
+            </Typography>
+          )}
         </Stack>
 
         <Stack
@@ -141,7 +168,7 @@ export const AttachPublicationLinkDialog = ({
             color="primary"
             variant="contained"
             loading={isPending}
-            disabled={isPending || !url.trim()}
+            disabled={isPending}
             onClick={() => void handleSubmit()}
           >
             Сохранить

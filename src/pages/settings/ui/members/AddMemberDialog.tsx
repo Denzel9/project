@@ -9,6 +9,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { isAxiosError } from 'axios';
+import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { MemberRole, useAddInviteMutation } from '@/entities/workspace-member';
@@ -27,6 +29,8 @@ type AddMemberDialogProps = {
 };
 
 export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
+  const [error, setError] = useState<string | null>(null);
+
   const { mutateAsync: addMember, isPending } = useAddInviteMutation();
 
   const { id } = useAuthStore();
@@ -45,17 +49,18 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
   };
 
   const onSubmit = async (data: AddMemberFormType) => {
-    try {
-      // TODO: add role selection
-      await addMember({
-        email: data.email,
-        userId: id || '',
-        role: MemberRole.ADMIN,
-      });
+    await addMember({
+      email: data.email,
+      userId: id || '',
+      role: MemberRole.ADMIN,
+    }).then(() => {
+      setError(null);
       handleClose();
-    } catch {
-      console.error('Failed to add member');
-    }
+    }).catch((error) => {
+      if (isAxiosError(error)) {
+        setError(error.response?.data.message);
+      }
+    });
   };
 
   return (
@@ -133,6 +138,17 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
                   Администратор имеет полный доступ к рабочему пространству.
                 </Typography>
               </Stack>
+
+              {error && (
+                <Stack spacing={1}>
+                  <Typography
+                    variant="body2"
+                    color="error"
+                  >
+                    {error}
+                  </Typography>
+                </Stack>
+              )}
 
               <Stack
                 direction="row"

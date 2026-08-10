@@ -285,7 +285,7 @@ export const ExecutorsPage = () => {
   const handleApplicantInteractionsClick = useCallback(
     (item: TaskContactRow) => {
       openInNewTab(
-        `${ROUTES.MANAGE_POSTS}?userId=${encodeURIComponent(item.id)}`,
+        `${ROUTES.POSTS_RESPONSES}?userId=${encodeURIComponent(item.id)}`,
       );
     },
     [],

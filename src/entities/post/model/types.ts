@@ -42,6 +42,13 @@ export enum WorkFormatEnum {
   HYBRID = 'HYBRID',
 }
 
+export type EmploymentType = 'STAFF' | 'ONE_TIME'
+
+export enum EmploymentTypeEnum {
+  STAFF = 'STAFF',
+  ONE_TIME = 'ONE_TIME',
+}
+
 export type BudgetType = 'FIXED' | 'RANGE' | 'NEGOTIABLE' | 'BARTER'
 
 export enum BudgetTypeEnum {
@@ -51,13 +58,12 @@ export enum BudgetTypeEnum {
   BARTER = 'BARTER',
 }
 
-export type PaymentTerms = 'PREPAY' | 'POSTPAY' | '50_50' | 'SAFE_DEAL'
+export type PaymentTerms = 'PREPAY' | 'POSTPAY' | '50_50'
 
 export enum PaymentTermsEnum {
   PREPAY = 'PREPAY',
   POSTPAY = 'POSTPAY',
   HALF = '50_50',
-  SAFE_DEAL = 'SAFE_DEAL',
 }
 
 export type PostCurrency = 'RUB' | 'USD'
@@ -78,32 +84,6 @@ export type PostLocation = {
   address?: string
   shootingRequired?: boolean
 }
-
-// Значение	Смысл
-// UNBOXING
-// Распаковка продукта
-// TUTORIAL
-// Обучающий контент / how-to
-// VLOG
-// Влог, нативная интеграция в день блогера
-// STORYTELLING
-// Сторителлинг, сюжетная подача
-// BEFORE_AFTER
-// До/после (beauty, фитнес и т.п.)
-// CHALLENGE
-// Челлендж, вирусный формат
-// GRWM
-// Get Ready With Me
-// HAUL
-// Покупки / хaul
-// PODCAST
-// Подкаст, длинный разговорный формат
-// INTERVIEW
-// Интервью, Q&A
-// ASMR
-// ASMR-контент
-// EDUCATIONAL
-// Образовательный контент
 
 export type ContentStyle =
   | 'LIFESTYLE'
@@ -249,6 +229,7 @@ export type Post = {
   budget?: PostBudget
   deadline?: string
   workFormat?: WorkFormat
+  employmentType?: EmploymentType
   location?: PostLocation
   bloggerRequirements?: BloggerRequirements
   cooperationDetails?: CooperationDetails
@@ -272,6 +253,7 @@ export type CreatePostDto = {
   budget?: PostBudget
   deadline?: string
   workFormat?: WorkFormat
+  employmentType?: EmploymentType | null
   location?: PostLocation
   bloggerRequirements?: BloggerRequirements
   cooperationDetails?: CooperationDetails
@@ -303,6 +285,7 @@ export type PostListParams = {
   niche?: string[]
   tags?: string[]
   workFormat?: WorkFormat
+  employmentType?: EmploymentType
   createdDate?: string
   deadlineDate?: string
   budgetType?: BudgetType
@@ -352,6 +335,7 @@ export type UploadMediaResponse = {
   key: string
   mimeType: string
   size: number
+  fileName?: string | null
 }
 
 export enum POST_TYPE_ENUM {

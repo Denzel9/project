@@ -15,6 +15,7 @@ import {
   formatPostBudget,
   formatPostBudgetDetails,
   getWorkFormatLabel,
+  getEmploymentTypeLabel,
 } from '@/entities/post';
 import { ROUTES } from '@/shared';
 
@@ -88,6 +89,7 @@ export const TaskPostBrief = ({ post }: TaskPostBriefProps) => {
   const hasContext =
     Boolean(post.budget) ||
     Boolean(post.workFormat) ||
+    Boolean(post.employmentType) ||
     Boolean(post.platforms?.length) ||
     Boolean(post.placementFormats?.length) ||
     Boolean(post.tags?.length) ||
@@ -214,6 +216,12 @@ export const TaskPostBrief = ({ post }: TaskPostBriefProps) => {
             {post.workFormat && (
               <DetailItem label="Формат работы">
                 {getWorkFormatLabel(post.workFormat)}
+              </DetailItem>
+            )}
+
+            {post.employmentType && (
+              <DetailItem label="Тип занятости">
+                {getEmploymentTypeLabel(post.employmentType)}
               </DetailItem>
             )}
           </Box>

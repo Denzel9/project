@@ -96,6 +96,10 @@ export type UpdatePublicationDto = {
   description?: string
   externalUrl?: string | null
   platform?: Publication['platform']
+  links?: {
+    platform: NonNullable<Publication['platform']>
+    url: string | null
+  }[]
 }
 
 const patchPublicationInListCache = (

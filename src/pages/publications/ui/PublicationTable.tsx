@@ -1,9 +1,13 @@
-import { LinkOutlined, OpenInNewOutlined } from '@mui/icons-material';
+import { CheckBox, CheckBoxOutlineBlank, LinkOutlined, OpenInNewOutlined } from '@mui/icons-material';
 import {
   Avatar,
   Box,
   Chip,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -23,7 +27,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { theme } from '@/app/index';
-import { getPlatformLabel } from '@/entities/post';
+import { getPlatformLabel, type Platform } from '@/entities/post';
 import {
   executorToUserPartial,
   UserDisplayName,
@@ -39,12 +43,14 @@ import {
 } from '../model/constants';
 import {
   getPublicationGalleryMediaItems,
+  getPublicationPlatformLinks,
   getPublicationPlatforms,
   getPublicationPostPath,
   getPublicationPostTitle,
   getPublicationPreviewMedia,
   getPublicationTaskPath,
   getPublicationTitle,
+  publicationHasLink,
   sortPublications,
 } from '../model/utils';
 
@@ -94,9 +100,12 @@ export const PublicationTable = ({
   const [galleryItems, setGalleryItems] = useState<MediaItemType[] | null>(
     null
   );
-  const [attachLinkPublicationId, setAttachLinkPublicationId] = useState<
-    string | null
-  >(null);
+  const [attachLinkPublication, setAttachLinkPublication] =
+    useState<Publication | null>(null);
+  const [linkMenu, setLinkMenu] = useState<{
+    anchor: HTMLElement;
+    publication: Publication;
+  } | null>(null);
   const [internalPage, setInternalPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<PublicationSortOrder>('desc');
   const [sortField, setSortField] = useState<PublicationSortField>('createdAt');
@@ -253,7 +262,7 @@ export const PublicationTable = ({
     setGalleryItems(items);
   };
 
-  const colSpan = forPrint ? 6 : 7;
+  const colSpan = 7;
 
   return (
     <>
@@ -468,6 +477,14 @@ export const PublicationTable = ({
                   </Stack>
                 </TableCell>
 
+                {forPrint && (
+                  <TableCell
+                    sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.link)}
+                  >
+                    Ссылка
+                  </TableCell>
+                )}
+
                 <TableCell sx={mediaCellSx}>Медиа</TableCell>
 
                 {!forPrint && (
@@ -569,6 +586,11 @@ export const PublicationTable = ({
                       onChange={columnFilters.onCreatedDateChange}
                     />
                   </TableCell>
+                  {forPrint && (
+                    <TableCell
+                      sx={filterCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.link)}
+                    />
+                  )}
                   <TableCell sx={mediaCellSx} />
                   {!forPrint && (
                     <TableCell
@@ -778,6 +800,26 @@ export const PublicationTable = ({
                       )}
                     </TableCell>
 
+                    {forPrint && (
+                      <TableCell
+                        sx={columnCellSx(PUBLICATION_TABLE_COLUMN_WIDTHS.link)}
+                      >
+                        {publicationHasLink(publication) ? (
+                          <CheckBox
+                            fontSize="small"
+                            color="primary"
+                            aria-label="Ссылка прикреплена"
+                          />
+                        ) : (
+                          <CheckBoxOutlineBlank
+                            fontSize="small"
+                            color="disabled"
+                            aria-label="Ссылка не прикреплена"
+                          />
+                        )}
+                      </TableCell>
+                    )}
+
                     <TableCell sx={mediaCellSx}>
                       {previewMedia.length > 0 ? (
                         forPrint ? (
@@ -816,31 +858,34 @@ export const PublicationTable = ({
                         onClick={event => event.stopPropagation()}
                         onMouseDown={event => event.stopPropagation()}
                       >
-                        {publication.externalUrl ? (
-                          <Tooltip title="Открыть публикацию">
-                            <IconButton
-                              size="small"
-                              href={publication.externalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="Открыть публикацию"
-                            >
+                        <Tooltip
+                          title={
+                            publicationHasLink(publication)
+                              ? 'Ссылки публикации'
+                              : 'Прикрепить ссылку'
+                          }
+                        >
+                          <IconButton
+                            size="small"
+                            aria-label={
+                              publicationHasLink(publication)
+                                ? 'Ссылки публикации'
+                                : 'Прикрепить ссылку'
+                            }
+                            onClick={event =>
+                              setLinkMenu({
+                                anchor: event.currentTarget,
+                                publication,
+                              })
+                            }
+                          >
+                            {publicationHasLink(publication) ? (
                               <OpenInNewOutlined fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Прикрепить ссылку">
-                            <IconButton
-                              size="small"
-                              aria-label="Прикрепить ссылку"
-                              onClick={() =>
-                                setAttachLinkPublicationId(publication.id)
-                              }
-                            >
+                            ) : (
                               <LinkOutlined fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                            )}
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     )}
                   </TableRow>
@@ -881,11 +926,86 @@ export const PublicationTable = ({
       )}
 
       {!forPrint && (
-        <AttachPublicationLinkDialog
-          open={Boolean(attachLinkPublicationId)}
-          publicationId={attachLinkPublicationId}
-          onClose={() => setAttachLinkPublicationId(null)}
-        />
+        <>
+          <Menu
+            anchorEl={linkMenu?.anchor ?? null}
+            open={Boolean(linkMenu)}
+            onClose={() => setLinkMenu(null)}
+          >
+            {linkMenu &&
+              (() => {
+                const platforms = getPublicationPlatforms(
+                  linkMenu.publication,
+                );
+                const resolvedPlatforms: Platform[] =
+                  platforms.length > 0 ? platforms : ['OTHER'];
+                const links = getPublicationPlatformLinks(
+                  linkMenu.publication,
+                );
+
+                return (
+                  <>
+                    {resolvedPlatforms.map(platform => {
+                      const url = links[platform];
+                      if (url) {
+                        return (
+                          <MenuItem
+                            key={platform}
+                            component="a"
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setLinkMenu(null)}
+                          >
+                            <ListItemIcon>
+                              <OpenInNewOutlined fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText>
+                              Открыть · {getPlatformLabel(platform)}
+                            </ListItemText>
+                          </MenuItem>
+                        );
+                      }
+
+                      return (
+                        <MenuItem
+                          key={platform}
+                          onClick={() => {
+                            setAttachLinkPublication(linkMenu.publication);
+                            setLinkMenu(null);
+                          }}
+                        >
+                          <ListItemIcon>
+                            <LinkOutlined fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText>
+                            Прикрепить · {getPlatformLabel(platform)}
+                          </ListItemText>
+                        </MenuItem>
+                      );
+                    })}
+                    <MenuItem
+                      onClick={() => {
+                        setAttachLinkPublication(linkMenu.publication);
+                        setLinkMenu(null);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <LinkOutlined fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Изменить ссылки</ListItemText>
+                    </MenuItem>
+                  </>
+                );
+              })()}
+          </Menu>
+
+          <AttachPublicationLinkDialog
+            open={Boolean(attachLinkPublication)}
+            publication={attachLinkPublication}
+            onClose={() => setAttachLinkPublication(null)}
+          />
+        </>
       )}
     </>
   );

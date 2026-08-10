@@ -19,6 +19,7 @@ import {
   UsageRightsEnum,
   USER_ROLE,
   WorkFormatEnum,
+  EmploymentTypeEnum,
   getBudgetTypeLabel,
   getContentStyleLabel,
   getPaymentTermsLabel,
@@ -26,6 +27,7 @@ import {
   getPlatformLabel,
   getUsageRightsLabel,
   getWorkFormatLabel,
+  getEmploymentTypeLabel,
 } from '@/entities';
 import { useAuthStore } from '@/features/auth';
 import { DatePicker } from '@/shared';
@@ -280,29 +282,58 @@ export const SideBarFilter = () => {
                 />
               )}
 
-              <TextField
-                size="small"
-                fullWidth
-                select
-                label="Формат работы"
-                value={draft.workFormat}
-                onChange={event =>
-                  setField(
-                    'workFormat',
-                    event.target.value as PostFilterDraft['workFormat'],
-                  )
-                }
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
               >
-                <MenuItem value="">Любой</MenuItem>
-                {Object.values(WorkFormatEnum).map(option => (
-                  <MenuItem
-                    key={option}
-                    value={option}
-                  >
-                    {getWorkFormatLabel(option)}
-                  </MenuItem>
-                ))}
-              </TextField>
+                <TextField
+                  size="small"
+                  fullWidth
+                  select
+                  label="Формат работы"
+                  value={draft.workFormat}
+                  onChange={event =>
+                    setField(
+                      'workFormat',
+                      event.target.value as PostFilterDraft['workFormat'],
+                    )
+                  }
+                >
+                  <MenuItem value="">Любой</MenuItem>
+                  {Object.values(WorkFormatEnum).map(option => (
+                    <MenuItem
+                      key={option}
+                      value={option}
+                    >
+                      {getWorkFormatLabel(option)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  size="small"
+                  fullWidth
+                  select
+                  label="Тип занятости"
+                  value={draft.employmentType}
+                  onChange={event =>
+                    setField(
+                      'employmentType',
+                      event.target.value as PostFilterDraft['employmentType'],
+                    )
+                  }
+                >
+                  <MenuItem value="">Любой</MenuItem>
+                  {Object.values(EmploymentTypeEnum).map(option => (
+                    <MenuItem
+                      key={option}
+                      value={option}
+                    >
+                      {getEmploymentTypeLabel(option)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
             </Stack>
           </FilterSection>
 

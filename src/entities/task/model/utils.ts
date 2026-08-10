@@ -558,7 +558,8 @@ const canActOnTurnBasedStatus = (
   userId: string | null,
   options?: TaskStatusTransitionOptions,
 ) => {
-  if (options?.lastStatusActorId !== undefined) {
+  // null/undefined — актор неизвестен (activities ещё не подтянулись) → isCompanyAction
+  if (options?.lastStatusActorId) {
     return Boolean(userId) && options.lastStatusActorId !== userId
   }
 
@@ -595,7 +596,7 @@ export const getAllowedTaskStatusTransitions = (
       break
 
     case TASK_STATUS_ENUM.PENDING_APPROVAL:
-      if (canAct) allowed.push(TASK_STATUS_ENUM.IN_PROGRESS)
+      if (canAct && isExecutor) allowed.push(TASK_STATUS_ENUM.IN_PROGRESS)
       // «На доработку» — обе стороны
       allowed.push(TASK_STATUS_ENUM.REVISION)
       break
@@ -712,6 +713,12 @@ export const getTaskStatusTransitionBlockReason = (
       case TASK_STATUS_ENUM.PENDING_APPROVAL:
         if (
           toStatus === TASK_STATUS_ENUM.IN_PROGRESS &&
+          !isExecutor
+        ) {
+          return 'В работу может взять только исполнитель'
+        }
+        if (
+          toStatus === TASK_STATUS_ENUM.IN_PROGRESS &&
           !canAct
         ) {
           return 'Сейчас ход другой стороны'
@@ -765,6 +772,15 @@ export const getTaskStatusTransitionBlockReason = (
     case TASK_STATUS_ENUM.PREPARING:
       if (!isOwner) {
         return 'На согласование может отправить только заказчик'
+      }
+      break
+
+    case TASK_STATUS_ENUM.PENDING_APPROVAL:
+      if (!isExecutor) {
+        return 'В работу может взять только исполнитель'
+      }
+      if (!canAct) {
+        return 'Сейчас ход другой стороны'
       }
       break
 

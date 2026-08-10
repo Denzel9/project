@@ -7,6 +7,7 @@ import type {
   PostCurrency,
   UsageRights,
   WorkFormat,
+  EmploymentType,
 } from '@/entities/post';
 
 export type TriStateFilter = '' | 'true' | 'false';
@@ -53,6 +54,7 @@ export type PostFilterDraft = {
   budget: PostFilterBudget;
   deadline: string;
   workFormat: WorkFormat | '';
+  employmentType: EmploymentType | '';
   location: PostFilterLocation;
   bloggerRequirements: PostFilterBloggerRequirements;
   cooperationDetails: PostFilterCooperationDetails;
@@ -102,6 +104,7 @@ export const defaultPostFilterDraft: PostFilterDraft = {
   budget: defaultBudget,
   deadline: '',
   workFormat: '',
+  employmentType: '',
   location: defaultLocation,
   bloggerRequirements: defaultBloggerRequirements,
   cooperationDetails: defaultCooperationDetails,

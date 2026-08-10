@@ -1,8 +1,8 @@
 import {
-  Backdrop,
   Box,
   Button,
   CircularProgress,
+  Stack,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -34,58 +34,58 @@ export const InvitePage = () => {
         .catch(() => {
           setIsError(true);
         });
+    } else {
+      setTimeout(() => {
+        setIsError(true);
+      }, 0);
     }
   }, [acceptInvite, navigate, token]);
 
   return (
     <Box
       sx={{
+        position: 'relative',
         height: '100vh',
       }}
     >
+      <Stack direction='column' sx={{ position: 'absolute', top: 32, left: 32 }}>
+        <img src='/Primary.png' alt="NIKSSENSES" />
+        {!isError && (
+          <Typography
+            sx={{ mt: 2, fontWeight: 500, opacity: 0.5 }}
+            variant='subtitle1'
+          >
+            Добавляем Вас в команду!
+          </Typography>
+        )}
+      </Stack>
+
       <Box
         sx={{
-          p: 4,
           width: '100%',
           height: '100%',
-          borderRadius: 4,
           display: 'flex',
-          bgcolor: 'white',
-          position: 'relative',
           alignItems: 'center',
           flexDirection: 'column',
           justifyContent: 'center',
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ position: 'absolute', top: 32, left: 32 }}
-        >
-          NIKSSENSES
-        </Typography>
 
-        {!isError && (
-          <Typography
-            sx={{ mt: 4, fontWeight: 500, opacity: 0.5 }}
-            variant="h5"
-          >
-            Добавляем Вас в команду!
-          </Typography>
-        )}
+        {isPending && <CircularProgress
+          size={40}
+          color="primary"
+        />}
 
         {isError && (
-          <Box
+          <Stack
+            direction='column'
+            spacing={2}
             sx={{
-              mt: 4,
-              gap: 2,
-              display: 'flex',
               alignItems: 'center',
-              flexDirection: 'column',
-              justifyContent: 'center',
             }}
           >
-            <Typography variant="h6">Что то пошло не так...</Typography>
-            <Typography variant="h6">Пожалуйста, попробуйте снова.</Typography>
+            <Typography variant='subtitle1'>Что то пошло не так...</Typography>
+            <Typography variant='body1'>Пожалуйста, попробуйте снова.</Typography>
             <Button
               variant="contained"
               color="primary"
@@ -93,16 +93,9 @@ export const InvitePage = () => {
             >
               На главную
             </Button>
-          </Box>
+          </Stack>
         )}
       </Box>
-
-      <Backdrop
-        open={isPending}
-        sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}
-      >
-        <CircularProgress color="primary" />
-      </Backdrop>
     </Box>
   );
 };

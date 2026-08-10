@@ -8,7 +8,7 @@ import {
   type ImgHTMLAttributes,
 } from 'react'
 
-import { getFileNameFromKey, getMediaKind } from '../lib/getMediaKind'
+import { getMediaDisplayName, getMediaKind } from '../lib/getMediaKind'
 
 export type MediaObjectFit = 'cover' | 'contain'
 
@@ -113,7 +113,7 @@ export const MediaItem = ({
   }, [isActive, kind])
 
   if (kind === 'document') {
-    const displayName = fileName ?? getFileNameFromKey(src)
+    const displayName = getMediaDisplayName(fileName, src)
 
     return (
       <Box
@@ -121,6 +121,7 @@ export const MediaItem = ({
         component="a"
         target="_blank"
         rel="noopener noreferrer"
+        download={displayName}
         onClick={event => event.stopPropagation()}
         sx={{
           gap: 1,
@@ -135,13 +136,24 @@ export const MediaItem = ({
           border: '1px solid',
           borderColor: 'divider',
           '&:hover': {
-            bgcolor: 'action.hover',
+            bgcolor: 'secondary.main',
           },
         }}
       >
         <Description color="action" />
 
-        <Typography variant="body2">{displayName}</Typography>
+        <Typography
+          variant="body2"
+          title={displayName}
+          sx={{
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {displayName}
+        </Typography>
       </Box>
     )
   }

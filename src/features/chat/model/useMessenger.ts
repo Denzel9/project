@@ -7,12 +7,16 @@ import {
   appendMessageToCache,
   applyMessagesReadInCache,
   chatKeys,
+  claimIncomingChatMessage,
   getUnreadDividerMessageId,
   incrementConversationUnreadCount,
   markConversationReadInCache,
   removeMessageFromCache,
+  setActiveChatConversationId,
+  setChatUnreadHoldConversationId,
   setConversationUnreadCount,
   sortConversationsByUnread,
+  unlockConversationSendPermission,
   updateConversationLastMessage,
   updateMessageInCache,
   uploadConversationMediaBatch,
@@ -171,6 +175,10 @@ export const useMessenger = () => {
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId
+    setActiveChatConversationId(selectedConversationId)
+    return () => {
+      setActiveChatConversationId(null)
+    }
   }, [selectedConversationId])
 
   useEffect(() => {
@@ -179,6 +187,10 @@ export const useMessenger = () => {
 
   useEffect(() => {
     unreadHoldConversationIdRef.current = unreadHoldConversationId
+    setChatUnreadHoldConversationId(unreadHoldConversationId)
+    return () => {
+      setChatUnreadHoldConversationId(null)
+    }
   }, [unreadHoldConversationId])
 
   const {
@@ -246,9 +258,30 @@ export const useMessenger = () => {
     [pinnedMessages],
   )
 
+  const pinnedByMessageId = useMemo(() => {
+    const map = new Map<string, (typeof pinnedMessages)[number]>()
+
+    pinnedMessages.forEach(pin => {
+      map.set(pin.messageId, pin)
+    })
+
+    return map
+  }, [pinnedMessages])
+
   const isMessagePinned = useCallback(
     (messageId: string) => pinnedMessageIds.has(messageId),
     [pinnedMessageIds],
+  )
+
+  const canUnpinMessage = useCallback(
+    (messageId: string) => {
+      const pin = pinnedByMessageId.get(messageId)
+
+      if (!pin || !currentUserId) return false
+
+      return pin.pinnedById === currentUserId
+    },
+    [currentUserId, pinnedByMessageId],
   )
 
   const clearReplyTo = useCallback(() => {
@@ -291,13 +324,18 @@ export const useMessenger = () => {
   }, [])
 
   const onTogglePinMessage = useCallback(
-    (messageId: string, nextPinned: boolean) => {
+    (
+      messageId: string,
+      nextPinned: boolean,
+      scope?: 'PERSONAL' | 'SHARED',
+    ) => {
       if (!selectedConversationId) return
 
       pinMessageMutation.mutate({
         conversationId: selectedConversationId,
         messageId,
         isPinned: nextPinned,
+        ...(nextPinned && scope ? { scope } : {}),
       })
     },
     [pinMessageMutation, selectedConversationId],
@@ -475,8 +513,17 @@ export const useMessenger = () => {
         normalizedMessage,
       )
 
+      if (isIncoming) {
+        unlockConversationSendPermission(
+          queryClient,
+          normalizedMessage.conversationId,
+        )
+      }
+
       if (isActiveConversation) {
         if (isIncoming && !isUnreadHold) {
+          // Consume claim so global unread listener does not bump the counter
+          claimIncomingChatMessage(normalizedMessage.id)
           chatSocket.markRead(normalizedMessage.conversationId)
 
           if (userId) {
@@ -489,10 +536,12 @@ export const useMessenger = () => {
         }
 
         if (isIncoming && isUnreadHold) {
-          incrementConversationUnreadCount(
-            queryClient,
-            normalizedMessage.conversationId,
-          )
+          if (claimIncomingChatMessage(normalizedMessage.id)) {
+            incrementConversationUnreadCount(
+              queryClient,
+              normalizedMessage.conversationId,
+            )
+          }
         }
 
         setLiveMessages(prev => {
@@ -506,7 +555,7 @@ export const useMessenger = () => {
         return
       }
 
-      if (isIncoming) {
+      if (isIncoming && claimIncomingChatMessage(normalizedMessage.id)) {
         incrementConversationUnreadCount(
           queryClient,
           normalizedMessage.conversationId,
@@ -628,7 +677,7 @@ export const useMessenger = () => {
       })
     }
 
-    chatSocket.onMessage(handleMessage)
+    const unsubscribeMessage = chatSocket.onMessage(handleMessage)
     chatSocket.onMessagesRead(handleMessagesRead)
     chatSocket.onMessageDeleted(handleMessageDeleted)
     chatSocket.onMessagesHidden(handleMessagesHidden)
@@ -642,10 +691,9 @@ export const useMessenger = () => {
     }, 0)
 
     return () => {
-      chatSocket.removeListeners()
-      chatSocket.disconnect()
+      unsubscribeMessage()
     }
-  }, [queryClient])
+  }, [queryClient, currentUserId])
 
   useEffect(() => {
     if (
@@ -812,6 +860,17 @@ export const useMessenger = () => {
       return
     }
 
+    const conversation = conversations.find(
+      item => item.id === selectedConversationId,
+    )
+    if (conversation && conversation.canSendMessages === false) {
+      setSocketError(
+        conversation.sendBlockedReason ??
+          'Дождитесь первого сообщения от компании',
+      )
+      return
+    }
+
     if (!isSocketConnected) {
       setSocketError(CONNECTION_ERROR_MESSAGE)
       chatSocket.connect()
@@ -847,6 +906,7 @@ export const useMessenger = () => {
       setIsSendingMedia(false)
     }
   }, [
+    conversations,
     draft,
     ensureConversationId,
     isSocketConnected,
@@ -1169,6 +1229,7 @@ export const useMessenger = () => {
     messages,
     pinnedMessages,
     isMessagePinned,
+    canUnpinMessage,
     onTogglePinMessage,
     unreadDividerMessageId,
     currentUserId,

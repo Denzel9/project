@@ -12,12 +12,15 @@ import { useMemo, type ChangeEvent } from 'react';
 import { CHAR, MASK, OPERATORS } from '../lib/constants';
 
 type PhoneInputProps = {
-  value: string;
+  value: string | null;
   label: string;
   error?: boolean;
   helperText?: string;
   onChange: (e: ChangeEvent) => void;
-} & TextFieldProps;
+} & Omit<
+  TextFieldProps,
+  'value' | 'label' | 'error' | 'helperText' | 'onChange'
+>;
 
 export const PhoneInput = ({
   onChange,
@@ -64,7 +67,7 @@ export const PhoneInput = ({
   };
 
   const handleOnBlurClearValue = () => {
-    if (!value.replace(/\D/g, '')?.length)
+    if (!value?.replace(/\D/g, '')?.length)
       onChange({ target: { value: '' } } as ChangeEvent<HTMLInputElement>);
   };
 
@@ -98,8 +101,8 @@ export const PhoneInput = ({
       onChange={handleChange}
       placeholder="999 999 99 99"
       onBlur={handleOnBlurClearValue}
-      helperText={validatePhone(value).message || ''}
-      error={!validatePhone(value).isValid || error}
+      helperText={validatePhone(value ?? '').message || ''}
+      error={!validatePhone(value ?? '').isValid || error}
       sx={{
         '& .MuiInputBase-input::placeholder': {
           opacity: 1,

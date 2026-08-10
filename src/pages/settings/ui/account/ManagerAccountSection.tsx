@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Typography } from '@mui/material';
+import { Avatar, Box, Button, TextField, Typography } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
 
 import { FormBlock, FormBlockRowItem, RHFInput } from '@/shared';
@@ -18,6 +18,7 @@ export const ManagerAccountSection = ({ user }: ManagerAccountSectionProps) => {
   const { control, setValue, watch } = useFormContext();
 
   const avatarUrl = watch('avatar') || user?.avatar || '';
+  const email = user?.email ?? '';
 
   const handleMediaUploaded = (field: ProfileMediaField, url: string) => {
     setValue(field, url);
@@ -81,6 +82,14 @@ export const ManagerAccountSection = ({ user }: ManagerAccountSectionProps) => {
               fullWidth: true,
               label: 'Фамилия',
             }}
+          />
+        </FormBlockRowItem>
+        <FormBlockRowItem>
+          <TextField
+            label="Email"
+            value={email}
+            disabled
+            fullWidth
           />
         </FormBlockRowItem>
       </FormBlock>

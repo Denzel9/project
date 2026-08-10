@@ -11,6 +11,7 @@ export const SnackbarLocal = () => {
       open={snackbarOpen}
       autoHideDuration={3000}
       onClose={() => setSnackbarOpen?.(false, '')}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     />
   );
 };

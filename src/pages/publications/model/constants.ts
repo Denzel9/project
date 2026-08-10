@@ -8,6 +8,7 @@ export const PUBLICATION_TABLE_COLUMN_WIDTHS = {
   platform: '15%',
   executor: '16%',
   publishedAt: '10%',
+  link: '8%',
   actions: '10%',
   media: 88,
 } as const

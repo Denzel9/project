@@ -18,6 +18,7 @@ export const toChatMessageMedia = (
   key: upload.key,
   mimeType: upload.mimeType,
   size: String(upload.size),
+  fileName: upload.fileName?.trim() || null,
 })
 
 export const validateChatMediaFile = (file: File): string | null =>

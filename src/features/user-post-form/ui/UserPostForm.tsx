@@ -300,7 +300,7 @@ export const UserPostForm = ({
         <RHFInput
           name="description"
           control={control}
-          maxLength={400}
+          maxLength={1000}
           props={{
             rows: 5,
             fullWidth: true,

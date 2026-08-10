@@ -39,6 +39,7 @@ type TaskSwitcherProps = {
   onSelectTask: (taskId: string) => void;
   onSelectExecutor: (executorKey: string) => void;
   onTaskCreated?: (task: Task) => void;
+  onEditTask?: () => void;
 };
 
 const getExecutorKey = (task: Task) => task.executorId || 'unassigned';
@@ -68,6 +69,7 @@ export const TaskSwitcher = ({
   onSelectTask,
   onSelectExecutor,
   onTaskCreated,
+  onEditTask,
 }: TaskSwitcherProps) => {
   const [isTaskListOpen, setIsTaskListOpen] = useState(false);
   const [isExecutorListOpen, setIsExecutorListOpen] = useState(false);
@@ -327,6 +329,7 @@ export const TaskSwitcher = ({
         <TaskSwitcherMoreMenu
           task={currentTask}
           onTaskCreated={onTaskCreated}
+          onEdit={onEditTask}
         />
       </Stack>
 

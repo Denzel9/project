@@ -1,5 +1,6 @@
 import {
   BudgetTypeEnum,
+  EmploymentTypeEnum,
   type BudgetType,
   type CreatePostDto,
   type PaymentTerms,
@@ -10,6 +11,7 @@ import {
   type PostLocation,
   type UpdatePostDto,
   type WorkFormat,
+  type EmploymentType,
 } from '@/entities/post'
 
 import type { FormProductType } from './schema/schema'
@@ -136,6 +138,7 @@ export const mapFormToCreatePost = (form: FormProductType): CreatePostDto => {
     urgent: false,
     isPrivate: form.isPrivate,
     workFormat: form.workFormat as WorkFormat,
+    employmentType: (form.employmentType || null) as EmploymentType | null,
     ...(form.description?.trim() && { description: form.description.trim() }),
     ...(chips.length > 0 && { chips }),
     ...(keyWords.length > 0 && { keyWords }),
@@ -161,6 +164,7 @@ export const mapPostToForm = (post: Post): Partial<FormProductType> => ({
   description: post.description,
   isPrivate: post.isPrivate ?? false,
   workFormat: post.workFormat ?? 'REMOTE',
+  employmentType: (post.employmentType ?? '') as '' | EmploymentTypeEnum,
   keyWords: post.keyWords ?? [],
   categories: post.categories ?? [],
   tags: post.tags ?? [],

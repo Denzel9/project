@@ -30,7 +30,7 @@ const getChatSocketUrl = () => {
 
 class ChatSocketService {
   private socket: Socket | null = null
-  private onMessageCallback: ((message: ChatMessage) => void) | null = null
+  private onMessageCallbacks = new Set<(message: ChatMessage) => void>()
   private onMessagesReadCallback:
     | ((event: ChatMessagesReadEvent) => void)
     | null = null
@@ -93,7 +93,7 @@ class ChatSocketService {
     this.socket.off('error')
 
     this.socket.on('message', (message: ChatMessage) => {
-      this.onMessageCallback?.(message)
+      this.onMessageCallbacks.forEach(callback => callback(message))
     })
 
     this.socket.on('messages_read', (event: ChatMessagesReadEvent) => {
@@ -192,8 +192,12 @@ class ChatSocketService {
     return this.socket?.connected ?? false
   }
 
-  onMessage(callback: (message: ChatMessage) => void) {
-    this.onMessageCallback = callback
+  onMessage(callback: (message: ChatMessage) => void): () => void {
+    this.onMessageCallbacks.add(callback)
+
+    return () => {
+      this.onMessageCallbacks.delete(callback)
+    }
   }
 
   onMessagesRead(callback: (event: ChatMessagesReadEvent) => void) {
@@ -225,7 +229,7 @@ class ChatSocketService {
   }
 
   removeListeners() {
-    this.onMessageCallback = null
+    this.onMessageCallbacks.clear()
     this.onMessagesReadCallback = null
     this.onMessageDeletedCallback = null
     this.onMessagesHiddenCallback = null

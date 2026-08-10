@@ -25,6 +25,7 @@ type TaskTargetPostMode = 'duplicate' | 'duplicate-same';
 type TaskSwitcherMoreMenuProps = {
   task?: Task | null;
   onTaskCreated?: (task: Task) => void;
+  onEdit?: () => void;
 };
 
 const getExecutorLabel = (task: Task) => {
@@ -36,6 +37,7 @@ const getExecutorLabel = (task: Task) => {
 export const TaskSwitcherMoreMenu = ({
   task,
   onTaskCreated,
+  onEdit,
 }: TaskSwitcherMoreMenuProps) => {
   const navigate = useNavigate();
   const currentUserId = useAuthStore(state => state.id);
@@ -65,6 +67,14 @@ export const TaskSwitcherMoreMenu = ({
       ? task.deadlineExtension
       : null;
 
+  const canEditTask = Boolean(
+    task &&
+    isOwner &&
+    onEdit &&
+    (task.status === TASK_STATUS_ENUM.PREPARING ||
+      task.status === TASK_STATUS_ENUM.REVISION)
+  );
+
   const canRequestAnnulment = Boolean(
     task &&
     task.status !== TASK_STATUS_ENUM.ANNULLED &&
@@ -84,7 +94,10 @@ export const TaskSwitcherMoreMenu = ({
   );
 
   const showMenu =
-    isOwner || canRequestAnnulment || canRequestDeadlineExtension;
+    isOwner ||
+    canEditTask ||
+    canRequestAnnulment ||
+    canRequestDeadlineExtension;
 
   const currentPostId = task?.postId || task?.post?.id || null;
 
@@ -136,10 +149,6 @@ export const TaskSwitcherMoreMenu = ({
         buildCreateTaskPayload(task, postId, executorId)
       );
 
-      if (targetPostMode === 'duplicate-same') {
-        setSnackbarOpen(true, 'Задача успешно дублирована');
-      }
-
       return created;
     } catch (error) {
       setSnackbarOpen(true, 'Не удалось дублировать задачу');
@@ -166,6 +175,19 @@ export const TaskSwitcherMoreMenu = ({
         open={Boolean(menuAnchor)}
         onClose={closeMenu}
       >
+        {canEditTask && (
+          <MenuItem
+            onClick={() => {
+              closeMenu();
+              onEdit?.();
+            }}
+          >
+            <Typography>Редактировать</Typography>
+          </MenuItem>
+        )}
+
+        {canEditTask && isOwner && <Divider sx={{ my: 0.5 }} />}
+
         {isOwner && (
           <>
             <MenuItem
@@ -239,7 +261,9 @@ export const TaskSwitcherMoreMenu = ({
         open={isDialogOpen}
         mode={targetPostMode ?? 'duplicate'}
         fixedPostId={currentPostId}
-        excludePostId={currentPostId}
+        excludePostId={
+          targetPostMode === 'duplicate' ? currentPostId : null
+        }
         initialExecutorId={task.executorId}
         executorOptions={executorOptions}
         isPending={isCreating}

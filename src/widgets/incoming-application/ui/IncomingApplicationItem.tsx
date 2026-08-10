@@ -22,15 +22,20 @@ import {
 } from '@/entities/application';
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { applicantToUserPartial, UserDisplayName } from '@/entities/user';
+import { useAuthStore } from '@/features/auth';
 import { ActionActorCaption } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
-import { ConfirmDialog, useSnackbarStore } from '@/widgets';
+import { ConfirmDialog } from '@/widgets/confirm-dialog';
+import { useSnackbarStore } from '@/widgets/snackbar';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 import { IncomingApplicationDetailsDialog } from './IncomingApplicationDetailsDialog';
 
 type IncomingApplicationItemProps = {
   application: Application;
+  /** Показать превью и название объявления (для списка по всем постам) */
+  showPostContext?: boolean;
+  onAccepted?: () => void;
 };
 
 const getStatusColor = (status: Application['status']) => {
@@ -46,18 +51,23 @@ const isGalleryMedia = (mimeType: string) =>
 
 export const IncomingApplicationItem = ({
   application,
+  showPostContext = true,
+  onAccepted,
 }: IncomingApplicationItemProps) => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isOpenRejectDialog, setIsOpenRejectDialog] = useState(false);
 
   const { setSnackbarOpen } = useSnackbarStore();
+  const isPrime = useAuthStore(state => state.isPrime);
 
   const { mutateAsync: updateStatus, isPending } =
     useUpdateApplicationStatusMutation();
 
   const post = application.post;
   const postMedia = post?.media ?? [];
-  const previewMedia = postMedia.find(item => isGalleryMedia(item.mimeType));
+  const previewMedia = showPostContext
+    ? postMedia.find(item => isGalleryMedia(item.mimeType))
+    : undefined;
   const isUpdated = application.createdAt !== application.updatedAt;
   const actor = getApplicationActor(application);
   const canRespond =
@@ -71,8 +81,11 @@ export const IncomingApplicationItem = ({
     });
     setSnackbarOpen?.(
       true,
-      'Задача создана и переведена в статус «Подготовка»'
+      isPrime
+        ? 'Задача создана и переведена в статус «Подготовка»'
+        : 'Отклик принят'
     );
+    onAccepted?.();
   };
 
   return (
@@ -170,23 +183,25 @@ export const IncomingApplicationItem = ({
                   size="small"
                   label={APPLICATION_STATUS_LABELS[application.status]}
                   color={getStatusColor(application.status)}
-                  sx={{ opacity: 0.8 }}
+                  sx={{ opacity: 0.8, flexShrink: 0 }}
                 />
               )}
             </Stack>
 
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {post?.title ?? 'Объявление'}
-            </Typography>
+            {showPostContext && (
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {post?.title ?? 'Объявление'}
+              </Typography>
+            )}
 
             {application.message && (
               <Box
@@ -225,7 +240,7 @@ export const IncomingApplicationItem = ({
             <Stack
               spacing={1}
               direction="row"
-              sx={{ alignItems: 'end' }}
+              sx={{ alignItems: 'end', flexWrap: 'wrap' }}
             >
               <Tooltip title="Дата создания отклика">
                 <Stack
@@ -285,43 +300,44 @@ export const IncomingApplicationItem = ({
 
           {(canRespond ||
             application.status === APPLICATION_STATUS_ENUM.ACCEPTED) && (
-              <Box
-                sx={{ flexShrink: 0, pt: 1.5 }}
-                onClick={event => event.stopPropagation()}
+            <Box
+              sx={{ flexShrink: 0, pt: 1.5 }}
+              onClick={event => event.stopPropagation()}
+            >
+              <Divider sx={{ mb: 1.5 }} />
+
+              <Stack
+                direction="row"
+                spacing={0.75}
+                sx={{ flexWrap: 'wrap', gap: 0.75 }}
               >
-                <Divider sx={{ mb: 1.5 }} />
+                {canRespond && (
+                  <>
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      disabled={isPending}
+                      onClick={() => setIsOpenRejectDialog(true)}
+                    >
+                      Отклонить
+                    </Button>
 
-                <Stack
-                  direction="row"
-                  spacing={0.75}
-                  sx={{ flexWrap: 'wrap', gap: 0.75 }}
-                >
-                  {canRespond && (
-                    <>
-                      <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        disabled={isPending}
-                        onClick={() => setIsOpenRejectDialog(true)}
-                      >
-                        Отклонить
-                      </Button>
+                    <Button
+                      size="small"
+                      color="success"
+                      variant="outlined"
+                      disabled={isPending}
+                      onClick={() => void handleAccept()}
+                    >
+                      Принять
+                    </Button>
+                  </>
+                )}
 
-                      <Button
-                        size="small"
-                        color="success"
-                        variant="outlined"
-                        disabled={isPending}
-                        onClick={() => void handleAccept()}
-                      >
-                        Принять
-                      </Button>
-                    </>
-                  )}
-
-                  {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
-                    <>
+                {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
+                  <>
+                    {isPrime && (
                       <Button
                         size="small"
                         variant="outlined"
@@ -330,20 +346,21 @@ export const IncomingApplicationItem = ({
                       >
                         В задачу
                       </Button>
+                    )}
 
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        component={Link}
-                        to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
-                      >
-                        Чат
-                      </Button>
-                    </>
-                  )}
-                </Stack>
-              </Box>
-            )}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      component={Link}
+                      to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
+                    >
+                      Чат
+                    </Button>
+                  </>
+                )}
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </Stack>
 
@@ -351,6 +368,7 @@ export const IncomingApplicationItem = ({
         open={isDetailsOpen}
         application={application}
         onClose={() => setIsDetailsOpen(false)}
+        onAccepted={onAccepted}
       />
 
       <ConfirmDialog

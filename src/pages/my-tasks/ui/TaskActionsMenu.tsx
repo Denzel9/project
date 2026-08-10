@@ -1,6 +1,7 @@
 import { MoreVertOutlined } from '@mui/icons-material';
 import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import { useMemo, useState, type MouseEvent } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
   buildCreateTaskPayload,
@@ -12,6 +13,7 @@ import {
   type Task,
 } from '@/entities';
 import { useAuthStore } from '@/features';
+import { ROUTES } from '@/shared';
 import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
 import { TaskTargetPostDialog } from '@/pages/task/ui/TaskTargetPostDialog';
@@ -33,6 +35,7 @@ export const TaskActionsMenu = ({
   ownerOnly = false,
   size = 'medium',
 }: TaskActionsMenuProps) => {
+  const navigate = useNavigate();
   const currentUserId = useAuthStore(state => state.id);
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -101,12 +104,20 @@ export const TaskActionsMenu = ({
     executorId: string | null;
   }) => {
     try {
-      await createTask(buildCreateTaskPayload(task, postId, executorId));
-      setSnackbarOpen(true, 'Задача успешно дублирована');
+      const created = await createTask(
+        buildCreateTaskPayload(task, postId, executorId)
+      );
+      return created;
     } catch (error) {
       setSnackbarOpen(true, 'Не удалось дублировать задачу');
       throw error;
     }
+  };
+
+  const handleGoToCreatedTask = (created: Task) => {
+    const postId = created.postId || created.post?.id;
+    if (!postId) return;
+    navigate(`${ROUTES.TASK}/${postId}?taskId=${created.id}`);
   };
 
   const handleDelete = async () => {
@@ -208,7 +219,7 @@ export const TaskActionsMenu = ({
         isPending={isCopying}
         onClose={() => setIsDuplicateDialogOpen(false)}
         onConfirm={handleDuplicateConfirm}
-        onGoToCreatedTask={() => undefined}
+        onGoToCreatedTask={handleGoToCreatedTask}
       />
     </Box>
   );

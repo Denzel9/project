@@ -129,12 +129,11 @@ export const ChatPinnedMessagesDialog = ({
               }}
             >
 
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                 <Typography
                   variant="caption"
                   color="text.secondary"
                   sx={{
-                    mt: 0.5,
                     display: 'block',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -148,11 +147,19 @@ export const ChatPinnedMessagesDialog = ({
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ mt: 0.5, display: 'block', flexShrink: 0 }}
+                  sx={{ display: 'block', flexShrink: 0 }}
                 >
                   {format(new Date(pin.pinnedAt), 'dd.MM.yyyy HH:mm')}
                 </Typography>
               </Stack>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 1 }}
+              >
+                {pin.scope === 'PERSONAL' ? 'Только вы' : 'Для всех'}
+              </Typography>
 
               <Typography
                 variant="body2"

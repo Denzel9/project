@@ -221,14 +221,12 @@ export const SideBarContent = ({
             }}
           >
             <Typography variant="body1">Prime активен</Typography>
-            <Typography
+            {!primeExpiresLabel && <Typography
               variant="body2"
               sx={{ mt: 1 }}
             >
-              {primeExpiresLabel
-                ? `Подписка действует до ${primeExpiresLabel}`
-                : 'Доступны CRM и расширенные функции рабочего пространства.'}
-            </Typography>
+              Доступны CRM и расширенные функции рабочего пространства.
+            </Typography>}
           </Box>
         )}
 

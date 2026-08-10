@@ -20,6 +20,7 @@ import type {
   ChatConversation,
   ChatMessage,
   ChatMessagePin,
+  ChatMessagePinScope,
   ChatMessageMedia,
   ChatUnreadCount,
   ConversationsParams,
@@ -159,6 +160,8 @@ const normalizeConversation = (conversation: ChatConversation): ChatConversation
     isMarkedUnread: conversation.isMarkedUnread ?? false,
     isPinned: conversation.isPinned ?? false,
     isNotes,
+    canSendMessages: conversation.canSendMessages ?? true,
+    sendBlockedReason: conversation.sendBlockedReason ?? null,
     peer: isNotes
       ? { ...conversation.peer, displayName: 'Заметки' }
       : conversation.peer,
@@ -256,6 +259,24 @@ export const updateConversationLastMessage = (
             ...conversation,
             lastMessage: normalizeMessage(message),
             updatedAt: message.createdAt,
+          }
+        : conversation,
+    ),
+  )
+}
+
+/** После первого сообщения компании исполнитель снова может писать. */
+export const unlockConversationSendPermission = (
+  client: QueryClient,
+  conversationId: string,
+) => {
+  updateConversationsCache(client, old =>
+    old?.map(conversation =>
+      conversation.id === conversationId
+        ? {
+            ...conversation,
+            canSendMessages: true,
+            sendBlockedReason: null,
           }
         : conversation,
     ),
@@ -591,14 +612,19 @@ export const usePinMessageMutation = () => {
       conversationId,
       messageId,
       isPinned,
+      scope,
     }: {
       conversationId: string
       messageId: string
       isPinned: boolean
+      scope?: ChatMessagePinScope
     }) => {
       await mainAxios.patch(
         `/chat/conversations/${conversationId}/messages/${messageId}/pin`,
-        { isPinned },
+        {
+          isPinned,
+          ...(isPinned && scope ? { scope } : {}),
+        },
       )
     },
     onSuccess: (_data, { conversationId }) => {
@@ -840,18 +866,22 @@ export const uploadConversationMedia = async (
 ) => {
   const prepared = await prepareFileForUpload(file)
   const formData = new FormData()
-  formData.append('file', prepared)
+  // Third arg sets Content-Disposition filename → multer `originalname`
+  formData.append('file', prepared, file.name)
+  formData.append('fileName', file.name)
 
   const { data } = await mainAxios.post<UploadMediaResponse>(
     '/media/upload',
     formData,
     {
       params: { conversationId },
-      headers: { 'Content-Type': 'multipart/form-data' },
     },
   )
 
-  return data
+  return {
+    ...data,
+    fileName: data.fileName?.trim() || file.name,
+  }
 }
 
 export const uploadConversationMediaBatch = async (

@@ -40,7 +40,14 @@ export const prepareFileForUpload = async (file: File): Promise<File> => {
     throw new Error(validationError)
   }
 
-  return prepared
+  if (prepared.name === file.name) {
+    return prepared
+  }
+
+  return new File([prepared], file.name, {
+    type: prepared.type,
+    lastModified: prepared.lastModified,
+  })
 }
 
 export const prepareFilesForUpload = (files: File[]) =>

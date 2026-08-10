@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { useMemo } from 'react'
 
-import { getMediaKind, MediaItem } from '@/widgets/media'
+import { getMediaDisplayName, getMediaKind, MediaItem } from '@/widgets/media'
 
 import type { ChatMessageMedia } from '@/entities/chat'
 
@@ -142,7 +142,7 @@ export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
                   src={item.url}
                   alt="Вложение"
                   mimeType={item.mimeType}
-                  fileName={item.key.split('/').pop()}
+                  fileName={getMediaDisplayName(item.fileName, item.key)}
                 />
 
                 {showOverflow && (
@@ -182,7 +182,7 @@ export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
             src={item.url}
             alt="Документ"
             mimeType={item.mimeType}
-            fileName={item.key.split('/').pop()}
+            fileName={getMediaDisplayName(item.fileName, item.key)}
           />
         </Box>
       ))}

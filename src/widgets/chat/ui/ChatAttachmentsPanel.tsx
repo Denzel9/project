@@ -18,7 +18,7 @@ import { useAttachmentsQuery, type ChatAttachment } from '@/entities/chat';
 import { useDeleteMediaMutation } from '@/entities/media';
 import { useAuthStore } from '@/features/auth';
 import {
-  getFileNameFromKey,
+  getMediaDisplayName,
   isGalleryMedia,
 } from '@/widgets/media/lib/getMediaKind';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
@@ -255,7 +255,7 @@ export const ChatAttachmentsPanel = ({
                     <Description color="action" />
 
                     <Typography variant="caption">
-                      {getFileNameFromKey(item.key)}
+                      {getMediaDisplayName(item.fileName, item.key)}
                     </Typography>
 
                     <Typography

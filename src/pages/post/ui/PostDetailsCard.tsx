@@ -25,6 +25,7 @@ import {
   getPlatformChipSx,
   getPlatformLabel,
   getWorkFormatLabel,
+  getEmploymentTypeLabel,
   type Platform,
   type Post,
   type PostDeliverable,
@@ -299,6 +300,11 @@ const CompanyDetails = ({ post }: { post: Post }) => {
           <DetailRow label="Формат работы">
             {post.workFormat ? getWorkFormatLabel(post.workFormat) : '—'}
           </DetailRow>
+          <DetailRow label="Тип занятости">
+            {post.employmentType
+              ? getEmploymentTypeLabel(post.employmentType)
+              : '—'}
+          </DetailRow>
           <DetailRow label="Срочность">
             {post.urgent ? (
               <Chip
@@ -487,6 +493,7 @@ const CreatorDetails = ({ post }: { post: Post }) => {
 
   const hasProfileDetails =
     Boolean(post.workFormat) ||
+    Boolean(post.employmentType) ||
     locationLabel !== '—' ||
     price !== '—' ||
     Boolean(post.createdAt)
@@ -505,6 +512,11 @@ const CreatorDetails = ({ post }: { post: Post }) => {
             {post.workFormat && (
               <DetailRow label="Формат работы">
                 {getWorkFormatLabel(post.workFormat)}
+              </DetailRow>
+            )}
+            {post.employmentType && (
+              <DetailRow label="Тип занятости">
+                {getEmploymentTypeLabel(post.employmentType)}
               </DetailRow>
             )}
             {locationLabel !== '—' && (

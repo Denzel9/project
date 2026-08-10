@@ -5,7 +5,8 @@ import {
   sortConversationsByUnread,
   type ChatConversation,
 } from '@/entities/chat';
-import { type UserSearchItem } from '@/entities/user';
+import { USER_ROLE, type UserSearchItem } from '@/entities/user';
+import { useAuthStore } from '@/features/auth';
 import { ChatContactSearch } from '@/features/chat';
 import { ConversationItem } from '@/widgets/chat';
 
@@ -26,6 +27,9 @@ export const Contacts = ({
   onSelect,
   onStartChat,
 }: ContactsProps) => {
+  const role = useAuthStore(state => state.role);
+  const canSearchContacts = role !== USER_ROLE.MANAGER;
+
   const sortedConversations = useMemo(
     () => sortConversationsByUnread(conversations),
     [conversations]
@@ -45,14 +49,22 @@ export const Contacts = ({
         minHeight: 0,
       }}
     >
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-
-        <ChatContactSearch onSelect={onStartChat} size="small" />
-      </Stack>
+      {canSearchContacts && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'center' }}
+        >
+          <ChatContactSearch
+            onSelect={onStartChat}
+            size="small"
+          />
+        </Stack>
+      )}
 
       <Stack
         sx={{
-          mt: 2,
+          mt: canSearchContacts ? 2 : 0,
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',

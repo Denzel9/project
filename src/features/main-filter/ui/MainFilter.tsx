@@ -74,15 +74,13 @@ export const MainFilter = () => {
         direction="column"
         spacing={1}
         sx={{
-          px: 2,
-          pb: 2,
-          pt: isScrolled ? 4 : 1,
-          border: isScrolled ? '1px solid' : 'none',
+          p: 2,
+          mb: 1,
+          bgcolor: 'white',
+          border: '1px solid',
+          borderRadius: '24px',
           borderColor: 'divider',
           transition: 'all 0.3s ease',
-          bgcolor: isScrolled ? 'white' : 'transparent',
-          borderBottomLeftRadius: isScrolled ? '32px' : '0',
-          borderBottomRightRadius: isScrolled ? '32px' : '0',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >

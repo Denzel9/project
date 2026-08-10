@@ -1,7 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
+import { chatKeys } from '@/entities/chat'
 import {
+  NOTIFICATION_TYPE,
   notificationKeys,
   prependNotificationToCache,
   setUnreadCountInCache,
@@ -14,6 +16,7 @@ import { useSnackbarStore } from '@/widgets'
 export const useNotificationsRealtime = () => {
   const queryClient = useQueryClient()
   const isAuth = useAuthStore(state => state.isAuth)
+  const userId = useAuthStore(state => state.id)
   const { setSnackbarOpen } = useSnackbarStore()
 
   useNotificationsUnreadCountQuery({ enabled: isAuth })
@@ -29,6 +32,15 @@ export const useNotificationsRealtime = () => {
       prependNotificationToCache(queryClient, event.notification)
       setUnreadCountInCache(queryClient, event.unreadCount)
       setSnackbarOpen(true, event.notification.title)
+
+      if (event.notification.type === NOTIFICATION_TYPE.CHAT_MESSAGE) {
+        void queryClient.invalidateQueries({
+          queryKey: chatKeys.unreadCount(),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: chatKeys.conversationsRoot(),
+        })
+      }
     })
 
     notificationsSocket.onError(() => {
@@ -43,5 +55,5 @@ export const useNotificationsRealtime = () => {
       notificationsSocket.removeListeners()
       notificationsSocket.disconnect()
     }
-  }, [isAuth, queryClient, setSnackbarOpen])
+  }, [isAuth, userId, queryClient, setSnackbarOpen])
 }

@@ -1,4 +1,4 @@
-import { QuestionMark } from '@mui/icons-material';
+import { HelpOutlineOutlined, } from '@mui/icons-material';
 import {
   Button,
   Checkbox,
@@ -229,7 +229,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             </Typography>
 
             <Tooltip title="Пост будет виден только вам. Нужен для создания задач на частные проекты.">
-              <QuestionMark color="primary" />
+              <HelpOutlineOutlined color="info" />
             </Tooltip>
           </Stack>
         </Stack>
@@ -272,10 +272,9 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             color="primary"
             onClick={() =>
               navigate(
-                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${
-                  executorId !== EXECUTOR_UNASSIGNED_ID
-                    ? `&userId=${executorId}`
-                    : '&userId=unassigned'
+                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${executorId !== EXECUTOR_UNASSIGNED_ID
+                  ? `&userId=${executorId}`
+                  : '&userId=unassigned'
                 }`
               )
             }

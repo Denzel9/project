@@ -11,6 +11,7 @@ import type {
   PostType,
   UsageRights,
   WorkFormat,
+  EmploymentType,
 } from './types'
 import type { Application } from '@/entities/application'
 import type { Photo } from '@/entities/photo'
@@ -51,6 +52,11 @@ export const WORK_FORMAT_LABELS: Record<WorkFormat, string> = {
   HYBRID: 'Гибрид',
 }
 
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  STAFF: 'В штат',
+  ONE_TIME: 'Разовое сотрудничество',
+}
+
 export const BUDGET_TYPE_LABELS: Record<BudgetType, string> = {
   FIXED: 'Фиксированная',
   RANGE: 'Диапазон',
@@ -62,7 +68,6 @@ export const PAYMENT_TERMS_LABELS: Record<PaymentTerms, string> = {
   PREPAY: 'Предоплата',
   POSTPAY: 'После публикации',
   '50_50': '50/50',
-  SAFE_DEAL: 'Безопасная сделка',
 }
 
 export const getPlatformLabel = (platform: Platform): string =>
@@ -87,6 +92,10 @@ export const getPlacementFormatLabel = (format: PlacementFormat): string =>
 
 export const getWorkFormatLabel = (workFormat: WorkFormat): string =>
   WORK_FORMAT_LABELS[workFormat] ?? workFormat
+
+export const getEmploymentTypeLabel = (
+  employmentType: EmploymentType,
+): string => EMPLOYMENT_TYPE_LABELS[employmentType] ?? employmentType
 
 export const getBudgetTypeLabel = (type: BudgetType): string =>
   BUDGET_TYPE_LABELS[type] ?? type

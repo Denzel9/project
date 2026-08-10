@@ -3,7 +3,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import { prefetchUserConfig } from '@/entities/user-config';
-import { mapAuthSessionUser, useAuthStore, useRefreshTokenMutation } from '@/features/auth';
+import {
+  mapAuthSessionUser,
+  subscribeRemoteProfileSwitch,
+  useAuthStore,
+  useRefreshTokenMutation,
+} from '@/features/auth';
 import { queryClient } from '@/shared/api';
 import { ROUTES } from '@/shared/config/routes';
 
@@ -19,6 +24,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const hasFetched = useRef(false);
 
   const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    return subscribeRemoteProfileSwitch();
+  }, []);
 
   useEffect(() => {
     if (hasFetched.current) {

@@ -9,8 +9,7 @@ import {
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
-
-import { IncomingApplicationItem } from './IncomingApplicationItem';
+import { IncomingApplicationItem } from '@/widgets';
 
 type IncomingApplicationsProps = {
   applications?: ApplicationList;
@@ -80,6 +79,7 @@ export const IncomingApplications = ({
           <Box sx={{ width: '100%', height: '100%' }}>
             <IncomingApplicationItem
               application={application}
+              showPostContext={false}
               onAccepted={() => navigate(ROUTES.MY_TASKS)}
             />
           </Box>

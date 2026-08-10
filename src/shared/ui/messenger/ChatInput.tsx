@@ -12,6 +12,7 @@ import {
   InputAdornment,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import {
   useRef,
@@ -121,33 +122,57 @@ export const ChatInput = ({
                 spacing={1}
                 direction="row"
                 key={`${file.name}-${index}`}
-                sx={{ py: 2, position: 'relative' }}
+                sx={{
+                  py: 1,
+                  px: 1.5,
+                  maxWidth: 220,
+                  borderRadius: '12px',
+                  alignItems: 'center',
+                  bgcolor: 'action.hover',
+                  position: 'relative',
+                }}
               >
                 {previewUrl ? (
                   <Box
                     component="img"
-                    src={previewUrl ?? ''}
+                    src={previewUrl}
                     alt={file.name}
                     sx={{
                       width: 40,
                       height: 40,
+                      flexShrink: 0,
                       objectFit: 'cover',
                       borderRadius: '4px',
                     }}
                   />
                 ) : (
-                  // TODO: add file icon by file type
                   <DescriptionOutlined
-                    sx={{ fontSize: 40 }}
+                    sx={{ fontSize: 40, flexShrink: 0 }}
                     color="disabled"
                   />
                 )}
 
+                <Typography
+                  variant="caption"
+                  title={file.name}
+                  sx={{
+                    minWidth: 0,
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    pr: 2,
+                  }}
+                >
+                  {file.name}
+                </Typography>
+
                 <IconButton
                   size="small"
                   color="inherit"
+                  aria-label="Удалить файл"
                   onClick={() => onRemoveFile(index)}
-                  sx={{ position: 'absolute', right: -10, top: 0 }}
+                  sx={{ position: 'absolute', right: -4, top: -4 }}
                 >
                   <DeleteOutlined color="error" />
                 </IconButton>

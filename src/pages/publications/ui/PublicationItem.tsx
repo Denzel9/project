@@ -3,10 +3,19 @@ import {
   OpenInNewOutlined,
   ScheduleOutlined,
 } from '@mui/icons-material'
-import { Box, Button, Chip, Divider, Stack, Typography } from '@mui/material'
+import {
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Menu,
+  MenuItem,
+  Stack,
+  Typography,
+} from '@mui/material'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Link } from 'react-router'
 
 import { getPlatformChipSx, getPlatformLabel } from '@/entities/post'
@@ -19,16 +28,19 @@ import { Media } from '@/widgets'
 
 import {
   getPublicationGalleryMediaItems,
+  getPublicationPlatformLinks,
   getPublicationPlatforms,
   getPublicationPostPath,
   getPublicationPostTitle,
   getPublicationTaskPath,
   getPublicationTitle,
+  publicationHasLink,
 } from '../model/utils'
 
 import { AttachPublicationLinkDialog } from './AttachPublicationLinkDialog'
 
 import type { Publication } from '@/entities/publication'
+import type { Platform } from '@/entities/post'
 
 type PublicationItemProps = {
   publication: Publication
@@ -36,6 +48,7 @@ type PublicationItemProps = {
 
 export const PublicationItem = ({ publication }: PublicationItemProps) => {
   const [isAttachLinkOpen, setIsAttachLinkOpen] = useState(false)
+  const [openMenuAnchor, setOpenMenuAnchor] = useState<HTMLElement | null>(null)
   const title = getPublicationTitle(publication)
   const postTitle = getPublicationPostTitle(publication)
   const postPath = getPublicationPostPath(publication)
@@ -44,9 +57,17 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
   const participantUser = publication.executor
     ? executorToUserPartial(publication.executor)
     : (publication.owner as Partial<User>)
-  const externalUrl = publication.externalUrl?.trim() || null
-
   const platformChips = getPublicationPlatforms(publication)
+  const platformLinks = getPublicationPlatformLinks(publication)
+  const hasLink = publicationHasLink(publication)
+  const linkedPlatforms = (
+    platformChips.length > 0 ? platformChips : (['OTHER'] as Platform[])
+  ).filter(platform => Boolean(platformLinks[platform]))
+
+  const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
+    event.stopPropagation()
+    setOpenMenuAnchor(event.currentTarget)
+  }
 
   return (
     <Box
@@ -174,6 +195,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
 
         <Box
           sx={{
+            mt: platformChips.length > 0 ? 2 : 0,
             px: 1.5,
             py: 1.25,
             borderRadius: '14px',
@@ -202,40 +224,54 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               </Typography>
             </Stack>
 
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
-            >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ flexShrink: 0 }}
-              >
-                Ссылка:
+            <Stack spacing={0.5}>
+              <Typography variant="body2" color="text.secondary">
+                Ссылки:
               </Typography>
-              {externalUrl ? (
-                <Typography
-                  component="a"
-                  href={externalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="body2"
-                  onClick={event => event.stopPropagation()}
-                  sx={{
-                    color: 'info.main',
-                    textDecoration: 'none',
-                    wordBreak: 'break-all',
-                    '&:hover': { color: 'primary.main' },
-                  }}
-                >
-                  {externalUrl}
-                </Typography>
-              ) : (
-                <Typography variant="body2" color="text.disabled">
-                  не указана
-                </Typography>
-              )}
+              {(platformChips.length > 0
+                ? platformChips
+                : (['OTHER'] as Platform[])
+              ).map(platform => {
+                const url = platformLinks[platform]
+                return (
+                  <Stack
+                    key={platform}
+                    direction="row"
+                    spacing={0.5}
+                    sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ flexShrink: 0 }}
+                    >
+                      {getPlatformLabel(platform)}:
+                    </Typography>
+                    {url ? (
+                      <Typography
+                        component="a"
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="body2"
+                        onClick={event => event.stopPropagation()}
+                        sx={{
+                          color: 'info.main',
+                          textDecoration: 'none',
+                          wordBreak: 'break-all',
+                          '&:hover': { color: 'primary.main' },
+                        }}
+                      >
+                        {url}
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="text.disabled">
+                        не указана
+                      </Typography>
+                    )}
+                  </Stack>
+                )
+              })}
             </Stack>
 
             <Stack
@@ -279,18 +315,44 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               К задаче
             </Button>
 
-            {externalUrl ? (
-              <Button
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="contained"
-                size="small"
-                endIcon={<OpenInNewOutlined />}
-                sx={{ flex: 1, whiteSpace: 'nowrap' }}
-              >
-                Открыть публикацию
-              </Button>
+            {hasLink ? (
+              <>
+                <Button
+                  variant="contained"
+                  size="small"
+                  endIcon={<OpenInNewOutlined />}
+                  onClick={handleOpenMenu}
+                  sx={{ flex: 1, whiteSpace: 'nowrap' }}
+                >
+                  Открыть
+                </Button>
+                <Menu
+                  anchorEl={openMenuAnchor}
+                  open={Boolean(openMenuAnchor)}
+                  onClose={() => setOpenMenuAnchor(null)}
+                >
+                  {linkedPlatforms.map(platform => (
+                    <MenuItem
+                      key={platform}
+                      component="a"
+                      href={platformLinks[platform]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setOpenMenuAnchor(null)}
+                    >
+                      {getPlatformLabel(platform)}
+                    </MenuItem>
+                  ))}
+                  <MenuItem
+                    onClick={() => {
+                      setOpenMenuAnchor(null)
+                      setIsAttachLinkOpen(true)
+                    }}
+                  >
+                    Изменить ссылки
+                  </MenuItem>
+                </Menu>
+              </>
             ) : (
               <Button
                 variant="contained"
@@ -311,7 +373,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
 
       <AttachPublicationLinkDialog
         open={isAttachLinkOpen}
-        publicationId={publication.id}
+        publication={publication}
         onClose={() => setIsAttachLinkOpen(false)}
       />
     </Box>

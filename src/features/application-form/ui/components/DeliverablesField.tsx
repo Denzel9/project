@@ -206,7 +206,7 @@ export const DeliverablesField = ({
 
       <Grid
         container
-        spacing={1.5}
+        spacing={1}
       >
         {fields?.map((field, index) => {
           const item = deliverables[index];
@@ -214,7 +214,7 @@ export const DeliverablesField = ({
           return (
             <Grid
               key={field.id}
-              size={{ xs: 12, sm: 6, md: 4 }}
+              size={{ xs: 12, sm: 6 }}
             >
               <DeliverableRow
                 index={index}

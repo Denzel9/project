@@ -1,4 +1,4 @@
-export { getMediaKind, isGalleryMedia, getFileNameFromKey } from './lib/getMediaKind'
+export { getMediaKind, isGalleryMedia, getFileNameFromKey, getMediaDisplayName } from './lib/getMediaKind'
 export { MediaItem, type MediaObjectFit } from './ui/MediaItem'
 export { Media } from './ui/Media'
 export type { MediaItemType } from './model/types'

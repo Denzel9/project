@@ -75,7 +75,7 @@ export const ChangeAssigneeDialog = ({
       if (
         !existing ||
         getOptionPriority(option, currentAssigneeAccountId) <
-          getOptionPriority(existing, currentAssigneeAccountId)
+        getOptionPriority(existing, currentAssigneeAccountId)
       ) {
         uniqueByLabel.set(key, option);
       }
@@ -188,7 +188,7 @@ export const ChangeAssigneeDialog = ({
             <List disablePadding>
               {options.map(option => {
                 const isSelected = selectedAccountId === option.id;
-
+                console.log(option);
                 return (
                   <ListItemButton
                     key={option.id}
@@ -196,13 +196,13 @@ export const ChangeAssigneeDialog = ({
                     onClick={() => setSelectedAccountId(option.id)}
                     sx={{ borderRadius: '16px', mb: 0.5 }}
                   >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      {isSelected ? <Check fontSize="small" /> : null}
-                    </ListItemIcon>
                     <ListItemText
                       primary={option.label}
                       secondary={option.roleLabel}
                     />
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      {isSelected ? <Check fontSize="small" /> : null}
+                    </ListItemIcon>
                   </ListItemButton>
                 );
               })}

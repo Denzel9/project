@@ -169,11 +169,11 @@ export const TaskDeliverablesSection = ({
       ) : (
         <Grid
           container
-          spacing={1.5}
+          spacing={1}
         >
           {filledDeliverables.map((item, index) => (
             <Grid
-              size={{ xs: 12 }}
+              size={{ xs: 6 }}
               key={`${item.platform}-${item.format}-${index}`}
             >
               <DeliverableViewCard item={item} />

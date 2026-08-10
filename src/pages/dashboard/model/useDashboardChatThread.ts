@@ -9,6 +9,7 @@ import {
   useMessagesQuery,
   type ChatMessage,
 } from '@/entities/chat'
+import { useAuthStore } from '@/features/auth'
 import chatSocket from '@/shared/api/socket'
 
 type UseDashboardChatThreadParams = {
@@ -19,6 +20,7 @@ export const useDashboardChatThread = ({
   conversationId,
 }: UseDashboardChatThreadParams) => {
   const queryClient = useQueryClient()
+  const currentUserId = useAuthStore(state => state.id)
   const [draft, setDraft] = useState('')
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
@@ -49,12 +51,12 @@ export const useDashboardChatThread = ({
       void queryClient.invalidateQueries({ queryKey: chatKeys.conversationsRoot() })
     }
 
-    chatSocket.onMessage(handleMessage)
+    const unsubscribeMessage = chatSocket.onMessage(handleMessage)
 
     return () => {
-      chatSocket.onMessage(() => undefined)
+      unsubscribeMessage()
     }
-  }, [conversationId, queryClient])
+  }, [conversationId, currentUserId, queryClient])
 
   const attachFiles = useCallback((files: File[]) => {
     if (!files.length) return

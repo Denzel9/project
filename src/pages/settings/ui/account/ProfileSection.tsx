@@ -2,6 +2,7 @@ import { Avatar, Box, Button, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
+import { useAuthStore } from '@/features';
 import {
   FormBlock,
   FormBlockRowItem,
@@ -20,6 +21,8 @@ import type { ProfileSectionProps } from '../../model/types';
 
 export const ProfileSection = ({ user }: ProfileSectionProps) => {
   const [isOpenAddContacts, setIsOpenAddContacts] = useState(false);
+
+  const { role } = useAuthStore()
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -226,7 +229,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
           />
         </FormBlockRowItem>
 
-        <ParametersSection />
+        {role !== 'COMPANY' && <ParametersSection />}
       </FormBlock>
 
       <FormBlock>

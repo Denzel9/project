@@ -10,6 +10,7 @@ import {
   getPublicationPostTitle,
   getPublicationPreviewMedia,
   getPublicationTitle,
+  publicationHasLink,
 } from './utils'
 
 const formatExportDateTime = (value?: string | null) => {
@@ -52,7 +53,7 @@ export const exportPublicationsReport = (publications: Publication[]) => {
         : '—',
       getPublicationExecutorName(publication) || '—',
       formatExportDateTime(publication.createdAt),
-      publication.externalUrl || '—',
+      publicationHasLink(publication) ? '☑' : '☐',
       previewMediaCount ? String(previewMediaCount) : '0',
       publication.id,
     ]

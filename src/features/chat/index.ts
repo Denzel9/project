@@ -1,4 +1,5 @@
 export { useMessenger } from './model/useMessenger'
+export { useChatUnreadRealtime } from './model/useChatUnreadRealtime'
 export {
   formatTaskTzForChat,
   sendTaskTzToChat,

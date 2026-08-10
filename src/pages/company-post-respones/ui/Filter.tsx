@@ -119,15 +119,15 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
         ref={ref}
         direction="row"
         sx={{
-          px: 2,
-          pb: 2,
+          p: 2,
+          mb: 1,
+          bgcolor: 'white',
+          borderRadius: '24px',
+          border: '1px solid',
+          borderColor: 'divider',
           alignItems: 'center',
-          pt: isScrolled ? 4 : 1,
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
-          bgcolor: isScrolled ? 'white' : 'transparent',
-          borderBottomLeftRadius: isScrolled ? '32px' : '0',
-          borderBottomRightRadius: isScrolled ? '32px' : '0',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
@@ -195,9 +195,6 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
           spacing={1}
           sx={{ alignItems: 'center' }}
         >
-          {/* <IconButton onClick={() => setIsSearchOpen(true)}>
-            <Search />
-          </IconButton> */}
           <IconButton
             onClick={() => setIsOpenFilter(!isOpenFilter)}
             sx={{

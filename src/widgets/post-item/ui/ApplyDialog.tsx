@@ -56,8 +56,9 @@ export const ApplyDialog = ({
       sx={{
         '& .MuiDialog-paper': {
           maxWidth: '90%',
+          maxHeight: '90%',
           outline: 'none',
-          overflow: 'visible',
+          overflow: 'hidden',
           position: 'relative',
           borderRadius: '32px',
           minWidth: { xs: 'auto', md: 560 },
@@ -95,6 +96,7 @@ export const ApplyDialog = ({
           multiline
           fullWidth
           minRows={4}
+          maxRows={15}
           sx={{ mt: 3 }}
           value={message}
           disabled={isPending}

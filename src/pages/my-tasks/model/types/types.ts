@@ -18,6 +18,8 @@ export type FilterOption = {
 export type TaskTableColumnFilters = {
   status: TaskStatus | 'all';
   taskId: string;
+  /** Свободный поиск по названию (частичное вхождение), пока не выбран конкретный taskId */
+  taskQuery: string;
   personId: string;
   urgentOnly: boolean;
   updatedDate: string | null;
@@ -25,6 +27,7 @@ export type TaskTableColumnFilters = {
   personLabel: string;
   onStatusChange: (value: TaskStatus | 'all') => void;
   onTaskIdChange: (value: string) => void;
+  onTaskQueryChange: (value: string) => void;
   onPersonIdChange: (value: string) => void;
   onUrgentOnlyChange: (value: boolean) => void;
   onUpdatedDateChange: (value: string | null) => void;

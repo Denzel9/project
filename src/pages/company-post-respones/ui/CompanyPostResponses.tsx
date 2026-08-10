@@ -1,5 +1,4 @@
-import { InboxOutlined } from '@mui/icons-material';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -9,16 +8,18 @@ import {
 } from '@/entities/application';
 import { EmptyBlock } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
-import { PageLayout } from '@/widgets';
+import { IncomingApplicationItem, PageLayout } from '@/widgets';
 
 import { APPLICATION_TABLE_PAGE_SIZE } from '../model/constants';
 import { exportIncomingApplicationsReport } from '../model/exportIncomingApplicationsReport';
 import { fetchIncomingApplicationsForReport } from '../model/fetchIncomingApplicationsForReport';
 import { useMyPostFilterStore } from '../model/store';
-import { toIncomingApplicationsParams } from '../model/utils';
+import {
+  toIncomingApplicationsParams,
+  type ApplicationStatusFilter,
+} from '../model/utils';
 
 import Filter from './Filter';
-import { IncomingApplicationItem } from './IncomingApplicationItem';
 import { IncomingApplicationItemSkeletonList } from './IncomingApplicationItemSkeleton';
 import { IncomingApplicationsPrintHeader } from './IncomingApplicationsPrintHeader';
 import { IncomingApplicationsTable } from './IncomingApplicationsTable';
@@ -36,7 +37,9 @@ const CompanyPostResponses = () => {
     type: postType,
     viewMode,
     setPosts,
+    setPostId,
     setUserId,
+    setStatus,
     setViewMode,
     posts,
     resetFilters,
@@ -52,6 +55,10 @@ const CompanyPostResponses = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const userIdFromUrl = searchParams.get('userId');
+    const postIdFromUrl = searchParams.get('postId');
+    const statusFromUrl = searchParams.get('status');
+
+    let shouldReplace = false;
 
     if (
       userIdFromUrl &&
@@ -60,9 +67,40 @@ const CompanyPostResponses = () => {
       userIdFromUrl !== 'null'
     ) {
       setUserId(userIdFromUrl);
+      shouldReplace = true;
+    }
+
+    if (
+      postIdFromUrl &&
+      postIdFromUrl !== 'all' &&
+      postIdFromUrl !== 'undefined' &&
+      postIdFromUrl !== 'null'
+    ) {
+      setPostId(postIdFromUrl);
+      shouldReplace = true;
+    }
+
+    if (
+      statusFromUrl &&
+      ['NEW', 'VIEWED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].includes(
+        statusFromUrl
+      )
+    ) {
+      setStatus(statusFromUrl as ApplicationStatusFilter);
+      shouldReplace = true;
+    }
+
+    if (shouldReplace) {
       navigate(location.pathname, { replace: true });
     }
-  }, [location.pathname, location.search, navigate, setUserId]);
+  }, [
+    location.pathname,
+    location.search,
+    navigate,
+    setPostId,
+    setStatus,
+    setUserId,
+  ]);
 
   const userIdFromUrl = (() => {
     const value = new URLSearchParams(location.search).get('userId');
@@ -236,7 +274,7 @@ const CompanyPostResponses = () => {
         <Box
           className="print-no-print"
           sx={{
-            top: 0,
+            top: 8,
             zIndex: 1000,
             position: 'sticky',
             flexShrink: 0,
@@ -286,52 +324,25 @@ const CompanyPostResponses = () => {
       {isEmpty && (
         <Box
           sx={{
+            height: '100%',
             display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             bgcolor: 'white',
             borderRadius: '32px',
-            border: '1px dashed',
+            border: '1px solid',
             borderColor: 'divider',
-            py: 8,
-            px: 3,
             flex: 1,
           }}
         >
-          <Stack
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <InboxOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ textAlign: 'center' }}
-            >
-              {hasActiveFilters
-                ? 'По выбранным фильтрам ничего не найдено'
-                : 'Пока нет входящих откликов'}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: 'center' }}
-            >
-              {hasActiveFilters
-                ? 'Попробуйте изменить фильтры или сбросить их'
-                : 'Когда кандидаты откликнутся на ваши объявления, они появятся здесь'}
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() =>
-                hasActiveFilters ? resetFilters() : navigate(ROUTES.INDEX)
-              }
-            >
-              {hasActiveFilters ? 'Сбросить фильтры' : 'На главную'}
-            </Button>
-          </Stack>
+          <EmptyBlock
+            title="Пока нет входящих откликов"
+            description="Когда кандидаты откликнутся на ваши объявления, они появятся здесь"
+            buttonText="На главную"
+            buttonOnClick={() => navigate(ROUTES.INDEX)}
+            hasActiveFilters={hasActiveFilters}
+            resetFilters={resetFilters}
+          />
         </Box>
       )}
 
@@ -381,10 +392,10 @@ const CompanyPostResponses = () => {
                     sx={{
                       flex: 1,
                       minHeight: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
                       width: '100%',
+                      display: 'flex',
                       overflow: 'hidden',
+                      flexDirection: 'column',
                     }}
                   >
                     <IncomingApplicationsTable

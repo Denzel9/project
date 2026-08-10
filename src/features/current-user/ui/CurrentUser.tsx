@@ -15,12 +15,9 @@ import { useNavigate } from 'react-router';
 import {
   getProfileSwitchLines,
   useGetProfilesQuery,
-  useSwitchProfileMutation,
   type WorkspaceMember,
 } from '@/entities';
-import { prefetchUserConfig } from '@/entities/user-config';
-import { mapAuthSessionUser, useAuthStore } from '@/features';
-import { queryClient } from '@/shared/api';
+import { useAuthStore, useSwitchActiveProfile } from '@/features';
 import { ROUTES } from '@/shared/config/routes';
 import { useSnackbarStore } from '@/widgets';
 
@@ -75,9 +72,9 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
   };
   const { data, isLoading } = useGetProfilesQuery();
 
-  const { mutateAsync: switchProfile, isPending } = useSwitchProfileMutation();
+  const { switchActiveProfile, isPending } = useSwitchActiveProfile();
 
-  const { id, role, setAuth } = useAuthStore();
+  const { id, role } = useAuthStore();
 
   const { currentUser, setCurrentUser } = useCurrentUserStore();
 
@@ -97,21 +94,6 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
     }
   }, [data, id, setCurrentUser]);
 
-  const handleSwitchProfile = async (profileId: string) => {
-    const res = await switchProfile(profileId);
-    const user = res.data.user;
-
-    if (!user?.id) return;
-
-    setAuth(mapAuthSessionUser(user));
-
-    try {
-      await prefetchUserConfig(queryClient);
-    } catch {
-      // конфиг подтянется при следующем обращении
-    }
-  };
-
   const handleChangeUser = async (value: string) => {
     if (value === 'newUser') {
       navigate(
@@ -120,9 +102,10 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
       return;
     }
 
-    await handleSwitchProfile(value);
-    navigate(ROUTES.INDEX);
-    setCurrentUser(value);
+    const switched = await switchActiveProfile(value);
+
+    if (!switched) return;
+
     setAnchorEl(null);
     setSnackbarOpen?.(true, 'Профиль успешно переключен');
   };
@@ -153,7 +136,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
             <MenuItem
               key={item.id}
               disabled={item.userId === id}
-              onClick={() => handleChangeUser(item.userId || '')}
+              onClick={() => void handleChangeUser(item.userId || '')}
             >
               <ProfileSwitchLabel item={item} />
             </MenuItem>
@@ -162,7 +145,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
           <MenuItem
             value="newUser"
             sx={{ color: 'primary.main' }}
-            onClick={() => handleChangeUser('newUser')}
+            onClick={() => void handleChangeUser('newUser')}
           >
             <Add
               sx={{ mr: 1 }}
@@ -181,7 +164,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
         select
         size="small"
         value={currentUser}
-        onChange={e => handleChangeUser(e.target.value)}
+        onChange={e => void handleChangeUser(e.target.value)}
         sx={{
           width: '100%',
           borderRadius: '16px',

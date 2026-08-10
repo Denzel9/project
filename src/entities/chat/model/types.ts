@@ -12,6 +12,7 @@ export type ChatMessageMedia = {
   key: string
   size: string
   mimeType: string
+  fileName?: string | null
 }
 
 export type ChatMessageActorKind = 'OWNER' | 'MANAGER'
@@ -37,10 +38,13 @@ export type ChatMessage = {
   redirectedFromDisplayName?: string | null
 }
 
+export type ChatMessagePinScope = 'PERSONAL' | 'SHARED'
+
 export type ChatMessagePin = {
   messageId: string
   content: string
   mediaCount: number
+  scope: ChatMessagePinScope
   pinnedAt: string
   pinnedById?: string
   createdAt: string
@@ -59,6 +63,8 @@ export type ChatConversation = {
   isMarkedUnread?: boolean
   isPinned: boolean
   isNotes: boolean
+  canSendMessages?: boolean
+  sendBlockedReason?: string | null
   updatedAt: string
 }
 
@@ -100,6 +106,7 @@ export type ChatAttachment = {
   key: string
   size: string
   mimeType: string
+  fileName?: string | null
   createdAt: string
 }
 

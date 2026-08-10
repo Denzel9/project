@@ -55,10 +55,16 @@ export const TOP_MENU_ROUTES: MenuRoute[] = [
   },
   {
     authTypes: [AUTH_TYPES.COMPANY, AUTH_TYPES.ALWAYS],
-    path: ROUTES.MANAGE_POSTS,
+    path: ROUTES.POSTS_RESPONSES,
     icon: <PostAddOutlined />,
     label: 'Отклики',
     badgeKey: 'applications',
+  },
+  {
+    authTypes: [AUTH_TYPES.COMPANY],
+    path: ROUTES.MY_ANNOUNCEMENTS,
+    icon: <ImageOutlined />,
+    label: 'Мои объявления',
   },
 ];
 

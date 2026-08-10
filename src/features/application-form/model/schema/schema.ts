@@ -2,6 +2,7 @@ import * as yup from 'yup'
 
 import {
   BudgetTypeEnum,
+  EmploymentTypeEnum,
   PlacementFormatEnum,
   PlatformEnum,
   WorkFormatEnum,
@@ -29,6 +30,10 @@ export const schema = yup.object().shape({
     .string()
     .default(WorkFormatEnum.REMOTE)
     .required('Обязательно для заполнения'),
+  employmentType: yup
+    .string()
+    .oneOf(['', ...Object.values(EmploymentTypeEnum)])
+    .default(''),
   deadline: yup.string().default(''),
 
   chips: yup.array().of(yup.string()).default([]),
@@ -75,7 +80,10 @@ export const schema = yup.object().shape({
   coopRequiresContract: yup.boolean().default(false),
   coopNdaRequired: yup.boolean().default(false),
 
-  briefTaskDescription: yup.string().default(''),
+  briefTaskDescription: yup
+    .string()
+    .default('')
+    .max(2500, 'Описание задачи не должно превышать 2500 символов'),
   briefReferences: yup.array().of(yup.string()).default([]),
   briefBrandGuidelinesUrl: yup.string().default(''),
   briefHashtags: yup.array().of(yup.string()).default([]),

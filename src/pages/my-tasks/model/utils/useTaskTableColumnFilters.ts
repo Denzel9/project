@@ -26,6 +26,7 @@ export const useTaskTableColumnFilters = ({
 }: UseTaskTableColumnFiltersOptions) => {
   const [localStatus, setLocalStatus] = useState<TaskStatus | 'all'>('all')
   const [taskId, setTaskId] = useState('all')
+  const [taskQuery, setTaskQuery] = useState('')
   const [localPersonId, setLocalPersonId] = useState('all')
   const [localUrgentOnly, setLocalUrgentOnly] = useState(false)
   const [localUpdatedDate, setLocalUpdatedDate] = useState<string | null>(null)
@@ -43,9 +44,17 @@ export const useTaskTableColumnFilters = ({
   const updatedDate = updatedDateControl?.value ?? localUpdatedDate
   const onUpdatedDateChange = updatedDateControl?.onChange ?? setLocalUpdatedDate
 
+  const handleTaskIdChange = useCallback((value: string) => {
+    setTaskId(value)
+    if (value !== 'all') {
+      setTaskQuery('')
+    }
+  }, [])
+
   const resetFilters = useCallback(() => {
     onStatusChange('all')
     setTaskId('all')
+    setTaskQuery('')
     onPersonIdChange('all')
     onUrgentOnlyChange(false)
     onUpdatedDateChange(null)
@@ -60,6 +69,7 @@ export const useTaskTableColumnFilters = ({
   const hasActiveFilters =
     status !== 'all' ||
     taskId !== 'all' ||
+    Boolean(taskQuery.trim()) ||
     personId !== 'all' ||
     urgentOnly ||
     updatedDate !== null ||
@@ -69,13 +79,15 @@ export const useTaskTableColumnFilters = ({
     () => ({
       status,
       taskId,
+      taskQuery,
       personId,
       urgentOnly,
       updatedDate,
       deadlineDate,
       personLabel: isCompany ? 'Исполнитель' : 'Заказчик',
       onStatusChange,
-      onTaskIdChange: setTaskId,
+      onTaskIdChange: handleTaskIdChange,
+      onTaskQueryChange: setTaskQuery,
       onPersonIdChange,
       onUrgentOnlyChange,
       onUpdatedDateChange,
@@ -84,12 +96,14 @@ export const useTaskTableColumnFilters = ({
     [
       status,
       taskId,
+      taskQuery,
       personId,
       urgentOnly,
       updatedDate,
       deadlineDate,
       isCompany,
       onStatusChange,
+      handleTaskIdChange,
       onPersonIdChange,
       onUrgentOnlyChange,
       onUpdatedDateChange,
@@ -102,6 +116,7 @@ export const useTaskTableColumnFilters = ({
     resetFilters,
     status,
     taskId,
+    taskQuery,
     personId,
     urgentOnly,
     updatedDate,

@@ -172,6 +172,25 @@ export const TaskTable = ({
   }, [taskFilterInput]);
 
   useEffect(() => {
+    if (!columnFilters?.onTaskQueryChange) return;
+
+    if (columnFilters.taskId !== 'all') {
+      columnFilters.onTaskQueryChange('');
+      return;
+    }
+
+    columnFilters.onTaskQueryChange(
+      debouncedTaskQuery.length >= COLUMN_FILTER_SEARCH_MIN
+        ? debouncedTaskQuery
+        : '',
+    );
+  }, [
+    columnFilters?.onTaskQueryChange,
+    columnFilters?.taskId,
+    debouncedTaskQuery,
+  ]);
+
+  useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setDebouncedPersonQuery(personFilterInput.trim());
     }, COLUMN_FILTER_SEARCH_DEBOUNCE_MS);
@@ -644,7 +663,10 @@ export const TaskTable = ({
                         <ColumnFilterButton
                           title="Задача"
                           open={isFilterRowOpen}
-                          active={columnFilters.taskId !== 'all'}
+                          active={
+                            columnFilters.taskId !== 'all' ||
+                            Boolean(columnFilters.taskQuery.trim())
+                          }
                           onClick={toggleFilterRow}
                         />
                         <Tooltip

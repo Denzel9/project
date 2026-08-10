@@ -19,7 +19,7 @@ import { format } from 'date-fns'
 import { useMemo, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router'
 
-import { parseChatTaskTzMessage, type ChatMessage } from '@/entities/chat'
+import { parseChatTaskTzMessage, type ChatMessage, type ChatMessagePinScope } from '@/entities/chat'
 import { ROUTES, MarkdownContent } from '@/shared'
 import { ActionActorCaption } from '@/shared/ui/action-actor-caption/ActionActorCaption'
 import { FullScreenImageViewer, getMediaKind } from '@/widgets/media'
@@ -34,6 +34,7 @@ type ChatMessageBubbleProps = {
   senderAvatar?: string | null
   senderName?: string | null
   isPinned?: boolean
+  canUnpin?: boolean
   highlight?: string
   isDeleting?: boolean
   isEditing?: boolean
@@ -45,7 +46,11 @@ type ChatMessageBubbleProps = {
   onDelete?: (messageId: string) => void
   onEdit?: (messageId: string, content: string) => Promise<boolean>
   onForward?: (messageId: string) => void
-  onPin?: (messageId: string, nextPinned: boolean) => void
+  onPin?: (
+    messageId: string,
+    nextPinned: boolean,
+    scope?: ChatMessagePinScope,
+  ) => void
   onReply?: (message: ChatMessage) => void
   onCopy?: (messageId: string) => void
   onMarkUnread?: (messageId: string) => void
@@ -178,6 +183,7 @@ export const ChatMessageBubble = ({
   senderAvatar = null,
   senderName = null,
   isPinned = false,
+  canUnpin = false,
   highlight,
   isHighlighted = false,
   isDeleting = false,
@@ -230,6 +236,9 @@ export const ChatMessageBubble = ({
   const canCopy = hasText || media.length > 0
   const canSelect = Boolean(onEnterSelection)
   const canMarkUnread = Boolean(onMarkUnread)
+  const canPin = Boolean(onPin) && !isPinned
+  const canUnpinPin = Boolean(onPin) && isPinned && canUnpin
+  const showPinActions = canPin || canUnpinPin
   const showMenu =
     !selectionMode &&
     (canEdit ||
@@ -239,7 +248,7 @@ export const ChatMessageBubble = ({
       canCopy ||
       canSelect ||
       canMarkUnread ||
-      Boolean(onPin))
+      showPinActions)
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [galleryInitialSlide, setGalleryInitialSlide] = useState(0)
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
@@ -289,9 +298,14 @@ export const ChatMessageBubble = ({
     onForward?.(messageId)
   }
 
-  const handleTogglePin = () => {
+  const handlePin = (scope: ChatMessagePinScope) => {
     handleCloseMenu()
-    onPin?.(messageId, !isPinned)
+    onPin?.(messageId, true, scope)
+  }
+
+  const handleUnpin = () => {
+    handleCloseMenu()
+    onPin?.(messageId, false)
   }
 
   const handleReply = () => {
@@ -393,7 +407,7 @@ export const ChatMessageBubble = ({
         <MenuItem onClick={handleStartEdit}>Редактировать</MenuItem>
       )}
       {(canReply || canEdit) &&
-        (canCopy || canSelect || canForward || onPin) && <Divider />}
+        (canCopy || canSelect || canForward || showPinActions) && <Divider />}
       {canCopy && (
         <MenuItem onClick={() => void handleCopy()}>Копировать</MenuItem>
       )}
@@ -403,12 +417,20 @@ export const ChatMessageBubble = ({
       {canForward && onForward && (
         <MenuItem onClick={handleForward}>Переслать</MenuItem>
       )}
-      {onPin && (
-        <MenuItem onClick={handleTogglePin}>
-          {isPinned ? 'Открепить' : 'Закрепить'}
+      {canPin && (
+        <MenuItem onClick={() => handlePin('PERSONAL')}>
+          Закрепить для себя
         </MenuItem>
       )}
-      {(canReply || canEdit || canCopy || canSelect || canForward || onPin) &&
+      {canPin && (
+        <MenuItem onClick={() => handlePin('SHARED')}>
+          Закрепить для всех
+        </MenuItem>
+      )}
+      {canUnpinPin && (
+        <MenuItem onClick={handleUnpin}>Открепить</MenuItem>
+      )}
+      {(canReply || canEdit || canCopy || canSelect || canForward || showPinActions) &&
         (canMarkUnread || canDelete) && <Divider />}
       {canMarkUnread && onMarkUnread && (
         <MenuItem onClick={handleMarkUnread}>Пометить непрочитанным</MenuItem>
@@ -822,7 +844,7 @@ export const ChatMessageBubble = ({
                   {renderHighlightedText(text, highlight)}
                 </Typography>
               )}
-              text              </>
+            </>
           )}
         </Stack>
 

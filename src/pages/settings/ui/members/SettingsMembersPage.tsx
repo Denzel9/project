@@ -5,6 +5,7 @@ import {
   type WorkspaceMember,
   useGetProfilesQuery,
 } from '@/entities/workspace-member';
+import { useAuthStore } from '@/features/auth';
 
 import { AddMemberDialog } from './AddMemberDialog';
 import { DeleteMemberDialog } from './DeleteMemberDialog';
@@ -17,6 +18,7 @@ export const SettingsMembersPage = () => {
     null
   );
 
+  const isPrime = useAuthStore(state => state.isPrime);
   const { data, isLoading, isError } = useGetProfilesQuery();
 
   return (
@@ -24,7 +26,10 @@ export const SettingsMembersPage = () => {
       spacing={3}
       sx={{ height: '100%' }}
     >
-      <MembersHeader onAddClick={() => setIsAddOpen(true)} />
+      <MembersHeader
+        canAdd={isPrime}
+        onAddClick={() => setIsAddOpen(true)}
+      />
 
       {isLoading && (
         <Stack spacing={1}>
@@ -69,10 +74,12 @@ export const SettingsMembersPage = () => {
         />
       )}
 
-      <AddMemberDialog
-        open={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-      />
+      {isAddOpen && isPrime && (
+        <AddMemberDialog
+          open={isAddOpen}
+          onClose={() => setIsAddOpen(false)}
+        />
+      )}
 
       <DeleteMemberDialog
         member={memberToDelete}

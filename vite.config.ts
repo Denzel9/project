@@ -3,6 +3,7 @@ import path from 'path'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 const manualChunks = (id: string) => {
   if (!id.includes('node_modules')) return
@@ -43,6 +44,56 @@ const manualChunks = (id: string) => {
 export default defineConfig({
   plugins: [
     react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: [
+        'Mark.png',
+        'Primary.png',
+        'pwa-192.png',
+        'pwa-512.png',
+        'robots.txt',
+      ],
+      manifest: {
+        name: 'Nikssens',
+        short_name: 'Nikssens',
+        description:
+          'Платформа, где бренды находят исполнителей и ведут работу от объявления до результата',
+        theme_color: '#4d908e',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        lang: 'ru',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          {
+            src: '/pwa-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: '/pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp}'],
+        globIgnores: ['**/stats.html'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
     visualizer({
       filename: 'dist/stats.html',
       gzipSize: true,

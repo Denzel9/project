@@ -1,6 +1,7 @@
 import { LogoutOutlined } from '@mui/icons-material';
 import {
   Box,
+  Divider,
   List,
   ListItemButton,
   ListItemIcon,
@@ -126,6 +127,8 @@ export const SettingsNavSections = ({
           </List>
         </Box>
       ))}
+
+      <Divider sx={{ mb: 3 }} />
 
       <List
         disablePadding

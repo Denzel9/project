@@ -60,6 +60,7 @@ export const ChatPage = () => {
     unreadDividerMessageId,
     pinnedMessages,
     isMessagePinned,
+    canUnpinMessage,
     onTogglePinMessage,
     isLoading,
     sendMessage,
@@ -433,6 +434,7 @@ export const ChatPage = () => {
                 unreadDividerMessageId={unreadDividerMessageId}
                 pinnedMessages={pinnedMessages}
                 isMessagePinned={isMessagePinned}
+                canUnpinMessage={canUnpinMessage}
                 onTogglePinMessage={onTogglePinMessage}
                 onSend={sendMessage}
                 onDeleteMessage={messageId => void deleteMessage(messageId)}
@@ -461,6 +463,10 @@ export const ChatPage = () => {
                 onAttachFiles={addPendingFiles}
                 onRemoveFile={removePendingFile}
                 peer={selectedConversation?.peer}
+                canSendMessages={selectedConversation?.canSendMessages ?? true}
+                sendBlockedReason={
+                  selectedConversation?.sendBlockedReason ?? null
+                }
                 isLoading={isLoading && Boolean(selectedConversationId)}
                 onRetryError={retryError}
                 onDismissError={clearError}

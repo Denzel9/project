@@ -6,6 +6,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -16,6 +17,7 @@ import {
   getIsCompanyAction,
   getTaskStatusTransitionBlockReason,
   isTaskOwner,
+  TASK_STATUS_ENUM,
   taskKeys,
   useUpdateTaskMutation,
   type Task,
@@ -24,11 +26,17 @@ import {
   type TaskStatus,
 } from '@/entities';
 import { useAuthStore, KANBAN_COLUMNS, getTaskConfig } from '@/features';
-import { useSnackbarStore } from '@/widgets';
+import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 import { KanbanColumn } from './KanbanColumn';
 
 const EMPTY_COLUMN_TASKS: Task[] = [];
+
+type PendingComplete = {
+  taskId: string;
+  newStatus: TaskStatus;
+  isCompanyAction: boolean;
+};
 
 type KanbanBoardProps = {
   tasks: Task[];
@@ -66,7 +74,11 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
 
     const { setSnackbarOpen } = useSnackbarStore();
 
-    const { mutate: updateTask } = useUpdateTaskMutation();
+    const { mutate: updateTask, isPending: isUpdatingTask } =
+      useUpdateTaskMutation();
+
+    const [pendingComplete, setPendingComplete] =
+      useState<PendingComplete | null>(null);
 
     const columns = useMemo(
       () =>
@@ -113,31 +125,8 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
       [currentUserId],
     );
 
-    const handleTaskDrop = useCallback(
-      (taskId: string, newStatus: TaskStatus) => {
-        const task = tasks.find(item => item.id === taskId);
-
-        if (!task || task.status === newStatus) return;
-
-        if (!canTransitionTaskStatus(task, currentUserId ?? null, newStatus)) {
-          const reason = getTaskStatusTransitionBlockReason(
-            task,
-            currentUserId ?? null,
-            newStatus,
-          );
-          const columnLabel = getTaskConfig(newStatus)?.label ?? newStatus;
-
-          setSnackbarOpen?.(
-            true,
-            reason ?? `Нельзя перевести в «${columnLabel}»`,
-            'warning',
-          );
-          return;
-        }
-
-        const isOwner = isTaskOwner(task, currentUserId ?? null);
-        const isCompanyAction = getIsCompanyAction(task, isOwner, newStatus);
-
+    const applyStatusChange = useCallback(
+      (taskId: string, newStatus: TaskStatus, isCompanyAction: boolean) => {
         const tasksQueryKey = taskKeys.infiniteList(filterParams);
         const previousData =
           queryClient.getQueryData<InfiniteData<TaskList>>(tasksQueryKey);
@@ -170,15 +159,54 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
           },
         );
       },
-      [
-        tasks,
-        updateTask,
-        queryClient,
-        filterParams,
-        currentUserId,
-        setSnackbarOpen,
-      ],
+      [filterParams, queryClient, setSnackbarOpen, updateTask],
     );
+
+    const handleTaskDrop = useCallback(
+      (taskId: string, newStatus: TaskStatus) => {
+        const task = tasks.find(item => item.id === taskId);
+
+        if (!task || task.status === newStatus) return;
+
+        if (!canTransitionTaskStatus(task, currentUserId ?? null, newStatus)) {
+          const reason = getTaskStatusTransitionBlockReason(
+            task,
+            currentUserId ?? null,
+            newStatus,
+          );
+          const columnLabel = getTaskConfig(newStatus)?.label ?? newStatus;
+
+          setSnackbarOpen?.(
+            true,
+            reason ?? `Нельзя перевести в «${columnLabel}»`,
+            'warning',
+          );
+          return;
+        }
+
+        const isOwner = isTaskOwner(task, currentUserId ?? null);
+        const isCompanyAction = getIsCompanyAction(task, isOwner, newStatus);
+
+        if (
+          task.status === TASK_STATUS_ENUM.CHECKING &&
+          newStatus === TASK_STATUS_ENUM.COMPLETED
+        ) {
+          setPendingComplete({ taskId, newStatus, isCompanyAction });
+          return;
+        }
+
+        applyStatusChange(taskId, newStatus, isCompanyAction);
+      },
+      [tasks, applyStatusChange, currentUserId, setSnackbarOpen],
+    );
+
+    const handleConfirmComplete = () => {
+      if (!pendingComplete) return;
+
+      const { taskId, newStatus, isCompanyAction } = pendingComplete;
+      setPendingComplete(null);
+      applyStatusChange(taskId, newStatus, isCompanyAction);
+    };
 
     return (
       <Box
@@ -228,6 +256,15 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
             ))}
           </Stack>
         </DndProvider>
+
+        <ConfirmDialog
+          title="Завершить задачу"
+          isOpen={Boolean(pendingComplete)}
+          isPending={isUpdatingTask}
+          onSuccess={handleConfirmComplete}
+          onClose={() => setPendingComplete(null)}
+          description="Вы уверены, что хотите завершить задачу?"
+        />
       </Box>
     );
   },

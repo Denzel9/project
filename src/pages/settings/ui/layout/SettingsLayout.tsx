@@ -10,7 +10,7 @@ export const SettingsLayout = () => {
     <PageLayout>
       <Box
         sx={{
-          gap: 2,
+          gap: 1,
           flex: 1,
           width: '100%',
           height: '100%',
@@ -20,8 +20,9 @@ export const SettingsLayout = () => {
       >
         <Box
           sx={{
-            top: 0,
+            top: 8,
             position: 'sticky',
+            height: '100%',
             display: { xs: 'none', md: 'block' },
           }}
         >
@@ -31,7 +32,6 @@ export const SettingsLayout = () => {
         <Box
           sx={{
             flex: 1,
-            minWidth: 0,
             height: '100%',
             bgcolor: 'white',
             overflowY: 'auto',

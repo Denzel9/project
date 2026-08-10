@@ -1,5 +1,6 @@
 import {
   BudgetTypeEnum,
+  EmploymentTypeEnum,
   formatPostDeadlineForApi,
   parsePostDeadlineForForm,
   type BloggerRequirements,
@@ -18,6 +19,7 @@ import {
   type UpdatePostDto,
   type UsageRights,
   type WorkFormat,
+  type EmploymentType,
 } from '@/entities/post'
 
 import type { FormProductType } from './schema/schema'
@@ -309,6 +311,7 @@ export const mapFormToCreatePost = (form: FormProductType): CreatePostDto => {
     urgent: form.urgent,
     isPrivate: form.isPrivate,
     workFormat: form.workFormat as WorkFormat,
+    employmentType: (form.employmentType || null) as EmploymentType | null,
     deadline: formatPostDeadlineForApi(form.deadline),
     ...(chips.length > 0 && { chips }),
     ...(keyWords.length > 0 && { keyWords }),
@@ -336,6 +339,7 @@ export const mapPostToForm = (post: Post): Partial<FormProductType> => ({
   urgent: post.urgent,
   isPrivate: post.isPrivate ?? false,
   workFormat: post.workFormat ?? 'REMOTE',
+  employmentType: (post.employmentType ?? '') as '' | EmploymentTypeEnum,
   deadline: parsePostDeadlineForForm(post.deadline),
   chips: post.chips ?? [],
   keyWords: post.keyWords ?? [],

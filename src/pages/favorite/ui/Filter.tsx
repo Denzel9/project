@@ -139,15 +139,15 @@ const FavoriteFilter = ({
         ref={ref}
         direction="row"
         sx={{
-          px: 2,
-          pb: 2,
+          p: 2,
+          mb: 1,
+          bgcolor: 'white',
+          border: '1px solid',
+          borderRadius: '24px',
           alignItems: 'center',
-          pt: isScrolled ? 4 : 1,
+          borderColor: 'divider',
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
-          bgcolor: isScrolled ? 'white' : 'transparent',
-          borderBottomLeftRadius: isScrolled ? '32px' : '0',
-          borderBottomRightRadius: isScrolled ? '32px' : '0',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >

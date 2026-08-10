@@ -69,17 +69,26 @@ export const getNotificationLink = (
   const { type, payload, actor } = notification
 
   switch (type) {
-    case NOTIFICATION_TYPE.APPLICATION_NEW:
+    case NOTIFICATION_TYPE.APPLICATION_NEW: {
+      const params = new URLSearchParams()
+      params.set('status', 'NEW')
+      if (payload.postId) {
+        params.set('postId', payload.postId)
+      }
+      return `${ROUTES.POSTS_RESPONSES}?${params.toString()}`
+    }
+
     case NOTIFICATION_TYPE.APPLICATION_STATUS_CHANGED:
     case NOTIFICATION_TYPE.APPLICATION_WITHDRAWN:
       if (payload.postId) {
         return `${ROUTES.POST}/${payload.postId}`
       }
-      return ROUTES.MANAGE_POSTS
+      return ROUTES.POSTS_RESPONSES
 
     case NOTIFICATION_TYPE.TASK_CREATED:
     case NOTIFICATION_TYPE.TASK_STATUS_CHANGED:
     case NOTIFICATION_TYPE.TASK_EXECUTOR_ASSIGNED:
+    case NOTIFICATION_TYPE.TASK_ASSIGNEE_ASSIGNED:
     case NOTIFICATION_TYPE.TASK_COMMENT_CREATED:
     case NOTIFICATION_TYPE.TASK_MEDIA_ADDED:
     case NOTIFICATION_TYPE.TASK_DEADLINE_SOON:
@@ -125,6 +134,8 @@ export const getNotificationTypeLabel = (type: NotificationType) => {
       return 'Статус задачи'
     case NOTIFICATION_TYPE.TASK_EXECUTOR_ASSIGNED:
       return 'Назначение исполнителя'
+    case NOTIFICATION_TYPE.TASK_ASSIGNEE_ASSIGNED:
+      return 'Назначение ответственным'
     case NOTIFICATION_TYPE.TASK_COMMENT_CREATED:
       return 'Комментарий к задаче'
     case NOTIFICATION_TYPE.TASK_MEDIA_ADDED:

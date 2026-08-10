@@ -197,9 +197,17 @@ export const NotificationsMenu = () => {
 
                     {item.body && (
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
-                        sx={{ mt: 0.25 }}
+                        sx={{
+                          mt: 0.25,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          whiteSpace: 'pre-wrap',
+                          lineHeight: 1.4,
+                        }}
                       >
                         {item.body}
                       </Typography>

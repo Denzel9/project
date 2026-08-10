@@ -68,6 +68,7 @@ type MyTaskFilterStore = {
     searchQuery: string;
 
     resetKanbanColumns: () => void;
+    resetForProfileSwitch: () => void;
     setPostId: (postId: string) => void;
     setExecutorId: (executorId: string) => void;
     setStatus: (status: TaskStatusFilter) => void;
@@ -212,6 +213,21 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     resetKanbanColumns: () =>
         set({ visibleKanbanColumns: [...ALL_TASK_STATUSES] }),
+
+    resetForProfileSwitch: () =>
+        set({
+            postId: 'all',
+            executorId: 'all',
+            status: 'all',
+            updatedDate: null,
+            fastButtonValue: null,
+            extraFilter: null,
+            onlyMyTasks: false,
+            assigneeAccountId: 'all',
+            period: 'all',
+            isSearchOpen: false,
+            searchQuery: '',
+        }),
 
     setIsSearchOpen: isSearchOpen =>
         set(

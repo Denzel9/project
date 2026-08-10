@@ -14,6 +14,7 @@ const ChatPage = lazy(() => import('./chat'));
 const PostPage = lazy(() => import('./post'));
 const ManageApplicationPage = lazy(() => import('./manage-application'));
 const MyResponsesPage = lazy(() => import('./my-responses'));
+const MyAnnouncementsPage = lazy(() => import('./my-announcements'));
 const SettingsLayout = lazy(
   () => import('./settings/ui/layout/SettingsLayout')
 );
@@ -75,22 +76,22 @@ export const Router = () => {
         children={
           <>
             <Route
-              path={`${ROUTES.INDEX}`}
+              path={ROUTES.INDEX}
               element={<HomePage />}
             />
 
             <Route
-              path={`${ROUTES.PROFILE}`}
+              path={ROUTES.PROFILE}
               element={<ProfilePage />}
             />
 
             <Route
-              path={`${ROUTES.FAVORITES}`}
+              path={ROUTES.FAVORITES}
               element={<FavoritePage />}
             />
 
             <Route
-              path={`${ROUTES.CHAT}`}
+              path={ROUTES.CHAT}
               element={<ChatPage />}
             />
 
@@ -100,22 +101,27 @@ export const Router = () => {
             />
 
             <Route
-              path={`${ROUTES.MANAGE_APPLICATION}`}
+              path={ROUTES.MANAGE_APPLICATION}
               element={<ManageApplicationPage />}
             />
 
             <Route
-              path={`${ROUTES.MY_RESPONSES}`}
+              path={ROUTES.MY_RESPONSES}
               element={<MyResponsesPage />}
             />
 
             <Route
-              path={`${ROUTES.MANAGE_POSTS}`}
+              path={ROUTES.MY_ANNOUNCEMENTS}
+              element={<MyAnnouncementsPage />}
+            />
+
+            <Route
+              path={ROUTES.POSTS_RESPONSES}
               element={<CompanyPostResponses />}
             />
 
             <Route
-              path={`${ROUTES.SETTINGS}/*`}
+              path={ROUTES.SETTINGS}
               element={<SettingsLayout />}
             >
               <Route
@@ -123,47 +129,47 @@ export const Router = () => {
                 element={<SettingsIndexRedirect />}
               />
               <Route
-                path="account"
+                path={ROUTES.SETTINGS_ACCOUNT}
                 element={<SettingsAccountPage />}
               />
 
               <Route
-                path="profiles"
+                path={ROUTES.SETTINGS_PROFILES}
                 element={<SettingsProfilesPage />}
               />
 
               <Route
-                path="security"
+                path={ROUTES.SETTINGS_SECURITY}
                 element={<SecurityPage />}
               />
 
               <Route
-                path="notification"
+                path={ROUTES.SETTINGS_NOTIFICATION}
                 element={<SettingsNotificationPage />}
               />
 
               <Route
-                path="apps"
+                path={ROUTES.SETTINGS_APPS}
                 element={<SettingsAppsPage />}
               />
 
               <Route
-                path="general"
+                path={ROUTES.SETTINGS_GENERAL}
                 element={<SettingsGeneralPage />}
               />
 
               <Route
-                path="members"
+                path={ROUTES.SETTINGS_MEMBERS}
                 element={<SettingsMembersPage />}
               />
 
               <Route
-                path="billing"
+                path={ROUTES.SETTINGS_BILLING}
                 element={<SettingsBillingPage />}
               />
 
               <Route
-                path="crm"
+                path={ROUTES.SETTINGS_CRM}
                 element={
                   <ProtectedRoute isPrimeAccount>
                     <SettingsCrmDashboardPage />
@@ -186,27 +192,27 @@ export const Router = () => {
         children={
           <>
             <Route
-              path={`${ROUTES.CRM}`}
+              path={ROUTES.CRM}
               element={<DashboardPage />}
             />
 
             <Route
-              path={`${ROUTES.MY_TASKS}`}
+              path={ROUTES.MY_TASKS}
               element={<MyTasksPage />}
             />
 
             <Route
-              path={`${ROUTES.CALENDAR}`}
+              path={ROUTES.CALENDAR}
               element={<CalendarPage />}
             />
 
             <Route
-              path={`${ROUTES.EXECUTORS}`}
+              path={ROUTES.EXECUTORS}
               element={<ExecutorsPage />}
             />
 
             <Route
-              path={`${ROUTES.PUBLICATIONS}`}
+              path={ROUTES.PUBLICATIONS}
               element={<PublicationsPage />}
             />
 

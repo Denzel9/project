@@ -297,10 +297,9 @@ export const FavoritePage = () => {
           <Box
             className="print-no-print"
             sx={{
-              top: 0,
+              top: 8,
               zIndex: 1000,
               position: 'sticky',
-              flexShrink: 0,
             }}
           >
             <FavoriteFilter

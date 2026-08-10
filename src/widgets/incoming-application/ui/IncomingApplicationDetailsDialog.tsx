@@ -33,15 +33,18 @@ import {
 } from '@/entities/application';
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { applicantToUserPartial, UserDisplayName } from '@/entities/user';
+import { useAuthStore } from '@/features/auth';
 import { ActionActorCaption } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
-import { ConfirmDialog, useSnackbarStore } from '@/widgets';
+import { ConfirmDialog } from '@/widgets/confirm-dialog';
+import { useSnackbarStore } from '@/widgets/snackbar';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 type IncomingApplicationDetailsDialogProps = {
   open: boolean;
   application: Application;
   onClose: () => void;
+  onAccepted?: () => void;
 };
 
 const getStatusColor = (status: Application['status']) => {
@@ -109,9 +112,11 @@ export const IncomingApplicationDetailsDialog = ({
   open,
   application,
   onClose,
+  onAccepted,
 }: IncomingApplicationDetailsDialogProps) => {
   const [isOpenRejectDialog, setIsOpenRejectDialog] = useState(false);
   const { setSnackbarOpen } = useSnackbarStore();
+  const isPrime = useAuthStore(state => state.isPrime);
   const { mutateAsync: updateStatus, isPending } =
     useUpdateApplicationStatusMutation();
 
@@ -145,9 +150,12 @@ export const IncomingApplicationDetailsDialog = ({
     });
     setSnackbarOpen?.(
       true,
-      'Задача создана и переведена в статус «Подготовка»'
+      isPrime
+        ? 'Задача создана и переведена в статус «Подготовка»'
+        : 'Отклик принят'
     );
     onClose();
+    onAccepted?.();
   };
 
   return (
@@ -509,14 +517,16 @@ export const IncomingApplicationDetailsDialog = ({
 
                   {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
                     <>
-                      <Button
-                        variant="outlined"
-                        component={Link}
-                        to={`${ROUTES.TASK}/${post?.id}?inviteId=${application.id}`}
-                        onClick={onClose}
-                      >
-                        В задачу
-                      </Button>
+                      {isPrime && (
+                        <Button
+                          variant="outlined"
+                          component={Link}
+                          to={`${ROUTES.TASK}/${post?.id}?inviteId=${application.id}`}
+                          onClick={onClose}
+                        >
+                          В задачу
+                        </Button>
+                      )}
 
                       <Button
                         variant="outlined"

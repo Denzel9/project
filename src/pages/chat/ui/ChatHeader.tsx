@@ -99,6 +99,7 @@ export const ChatHeader = ({
         alignItems: 'center',
         borderColor: 'divider',
         justifyContent: 'space-between',
+        borderTop: { xs: 'none', md: '1px solid' },
         borderTopRightRadius: { xs: 0, md: '24px' },
         borderTopLeftRadius: { xs: 0, md: '24px' },
       }}

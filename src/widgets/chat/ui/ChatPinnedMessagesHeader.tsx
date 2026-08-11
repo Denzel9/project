@@ -137,7 +137,7 @@ export const ChatPinnedMessagesHeader = ({
           </Typography>
         </Box>
 
-        <Tooltip
+        {pinnedMessages.length > 1 && <Tooltip
           title={hasMultiple ? 'Все закреплённые' : 'Перейти к сообщению'}
         >
           <Button
@@ -153,7 +153,7 @@ export const ChatPinnedMessagesHeader = ({
           >
             Все
           </Button>
-        </Tooltip>
+        </Tooltip>}
       </Stack>
     </Box>
   )

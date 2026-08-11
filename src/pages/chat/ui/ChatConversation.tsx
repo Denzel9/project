@@ -364,6 +364,9 @@ export const ChatConversation = ({
       sx={{
         border: '1px solid',
         borderColor: 'divider',
+        borderBottom: { xs: 'none', md: '1px solid' },
+        borderLeft: { xs: 'none', md: '1px solid' },
+        borderRight: { xs: 'none', md: '1px solid' },
         flex: 1,
         minHeight: 0,
         p: { xs: 2, md: 2 },
@@ -495,6 +498,7 @@ export const ChatConversation = ({
             aria-label="Прокрутить к последнему сообщению"
             onClick={handleScrollToBottomClick}
             sx={{
+              zIndex: 100,
               position: 'absolute',
               right: 16,
               bottom: 16,

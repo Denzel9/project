@@ -388,9 +388,9 @@ export const ChatPage = () => {
         direction="row"
         spacing={{ xs: 0, md: 1 }}
         sx={{
-          width: '100%',
           flex: 1,
           minHeight: 0,
+          width: '100%',
           overflow: 'hidden',
         }}
       >

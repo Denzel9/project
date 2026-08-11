@@ -363,10 +363,11 @@ export const ChatConversation = ({
       direction="column"
       sx={{
         border: '1px solid',
+        borderBottom: theme => ({ xs: 'none', md: `1px solid ${theme.palette.divider}` }),
+        borderLeft: theme => ({ xs: 'none', md: `1px solid ${theme.palette.divider}` }),
+        borderRight: theme => ({ xs: 'none', md: `1px solid ${theme.palette.divider}` }),
         borderColor: 'divider',
-        borderBottom: { xs: 'none', md: '1px solid' },
-        borderLeft: { xs: 'none', md: '1px solid' },
-        borderRight: { xs: 'none', md: '1px solid' },
+
         flex: 1,
         minHeight: 0,
         p: { xs: 2, md: 2 },

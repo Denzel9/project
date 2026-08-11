@@ -208,15 +208,16 @@ export const ChatAddTaskDialog = ({
       }}
       sx={{
         '& .MuiDialog-paper': {
-          borderRadius: '32px',
+          m: 0,
+          p: 2,
           width: '100%',
-          maxWidth: 820,
-          minHeight: 560,
-          maxHeight: '90vh',
-          p: { xs: 2, md: 3 },
+          borderRadius: { xs: 0, md: '32px' },
+          maxWidth: { md: 820, xs: '100%' },
+          minHeight: { md: 560, xs: '100%' },
+          maxHeight: { md: '90vh', xs: '100%' },
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
+          overflow: 'scroll',
           position: 'relative',
         },
       }}
@@ -387,17 +388,6 @@ export const ChatAddTaskDialog = ({
         spacing={1}
         sx={{ mb: 1.5, alignItems: 'center', minHeight: 28 }}
       >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-        >
-          {hasFilteredTasks
-            ? `Найдено: ${filteredTasks.length}`
-            : hasTasks
-              ? 'Нет задач по фильтрам'
-              : 'Нет задач'}
-        </Typography>
-
         {hasActiveFilters && (
           <>
             <Chip

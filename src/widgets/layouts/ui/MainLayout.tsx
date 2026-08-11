@@ -72,8 +72,6 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           sx={{
             flex: 1,
             minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
             overflowY: 'auto',
             overflowX: 'hidden',
             '@media print': {

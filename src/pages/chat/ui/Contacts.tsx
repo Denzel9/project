@@ -40,8 +40,10 @@ export const Contacts = ({
       sx={{
         p: { xs: 2, md: 2 },
         width: { xs: '100%', md: '30%' },
+        maxWidth: { md: '30%', xs: '100%' },
         bgcolor: 'white',
         border: '1px solid',
+        borderBottom: theme => ({ xs: 'none', md: `1px solid ${theme.palette.divider}` }),
         borderColor: 'divider',
         borderRadius: { xs: '16px', md: '24px' },
         display: 'flex',

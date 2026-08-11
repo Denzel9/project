@@ -45,19 +45,31 @@ export const SettingsNavSections = ({
     return next
       .map(section => ({
         ...section,
-        items: section.items.filter(item => {
-          if (item.path === ROUTES.SETTINGS_PROFILES && !isManager) {
-            return false;
-          }
-          if (
-            isManager &&
-            (item.path === ROUTES.SETTINGS_MEMBERS ||
-              item.path === ROUTES.SETTINGS_BILLING)
-          ) {
-            return false;
-          }
-          return true;
-        }),
+        items: section.items
+          .filter(item => {
+            // MANAGER: только «Компании» (тот же route profiles), без команды и billing
+            if (isManager) {
+              if (
+                item.path === ROUTES.SETTINGS_MEMBERS ||
+                item.path === ROUTES.SETTINGS_BILLING
+              ) {
+                return false;
+              }
+              return true;
+            }
+
+            // COMPANY / CREATOR: Команда + Профили (профили больше не скрыты)
+            return true;
+          })
+          .map(item => {
+            if (item.path === ROUTES.SETTINGS_PROFILES) {
+              return {
+                ...item,
+                label: isManager ? 'Компании' : 'Профили',
+              };
+            }
+            return item;
+          }),
       }))
       .filter(section => section.items.length > 0);
   }, [isPrime, isManager]);

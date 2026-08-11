@@ -14,14 +14,14 @@ import {
 
 import {
   MemberRole,
-  MemberRoleLabels,
-  type WorkspaceMember,
+  ProfileMemberKindLabels,
+  type ProfileMember,
 } from '@/entities/workspace-member';
 import { useAuthStore } from '@/features/auth';
 
 type MembersListProps = {
-  members: WorkspaceMember[];
-  onDelete: (member: WorkspaceMember) => void;
+  members: ProfileMember[];
+  onDelete: (member: ProfileMember) => void;
 };
 
 const getInitials = (name: string) =>
@@ -32,8 +32,18 @@ const getInitials = (name: string) =>
     ?.slice(0, 2)
     ?.toUpperCase();
 
+const getMemberRoleLabel = (member: ProfileMember) => {
+  if (member.kind === 'OWNER' || member.kind === 'MANAGER') {
+    return ProfileMemberKindLabels[member.kind];
+  }
+
+  return member.membershipRole === MemberRole.OWNER
+    ? ProfileMemberKindLabels.OWNER
+    : ProfileMemberKindLabels.MANAGER;
+};
+
 export const MembersList = ({ members, onDelete }: MembersListProps) => {
-  const { id } = useAuthStore();
+  const accountId = useAuthStore(state => state.accountId);
 
   if (!members.length) {
     return (
@@ -49,88 +59,85 @@ export const MembersList = ({ members, onDelete }: MembersListProps) => {
 
   return (
     <List disablePadding>
-      {members?.map(member => (
-        <ListItem
-          key={member.id}
-          disablePadding
-          sx={{
-            mb: 1,
-            px: 2,
-            py: 1.5,
-            borderRadius: '16px',
-            '&:hover': { bgcolor: 'secondary.light' },
-            transition: 'all 0.3s ease',
-            backgroundColor:
-              member.userId === id ? 'info.light' : 'transparent',
-          }}
-          secondaryAction={
-            member.membershipRole !== MemberRole.OWNER && (
-              <IconButton
-                edge="end"
-                color="error"
-                aria-label={`Remove ${member.displayName}`}
-                onClick={() => onDelete(member)}
-              >
-                <DeleteOutlined />
-              </IconButton>
-            )
-          }
-        >
-          <ListItemAvatar>
-            <Avatar src={member.avatar}>
-              {getInitials(member.displayName || '')}
-            </Avatar>
-          </ListItemAvatar>
+      {members.map(member => {
+        const isCurrentAccount = member.accountId === accountId;
 
-          <ListItemText
-            primary={
-              <Typography
-                variant="body1"
-                sx={{ fontWeight: 500 }}
-              >
-                {member.displayName}
-
-                {member.membershipRole === MemberRole.OWNER && (
-                  <Chip
-                    label={'Это вы'}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                )}
-              </Typography>
-            }
-            secondary={
-              <Stack
-                direction="row"
-                spacing={1}
-                divider={
-                  <Divider
-                    orientation="vertical"
-                    flexItem
-                  />
-                }
-              >
-                <Typography variant="body2">{member?.email}</Typography>
-
-                <Typography
-                  variant="body2"
-                  color="primary"
-                >
-                  {
-                    MemberRoleLabels[
-                      member?.membershipRole || MemberRole.ADMIN
-                    ]
-                  }
-                </Typography>
-              </Stack>
-            }
-            slotProps={{
-              primary: { sx: { fontWeight: 500 } },
-              secondary: { sx: { color: 'text.secondary' } },
+        return (
+          <ListItem
+            key={member.membershipId}
+            disablePadding
+            sx={{
+              mb: 1,
+              px: 2,
+              py: 1.5,
+              borderRadius: '16px',
+              '&:hover': { bgcolor: 'secondary.light' },
+              transition: 'all 0.3s ease',
+              backgroundColor: isCurrentAccount ? 'info.light' : 'transparent',
             }}
-          />
-        </ListItem>
-      ))}
+            secondaryAction={
+              member.membershipRole !== MemberRole.OWNER && (
+                <IconButton
+                  edge="end"
+                  color="error"
+                  aria-label={`Remove ${member.displayName}`}
+                  onClick={() => onDelete(member)}
+                >
+                  <DeleteOutlined />
+                </IconButton>
+              )
+            }
+          >
+            <ListItemAvatar>
+              <Avatar>{getInitials(member.displayName || '')}</Avatar>
+            </ListItemAvatar>
+
+            <ListItemText
+              primary={
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 500 }}
+                >
+                  {member.displayName}
+
+                  {isCurrentAccount && (
+                    <Chip
+                      label="Это вы"
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+              }
+              secondary={
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  divider={
+                    <Divider
+                      orientation="vertical"
+                      flexItem
+                    />
+                  }
+                >
+                  <Typography variant="body2">{member.email}</Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="primary"
+                  >
+                    {getMemberRoleLabel(member)}
+                  </Typography>
+                </Stack>
+              }
+              slotProps={{
+                primary: { sx: { fontWeight: 500 } },
+                secondary: { sx: { color: 'text.secondary' } },
+              }}
+            />
+          </ListItem>
+        );
+      })}
     </List>
   );
 };

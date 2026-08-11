@@ -54,7 +54,7 @@ export const SETTINGS_MENU_SECTIONS: SettingsMenuSection[] = [
         icon: <BuildOutlined fontSize="small" />,
       },
       {
-        label: 'Участники',
+        label: 'Команда',
         path: ROUTES.SETTINGS_MEMBERS,
         icon: <PeopleOutlined fontSize="small" />,
       },

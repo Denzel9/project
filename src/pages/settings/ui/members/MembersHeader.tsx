@@ -21,14 +21,14 @@ export const MembersHeader = ({ canAdd, onAddClick }: MembersHeaderProps) => {
             variant="h6"
             sx={{ fontWeight: 600 }}
           >
-            Участники
+            Команда
           </Typography>
 
           <Typography
             variant="body2"
             color="text.secondary"
           >
-            Управление участниками команды
+            Менеджеры с доступом к этому профилю
           </Typography>
         </Stack>
 
@@ -38,7 +38,7 @@ export const MembersHeader = ({ canAdd, onAddClick }: MembersHeaderProps) => {
           disabled={!canAdd}
           sx={{ flexShrink: 0, px: 2 }}
         >
-          Добавить участника
+          Добавить менеджера
         </Button>
       </Stack>
 

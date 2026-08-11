@@ -1,5 +1,9 @@
 export type ProfileRole = 'CREATOR' | 'COMPANY' | 'MANAGER';
 
+export type InviteKind = 'TEAM' | 'CROSS';
+
+export type ProfileListScope = 'all' | 'companies' | 'linked';
+
 export type WorkspaceMember = {
   id: string;
   email?: string;
@@ -15,6 +19,8 @@ export type WorkspaceMember = {
   role?: ProfileRole;
   userId?: string;
   createdAt?: string;
+  linkKind?: 'own' | 'companies' | 'linked';
+  canSwitch?: boolean;
 };
 
 export type ProfileMember = {
@@ -23,12 +29,15 @@ export type ProfileMember = {
   membershipRole: MemberRole;
   email: string;
   displayName: string;
+  /** OWNER — владелец профиля; MANAGER — приглашённый менеджер */
+  kind?: 'OWNER' | 'MANAGER';
 };
 
 export type InviteUserRequest = {
   email: string;
   userId: string;
   role: MemberRole;
+  kind: InviteKind;
 };
 
 export enum MemberRole {
@@ -38,7 +47,12 @@ export enum MemberRole {
 
 export const MemberRoleLabels = {
   [MemberRole.OWNER]: 'Владелец',
-  [MemberRole.ADMIN]: 'Администратор',
+  [MemberRole.ADMIN]: 'Менеджер',
+} as const;
+
+export const ProfileMemberKindLabels = {
+  OWNER: 'Владелец',
+  MANAGER: 'Менеджер',
 } as const;
 
 export const ProfileRoleLabels: Record<ProfileRole, string> = {

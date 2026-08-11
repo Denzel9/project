@@ -8,17 +8,19 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { USER_ROLE } from '@/entities';
 import {
   ProfileRoleLabels,
-  isManagedProfile,
   useGetProfilesQuery,
 } from '@/entities/workspace-member';
 import { useAuthStore, useSwitchActiveProfile } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 import { useSnackbarStore } from '@/widgets';
+
+import { AddMemberDialog } from '../members/AddMemberDialog';
 
 const formatAddedAt = (value?: string) => {
   if (!value) return '—';
@@ -31,15 +33,15 @@ const formatAddedAt = (value?: string) => {
 
 export const SettingsProfilesPage = () => {
   const navigate = useNavigate();
-  const { id } = useAuthStore();
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const { id, role } = useAuthStore();
+  const isManager = role === USER_ROLE.MANAGER;
   const { setSnackbarOpen } = useSnackbarStore();
-  const { data, isLoading, isError } = useGetProfilesQuery();
+  const scope = isManager ? 'companies' : 'linked';
+  const { data, isLoading, isError } = useGetProfilesQuery(scope);
   const { switchActiveProfile, isPending } = useSwitchActiveProfile();
 
-  const managedProfiles = useMemo(
-    () => (data?.data ?? []).filter(isManagedProfile),
-    [data?.data]
-  );
+  const profiles = data?.data ?? [];
 
   const handleSwitch = async (userId: string) => {
     if (!userId || userId === id) return;
@@ -51,42 +53,80 @@ export const SettingsProfilesPage = () => {
     setSnackbarOpen?.(true, 'Профиль успешно переключён');
   };
 
+  const title = isManager ? 'Компании' : 'Профили';
+  const description = isManager
+    ? 'Компании и исполнители, к управлению которыми вас добавили. Переключитесь, чтобы открыть ленту и функции платформы.'
+    : 'Связанные профили компаний и исполнителей. Добавьте профиль по email или переключитесь на уже связанный.';
+
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>Профили</Typography>
-        <Typography
-          variant="body2"
-          color="info"
-          sx={{ mt: 1 }}
-        >
-          Компании и исполнители, к управлению которыми вас добавили.
-          Переключитесь на профиль, чтобы открыть ленту и функции платформы.
-        </Typography>
-      </Box>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
+      >
+        <Box>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600 }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="info"
+            sx={{ mt: 1 }}
+          >
+            {description}
+          </Typography>
+        </Box>
+
+        {!isManager && (
+          <Button
+            variant="contained"
+            onClick={() => setIsAddOpen(true)}
+            sx={{ flexShrink: 0 }}
+          >
+            Добавить
+          </Button>
+        )}
+      </Stack>
 
       {isLoading && (
         <Stack spacing={1.5}>
-          <Skeleton variant="rounded" height={88} />
-          <Skeleton variant="rounded" height={88} />
+          <Skeleton
+            variant="rounded"
+            height={88}
+          />
+          <Skeleton
+            variant="rounded"
+            height={88}
+          />
         </Stack>
       )}
 
       {isError && (
-        <Typography color="error" variant="body2">
-          Не удалось загрузить профили
+        <Typography
+          color="error"
+          variant="body2"
+        >
+          Не удалось загрузить {isManager ? 'компании' : 'профили'}
         </Typography>
       )}
 
-      {!isLoading && !isError && managedProfiles.length === 0 && (
-        <Typography color="text.secondary" variant="body2">
-          Пока нет доступных профилей. Примите приглашение к управлению
-          компанией или исполнителем.
+      {!isLoading && !isError && profiles.length === 0 && (
+        <Typography
+          color="text.secondary"
+          variant="body2"
+        >
+          {isManager
+            ? 'Пока нет доступных компаний. Примите приглашение к управлению.'
+            : 'Связанных профилей пока нет. Добавьте профиль по email.'}
         </Typography>
       )}
 
       <Stack spacing={1.5}>
-        {managedProfiles.map(profile => {
+        {profiles.map(profile => {
           const isActive = profile.userId === id;
           const roleLabel = profile.role
             ? ProfileRoleLabels[profile.role]
@@ -112,25 +152,46 @@ export const SettingsProfilesPage = () => {
                 }}
               >
                 <Box sx={{ minWidth: 0 }}>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }} noWrap>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: 'center', mb: 0.5 }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600 }}
+                      noWrap
+                    >
                       {profile.displayName || roleLabel}
                     </Typography>
                     {isActive && (
-                      <Chip size="small" color="primary" label="Активный" />
+                      <Chip
+                        size="small"
+                        color="primary"
+                        label="Активный"
+                      />
                     )}
                   </Stack>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                  >
                     {roleLabel}
                     {profile.actorName ? ` · ${profile.actorName}` : ''}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
                     Добавлен: {formatAddedAt(profile.createdAt)}
                   </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1}>
-                  {!isActive && (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                >
+                  {!isActive && profile.canSwitch !== false && (
                     <Button
                       size="small"
                       variant="contained"
@@ -155,9 +216,16 @@ export const SettingsProfilesPage = () => {
           );
         })}
       </Stack>
+
+      {isAddOpen && !isManager && (
+        <AddMemberDialog
+          open={isAddOpen}
+          kind="CROSS"
+          onClose={() => setIsAddOpen(false)}
+        />
+      )}
     </Stack>
   );
 };
 
 export default SettingsProfilesPage;
-

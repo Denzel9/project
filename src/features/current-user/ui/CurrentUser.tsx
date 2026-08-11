@@ -151,7 +151,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
               sx={{ mr: 1 }}
               color="primary"
             />{' '}
-            {role === 'MANAGER' ? 'К профилям' : 'Добавить пользователя'}
+            {role === 'MANAGER' ? 'К компаниям' : 'Команда'}
           </MenuItem>
         </Menu>
       </>
@@ -201,7 +201,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
             sx={{ mr: 1 }}
             color="primary"
           />{' '}
-          {role === 'MANAGER' ? 'К профилям' : 'Добавить пользователя'}
+          {role === 'MANAGER' ? 'К компаниям' : 'Команда'}
         </MenuItem>
       </TextField>
     </Box>

@@ -2,9 +2,10 @@ import { Box, Skeleton, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 
 import {
-  type WorkspaceMember,
-  useGetProfilesQuery,
+  type ProfileMember,
+  useGetProfileMembersQuery,
 } from '@/entities/workspace-member';
+import { USER_ROLE } from '@/entities';
 import { useAuthStore } from '@/features/auth';
 
 import { AddMemberDialog } from './AddMemberDialog';
@@ -14,12 +15,19 @@ import { MembersList } from './MembersList';
 
 export const SettingsMembersPage = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [memberToDelete, setMemberToDelete] = useState<WorkspaceMember | null>(
+  const [memberToDelete, setMemberToDelete] = useState<ProfileMember | null>(
     null
   );
 
   const isPrime = useAuthStore(state => state.isPrime);
-  const { data, isLoading, isError } = useGetProfilesQuery();
+  const role = useAuthStore(state => state.role);
+  const canAdd =
+    role === USER_ROLE.CREATOR || (role === USER_ROLE.COMPANY && isPrime);
+
+  const { data: members = [], isLoading, isError } =
+    useGetProfileMembersQuery();
+
+  const isEmpty = !isLoading && !isError && members.length === 0;
 
   return (
     <Stack
@@ -27,7 +35,7 @@ export const SettingsMembersPage = () => {
       sx={{ height: '100%' }}
     >
       <MembersHeader
-        canAdd={isPrime}
+        canAdd={canAdd}
         onAddClick={() => setIsAddOpen(true)}
       />
 
@@ -44,7 +52,7 @@ export const SettingsMembersPage = () => {
         </Stack>
       )}
 
-      {(isError || !data?.data?.length) && (
+      {(isError || isEmpty) && (
         <Box
           sx={{
             height: '100%',
@@ -62,21 +70,28 @@ export const SettingsMembersPage = () => {
               fontWeight: 500,
             }}
           >
-            Участников пока нет. <br /> Добавьте первого участника.
+            {isError ? (
+              <>Не удалось загрузить команду</>
+            ) : (
+              <>
+                В команде пока никого нет. <br /> Добавьте первого менеджера.
+              </>
+            )}
           </Typography>
         </Box>
       )}
 
-      {!isLoading && !isError && (
+      {!isLoading && !isError && members.length > 0 && (
         <MembersList
-          members={data?.data ?? []}
+          members={members}
           onDelete={setMemberToDelete}
         />
       )}
 
-      {isAddOpen && isPrime && (
+      {isAddOpen && canAdd && (
         <AddMemberDialog
           open={isAddOpen}
+          kind="TEAM"
           onClose={() => setIsAddOpen(false)}
         />
       )}

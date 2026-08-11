@@ -10,11 +10,11 @@ import {
 
 import {
   useDeleteMembershipMutation,
-  type WorkspaceMember,
+  type ProfileMember,
 } from '@/entities/workspace-member';
 
 type DeleteMemberDialogProps = {
-  member: WorkspaceMember | null;
+  member: ProfileMember | null;
   onClose: () => void;
 };
 
@@ -29,7 +29,7 @@ export const DeleteMemberDialog = ({
     if (!member) return;
 
     try {
-      await removeMember(member.id);
+      await removeMember(member.membershipId);
       onClose();
     } catch {
       console.log('Failed to remove member');

@@ -13,7 +13,11 @@ import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { MemberRole, useAddInviteMutation } from '@/entities/workspace-member';
+import {
+  type InviteKind,
+  MemberRole,
+  useAddInviteMutation,
+} from '@/entities/workspace-member';
 import { useAuthStore } from '@/features/auth';
 import { RHFInput } from '@/shared/ui/rhf';
 
@@ -26,13 +30,19 @@ import {
 type AddMemberDialogProps = {
   open: boolean;
   onClose: () => void;
+  /** TEAM — менеджер в команду; CROSS — связанный COMPANY/CREATOR */
+  kind?: InviteKind;
 };
 
-export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
+export const AddMemberDialog = ({
+  open,
+  onClose,
+  kind = 'TEAM',
+}: AddMemberDialogProps) => {
   const [error, setError] = useState<string | null>(null);
+  const isCross = kind === 'CROSS';
 
   const { mutateAsync: addMember, isPending } = useAddInviteMutation();
-
   const { id } = useAuthStore();
 
   const methods = useForm({
@@ -45,6 +55,7 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
 
   const handleClose = () => {
     reset(defaultAddMemberValues);
+    setError(null);
     onClose();
   };
 
@@ -53,14 +64,17 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
       email: data.email,
       userId: id || '',
       role: MemberRole.ADMIN,
-    }).then(() => {
-      setError(null);
-      handleClose();
-    }).catch((error) => {
-      if (isAxiosError(error)) {
-        setError(error.response?.data.message);
-      }
-    });
+      kind,
+    })
+      .then(() => {
+        setError(null);
+        handleClose();
+      })
+      .catch(err => {
+        if (isAxiosError(err)) {
+          setError(err.response?.data.message);
+        }
+      });
   };
 
   return (
@@ -96,7 +110,7 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
           variant="h6"
           sx={{ mb: 3 }}
         >
-          Добавить участника
+          {isCross ? 'Добавить профиль' : 'Добавить менеджера'}
         </Typography>
 
         <FormProvider {...methods}>
@@ -114,18 +128,20 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
                 }}
               />
 
-              <RHFInput
-                name="role"
-                control={control}
-                props={{
-                  label: 'Роль',
-                  fullWidth: true,
-                  select: true,
-                  sx: { mt: 1 },
-                }}
-              >
-                <MenuItem value={MemberRole.ADMIN}>Администратор</MenuItem>
-              </RHFInput>
+              {!isCross && (
+                <RHFInput
+                  name="role"
+                  control={control}
+                  props={{
+                    label: 'Роль',
+                    fullWidth: true,
+                    select: true,
+                    sx: { mt: 1 },
+                  }}
+                >
+                  <MenuItem value={MemberRole.ADMIN}>Менеджер</MenuItem>
+                </RHFInput>
+              )}
 
               <Stack
                 spacing={1}
@@ -135,7 +151,9 @@ export const AddMemberDialog = ({ open, onClose }: AddMemberDialogProps) => {
                   variant="body2"
                   color="info"
                 >
-                  Администратор имеет полный доступ к рабочему пространству.
+                  {isCross
+                    ? 'Связанный профиль компании или исполнителя получит доступ к этому рабочему пространству.'
+                    : 'Менеджер получает полный доступ к рабочему пространству профиля.'}
                 </Typography>
               </Stack>
 

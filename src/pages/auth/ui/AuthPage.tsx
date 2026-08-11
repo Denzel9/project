@@ -89,8 +89,8 @@ export const AuthPage = () => {
           <img
             src="./Primary.png"
             alt="auth-background"
-            width={250}
-            height={50}
+            width={277}
+            height={64}
           />
 
           <Typography

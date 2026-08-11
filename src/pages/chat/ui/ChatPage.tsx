@@ -224,6 +224,7 @@ export const ChatPage = () => {
   );
 
   const handleBackToContacts = () => {
+    selectConversation('');
     setMobileShowChat(false);
   };
 
@@ -367,7 +368,7 @@ export const ChatPage = () => {
   }
 
   return (
-    <PageLayout isScreenHeight>
+    <PageLayout isScreenHeight withHeader={!selectedConversation}>
       <Stack
         direction="row"
         spacing={1}
@@ -525,7 +526,7 @@ export const ChatPage = () => {
               isForwardingMessage &&
               Boolean(
                 forwardingMessageId &&
-                  forwardMessageIds.includes(forwardingMessageId),
+                forwardMessageIds.includes(forwardingMessageId),
               )
             }
             error={forwardError}

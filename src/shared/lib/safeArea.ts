@@ -8,9 +8,6 @@ export const SAFE_AREA = {
   left: 'env(safe-area-inset-left, 0px)',
 } as const
 
-/** Same as MainLayout page background — masks content under the status bar. */
-const SAFE_AREA_STICKY_BG = 'rgb(244, 244, 244)'
-
 /** Padding for page chrome so content clears the system status bar / home indicator. */
 export const safeAreaPageSx = {
   pt: SAFE_AREA.top,
@@ -27,7 +24,6 @@ export const stickyFilterSx = {
   position: 'sticky',
   top: SAFE_AREA.top,
   zIndex: 1000,
-  bgcolor: SAFE_AREA_STICKY_BG,
   // Закрывает полосу под status bar / Dynamic Island, когда бар «прилип»
   '&::before': {
     content: '""',

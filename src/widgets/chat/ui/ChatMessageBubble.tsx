@@ -478,7 +478,7 @@ export const ChatMessageBubble = ({
         <Avatar
           alt={senderName ?? undefined}
           src={senderAvatar ?? undefined}
-          sx={{ width: 32, height: 32, flexShrink: 0 }}
+          sx={{ width: 32, height: 32, display: { xs: 'none', md: 'block' } }}
         />
       )}
       <Box

@@ -113,28 +113,28 @@ export const TaskRequirementsFields = ({
         (isEdit &&
           (status === TASK_STATUS_ENUM.PREPARING ||
             status === TASK_STATUS_ENUM.REVISION))) && (
-        <RequirementCard
-          icon="deadline"
-          isEdit={isEdit}
-          value={finalDate}
-          error={isOverdue}
-          canEdit={canEditForm}
-          onEdit={onStartEdit}
-          placeholder="Указать дату"
-          label={isEdit ? undefined : 'Дедлайн'}
-        >
-          {isEditEnabled ? (
-            <Box sx={{ mt: 0.5 }}>
-              <RHFDateTimePicker
-                size="small"
-                label="Дедлайн"
-                name="finalDate"
-                control={control}
-              />
-            </Box>
-          ) : undefined}
-        </RequirementCard>
-      )}
+          <RequirementCard
+            icon="deadline"
+            isEdit={isEdit}
+            value={finalDate}
+            error={isOverdue}
+            canEdit={canEditForm}
+            onEdit={onStartEdit}
+            placeholder="Указать дату"
+            label={isEdit ? undefined : 'Дедлайн'}
+          >
+            {isEditEnabled ? (
+              <Box sx={{ mt: 0.5 }}>
+                <RHFDateTimePicker
+                  size="small"
+                  label="Дедлайн"
+                  name="finalDate"
+                  control={control}
+                />
+              </Box>
+            ) : undefined}
+          </RequirementCard>
+        )}
     </Stack>
   );
 };

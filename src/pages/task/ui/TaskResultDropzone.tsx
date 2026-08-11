@@ -305,7 +305,7 @@ export const TaskResultDropzone = ({
     <Box
       sx={{
         bgcolor: 'white',
-        p: { xs: 2.5, md: 3 },
+        p: 2,
         borderRadius: '32px',
         border: '1px solid',
         borderColor: 'divider',
@@ -320,7 +320,7 @@ export const TaskResultDropzone = ({
           <Stack
             direction="row"
             spacing={1.5}
-            sx={{ alignItems: 'center', flex: 1, minWidth: 0 }}
+            sx={{ alignItems: isMobile ? 'flex-start' : 'center', flex: 1, minWidth: 0 }}
           >
             <Box
               sx={{
@@ -355,7 +355,7 @@ export const TaskResultDropzone = ({
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center' }}
+                    sx={{ alignItems: 'center', justifyContent: isMobile ? 'space-between' : 'flex-start' }}
                   >
                     <Typography
                       variant="h6"
@@ -375,7 +375,7 @@ export const TaskResultDropzone = ({
                       <Chip
                         size="small"
                         color="warning"
-                        label={`Прекрепить до ${new Date(deadline ?? '').toLocaleDateString()}`}
+                        label={`${isMobile ? '' : 'Прекрепить до'}${new Date(deadline ?? '').toLocaleDateString()}`}
                       />
                     )}
 
@@ -390,7 +390,7 @@ export const TaskResultDropzone = ({
 
                   {statusHint && (
                     <Typography
-                      variant="body2"
+                      variant={isMobile ? "caption" : "body2"}
                       sx={{ color: 'text.secondary' }}
                     >
                       {statusHint}
@@ -714,6 +714,7 @@ export const TaskResultDropzone = ({
 
             <Typography
               variant="body1"
+              color="info"
               sx={{ fontWeight: 500 }}
             >
               {hasMedia ? 'Добавить ещё файлы' : 'Перетащите файлы сюда'}
@@ -721,7 +722,7 @@ export const TaskResultDropzone = ({
 
             <Typography
               variant="body2"
-              color="text.secondary"
+              color="info"
               sx={{ mt: 0.5 }}
             >
               Фото и видео · или нажмите для выбора

@@ -16,6 +16,7 @@ import type { PageLayoutProps } from '../model/types';
 export const PageLayout = ({
   sx = {},
   children,
+  withHeader = true,
   withFooter = true,
   isScreenHeight = false,
   printHide = false,
@@ -69,6 +70,7 @@ export const PageLayout = ({
           borderColor: 'divider',
           justifyContent: 'space-between',
           borderTopLeftRadius: { xs: 0, md: '24px' },
+          display: withHeader ? 'flex' : 'none',
           borderTopColor: { xs: 'transparent', md: 'divider' },
           borderBottomLeftRadius: { xs: '16px', md: '24px' },
           borderBottomRightRadius: { xs: '16px', md: '24px' },

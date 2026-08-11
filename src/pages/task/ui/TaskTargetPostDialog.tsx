@@ -1,4 +1,4 @@
-import { Close, QuestionMark } from '@mui/icons-material';
+import { Close, HelpOutlineOutlined } from '@mui/icons-material';
 import {
   Button,
   Checkbox,
@@ -115,21 +115,25 @@ export const TaskTargetPostDialog = ({
 
   useEffect(() => {
     if (!open) {
-      setTab(0);
-      setPostId(null);
-      setExecutorId(UNASSIGNED_ID);
-      setPostTitle('');
-      setIsPrivate(false);
-      setCreatedTask(null);
+      setTimeout(() => {
+        setTab(0);
+        setPostId(null);
+        setExecutorId(UNASSIGNED_ID);
+        setPostTitle('');
+        setIsPrivate(false);
+        setCreatedTask(null);
+      }, 0);
       return;
     }
 
-    setTab(0);
-    setPostId(isSamePost ? fixedPostId : null);
-    setExecutorId(initialExecutorId || UNASSIGNED_ID);
-    setPostTitle('');
-    setIsPrivate(false);
-    setCreatedTask(null);
+    setTimeout(() => {
+      setTab(0);
+      setPostId(isSamePost ? fixedPostId : null);
+      setExecutorId(initialExecutorId || UNASSIGNED_ID);
+      setPostTitle('');
+      setIsPrivate(false);
+      setCreatedTask(null);
+    }, 0);
   }, [open, isSamePost, fixedPostId, initialExecutorId]);
 
   const busy = isPending || isCreatingPost;
@@ -205,7 +209,8 @@ export const TaskTargetPostDialog = ({
       maxWidth="sm"
       slotProps={{
         paper: {
-          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 } },
+          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, m: 0, width: { xs: '100%', md: 560 }, maxWidth: { xs: '100%', md: '90%' } },
+
         },
       }}
     >
@@ -355,7 +360,7 @@ export const TaskTargetPostDialog = ({
                 </Typography>
 
                 <Tooltip title="Пост будет виден только вам. Нужен для создания задач на частные проекты.">
-                  <QuestionMark color="primary" />
+                  <HelpOutlineOutlined color="info" />
                 </Tooltip>
               </Stack>
             </Stack>

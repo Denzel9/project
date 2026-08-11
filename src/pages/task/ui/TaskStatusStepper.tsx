@@ -1,4 +1,4 @@
-import { Step, StepLabel, Stepper } from '@mui/material';
+import { Box, Step, StepLabel, Stepper } from '@mui/material';
 
 import {
   TASK_STATUS_ENUM,
@@ -31,32 +31,41 @@ export const TaskStatusStepper = ({ status }: TaskStatusStepperProps) => {
   const activeStep = getActiveStepIndex(status);
 
   return (
-    <Stepper
-      alternativeLabel
-      activeStep={activeStep}
+    <Box
       sx={{
         mb: 1,
         bgcolor: 'white',
         border: '1px solid',
-        px: { xs: 2, md: 2 },
-        py: 4,
         borderRadius: '32px',
         borderColor: 'divider',
-        '& .MuiStepLabel-label': {
-          mt: 1,
-          fontSize: { xs: '0.7rem', sm: '0.8rem' },
-        },
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
+        overflowX: { xs: 'auto', md: 'visible' },
       }}
     >
-      {TASK_FLOW_STEPS.map((stepStatus, index) => (
-        <Step
-          key={stepStatus}
-          completed={activeStep > index}
-          active={status === stepStatus}
-        >
-          <StepLabel>{TASK_STATUS_LABELS[stepStatus]}</StepLabel>
-        </Step>
-      ))}
-    </Stepper>
+      <Stepper
+        alternativeLabel
+        activeStep={activeStep}
+        sx={{
+          py: 4,
+          px: 2,
+          minWidth: { xs: 640, md: 0 },
+          '& .MuiStepLabel-label': {
+            mt: 1,
+            fontSize: { xs: '0.7rem', sm: '0.8rem' },
+          },
+        }}
+      >
+        {TASK_FLOW_STEPS.map((stepStatus, index) => (
+          <Step
+            key={stepStatus}
+            completed={activeStep > index}
+            active={status === stepStatus}
+          >
+            <StepLabel>{TASK_STATUS_LABELS[stepStatus]}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+    </Box>
   );
 };

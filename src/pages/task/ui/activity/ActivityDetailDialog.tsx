@@ -65,6 +65,9 @@ export const ActivityDetailDialog = ({
           overflow: 'visible',
           display: 'flex',
           flexDirection: 'column',
+          m: 0,
+          width: { xs: '100%', md: 560 },
+          maxWidth: { xs: '100%', md: '90%' },
         },
       }}
     >

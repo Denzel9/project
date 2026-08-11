@@ -1,4 +1,4 @@
-import { Add, Circle, } from '@mui/icons-material';
+import { Add, AutoAwesomeMotion, Circle, Group, } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -9,6 +9,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { useMemo, useState, type MouseEvent } from 'react';
 
@@ -77,6 +78,8 @@ export const TaskSwitcher = ({
   const [createDialogExecutorKey, setCreateDialogExecutorKey] = useState<
     string | null
   >(null);
+
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   const { setSnackbarOpen } = useSnackbarStore();
   const currentUserId = useAuthStore(state => state.id);
@@ -298,15 +301,24 @@ export const TaskSwitcher = ({
 
         <Button
           size="small"
-          sx={{ px: 2 }}
+          sx={{ px: 2, display: { xs: 'none', md: 'block' } }}
           aria-label="Список исполнителей"
           onClick={() => setIsExecutorListOpen(true)}
         >
           Все исполнители
         </Button>
 
+        <IconButton
+          size="small"
+          sx={{ display: { xs: 'block', md: 'none' } }}
+          aria-label="Список исполнителей"
+          onClick={() => setIsExecutorListOpen(true)}
+        >
+          <Group />
+        </IconButton>
+
         {Boolean(cancelledTasks.length) && (
-          <>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: { xs: 'none', md: 'flex' } }}>
             <Divider
               flexItem
               orientation="vertical"
@@ -323,7 +335,7 @@ export const TaskSwitcher = ({
                 onClick={() => setIsCancelledListOpen(true)}
               />
             </Tooltip>
-          </>
+          </Stack>
         )}
 
         <TaskSwitcherMoreMenu
@@ -333,20 +345,20 @@ export const TaskSwitcher = ({
         />
       </Stack>
 
-      {Boolean(executorTasks.length > 1) && <Divider sx={{ my: 1.5 }} />}
+      {Boolean(executorTasks.length > 1 || isMobile) && <Divider sx={{ my: 1.5 }} />}
 
-      {Boolean(executorTasks.length > 1) && (
+      {Boolean(executorTasks.length > 1 || isMobile) && (
         <Stack
-          direction="row"
           spacing={1}
-          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          direction="row"
+          sx={{ alignItems: 'center', justifyContent: executorTasks.length > 1 ? 'space-between' : 'flex-end' }}
         >
           {executorTasks.length > 1 && (
             <Stack
               direction="row"
               sx={{
-                overflowX: 'auto',
                 gap: 1,
+                overflowX: 'auto',
                 scrollbarWidth: 'none',
               }}
             >
@@ -410,12 +422,32 @@ export const TaskSwitcher = ({
 
           <Button
             size='small'
-            sx={{ px: 2 }}
+            sx={{ px: 2, display: { xs: 'none', md: 'block' } }}
             aria-label="Список задач"
             onClick={() => setIsTaskListOpen(true)}
           >
             Все задачи
           </Button>
+
+          {Boolean(!executorTasks.length && isMobile) && <Tooltip title="Отменённые задачи">
+            <Chip
+              clickable
+              color="error"
+              size="small"
+              variant={isCancelledSelected ? 'filled' : 'outlined'}
+              label={`Отменённые ${cancelledTasks.length}`}
+              onClick={() => setIsCancelledListOpen(true)}
+            />
+          </Tooltip>}
+
+          {Boolean(executorTasks.length && isMobile) && <IconButton
+            size="small"
+            aria-label="Список задач"
+            onClick={() => setIsTaskListOpen(true)}
+            sx={{ display: { xs: 'block', md: 'none' } }}
+          >
+            <AutoAwesomeMotion />
+          </IconButton>}
         </Stack>
       )}
 
@@ -433,12 +465,14 @@ export const TaskSwitcher = ({
         onSelectTask={onSelectTask}
         currentTaskId={currentTask?.id}
         onClose={() => setIsTaskListOpen(false)}
+        cancelledTasks={cancelledTasks}
       />
 
       <TaskListDialog
         open={isCancelledListOpen}
         title="Отменённые задачи"
         tasks={cancelledTasks}
+        showExecutor
         onSelectTask={onSelectTask}
         currentTaskId={currentTask?.id}
         onClose={() => setIsCancelledListOpen(false)}

@@ -80,6 +80,10 @@ const TASK_FIELD_LABELS: Record<string, string> = {
   bloggerRequirements: 'Требования к блогеру',
   cooperationDetails: 'Условия сотрудничества',
   brief: 'Бриф',
+  isExecutorApprove: 'Одобрение исполнителем',
+  isCompanyAction: 'Ход заказчика',
+  executorId: 'Исполнитель',
+  postId: 'Объявление',
 }
 
 export const getTaskFieldLabel = (field?: string) =>
@@ -275,20 +279,37 @@ const formatObjectFallback = (value: unknown): string => {
   }
 }
 
+const formatTriStateLabel = (value: unknown) => {
+  if (value === true || value === 'true') return 'Да'
+  if (value === false || value === 'false') return 'Нет'
+  return '—'
+}
+
+const formatExecutorApproveLabel = (value: unknown) => {
+  if (value === true || value === 'true') return 'Принято'
+  if (value === false || value === 'false') return 'Отклонено'
+  return 'Ожидает'
+}
+
 const formatActivityValue = (
   field: string | undefined,
   value: unknown,
 ): string => {
+  if (field === 'isExecutorApprove') {
+    return formatExecutorApproveLabel(value)
+  }
+
+  if (field === 'isCompanyAction' || field === 'urgent') {
+    if (value === null || value === undefined || value === '') return '—'
+    return formatTriStateLabel(value)
+  }
+
   if (value === null || value === undefined || value === '') {
     return '—'
   }
 
   if (field === 'status' && typeof value === 'string') {
     return TASK_STATUS_LABELS[value as TaskStatus] ?? value
-  }
-
-  if (field === 'urgent') {
-    return value === true || value === 'true' ? 'Да' : 'Нет'
   }
 
   if (field === 'finalDate' && typeof value === 'string') {
@@ -399,6 +420,13 @@ export const getTaskActivitySummary = (activity: TaskActivity) => {
   }
 
   if (activity.type === TaskActivityType.FIELD_UPDATED && activity.payload.field) {
+    if (activity.payload.field === 'isExecutorApprove') {
+      const to = activity.payload.to
+      if (to === true) return 'Исполнитель принял задачу'
+      if (to === false) return 'Исполнитель отклонил задачу'
+      return 'Ожидается подтверждение исполнителя'
+    }
+
     const label = getTaskFieldLabel(activity.payload.field)
     const from = formatActivityValue(activity.payload.field, activity.payload.from)
     const to = formatActivityValue(activity.payload.field, activity.payload.to)

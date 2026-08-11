@@ -47,9 +47,9 @@ export const RequirementCard = ({
       sx={{
         p: 2,
         minWidth: 0,
-        width: '33%',
         borderRadius: '16px',
         bgcolor: 'secondary.light',
+        width: { xs: '100%', md: '33%' },
       }}
     >
       <Stack

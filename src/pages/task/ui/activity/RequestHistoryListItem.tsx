@@ -60,7 +60,8 @@ export const RequestHistoryListItem = ({
         sx={{
           display: 'flex',
           justifyContent: 'center',
-          pt: 0.35,
+          pt: '5px',
+          pr: '5px',
         }}
       >
         <Box

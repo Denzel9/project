@@ -24,19 +24,19 @@ import type { Task } from '@/entities';
 type TaskAssigneeCardProps = {
   taskId: string;
   ownerId: string;
-  executorId?: string | null;
   assigneeKind?: Task['assigneeKind'];
   assigneeAccountId?: Task['assigneeAccountId'];
   assigneeDisplayName?: Task['assigneeDisplayName'];
+  assigneeUserId?: Task['assigneeUserId'];
 };
 
 export const TaskAssigneeCard = ({
   taskId,
   ownerId,
-  executorId,
   assigneeKind,
   assigneeAccountId,
   assigneeDisplayName,
+  assigneeUserId,
 }: TaskAssigneeCardProps) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -56,11 +56,8 @@ export const TaskAssigneeCard = ({
   );
 
   const chatRecipientId =
-    currentUserId === ownerId
-      ? executorId || null
-      : currentUserId === executorId
-        ? ownerId
-        : null;
+    assigneeUserId ||
+    (assigneeKind === 'OWNER' ? ownerId : null);
 
   const canWrite =
     hasAssignee &&

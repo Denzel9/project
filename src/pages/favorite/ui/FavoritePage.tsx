@@ -365,14 +365,17 @@ export const FavoritePage = () => {
           <Box
             sx={{
               flex: 1,
+              height: '100%',
               display: 'flex',
-              justifyContent: 'center',
               bgcolor: 'white',
               borderRadius: '32px',
-              height: '100%',
+              justifyContent: 'center',
             }}
           >
             <EmptyBlock
+              sx={{
+                height: 'auto',
+              }}
               title={emptyTitle}
               description={
                 searchQ ? 'Попробуйте изменить запрос' : undefined

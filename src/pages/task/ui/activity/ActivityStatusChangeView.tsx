@@ -51,7 +51,7 @@ export const ActivityStatusChangeView = ({
         />
       </Box>
 
-      <ArrowForward color="action" />
+      <ArrowForward color="action" sx={{ display: { xs: 'none', sm: 'block' } }} />
 
       <Box
         sx={{

@@ -527,10 +527,10 @@ export const TaskItem = ({
                 }}
               >
                 <Stack
-                  direction="row"
+                  direction={{ xs: 'column', md: "row" }}
                   sx={{
                     mb: 3,
-                    alignItems: 'center',
+                    alignItems: { xs: 'flex-start', md: 'center' },
                     justifyContent: 'space-between',
                   }}
                 >
@@ -547,7 +547,7 @@ export const TaskItem = ({
                     Boolean(task.executorId) && (
                       <Button
                         color="primary"
-                        sx={{ px: 2 }}
+                        sx={{ px: { xs: 0, md: 2 } }}
                         disabled={isEdit}
                         onClick={() => setIsSendTzPreviewOpen(true)}
                       >
@@ -639,8 +639,8 @@ export const TaskItem = ({
               <TaskAssigneeCard
                 taskId={task.id}
                 ownerId={task.ownerId}
-                executorId={task.executorId}
                 assigneeKind={task.assigneeKind}
+                assigneeUserId={task.assigneeUserId}
                 assigneeAccountId={task.assigneeAccountId}
                 assigneeDisplayName={task.assigneeDisplayName}
               />

@@ -36,7 +36,7 @@ export const TaskPendingRequestBanner = ({
   return (
     <Box
       sx={{
-        mb: 2,
+        mb: 1,
         bgcolor: 'info.light',
         p: { xs: 2, md: 3 },
         borderRadius: '24px',

@@ -382,7 +382,7 @@ export const ChatConversation = ({
       <Box
         sx={{
           position: 'relative',
-          mb: 2,
+          mb: 2.5,
           flex: 1,
           minHeight: 0,
         }}
@@ -409,14 +409,12 @@ export const ChatConversation = ({
           <Box
             ref={messagesContentRef}
             sx={{
-              // minHeight (not height) so bottom padding sits after the last
-              // message when content overflows the scroll area
               minHeight: '100%',
               boxSizing: 'border-box',
               gap: 1.25,
               px: { xs: 1.5, md: 2 },
               pt: { xs: 1.5, md: 2 },
-              pb: 3,
+              pb: 2,
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -481,6 +479,13 @@ export const ChatConversation = ({
                 />
               </Box>
             ))}
+
+            {messages.length > 0 && (
+              <Box
+                aria-hidden
+                sx={{ flexShrink: 0, height: { xs: 40, md: 32 } }}
+              />
+            )}
           </Box>
         </Box>
 

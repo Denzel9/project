@@ -208,6 +208,8 @@ export type Task = {
   assigneeAccountId?: string | null
   assigneeDisplayName?: string | null
   assigneeKind?: 'OWNER' | 'MANAGER' | null
+  /** userId ответственного для чата (owner или менеджер) */
+  assigneeUserId?: string | null
   media: TaskMedia[]
   reportMedia?: TaskMedia[]
   activities?: TaskActivity[]

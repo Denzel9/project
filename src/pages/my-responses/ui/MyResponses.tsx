@@ -429,10 +429,9 @@ export const MyResponses = () => {
             bgcolor: 'white',
             border: '1px solid',
             borderRadius: '32px',
+            alignItems: 'center',
             borderColor: 'divider',
             justifyContent: 'center',
-            py: 8,
-            px: 3,
           }}
         >
           <EmptyBlock

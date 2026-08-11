@@ -76,8 +76,9 @@ export const RequestCancelTaskDialog = ({
           overflow: 'visible',
           position: 'relative',
           borderRadius: '32px',
-          width: 560,
-          maxWidth: '90%',
+          width: { xs: '100%', md: 560 },
+          maxWidth: { xs: '100%', md: '90%' },
+          m: 0
         },
       }}
     >

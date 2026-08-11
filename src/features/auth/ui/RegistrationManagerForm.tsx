@@ -178,7 +178,6 @@ const RegistrationManagerForm = ({
             variant="contained"
             size="large"
             fullWidth
-            sx={{ mt: 2 }}
           >
             Зарегистрироваться
           </Button>

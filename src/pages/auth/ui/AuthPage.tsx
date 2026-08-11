@@ -10,7 +10,7 @@ import {
   RecoveryPasswordForm,
   ResetPasswordForm,
 } from '@/features';
-import { ROUTES } from '@/shared';
+import { ROUTES, SAFE_AREA } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 export const AuthPage = () => {
@@ -53,25 +53,35 @@ export const AuthPage = () => {
   return (
     <Box
       sx={{
-        height: '100vh',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'row',
+        boxSizing: 'border-box',
+        pt: SAFE_AREA.top,
+        pb: SAFE_AREA.bottom,
+        pl: SAFE_AREA.left,
+        pr: SAFE_AREA.right,
       }}
     >
       <Box
         sx={{
           flex: 1,
           width: '100%',
-          height: '100%',
+          minHeight: 0,
           display: 'flex',
           p: { xs: 2, md: 4 },
           position: 'relative',
           alignItems: 'center',
           flexDirection: 'column',
           justifyContent: 'space-between',
+          overflow: 'hidden',
         }}
       >
-        <Box
+        <Stack
+          direction="column"
+          spacing={1}
           sx={{
             alignSelf: 'start',
           }}
@@ -79,25 +89,31 @@ export const AuthPage = () => {
           <img
             src="./Primary.png"
             alt="auth-background"
+            width={250}
+            height={50}
           />
 
           <Typography
             color="info"
-            sx={{ mt: 1 }}
-            variant="body1"
+            variant="caption"
+            sx={{ width: { xs: 230, md: 'auto' } }}
           >
             Лучший способ создавать и управлять своим контентом
           </Typography>
-        </Box>
+        </Stack>
 
         <Box
           sx={{
+            flex: 1,
+            minHeight: 0,
             width: '100%',
             maxWidth: 500,
             display: 'flex',
+            overflowY: 'auto',
             alignItems: 'center',
             flexDirection: 'column',
             justifyContent: 'center',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           {token && !isAuthFailed && <ResetPasswordForm />}
@@ -147,7 +163,7 @@ export const AuthPage = () => {
         <Stack
           direction="row"
           spacing={4}
-          sx={{ alignSelf: 'start', width: '100%' }}
+          sx={{ alignSelf: 'start', width: '100%', display: { xs: 'none', md: 'flex' } }}
         >
           <Typography
             variant="body2"

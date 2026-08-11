@@ -8,7 +8,7 @@ import {
   useConfirmEmailMutation,
   useRefreshTokenMutation,
 } from '@/features/auth';
-import { ROUTES } from '@/shared';
+import { ROUTES, SAFE_AREA } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 export const ConfirmEmailPage = () => {
@@ -80,13 +80,20 @@ export const ConfirmEmailPage = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 2,
         p: 3,
+        boxSizing: 'border-box',
+        pt: `calc(24px + ${SAFE_AREA.top})`,
+        pb: `calc(24px + ${SAFE_AREA.bottom})`,
+        pl: `calc(24px + ${SAFE_AREA.left})`,
+        pr: `calc(24px + ${SAFE_AREA.right})`,
       }}
     >
       <CircularProgress />

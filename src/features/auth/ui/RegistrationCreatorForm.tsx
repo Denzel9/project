@@ -180,7 +180,6 @@ const RegistrationCreatorForm = ({
             type="submit"
             variant="contained"
             size="large"
-            sx={{ mt: 4 }}
           >
             Зарегистрироваться
           </Button>

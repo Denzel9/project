@@ -170,7 +170,6 @@ const RegistrationCompanyForm = ({
             type="submit"
             variant="contained"
             size="large"
-            sx={{ mt: 4 }}
           >
             Зарегистрироваться
           </Button>

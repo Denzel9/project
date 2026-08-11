@@ -20,7 +20,7 @@ export const SettingsLayout = () => {
       >
         <Box
           sx={{
-            top: 8,
+            top: 0,
             position: 'sticky',
             height: '100%',
             display: { xs: 'none', md: 'block' },

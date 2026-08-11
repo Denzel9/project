@@ -14,6 +14,7 @@ export * from './api';
 export * from './lib/share/shareTargets';
 export * from './lib/maps/openYandexMaps';
 export * from './lib/formatActionActorLabel';
+export * from './lib/safeArea';
 export * from './hooks/useScroll';
 export * from './hooks/useInfiniteScroll';
 export * from './ui/date-picker/DateCalendarFilter';

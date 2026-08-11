@@ -217,7 +217,7 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
           display: 'flex',
           bgcolor: 'white',
           p: { xs: 1.5, md: 2 },
-          borderRadius: { xs: '16px', md: '24px' },
+          borderRadius: '24px',
         }}
       >
         <DndProvider backend={HTML5Backend}>

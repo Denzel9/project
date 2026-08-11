@@ -22,7 +22,7 @@ import {
   MyTaskFilter,
   AddTaskDialog,
 } from '@/features';
-import { EmptyBlock, ROUTES } from '@/shared';
+import { EmptyBlock, ROUTES, stickyFilterSx } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
 import { TASK_TABLE_PAGE_SIZE } from '../model/constants/constants';
@@ -546,13 +546,7 @@ export const MyTasks = () => {
         }}
       >
         {showFilter && (
-          <Box
-            sx={{
-              top: 8,
-              zIndex: 1000,
-              position: 'sticky',
-            }}
-          >
+          <Box sx={stickyFilterSx}>
             <MyTaskFilter
               tableReport={tableReport}
               initialPosts={initialPosts}

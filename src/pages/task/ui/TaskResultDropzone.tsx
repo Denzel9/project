@@ -562,7 +562,7 @@ export const TaskResultDropzone = ({
                       color="primary"
                       sx={{
                         position: 'absolute',
-                        top: 8,
+                        top: 0,
                         left: 8,
                         height: 22,
                         fontSize: 11,

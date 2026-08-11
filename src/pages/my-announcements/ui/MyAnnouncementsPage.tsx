@@ -25,6 +25,7 @@ import {
   FilterAutocomplete,
   InfiniteScrollSentinel,
   ROUTES,
+  stickyFilterSx,
   type FilterAutocompleteOption,
 } from '@/shared';
 import {
@@ -191,12 +192,10 @@ export const MyAnnouncementsPage = () => {
         spacing={1.5}
         direction="row"
         sx={{
+          ...stickyFilterSx,
           p: 2,
           mb: 1,
-          top: 0,
-          zIndex: 100,
           bgcolor: 'white',
-          position: 'sticky',
           border: '1px solid',
           borderRadius: '24px',
           alignItems: 'center',

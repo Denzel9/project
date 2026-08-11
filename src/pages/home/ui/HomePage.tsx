@@ -14,7 +14,7 @@ import {
   useMainFilterStore,
   hasActivePostFilters,
 } from '@/features/main-filter';
-import { EmptyBlock, InfiniteScrollSentinel, scrollMainToTop, useScroll } from '@/shared';
+import { EmptyBlock, InfiniteScrollSentinel, scrollMainToTop, stickyFilterSx, useScroll } from '@/shared';
 import {
   ACTION_BUTTONS_KEYS,
   PostItem,
@@ -220,13 +220,7 @@ export const HomePage = () => {
     <PageLayout>
       <Box ref={scrollProbeRef} />
 
-      <Box
-        sx={{
-          top: 8,
-          zIndex: 1000,
-          position: 'sticky',
-        }}
-      >
+      <Box sx={stickyFilterSx}>
         <MainFilter />
       </Box>
 

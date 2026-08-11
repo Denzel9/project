@@ -211,6 +211,9 @@ export const MyTaskFilter = ({
           border: '1px solid',
           borderColor: 'divider',
           transition: 'box-shadow 0.3s ease',
+          borderTopLeftRadius: isScrolled ? '0' : '24px',
+          borderTopRightRadius: isScrolled ? '0' : '24px',
+          borderTopColor: isScrolled ? 'transparent' : 'divider',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >

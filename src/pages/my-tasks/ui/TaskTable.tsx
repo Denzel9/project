@@ -603,7 +603,7 @@ export const TaskTable = ({
               bgcolor: 'white',
               overflow: 'hidden',
               flexDirection: 'column',
-              borderRadius: { xs: '16px', md: '24px' },
+              borderRadius: '24px',
             }),
       }}
     >

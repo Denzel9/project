@@ -124,7 +124,7 @@ export const FastButtonGroup = ({
           display: { xs: 'flex', md: 'none' },
           minWidth: 160,
           flex: 1,
-          maxWidth: 240,
+          maxWidth: 180,
         }}
       >
         <MenuItem value="all">Все</MenuItem>

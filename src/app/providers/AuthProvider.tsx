@@ -1,4 +1,5 @@
 import { Box, CircularProgress } from '@mui/material';
+import axios from 'axios';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -9,8 +10,22 @@ import {
   useAuthStore,
   useRefreshTokenMutation,
 } from '@/features/auth';
+import type { AuthSessionUser } from '@/features/auth/model/types/types';
 import { queryClient } from '@/shared/api';
 import { ROUTES } from '@/shared/config/routes';
+
+const AUTH_REFRESH_RETRY_DELAY_MS = 600;
+
+const isAuthFailureStatus = (status?: number) =>
+  status === 401 || status === 403;
+
+const getErrorStatus = (error: unknown) =>
+  axios.isAxiosError(error) ? error.response?.status : undefined;
+
+const wait = (ms: number) =>
+  new Promise<void>(resolve => {
+    window.setTimeout(resolve, ms);
+  });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { mutateAsync: refreshToken } = useRefreshTokenMutation();
@@ -36,6 +51,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     hasFetched.current = true;
 
+    const forceLogout = () => {
+      removeAuth();
+      navigate(ROUTES.AUTH);
+    };
+
+    const applySession = async (user: AuthSessionUser) => {
+      setAuth(mapAuthSessionUser(user));
+
+      try {
+        await prefetchUserConfig(queryClient);
+      } catch {
+        // Конфиг не критичен для старта приложения
+      }
+    };
+
     const fetchToken = async () => {
       const isPublicPath =
         pathname === ROUTES.AUTH ||
@@ -53,22 +83,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await refreshToken();
 
         if (res?.data?.user) {
-          setAuth(mapAuthSessionUser(res.data.user));
-
-          try {
-            await prefetchUserConfig(queryClient);
-          } catch {
-            // Конфиг не критичен для старта приложения
-          }
-
+          await applySession(res.data.user);
           return;
         }
 
-        removeAuth();
-        navigate(ROUTES.AUTH);
-      } catch {
-        removeAuth();
-        navigate(ROUTES.AUTH);
+        forceLogout();
+      } catch (error) {
+        // Явная потеря сессии — сразу на логин.
+        if (isAuthFailureStatus(getErrorStatus(error))) {
+          forceLogout();
+          return;
+        }
+
+        // Сеть / 5xx (часто в PWA после сна) — один повтор, без мгновенного logout.
+        try {
+          await wait(AUTH_REFRESH_RETRY_DELAY_MS);
+          const retryRes = await refreshToken();
+
+          if (retryRes?.data?.user) {
+            await applySession(retryRes.data.user);
+            return;
+          }
+        } catch (retryError) {
+          if (isAuthFailureStatus(getErrorStatus(retryError))) {
+            forceLogout();
+            return;
+          }
+        }
+
+        forceLogout();
       } finally {
         setIsInitialized(true);
       }

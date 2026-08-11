@@ -4,7 +4,7 @@ import { type PropsWithChildren, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { CurrentUser } from '@/features/current-user';
-import { ROUTES } from '@/shared';
+import { ROUTES, SAFE_AREA } from '@/shared';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
 import { HelpDialog } from './HelpDialog';
@@ -36,6 +36,9 @@ export const PageLayout = ({
         flexDirection: 'column',
         position: 'relative',
         gap: 1,
+        pt: SAFE_AREA.top,
+        pb: SAFE_AREA.bottom,
+        pl: SAFE_AREA.left,
         ...(isScreenHeight && {
           height: '100%',
           flex: 1,
@@ -47,6 +50,9 @@ export const PageLayout = ({
           minHeight: 'auto',
           overflow: 'visible',
           flex: 'none',
+          pt: 0,
+          pb: 0,
+          pl: 0,
         },
         ...sx,
       }}
@@ -76,7 +82,10 @@ export const PageLayout = ({
           direction="row"
           sx={{ alignItems: 'center' }}
         >
-          <IconButton aria-label="Prime-аккаунт" onClick={() => navigate(ROUTES.SETTINGS_BILLING)}>
+          <IconButton
+            aria-label="Prime-аккаунт"
+            onClick={() => navigate(ROUTES.SETTINGS_BILLING)}
+          >
             <RocketLaunchOutlined />
           </IconButton>
 
@@ -102,6 +111,7 @@ export const PageLayout = ({
         sx={{
           flex: 1,
           display: 'flex',
+          minHeight: 500,
           flexDirection: 'column',
           ...(isScreenHeight && {
             minHeight: 0,

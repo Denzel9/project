@@ -128,6 +128,9 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
           alignItems: 'center',
           transition: 'all 0.3s ease',
           justifyContent: 'space-between',
+          borderTopLeftRadius: isScrolled ? '0' : '24px',
+          borderTopRightRadius: isScrolled ? '0' : '24px',
+          borderTopColor: isScrolled ? 'transparent' : 'divider',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >

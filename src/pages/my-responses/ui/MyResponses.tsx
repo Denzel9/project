@@ -11,7 +11,7 @@ import {
 } from '@/entities/application';
 import { useFavoritePostIdsForPosts } from '@/entities/favorite';
 import { useExecutorTasksByPostMap } from '@/entities/task';
-import { EmptyBlock, InfiniteScrollSentinel, ROUTES } from '@/shared';
+import { EmptyBlock, InfiniteScrollSentinel, ROUTES, stickyFilterSx } from '@/shared';
 import { PageLayout } from '@/widgets';
 
 import {
@@ -361,9 +361,7 @@ export const MyResponses = () => {
         <Box
           className="print-no-print"
           sx={{
-            top: 8,
-            zIndex: 1000,
-            position: 'sticky',
+            ...stickyFilterSx,
             flexShrink: 0,
           }}
         >

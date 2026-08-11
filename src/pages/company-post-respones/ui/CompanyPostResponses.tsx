@@ -6,7 +6,7 @@ import {
   useIncomingApplicationsQuery,
   type Application,
 } from '@/entities/application';
-import { EmptyBlock } from '@/shared';
+import { EmptyBlock, stickyFilterSx } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { IncomingApplicationItem, PageLayout } from '@/widgets';
 
@@ -274,9 +274,7 @@ const CompanyPostResponses = () => {
         <Box
           className="print-no-print"
           sx={{
-            top: 8,
-            zIndex: 1000,
-            position: 'sticky',
+            ...stickyFilterSx,
             flexShrink: 0,
           }}
         >

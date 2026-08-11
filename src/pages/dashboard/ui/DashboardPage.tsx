@@ -19,7 +19,7 @@ import {
   type DashboardCardVariant,
   type FastButtonValueType,
 } from '@/features';
-import { EmptyBlock, ROUTES } from '@/shared';
+import { EmptyBlock, ROUTES, } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
 import { DASHBOARD_SETTINGS_TIP_SEEN_KEY } from '../model/constants';

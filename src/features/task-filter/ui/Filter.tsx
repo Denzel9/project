@@ -61,7 +61,7 @@ export const MyTaskFilter = ({
   initialPosts: { id?: string; title?: string }[];
   tableReport?: TaskTableReportControls;
 }) => {
-  const { isScrolled, ref } = useScroll(150);
+  const { isScrolled, ref } = useScroll(80);
 
   const isManagerAccount = useIsManagerAccount();
 

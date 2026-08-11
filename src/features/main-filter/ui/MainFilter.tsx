@@ -35,7 +35,7 @@ export const MainFilter = () => {
     setSearchQuery,
   } = useMainFilterStore();
 
-  const { isScrolled, ref } = useScroll(150);
+  const { isScrolled, ref } = useScroll(80);
   const hasSidebarFilters = hasActivePostFilters(postFilters);
   const hasAnyFilters = filters.length > 0 || hasSidebarFilters;
   const isFirstFilterRender = useRef(true);

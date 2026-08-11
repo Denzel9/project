@@ -215,6 +215,7 @@ export const DeliverablesField = ({
             <Grid
               key={field.id}
               size={{ xs: 12, sm: 6 }}
+              sx={{ width: { xs: '100%', md: '50%' } }}
             >
               <DeliverableRow
                 index={index}

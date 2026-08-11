@@ -8,6 +8,7 @@ import {
   getUsageRightsLabel,
 } from '@/entities/post';
 import { LocationAutocomplete } from '@/shared';
+import { formatAmountInput } from '@/shared/lib/amountFormat';
 import { RHFInput, RHFSwitch } from '@/shared/ui/rhf';
 
 import { FormSection } from './components/FormSection';
@@ -75,10 +76,10 @@ export const LocationSection = () => {
             setValue(
               'locationCity',
               address?.city ||
-                address?.town ||
-                address?.village ||
-                address?.municipality ||
-                ''
+              address?.town ||
+              address?.village ||
+              address?.municipality ||
+              ''
             );
             setValue('locationCountry', address?.country || '');
           }}
@@ -104,17 +105,32 @@ export const BloggerRequirementsSection = () => {
           <RHFInput
             name="bloggerMinFollowers"
             control={control}
-            props={{ fullWidth: true, label: 'Подписчики от' }}
+            formatValue={formatAmountInput}
+            props={{
+              fullWidth: true,
+              label: 'Подписчики от',
+              slotProps: { htmlInput: { inputMode: 'numeric' } },
+            }}
           />
           <RHFInput
             name="bloggerMaxFollowers"
             control={control}
-            props={{ fullWidth: true, label: 'Подписчики до' }}
+            formatValue={formatAmountInput}
+            props={{
+              fullWidth: true,
+              label: 'Подписчики до',
+              slotProps: { htmlInput: { inputMode: 'numeric' } },
+            }}
           />
           <RHFInput
             name="bloggerMinEngagementRate"
             control={control}
-            props={{ fullWidth: true, label: 'ER от, %' }}
+            formatValue={formatAmountInput}
+            props={{
+              fullWidth: true,
+              label: 'ER от, %',
+              slotProps: { htmlInput: { inputMode: 'decimal' } },
+            }}
           />
         </Stack>
 

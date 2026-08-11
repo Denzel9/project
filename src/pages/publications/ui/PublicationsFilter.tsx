@@ -85,7 +85,7 @@ export const PublicationsFilter = ({
   tableReport,
 }: PublicationsFilterProps) => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'))
-  const { isScrolled, ref } = useScroll(150)
+  const { isScrolled, ref } = useScroll(80)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isLinksOpen, setIsLinksOpen] = useState(false)
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)

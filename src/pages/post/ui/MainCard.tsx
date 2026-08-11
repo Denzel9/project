@@ -12,7 +12,6 @@ import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
-  formatPostBudget,
   UserDisplayName,
   UserStatsRow,
   useFavoritePostIds,
@@ -72,9 +71,6 @@ export const MainCard = ({
 
   const isCompanyPost = post?.type === 'COMPANY';
   const typeLabel = isCompanyPost ? 'Объявление' : 'Пост исполнителя';
-  const budgetLabel = formatPostBudget(post?.budget);
-  const showRate =
-    !isCompanyPost && Boolean(post?.budget) && budgetLabel !== '—';
 
   return (
     <Box
@@ -92,6 +88,7 @@ export const MainCard = ({
       <Box
         sx={{
           display: 'flex',
+
           flexDirection: { xs: 'column', lg: 'row' },
           gap: 3,
         }}
@@ -108,13 +105,13 @@ export const MainCard = ({
           </Box>
         )}
 
-        <Box sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
+        <Stack direction='column' spacing={2} sx={{ flex: 1, position: 'relative', minWidth: 0, justifyContent: 'space-between', }}>
           <Stack
             direction="row"
             spacing={2}
-            sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
+            sx={{ alignItems: 'flex-start' }}
           >
-            <Stack spacing={1.5} sx={{ minWidth: 0, flex: 1 }}>
+            <Stack spacing={2} sx={{ minWidth: 0, flex: 1, }}>
               <Stack
                 direction="row"
                 spacing={1}
@@ -222,66 +219,36 @@ export const MainCard = ({
             </Stack>
           </Stack>
 
-          <Box sx={{ width: { xs: '100%', md: '90%' }, mt: 3 }}>
-            {showRate && (
-              <Box
-                sx={{
-                  mb: 3,
-                  display: { xs: 'none', lg: 'block' },
-                  p: 2,
-                  borderRadius: '16px',
-                  bgcolor: 'secondary.light',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  width: 'fit-content',
-                  minWidth: 160,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Ставка
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color="primary.main"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {budgetLabel}
-                </Typography>
-              </Box>
-            )}
-
-            <Stack
-              component={Link}
-              to={`${ROUTES.PROFILE}?userId=${user?.id}`}
-              target="_blank"
-              spacing={1}
-              sx={{
-                color: 'inherit',
-                cursor: 'pointer',
-                width: 'fit-content',
-                alignItems: 'center',
-                textDecoration: 'none',
-                transition: 'all 0.3s ease',
-                ':hover': {
-                  color: 'primary.main',
-                },
-              }}
-              direction="row"
-            >
-              <UserDisplayName
-                user={user}
+          <Stack direction='column' spacing={6} sx={{ width: { xs: '100%', md: '90%' }, }}>
+            <Stack direction='column' spacing={0}>
+              <Typography
+                target="_blank"
+                component={Link}
                 variant="subtitle1"
+                to={`${ROUTES.PROFILE}?userId=${user?.id}`}
+                sx={{
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  width: 'fit-content',
+                  textDecoration: 'none',
+                  transition: 'all 0.3s ease',
+                  ':hover': {
+                    color: 'primary.main',
+                  },
+                }}>
+                <UserDisplayName
+                  user={user}
+                  variant="subtitle1"
+                />
+              </Typography>
+
+              <UserStatsRow
+                followers={user?.followers}
+                completedTasksCount={user?.completedTasksCount}
+                sx={{ mt: 0.5 }}
               />
             </Stack>
-
-            <UserStatsRow
-              followers={user?.followers}
-              completedTasksCount={user?.completedTasksCount}
-              sx={{ mt: 0.5 }}
-            />
 
             <Typography
               variant="body1"
@@ -289,7 +256,7 @@ export const MainCard = ({
             >
               {post?.description}
             </Typography>
-          </Box>
+          </Stack>
 
           {!isOwner && (
             <Action
@@ -303,7 +270,7 @@ export const MainCard = ({
               removePostFromCollection={removePostFromCollection}
             />
           )}
-        </Box>
+        </Stack>
       </Box>
 
       <DeletePostDialog

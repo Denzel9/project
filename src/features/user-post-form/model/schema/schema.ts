@@ -11,10 +11,7 @@ export const schema = yup.object().shape({
     .required('Обязательно для заполнения'),
   chips: yup.array().of(yup.string()).default([]),
   isPrivate: yup.boolean().default(false),
-  workFormat: yup
-    .string()
-    .default(WorkFormatEnum.REMOTE)
-    .required('Обязательно для заполнения'),
+  workFormat: yup.string().default(WorkFormatEnum.REMOTE),
   employmentType: yup
     .string()
     .oneOf(['', ...Object.values(EmploymentTypeEnum)])
@@ -27,10 +24,7 @@ export const schema = yup.object().shape({
   platforms: yup.array().of(yup.string()).default([]),
   portfolioLinks: yup.array().of(yup.string()).default([]),
 
-  budgetType: yup
-    .string()
-    .default(BudgetTypeEnum.NEGOTIABLE)
-    .required('Обязательно для заполнения'),
+  budgetType: yup.string().default(BudgetTypeEnum.NEGOTIABLE),
   budgetAmount: yup.string().default(''),
   budgetMinAmount: yup.string().default(''),
   budgetMaxAmount: yup.string().default(''),

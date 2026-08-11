@@ -9,14 +9,8 @@ import {
 } from '@/entities/post'
 
 const deliverableSchema = yup.object({
-  platform: yup
-    .string()
-    .default(PlatformEnum.INSTAGRAM)
-    .required('Обязательно'),
-  format: yup
-    .string()
-    .default(PlacementFormatEnum.REELS)
-    .required('Обязательно'),
+  platform: yup.string().default(PlatformEnum.INSTAGRAM),
+  format: yup.string().default(PlacementFormatEnum.REELS),
   count: yup.string().default('1'),
   durationSec: yup.string().default(''),
 })
@@ -24,12 +18,9 @@ const deliverableSchema = yup.object({
 export const schema = yup.object().shape({
   title: yup.string().default('').required('Обязательно для заполнения'),
   description: yup.string().default('').required('Обязательно для заполнения'),
-  urgent: yup.boolean().required('Обязательно для заполнения'),
+  urgent: yup.boolean().default(false),
   isPrivate: yup.boolean().default(false),
-  workFormat: yup
-    .string()
-    .default(WorkFormatEnum.REMOTE)
-    .required('Обязательно для заполнения'),
+  workFormat: yup.string().default(WorkFormatEnum.REMOTE),
   employmentType: yup
     .string()
     .oneOf(['', ...Object.values(EmploymentTypeEnum)])
@@ -42,10 +33,7 @@ export const schema = yup.object().shape({
   tags: yup.array().of(yup.string()).default([]),
   niche: yup.array().of(yup.string()).default([]),
 
-  budgetType: yup
-    .string()
-    .default(BudgetTypeEnum.FIXED)
-    .required('Обязательно для заполнения'),
+  budgetType: yup.string().default(BudgetTypeEnum.FIXED),
   budgetAmount: yup.string().default(''),
   budgetMinAmount: yup.string().default(''),
   budgetMaxAmount: yup.string().default(''),
@@ -53,11 +41,7 @@ export const schema = yup.object().shape({
   budgetCurrency: yup.string().default('RUB'),
   paymentTerms: yup.string().default(''),
 
-  deliverables: yup
-    .array()
-    .of(deliverableSchema)
-    .min(1, 'Добавьте хотя бы одну позицию контента')
-    .default([]),
+  deliverables: yup.array().of(deliverableSchema).default([]),
 
   locationCity: yup.string().default(''),
   locationCountry: yup.string().default(''),

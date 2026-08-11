@@ -61,7 +61,7 @@ export const UserDisplayName = ({
     <Stack
       direction="row"
       spacing={0.75}
-      sx={{ alignItems: 'center', minWidth: 0, ...sx }}
+      sx={{ alignItems: 'center', width: 'fit-content', minWidth: 0, ...sx }}
     >
       <Typography
         variant={variant}

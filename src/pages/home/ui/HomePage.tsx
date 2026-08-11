@@ -26,14 +26,14 @@ const searchMessageBoxSx = {
   flex: 1,
   display: 'flex',
   bgcolor: 'white',
+  alignItems: 'center',
   borderRadius: '32px',
   justifyContent: 'center',
-  py: 6,
 } as const;
 
 export const HomePage = () => {
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
-  const { isScrolled, ref: scrollProbeRef } = useScroll(320);
+  const { isScrolled, ref: scrollProbeRef } = useScroll(80);
 
   const {
     filters,

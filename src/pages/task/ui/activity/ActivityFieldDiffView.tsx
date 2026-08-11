@@ -134,7 +134,6 @@ export const ActivityFieldDiffView = ({
         <Chip
           size="small"
           label="Было"
-          color="error"
           sx={{ mb: 1.5 }}
         />
 
@@ -172,7 +171,6 @@ export const ActivityFieldDiffView = ({
         <Chip
           size="small"
           label="Стало"
-          color="success"
           sx={{ mb: 1.5 }}
         />
 

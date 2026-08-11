@@ -78,10 +78,10 @@ export const ProfileControl = ({
       direction="column"
       spacing={4}
       sx={{
+        p: 2,
         zIndex: 2,
         width: '100%',
         bgcolor: 'white',
-        p: { xs: 3, md: 4 },
         alignItems: 'start',
         border: '1px solid',
         borderRadius: '24px',

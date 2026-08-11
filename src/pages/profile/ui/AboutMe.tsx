@@ -7,6 +7,7 @@ import {
   MY_PARAMETERS_LABELS,
   type Person,
 } from '@/entities/user';
+import { useAuthStore } from '@/features';
 import { EmptyBlock, FormBlock } from '@/shared';
 
 const formatPersonValue = (key: string, person?: Person) => {
@@ -40,6 +41,8 @@ export const AboutMe = ({
   person?: Person;
   aboutMe?: string;
 }) => {
+  const { role } = useAuthStore()
+
   const isLeastOneParameter = Object.entries(MY_PARAMETERS_LABELS).some(
     ([key]) => person?.[key as keyof Person]
   );
@@ -87,7 +90,7 @@ export const AboutMe = ({
         </Typography>
       )}
 
-      {isLeastOneParameter && (
+      {isLeastOneParameter && role !== 'COMPANY' && (
         <FormBlock>
           {Object.keys(MY_PARAMETERS_LABELS).map(key => (
             <Stack

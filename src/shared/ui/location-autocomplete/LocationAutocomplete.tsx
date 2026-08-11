@@ -1,5 +1,4 @@
-import { MapOutlined } from '@mui/icons-material'
-import { Autocomplete, IconButton, Stack, TextField } from '@mui/material'
+import { Autocomplete, Stack, TextField } from '@mui/material'
 import { useEffect, useState } from 'react'
 import {
   useController,
@@ -9,7 +8,6 @@ import {
 } from 'react-hook-form'
 
 import { useGeoSearchQuery, type GeoPlace } from '@/entities/geo'
-import { openYandexMaps } from '@/shared/lib/maps/openYandexMaps'
 
 type LocationAutocompleteProps<
   TFieldValues extends FieldValues,
@@ -59,13 +57,6 @@ export const LocationAutocomplete = <
   }, [inputValue])
 
   const { data: options = [], isFetching } = useGeoSearchQuery(debouncedQuery)
-
-  const mapQuery =
-    inputValue.trim() ||
-    (typeof field.value === 'string' ? field.value.trim() : '')
-  const canOpenMap = Boolean(
-    mapQuery || (selectedPlace?.lat && selectedPlace?.lon)
-  )
 
   const applyPlace = (place: GeoPlace | null) => {
     setSelectedPlace(place)
@@ -145,20 +136,6 @@ export const LocationAutocomplete = <
           />
         )}
       />
-
-      <IconButton
-        disabled={!canOpenMap}
-        aria-label="Открыть на Яндекс.Картах"
-        onClick={() =>
-          openYandexMaps({
-            query: mapQuery,
-            lat: selectedPlace?.lat,
-            lon: selectedPlace?.lon,
-          })
-        }
-      >
-        <MapOutlined />
-      </IconButton>
     </Stack>
   )
 }

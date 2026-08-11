@@ -7,6 +7,7 @@ import {
   getBudgetTypeLabel,
   getPaymentTermsLabel,
 } from '@/entities/post';
+import { formatAmountInput } from '@/shared/lib/amountFormat';
 import { RHFDatePicker, RHFInput } from '@/shared/ui/rhf';
 
 import { DeliverablesField } from './components/DeliverablesField';
@@ -117,6 +118,7 @@ export const ProductInfo = () => {
               name="budgetAmount"
               control={control}
               endAdornment="₽"
+              formatValue={formatAmountInput}
               props={{
                 fullWidth: true,
                 label: 'Сумма',
@@ -135,12 +137,14 @@ export const ProductInfo = () => {
                 name="budgetMinAmount"
                 control={control}
                 endAdornment="₽"
+                formatValue={formatAmountInput}
                 props={{ fullWidth: true, label: 'От' }}
               />
               <RHFInput
                 name="budgetMaxAmount"
                 control={control}
                 endAdornment="₽"
+                formatValue={formatAmountInput}
                 props={{ fullWidth: true, label: 'До' }}
               />
             </Stack>

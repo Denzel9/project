@@ -65,7 +65,7 @@ const FavoriteFilter = ({
   onViewModeChange,
   tableReport,
 }: FavoriteFilterProps) => {
-  const { isScrolled, ref } = useScroll(150)
+  const { isScrolled, ref } = useScroll(80)
   const { role } = useAuthStore()
   const { setSnackbarOpen } = useSnackbarStore()
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)

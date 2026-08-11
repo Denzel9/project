@@ -26,6 +26,7 @@ import {
   InfiniteScrollSentinel,
   ROUTES,
   stickyFilterSx,
+  useScroll,
   type FilterAutocompleteOption,
 } from '@/shared';
 import {
@@ -79,6 +80,8 @@ export const MyAnnouncementsPage = () => {
   const [selectedPostOption, setSelectedPostOption] =
     useState<FilterAutocompleteOption | null>(null);
   const [postSearchQuery, setPostSearchQuery] = useState('');
+
+  const { isScrolled, ref: scrollProbeRef } = useScroll(80);
 
   const isCompany = role === USER_ROLE.COMPANY;
   const isActive = mediaTab === MEDIA_TAB.ACTIVE;
@@ -189,7 +192,8 @@ export const MyAnnouncementsPage = () => {
   return (
     <PageLayout>
       <Stack
-        spacing={1.5}
+        ref={scrollProbeRef}
+        spacing={1}
         direction="row"
         sx={{
           ...stickyFilterSx,
@@ -201,6 +205,9 @@ export const MyAnnouncementsPage = () => {
           alignItems: 'center',
           borderColor: 'divider',
           justifyContent: 'space-between',
+          borderTopLeftRadius: isScrolled ? 0 : 24,
+          borderTopRightRadius: isScrolled ? 0 : 24,
+          borderTopColor: isScrolled ? 'transparent' : 'divider',
         }}
       >
         <Stack direction="row" spacing={1} sx={{ flex: 1, alignItems: 'center' }}>
@@ -255,6 +262,7 @@ export const MyAnnouncementsPage = () => {
 
           <TextField
             select
+            fullWidth
             size="small"
             label="Статус"
             value={mediaTab}
@@ -267,9 +275,6 @@ export const MyAnnouncementsPage = () => {
             <MenuItem value={MEDIA_TAB.ARCHIVED}>Архивные</MenuItem>
             <MenuItem value={MEDIA_TAB.PRIVATE}>Приватные</MenuItem>
           </TextField>
-
-
-
 
           <Button
             size="small"

@@ -21,6 +21,7 @@ import {
   type WorkFormat,
   type EmploymentType,
 } from '@/entities/post'
+import { formatAmount } from '@/shared/lib/amountFormat'
 
 import type { FormProductType } from './schema/schema'
 
@@ -89,9 +90,9 @@ const mapBudgetFromForm = (form: FormProductType): PostBudget | undefined => {
 
 const mapBudgetToForm = (budget?: PostBudget) => ({
   budgetType: budget?.type ?? BudgetTypeEnum.FIXED,
-  budgetAmount: budget?.amount != null ? String(budget.amount) : '',
-  budgetMinAmount: budget?.minAmount != null ? String(budget.minAmount) : '',
-  budgetMaxAmount: budget?.maxAmount != null ? String(budget.maxAmount) : '',
+  budgetAmount: budget?.amount != null ? formatAmount(budget.amount) : '',
+  budgetMinAmount: budget?.minAmount != null ? formatAmount(budget.minAmount) : '',
+  budgetMaxAmount: budget?.maxAmount != null ? formatAmount(budget.maxAmount) : '',
   barterDescription: budget?.barterDescription ?? '',
   budgetCurrency: budget?.currency ?? 'RUB',
   paymentTerms: budget?.paymentTerms ?? '',
@@ -155,15 +156,15 @@ const mapBloggerRequirementsToForm = (
 ) => ({
   bloggerMinFollowers:
     requirements?.minFollowers != null
-      ? String(requirements.minFollowers)
+      ? formatAmount(requirements.minFollowers)
       : '',
   bloggerMaxFollowers:
     requirements?.maxFollowers != null
-      ? String(requirements.maxFollowers)
+      ? formatAmount(requirements.maxFollowers)
       : '',
   bloggerMinEngagementRate:
     requirements?.minEngagementRate != null
-      ? String(requirements.minEngagementRate)
+      ? formatAmount(requirements.minEngagementRate)
       : '',
   bloggerVerifiedAccount: requirements?.verifiedAccount ?? false,
   bloggerExperienceWithAds: requirements?.experienceWithAds ?? false,

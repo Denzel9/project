@@ -1,8 +1,6 @@
 import { Link, Skeleton, Stack, Typography } from '@mui/material';
 import { type ReactNode } from 'react';
 
-import { getYandexMapsUrl } from '@/shared/lib/maps/openYandexMaps';
-
 type UserCardItemProps = {
   value: string;
   icon?: ReactNode;
@@ -31,9 +29,7 @@ export const UserCardItem = ({
       ? `mailto:${value}`
       : type === 'phone'
         ? `tel:${value}`
-        : type === 'location'
-          ? getYandexMapsUrl(value)
-          : undefined;
+        : undefined;
 
   return (
     <Stack
@@ -48,8 +44,8 @@ export const UserCardItem = ({
         href={href}
         target={type === 'location' ? '_blank' : undefined}
         rel={type === 'location' ? 'noopener noreferrer' : undefined}
+        color='info'
         sx={{
-          color: 'inherit',
           textDecoration: type === 'location' ? 'underline' : 'none',
           textUnderlineOffset: 2,
         }}

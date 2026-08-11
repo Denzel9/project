@@ -40,7 +40,7 @@ type MyPostFilterProps = {
 }
 
 const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
-  const { isScrolled, ref } = useScroll(150)
+  const { isScrolled, ref } = useScroll(80)
 
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)

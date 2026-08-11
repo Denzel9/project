@@ -144,7 +144,7 @@ export const UserCard = ({
       >
         <UserCardItem
           type="email"
-          icon={<EmailOutlined />}
+          icon={<EmailOutlined color='info' />}
           isLoading={isLoading}
           value={user?.email || ''}
         />
@@ -152,7 +152,7 @@ export const UserCard = ({
         {user?.phone && (
           <UserCardItem
             type="phone"
-            icon={<PhoneOutlined />}
+            icon={<PhoneOutlined color='info' />}
             isLoading={isLoading}
             value={user?.phone || ''}
           />
@@ -161,7 +161,7 @@ export const UserCard = ({
         {user?.location && (
           <UserCardItem
             type="location"
-            icon={<LocationOnOutlined />}
+            icon={<LocationOnOutlined color='info' />}
             isLoading={isLoading}
             value={user?.location || ''}
           />

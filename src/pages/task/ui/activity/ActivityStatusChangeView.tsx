@@ -42,7 +42,6 @@ export const ActivityStatusChangeView = ({
         <Chip
           size="small"
           label="Было"
-          color="error"
           sx={{ mb: 1.5, display: 'flex', width: 'fit-content' }}
         />
         <Chip
@@ -65,7 +64,6 @@ export const ActivityStatusChangeView = ({
         <Chip
           size="small"
           label="Стало"
-          color="success"
           sx={{ mb: 1.5, display: 'flex', width: 'fit-content' }}
         />
         <Chip

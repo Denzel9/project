@@ -30,7 +30,6 @@ import {
   type Post,
   type PostDeliverable,
 } from '@/entities'
-import { getYandexMapsUrl } from '@/shared/lib/maps/openYandexMaps'
 
 import type { ReactNode } from 'react'
 
@@ -222,15 +221,7 @@ const LocationValue = ({ locationLabel }: { locationLabel: string }) => {
   }
 
   return (
-    <Link
-      href={getYandexMapsUrl(locationLabel)}
-      target="_blank"
-      rel="noopener noreferrer"
-      underline="hover"
-      color="inherit"
-    >
-      {locationLabel}
-    </Link>
+    <Typography variant="body1">{locationLabel}</Typography>
   )
 }
 

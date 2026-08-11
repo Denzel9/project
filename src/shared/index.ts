@@ -12,7 +12,6 @@ export * from './ui/filter-autocomplete/FilterAutocomplete';
 
 export * from './api';
 export * from './lib/share/shareTargets';
-export * from './lib/maps/openYandexMaps';
 export * from './lib/formatActionActorLabel';
 export * from './lib/safeArea';
 export * from './hooks/useScroll';

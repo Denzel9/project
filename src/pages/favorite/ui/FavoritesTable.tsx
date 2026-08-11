@@ -4,7 +4,6 @@ import {
   Box,
   Chip,
   IconButton,
-  Link,
   Stack,
   Table,
   TableBody,
@@ -30,7 +29,7 @@ import {
   type FavoriteUserItem,
 } from '@/entities/favorite'
 import { UserDisplayName, type User } from '@/entities/user'
-import { ROUTES, getYandexMapsUrl, scrollMainToTop } from '@/shared'
+import { ROUTES, scrollMainToTop } from '@/shared'
 
 import {
   FAVORITE_POST_TABLE_COLUMN_WIDTHS,
@@ -503,17 +502,7 @@ export const FavoritesTable = ({
                       )}
                     >
                       {item.user.location ? (
-                        <Link
-                          href={getYandexMapsUrl(item.user.location)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          underline="hover"
-                          variant="body2"
-                          color="text.secondary"
-                          noWrap
-                        >
-                          {item.user.location}
-                        </Link>
+                        <Typography variant="body2">{item.user.location}</Typography>
                       ) : (
                         <Typography
                           variant="body2"

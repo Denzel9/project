@@ -43,10 +43,12 @@ export const Contacts = ({
         bgcolor: 'white',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '24px',
+        borderRadius: { xs: '16px', md: '24px' },
         display: 'flex',
         flexDirection: 'column',
+        flex: 1,
         minHeight: 0,
+        overflow: 'hidden',
       }}
     >
       {canSearchContacts && (

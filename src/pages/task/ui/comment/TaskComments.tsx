@@ -2,7 +2,6 @@ import {
   AttachFile,
   ChatBubbleOutlined,
   Close,
-  MoreVert,
   Search,
 } from '@mui/icons-material';
 import {
@@ -11,8 +10,6 @@ import {
   Chip,
   CircularProgress,
   IconButton,
-  Menu,
-  MenuItem,
   Stack,
   TextField,
   Tooltip,
@@ -23,10 +20,6 @@ import {
 import { format } from 'date-fns';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-  formatChatDaySeparatorLabel,
-  isSameChatDay,
-} from '@/entities/chat';
 import {
   canEditTaskComment,
   uploadTaskCommentMediaBatch,
@@ -41,6 +34,10 @@ import {
   type User,
   type TaskCommentMedia,
 } from '@/entities';
+import {
+  formatChatDaySeparatorLabel,
+  isSameChatDay,
+} from '@/entities/chat';
 import { useAuthStore, useTaskCommentsRealtime } from '@/features';
 import { ChatInput } from '@/shared';
 import { FullScreenGallery } from '@/widgets';
@@ -91,7 +88,6 @@ export const TaskComments = ({
   const [searchPage, setSearchPage] = useState(1);
   const [searchItems, setSearchItems] = useState<TaskComment[]>([]);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryItems, setGalleryItems] = useState<
     ReturnType<typeof toGalleryItems>
@@ -390,13 +386,6 @@ export const TaskComments = ({
     }
   };
 
-  const handleCloseMenu = () => setMenuAnchor(null);
-
-  const handleOpenAttachments = () => {
-    handleCloseMenu();
-    setIsAttachmentsOpen(true);
-  };
-
   const emptyMessage = disabled
     ? 'Комментарии недоступны для этой задачи'
     : isExecutorApprove
@@ -478,18 +467,6 @@ export const TaskComments = ({
                 <AttachFile />
               </IconButton>
             </Tooltip>
-
-            <IconButton onClick={event => setMenuAnchor(event.currentTarget)}>
-              <MoreVert />
-            </IconButton>
-
-            <Menu
-              anchorEl={menuAnchor}
-              open={Boolean(menuAnchor)}
-              onClose={handleCloseMenu}
-            >
-              <MenuItem onClick={handleOpenAttachments}>Все вложения</MenuItem>
-            </Menu>
           </Stack>
         )}
       </Stack>

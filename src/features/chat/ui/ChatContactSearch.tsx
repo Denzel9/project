@@ -150,7 +150,6 @@ export const ChatContactSearch = ({
         renderInput={params => (
           <TextField
             {...params}
-            // label={label}
             placeholder={placeholder}
             slotProps={{
               input: {

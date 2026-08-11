@@ -322,13 +322,15 @@ export const ChatPage = () => {
     !isOpeningConversation &&
     !selectedConversation &&
     !conversations.length;
+  const isMobileConversation = Boolean(isMobile && selectedConversation);
 
   if (isInitialLoading) {
     return (
       <PageLayout isScreenHeight>
         <Box
           sx={{
-            height: '50vh',
+            flex: 1,
+            minHeight: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -346,7 +348,8 @@ export const ChatPage = () => {
         <Box
           sx={{
             width: '100%',
-            height: '100%',
+            flex: 1,
+            minHeight: 0,
             display: 'flex',
             bgcolor: 'white',
             border: '1px solid',
@@ -368,14 +371,27 @@ export const ChatPage = () => {
   }
 
   return (
-    <PageLayout isScreenHeight withHeader={!selectedConversation}>
+    <PageLayout
+      isScreenHeight
+      withHeader={isMobile ? !selectedConversation : true}
+      sx={
+        isMobileConversation
+          ? {
+            gap: 0,
+            pr: 0,
+            bgcolor: 'common.white',
+          }
+          : undefined
+      }
+    >
       <Stack
         direction="row"
-        spacing={1}
+        spacing={{ xs: 0, md: 1 }}
         sx={{
           width: '100%',
-          height: '100%',
-          overflowY: 'hidden',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {showContacts && (
@@ -397,6 +413,7 @@ export const ChatPage = () => {
               flex: 1,
               minHeight: 0,
               width: { xs: '100%', md: '70%' },
+              overflow: 'hidden',
             }}
           >
             <ChatHeader

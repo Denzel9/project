@@ -137,8 +137,8 @@ export const ChangeAssigneeDialog = ({
           overflow: 'visible',
           position: 'relative',
           borderRadius: '32px',
-          width: 480,
-          maxWidth: '90%',
+          width: { md: 480, xs: '100%' },
+          maxWidth: { xs: '100%', md: '90%' },
         },
       }}
     >

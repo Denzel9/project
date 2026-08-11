@@ -48,11 +48,12 @@ export const SendTzPreviewDialog = ({
       onClose={handleClose}
       sx={{
         '& .MuiDialog-paper': {
+          m: 0,
           outline: 'none',
           position: 'relative',
           borderRadius: '32px',
-          width: 640,
-          maxWidth: '92%',
+          width: { md: 640, xs: '100%' },
+          maxWidth: { xs: '100%', md: '92%' },
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',

@@ -90,15 +90,17 @@ export const ChatHeader = ({
       spacing={2}
       direction="row"
       sx={{
+        p: 2,
         width: '100%',
         flexShrink: 0,
         bgcolor: 'white',
-        p: { xs: 2, md: 2 },
         border: '1px solid',
+        borderRadius: '24px',
         alignItems: 'center',
         borderColor: 'divider',
         justifyContent: 'space-between',
-        borderRadius: { xs: '16px', md: '24px' },
+        borderTopRightRadius: { xs: 0, md: '24px' },
+        borderTopLeftRadius: { xs: 0, md: '24px' },
       }}
     >
       <Stack
@@ -106,8 +108,8 @@ export const ChatHeader = ({
         direction="row"
         onClick={isNotes ? undefined : onOpenProfile}
         sx={{
-          alignItems: 'center',
           minWidth: 0,
+          alignItems: 'center',
           cursor: isNotes ? 'default' : 'pointer',
         }}
       >

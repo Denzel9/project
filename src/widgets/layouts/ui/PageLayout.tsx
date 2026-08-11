@@ -37,13 +37,14 @@ export const PageLayout = ({
         flexDirection: 'column',
         position: 'relative',
         gap: 1,
+        boxSizing: 'border-box',
         pt: SAFE_AREA.top,
         pb: SAFE_AREA.bottom,
         pl: SAFE_AREA.left,
         ...(isScreenHeight && {
-          height: '100%',
           flex: 1,
           minHeight: 0,
+          height: 'auto',
           overflow: 'hidden',
         }),
         '@media print': {
@@ -117,6 +118,7 @@ export const PageLayout = ({
           flexDirection: 'column',
           ...(isScreenHeight && {
             minHeight: 0,
+            overflow: 'hidden',
           }),
           '@media print': {
             height: 'auto',

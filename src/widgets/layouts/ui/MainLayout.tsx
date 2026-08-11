@@ -56,10 +56,12 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           flexDirection: 'column',
           minHeight: 0,
           minWidth: 0,
-          height: '100vh',
+          height: '100dvh',
+          maxHeight: '100dvh',
           overflow: 'hidden',
           '@media print': {
             height: 'auto',
+            maxHeight: 'none',
             overflow: 'visible',
           },
         }}
@@ -69,6 +71,9 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           data-main-scroll
           sx={{
             flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
             overflowY: 'auto',
             overflowX: 'hidden',
             '@media print': {

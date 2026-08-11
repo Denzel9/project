@@ -369,6 +369,7 @@ export const ChatConversation = ({
         p: { xs: 2, md: 2 },
         borderRadius: '24px',
         bgcolor: 'common.white',
+        overflow: 'hidden',
       }}
     >
       {error && (

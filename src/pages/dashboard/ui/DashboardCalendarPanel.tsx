@@ -16,6 +16,7 @@ import { useCalendarTasks } from '@/pages/calendar/model/useCalendarTasks';
 import {
   buildCalendarEvents,
   filterEventsInMonthRange,
+  toDateKey,
 } from '@/pages/calendar/model/utils';
 import { CalendarMonthPanel } from '@/pages/calendar/ui/CalendarMonthPanel';
 import { CalendarPickerDay } from '@/pages/calendar/ui/CalendarPickerDay';
@@ -66,7 +67,7 @@ export const DashboardCalendarPanel = () => {
     return rawTasks.filter(task => {
       if (!task.finalDate) return false;
 
-      const deadline = task.finalDate.slice(0, 10);
+      const deadline = toDateKey(task.finalDate);
 
       return (
         deadline >= periodRange.dateFrom! && deadline <= periodRange.dateTo!

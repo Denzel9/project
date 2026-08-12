@@ -186,14 +186,20 @@ export const ChatContactSearch = ({
         }}
       >
         <MenuItem
-          onClick={() => { onFilterChange?.('all'); setMenuAnchorEl(null); }}
+          onClick={() => {
+            onFilterChange?.('all');
+            setMenuAnchorEl(null);
+          }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
         >
           <Typography>Все</Typography>
           {filter === 'all' && <Check fontSize="small" color="primary" />}
         </MenuItem>
         <MenuItem
-          onClick={() => { onFilterChange?.('unread'); setMenuAnchorEl(null); }}
+          onClick={() => {
+            onFilterChange?.('unread');
+            setMenuAnchorEl(null);
+          }}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
         >
           <Typography>Непрочитано</Typography>

@@ -43,6 +43,7 @@ export const DashboardPage = () => {
   const setFastButtonValue = useMyTaskFilterStore(
     state => state.setFastButtonValue
   );
+  const setExtraFilter = useMyTaskFilterStore(state => state.setExtraFilter);
   const setStatus = useMyTaskFilterStore(state => state.setStatus);
   const viewMode = useMyTaskFilterStore(state => state.viewMode);
   const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
@@ -203,6 +204,8 @@ export const DashboardPage = () => {
     if (value === 'checking') {
       setFastButtonValue(null);
       setStatus(TASK_STATUS_ENUM.CHECKING);
+    } else if (value === 'urgent') {
+      setExtraFilter('urgent');
     } else {
       setFastButtonValue(value);
     }

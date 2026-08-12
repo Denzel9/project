@@ -36,5 +36,7 @@ export const ALL_TASK_STATUSES: TaskStatus[] = KANBAN_COLUMNS.map(
     column => column.status,
 );
 
+export const MAX_SELECTED_TASKS = 20;
+
 export const getTaskConfig = (status: TaskStatus) =>
     KANBAN_COLUMNS.find(column => column.status === status);

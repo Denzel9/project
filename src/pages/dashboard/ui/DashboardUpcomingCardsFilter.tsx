@@ -45,6 +45,7 @@ export const DashboardUpcomingCardsFilterToggle = ({
   onClick: () => void;
 }) => (
   <IconButton
+    size="small"
     aria-label="Фильтры"
     onClick={onClick}
     sx={{

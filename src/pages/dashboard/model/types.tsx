@@ -46,7 +46,7 @@ export const CARD_CONFIG: Record<
   },
   urgent: {
     icon: WhatshotOutlined,
-    accentColor: 'warning',
+    accentColor: 'error',
   },
   checking: {
     icon: FactCheckOutlined,

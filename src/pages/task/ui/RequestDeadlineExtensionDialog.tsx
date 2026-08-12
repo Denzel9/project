@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   useRequestTaskDeadlineExtensionMutation,
@@ -27,20 +27,29 @@ const INITIATOR_OPTIONS: { value: TaskAnnulmentInitiator; label: string }[] = [
 
 type RequestDeadlineExtensionDialogProps = {
   open: boolean;
-  taskId: string;
+  taskId?: string;
+  taskIds?: string[];
   currentFinalDate?: string | null;
   onClose: () => void;
+  onSuccess?: () => void;
 };
 
 export const RequestDeadlineExtensionDialog = ({
   open,
   taskId,
+  taskIds,
   currentFinalDate,
   onClose,
+  onSuccess,
 }: RequestDeadlineExtensionDialogProps) => {
   const [reason, setReason] = useState('');
   const [newDate, setNewDate] = useState('');
   const [initiator, setInitiator] = useState<TaskAnnulmentInitiator | ''>('');
+
+  const ids = useMemo(
+    () => (taskIds?.length ? taskIds : taskId ? [taskId] : []),
+    [taskId, taskIds],
+  );
 
   const { setSnackbarOpen } = useSnackbarStore();
   const { mutateAsync: requestDeadlineExtension, isPending } =
@@ -54,7 +63,7 @@ export const RequestDeadlineExtensionDialog = ({
   };
 
   const handleSubmit = async () => {
-    if (!reason.trim() || !newDate || !initiator) return;
+    if (!reason.trim() || !newDate || !initiator || ids.length === 0) return;
 
     const proposedFinalDate = formatPostDeadlineForApi(newDate);
     if (!proposedFinalDate) return;
@@ -66,28 +75,62 @@ export const RequestDeadlineExtensionDialog = ({
         setSnackbarOpen?.(
           true,
           'Новая дата должна быть позже текущего дедлайна',
-          'error'
+          'error',
         );
         return;
       }
     }
 
     try {
-      await requestDeadlineExtension({
-        id: taskId,
-        body: {
-          reason: reason.trim(),
-          initiator,
-          proposedFinalDate,
-        },
-      });
-      setSnackbarOpen?.(true, 'Запрос на перенос дедлайна отправлен');
-      handleClose();
+      const results = await Promise.allSettled(
+        ids.map(id =>
+          requestDeadlineExtension({
+            id,
+            body: {
+              reason: reason.trim(),
+              initiator,
+              proposedFinalDate,
+            },
+          }),
+        ),
+      );
+
+      const successCount = results.filter(result => result.status === 'fulfilled').length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0 && failCount === 0) {
+        setSnackbarOpen?.(
+          true,
+          ids.length === 1
+            ? 'Запрос на перенос дедлайна отправлен'
+            : `Запрос на перенос дедлайна отправлен для ${successCount} задач`,
+        );
+        onSuccess?.();
+        handleClose();
+        return;
+      }
+
+      if (successCount > 0) {
+        setSnackbarOpen?.(
+          true,
+          `Отправлено: ${successCount}, не удалось: ${failCount}`,
+          'error',
+        );
+        onSuccess?.();
+        handleClose();
+        return;
+      }
+
+      setSnackbarOpen?.(
+        true,
+        'Не удалось отправить запрос. Попробуйте позже',
+        'error',
+      );
     } catch {
       setSnackbarOpen?.(
         true,
         'Не удалось отправить запрос. Попробуйте позже',
-        'error'
+        'error',
       );
     }
   };
@@ -104,7 +147,7 @@ export const RequestDeadlineExtensionDialog = ({
           borderRadius: '32px',
           width: { xs: '100%', md: 560 },
           maxWidth: { xs: '100%', md: '90%' },
-          m: 0
+          m: 0,
         },
       }}
     >
@@ -125,7 +168,11 @@ export const RequestDeadlineExtensionDialog = ({
       </IconButton>
 
       <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Запросить перенос дедлайна</Typography>
+        <Typography variant="h6">
+          {ids.length > 1
+            ? `Запросить перенос дедлайна (${ids.length})`
+            : 'Запросить перенос дедлайна'}
+        </Typography>
 
         <Stack
           spacing={2}
@@ -181,7 +228,9 @@ export const RequestDeadlineExtensionDialog = ({
             color="primary"
             variant="contained"
             loading={isPending}
-            disabled={!reason.trim() || !newDate || !initiator || isPending}
+            disabled={
+              !reason.trim() || !newDate || !initiator || isPending || ids.length === 0
+            }
             onClick={() => void handleSubmit()}
           >
             Запросить

@@ -1,5 +1,5 @@
 import { LockOutlined, Whatshot } from '@mui/icons-material';
-import { Avatar, Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
+import { Avatar, Box, Checkbox, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useRef } from 'react';
@@ -20,6 +20,7 @@ import {
 } from '@/entities';
 import { getTaskConfig, useAuthStore } from '@/features';
 
+import { useTaskSelectionToggle } from '../model/utils/useTaskSelectionToggle';
 import { getTaskPath } from '../model/utils/utils';
 
 import { TaskActionsMenu } from './TaskActionsMenu';
@@ -67,14 +68,20 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const { role, id: currentUserId } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
+  const { isTaskSelectionMode, isSelected, onToggleSelection } =
+    useTaskSelectionToggle();
+  const selected = isSelected(task.id);
+  const allowDrag = canDrag && !isTaskSelectionMode;
 
   const columnConfig = getTaskConfig(task.status);
   const accentColor = columnConfig?.color ?? 'primary';
   const contact = getContact(task, isCompany);
   const overdue = isTaskOverdue(task);
-  const dragBlockReason = canDrag
+  const dragBlockReason = allowDrag
     ? null
-    : getTaskStatusTransitionBlockReason(task, currentUserId ?? null);
+    : isTaskSelectionMode
+      ? null
+      : getTaskStatusTransitionBlockReason(task, currentUserId ?? null);
 
   const [{ isDragging }, drag] = useDrag({
     type: KANBAN_TASK_DRAG_TYPE,
@@ -86,7 +93,7 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
       isExecutorApprove: task.isExecutorApprove,
       isCompanyAction: task.isCompanyAction,
     } satisfies KanbanTaskDragItem,
-    canDrag,
+    canDrag: allowDrag,
     collect: monitor => ({
       isDragging: monitor.isDragging(),
     }),
@@ -97,6 +104,11 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
 
   const handleClick = () => {
     if (isDragging) return;
+
+    if (isTaskSelectionMode) {
+      onToggleSelection(task);
+      return;
+    }
 
     navigate(getTaskPath(task));
   };
@@ -123,24 +135,35 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
           bgcolor: 'white',
           borderRadius: '14px',
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: selected ? 'primary.main' : 'divider',
           borderLeftWidth: 2,
           borderLeftColor: theme => theme.palette[accentColor].main,
-          cursor: canDrag
-            ? isDragging
-              ? 'grabbing'
-              : 'grab'
-            : 'not-allowed',
-          opacity: isDragging ? 0.92 : canDrag ? 1 : 0.72,
-          boxShadow: isDragging ? theme => theme.shadows[6] : 'none',
+          cursor: isTaskSelectionMode
+            ? 'pointer'
+            : allowDrag
+              ? isDragging
+                ? 'grabbing'
+                : 'grab'
+              : 'not-allowed',
+          opacity: isDragging ? 0.92 : allowDrag || isTaskSelectionMode ? 1 : 0.72,
+          boxShadow: selected
+            ? '0 0 0 1px var(--mui-palette-primary-main)'
+            : isDragging
+              ? theme => theme.shadows[6]
+              : 'none',
           transition:
             'box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease',
           '&:hover': {
             boxShadow: theme =>
-              isDragging
-                ? theme.shadows[6]
-                : '0 4px 16px rgba(0, 0, 0, 0.06)',
-            transform: isDragging || !canDrag ? 'none' : 'translateY(-1px)',
+              selected
+                ? '0 0 0 1px var(--mui-palette-primary-main)'
+                : isDragging
+                  ? theme.shadows[6]
+                  : '0 4px 16px rgba(0, 0, 0, 0.06)',
+            transform:
+              isDragging || (!allowDrag && !isTaskSelectionMode)
+                ? 'none'
+                : 'translateY(-1px)',
           },
         }}
       >
@@ -185,10 +208,21 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
             onClick={event => event.stopPropagation()}
             onMouseDown={event => event.stopPropagation()}
           >
-            <TaskActionsMenu
-              task={task}
-              size="small"
-            />
+            {!isTaskSelectionMode && (
+              <TaskActionsMenu
+                task={task}
+                size="small"
+              />
+            )}
+
+            {isTaskSelectionMode && (
+              <Checkbox
+                size="small"
+                checked={selected}
+                onChange={() => onToggleSelection(task)}
+                onMouseDown={event => event.stopPropagation()}
+              />
+            )}
           </Box>
         </Stack>
 

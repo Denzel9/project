@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   useRequestTaskAnnulmentMutation,
@@ -25,17 +25,26 @@ const INITIATOR_OPTIONS: { value: TaskAnnulmentInitiator; label: string }[] = [
 
 type RequestCancelTaskDialogProps = {
   open: boolean;
-  taskId: string;
+  taskId?: string;
+  taskIds?: string[];
   onClose: () => void;
+  onSuccess?: () => void;
 };
 
 export const RequestCancelTaskDialog = ({
   open,
   taskId,
+  taskIds,
   onClose,
+  onSuccess,
 }: RequestCancelTaskDialogProps) => {
   const [reason, setReason] = useState('');
   const [initiator, setInitiator] = useState<TaskAnnulmentInitiator | ''>('');
+
+  const ids = useMemo(
+    () => (taskIds?.length ? taskIds : taskId ? [taskId] : []),
+    [taskId, taskIds],
+  );
 
   const { setSnackbarOpen } = useSnackbarStore();
   const { mutateAsync: requestAnnulment, isPending } =
@@ -48,20 +57,54 @@ export const RequestCancelTaskDialog = ({
   };
 
   const handleSubmit = async () => {
-    if (!reason.trim() || !initiator) return;
+    if (!reason.trim() || !initiator || ids.length === 0) return;
 
     try {
-      await requestAnnulment({
-        id: taskId,
-        body: { reason: reason.trim(), initiator },
-      });
-      setSnackbarOpen?.(true, 'Запрос на аннулирование отправлен');
-      handleClose();
+      const results = await Promise.allSettled(
+        ids.map(id =>
+          requestAnnulment({
+            id,
+            body: { reason: reason.trim(), initiator },
+          }),
+        ),
+      );
+
+      const successCount = results.filter(result => result.status === 'fulfilled').length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0 && failCount === 0) {
+        setSnackbarOpen?.(
+          true,
+          ids.length === 1
+            ? 'Запрос на аннулирование отправлен'
+            : `Запрос на аннулирование отправлен для ${successCount} задач`,
+        );
+        onSuccess?.();
+        handleClose();
+        return;
+      }
+
+      if (successCount > 0) {
+        setSnackbarOpen?.(
+          true,
+          `Отправлено: ${successCount}, не удалось: ${failCount}`,
+          'error',
+        );
+        onSuccess?.();
+        handleClose();
+        return;
+      }
+
+      setSnackbarOpen?.(
+        true,
+        'Не удалось отправить запрос. Попробуйте позже',
+        'error',
+      );
     } catch {
       setSnackbarOpen?.(
         true,
         'Не удалось отправить запрос. Попробуйте позже',
-        'error'
+        'error',
       );
     }
   };
@@ -78,7 +121,7 @@ export const RequestCancelTaskDialog = ({
           borderRadius: '32px',
           width: { xs: '100%', md: 560 },
           maxWidth: { xs: '100%', md: '90%' },
-          m: 0
+          m: 0,
         },
       }}
     >
@@ -99,7 +142,11 @@ export const RequestCancelTaskDialog = ({
       </IconButton>
 
       <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Запросить аннулирование задачи</Typography>
+        <Typography variant="h6">
+          {ids.length > 1
+            ? `Запросить аннулирование (${ids.length})`
+            : 'Запросить аннулирование задачи'}
+        </Typography>
 
         <Stack
           spacing={2}
@@ -149,7 +196,7 @@ export const RequestCancelTaskDialog = ({
             color="primary"
             variant="contained"
             loading={isPending}
-            disabled={!reason.trim() || !initiator || isPending}
+            disabled={!reason.trim() || !initiator || isPending || ids.length === 0}
             onClick={() => void handleSubmit()}
           >
             Запросить

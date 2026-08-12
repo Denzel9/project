@@ -148,6 +148,7 @@ export const FastButtonGroup = ({
         direction="row"
         sx={{
           display: { xs: 'none', md: 'flex' },
+          ml: '0px !important',
           width: 'fit-content',
           alignItems: 'center',
           scrollbarWidth: 'none',

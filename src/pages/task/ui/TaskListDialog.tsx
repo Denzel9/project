@@ -159,6 +159,7 @@ export const TaskListDialog = ({
           borderColor: 'divider',
           borderRadius: '16px',
           p: 1,
+          scrollbarWidth: 'none',
         }}
       >
         {!tasks.length && (

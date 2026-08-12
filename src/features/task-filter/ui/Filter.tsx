@@ -305,18 +305,20 @@ export const MyTaskFilter = ({
               />
             )}
 
-            {!isTableMode && <Tooltip sx={{ display: { xs: 'none', md: 'block' } }} title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
-              <IconButton
-                size="small"
-                color={isSearchOpen ? 'primary' : 'default'}
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-              >
-                {isSearchOpen ? (
-                  <Close fontSize="small" />
-                ) : (
-                  <Search fontSize="small" />
-                )}
-              </IconButton>
+            {!isTableMode && !isMobile && <Tooltip title={isSearchOpen ? 'Скрыть поиск' : 'Показать поиск'}>
+              <span>
+                <IconButton
+                  size="small"
+                  color={isSearchOpen ? 'primary' : 'default'}
+                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                >
+                  {isSearchOpen ? (
+                    <Close fontSize="small" />
+                  ) : (
+                    <Search fontSize="small" />
+                  )}
+                </IconButton>
+              </span>
             </Tooltip>}
 
             {isDrawerFilterMode && (
@@ -356,8 +358,6 @@ export const MyTaskFilter = ({
                 </Drawer>
               </>
             )}
-
-
 
             <TaskFilterActionsMenu
               isCompany={isCompany}

@@ -36,7 +36,7 @@ import {
   type ChatConversation,
   type ChatMessage,
 } from '@/entities';
-import { useAuthStore, ChatContactSearch } from '@/features';
+import { useAuthStore, ChatContactSearch, type ChatFilter } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
 import {
   ChatAttachmentsPanel,
@@ -66,6 +66,7 @@ export const DashboardChatsPanel = () => {
   const { setSnackbarOpen } = useSnackbarStore();
 
   const [peerId, setPeerId] = useState('all');
+  const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
   const [isOpenFilter, setIsOpenFilter] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
@@ -81,7 +82,7 @@ export const DashboardChatsPanel = () => {
   const prevConversationIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
 
-  const hasActiveFilters = peerId !== 'all';
+  const hasActiveFilters = peerId !== 'all' || chatFilter !== 'all';
 
   const conversationParams = useMemo(
     () => ({
@@ -132,8 +133,17 @@ export const DashboardChatsPanel = () => {
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
-    return hasActiveFilters ? sorted : sorted.slice(0, DASHBOARD_CHATS_LIMIT);
-  }, [data, hasActiveFilters]);
+    const filtered =
+      chatFilter === 'unread'
+        ? sorted.filter(
+            conversation =>
+              (conversation.unreadCount ?? 0) > 0 ||
+              Boolean(conversation.isMarkedUnread),
+          )
+        : sorted;
+
+    return hasActiveFilters ? filtered : filtered.slice(0, DASHBOARD_CHATS_LIMIT);
+  }, [data, hasActiveFilters, chatFilter]);
 
   const selectedPeerTitle = useMemo(
     () => peerOptions.find(peer => peer.id === peerId)?.displayName,
@@ -158,8 +168,12 @@ export const DashboardChatsPanel = () => {
       return 'Нет чатов с выбранным собеседником';
     }
 
+    if (chatFilter === 'unread') {
+      return 'Нет непрочитанных чатов';
+    }
+
     return 'Пока нет чатов';
-  }, [peerId]);
+  }, [peerId, chatFilter]);
 
   const {
     messages,
@@ -324,6 +338,7 @@ export const DashboardChatsPanel = () => {
 
   const handleResetFilters = () => {
     setPeerId('all');
+    setChatFilter('all');
   };
 
   const handleSelectContact = (user: UserSearchItem) => {
@@ -488,6 +503,8 @@ export const DashboardChatsPanel = () => {
         >
           <ChatContactSearch
             size="small"
+            filter={chatFilter}
+            onFilterChange={setChatFilter}
             onSelect={handleSelectContact}
           />
 
@@ -502,6 +519,14 @@ export const DashboardChatsPanel = () => {
                   size="small"
                   label={selectedPeerTitle}
                   onDelete={() => setPeerId('all')}
+                />
+              )}
+
+              {chatFilter === 'unread' && (
+                <Chip
+                  size="small"
+                  label="Непрочитано"
+                  onDelete={() => setChatFilter('all')}
                 />
               )}
 

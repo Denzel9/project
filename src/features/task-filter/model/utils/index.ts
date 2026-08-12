@@ -344,3 +344,8 @@ export const toDashboardTasksQueryParams = (
   ...(filters.dateTo && { dateTo: filters.dateTo }),
   ...(filters.dateField && { dateField: filters.dateField }),
 });
+
+export {
+  countTasksByPostId,
+  pickRepresentativeTasksByPost,
+} from './groupTasksByPost';

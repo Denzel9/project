@@ -1,5 +1,4 @@
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
 
 import { ROUTES } from '@/shared'
 
@@ -12,8 +11,6 @@ import type {
 } from './types'
 import type { TaskCalendarItem } from '@/entities'
 import type { SxProps, Theme } from '@mui/material'
-
-dayjs.extend(utc)
 
 export type CalendarEventType = 'created' | 'deadline'
 
@@ -42,14 +39,14 @@ export type CalendarMonthStats = {
   daysWithEvents: number
 }
 
-export const toDateKey = (iso: string) => dayjs.utc(iso).format('YYYY-MM-DD')
+export const toDateKey = (iso: string) => dayjs(iso).format('YYYY-MM-DD')
 
 export const toCalendarDateKey = (date: dayjs.Dayjs) =>
   date.format('YYYY-MM-DD')
 
 export const getDateCategory = (dateKey: string): DateCategory => {
-  const date = dayjs.utc(dateKey).startOf('day')
-  const today = dayjs.utc().startOf('day')
+  const date = dayjs(dateKey).startOf('day')
+  const today = dayjs().startOf('day')
 
   if (date.isBefore(today)) return 'past'
   if (date.isAfter(today)) return 'future'
@@ -72,7 +69,7 @@ export const getEventLabel = (
 
 export const isCalendarTaskOverdue = (task: TaskCalendarItem) =>
   Boolean(task.finalDate) &&
-  dayjs.utc(task.finalDate).isBefore(dayjs.utc(), 'day')
+  dayjs(task.finalDate).isBefore(dayjs(), 'day')
 
 export const getCalendarTaskPath = (task: TaskCalendarItem) => {
   const userId = task.executor?.id || 'unassigned'

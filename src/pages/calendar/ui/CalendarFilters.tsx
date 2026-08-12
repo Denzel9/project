@@ -86,6 +86,8 @@ export const CalendarFilters = ({
     setIsDrawerOpen(false);
   };
 
+  // TODO сделать в задачах кнопку сгрупировать(пишу тут просто так, сделать нужно в задачах. подумать как визуально отобразить задачи когда они сгрупировались по стопкам)
+
   const formattedDate = format(selectedDate.toDate(), 'd MMMM yyyy', {
     locale: ru,
   });

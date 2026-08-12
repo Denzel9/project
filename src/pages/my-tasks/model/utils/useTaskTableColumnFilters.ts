@@ -28,6 +28,7 @@ export const useTaskTableColumnFilters = ({
   const [taskId, setTaskId] = useState('all')
   const [taskQuery, setTaskQuery] = useState('')
   const [localPersonId, setLocalPersonId] = useState('all')
+  const [manager, setManager] = useState<string | 'all'>('all')
   const [localUrgentOnly, setLocalUrgentOnly] = useState(false)
   const [localUpdatedDate, setLocalUpdatedDate] = useState<string | null>(null)
   const [deadlineDate, setDeadlineDate] = useState<string | null>(null)
@@ -56,6 +57,7 @@ export const useTaskTableColumnFilters = ({
     setTaskId('all')
     setTaskQuery('')
     onPersonIdChange('all')
+    setManager('all')
     onUrgentOnlyChange(false)
     onUpdatedDateChange(null)
     setDeadlineDate(null)
@@ -71,6 +73,7 @@ export const useTaskTableColumnFilters = ({
     taskId !== 'all' ||
     Boolean(taskQuery.trim()) ||
     personId !== 'all' ||
+    manager !== 'all' ||
     urgentOnly ||
     updatedDate !== null ||
     deadlineDate !== null
@@ -78,6 +81,7 @@ export const useTaskTableColumnFilters = ({
   const columnFilters = useMemo<TaskTableColumnFilters>(
     () => ({
       status,
+      manager,
       taskId,
       taskQuery,
       personId,
@@ -95,6 +99,7 @@ export const useTaskTableColumnFilters = ({
     }),
     [
       status,
+      manager,
       taskId,
       taskQuery,
       personId,

@@ -79,7 +79,6 @@ export const DashboardCard = ({
                 width: 40,
                 height: 40,
                 flexShrink: 0,
-                // display: { xs: 'none', md: 'flex' },
                 display: 'flex',
                 color: `info.main`,
                 borderRadius: '12px',

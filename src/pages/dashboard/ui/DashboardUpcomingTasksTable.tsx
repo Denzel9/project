@@ -1,26 +1,31 @@
-import { AssignmentOutlined } from '@mui/icons-material';
+import { AssignmentOutlined, FilterNoneOutlined, } from '@mui/icons-material';
 import {
   Box,
   Chip,
   CircularProgress,
   Grid,
+  IconButton,
   Stack,
   TablePagination,
   Typography,
   useMediaQuery,
 } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useTasksQuery } from '@/entities';
+import { fetchAllTasks, taskKeys, useTasksQuery } from '@/entities';
 import {
+  countTasksByPostId,
   getDashboardPeriodRange,
+  pickRepresentativeTasksByPost,
   toDashboardTasksQueryParams,
+  useAuthStore,
   useMyTaskFilterStore,
 } from '@/features';
 import { useTaskTableColumnFilters } from '@/pages/my-tasks/model/utils/useTaskTableColumnFilters';
 import { TaskItem } from '@/pages/my-tasks/ui/TaskItem';
 import { TaskTable } from '@/pages/my-tasks/ui/TaskTable';
-import { EmptyBlock } from '@/shared';
+import { EmptyBlock, NSTooltip } from '@/shared';
 
 import {
   DASHBOARD_TABLE_PAGE_SIZE,
@@ -83,6 +88,7 @@ export const DashboardUpcomingTasksTable = ({
     columnFilters.onStatusChange('all');
     columnFilters.onUrgentOnlyChange(false);
   }, [columnFilters]);
+  const { isPrime } = useAuthStore();
   const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
   const assigneeAccountId = useMyTaskFilterStore(
     state => state.assigneeAccountId
@@ -90,6 +96,8 @@ export const DashboardUpcomingTasksTable = ({
   const postId = useMyTaskFilterStore(state => state.postId);
   const executorId = useMyTaskFilterStore(state => state.executorId);
   const period = useMyTaskFilterStore(state => state.period);
+  const groupByPost = useMyTaskFilterStore(state => state.groupByPost);
+  const setGroupByPost = useMyTaskFilterStore(state => state.setGroupByPost);
   const periodRange = useMemo(
     () => getDashboardPeriodRange(period),
     [period]
@@ -112,6 +120,7 @@ export const DashboardUpcomingTasksTable = ({
         isCompany,
         rowsPerPage,
         viewMode,
+        groupByPost,
       ].join('|'),
     [
       columnFilters.status,
@@ -128,6 +137,7 @@ export const DashboardUpcomingTasksTable = ({
       isCompany,
       rowsPerPage,
       viewMode,
+      groupByPost,
     ]
   );
 
@@ -135,69 +145,120 @@ export const DashboardUpcomingTasksTable = ({
   const gridPage =
     gridPageState.filterKey === filterKey ? gridPageState.page : 0;
 
-  const gridQueryParams = useMemo(() => {
-    if (!isGridView) return undefined;
+  const gridFilterInput = useMemo(
+    () => ({
+      isCompany,
+      ...(columnFilters.status !== 'all' && {
+        status: columnFilters.status,
+      }),
+      ...(columnFilters.taskId !== 'all' && {
+        taskId: columnFilters.taskId,
+      }),
+      ...(columnFilters.personId !== 'all' && {
+        personId: columnFilters.personId,
+      }),
+      urgentOnly: columnFilters.urgentOnly,
+      ...(columnFilters.updatedDate && {
+        updatedDate: columnFilters.updatedDate,
+      }),
+      ...(columnFilters.deadlineDate && {
+        deadlineDate: columnFilters.deadlineDate,
+      }),
+      onlyMyTasks,
+      assigneeAccountId,
+      postId,
+      executorId,
+      ...periodRange,
+    }),
+    [
+      isCompany,
+      columnFilters,
+      onlyMyTasks,
+      assigneeAccountId,
+      postId,
+      executorId,
+      periodRange,
+    ],
+  );
 
-    return toDashboardTasksQueryParams(
-      {
-        isCompany,
-        ...(columnFilters.status !== 'all' && {
-          status: columnFilters.status,
-        }),
-        ...(columnFilters.taskId !== 'all' && {
-          taskId: columnFilters.taskId,
-        }),
-        ...(columnFilters.personId !== 'all' && {
-          personId: columnFilters.personId,
-        }),
-        urgentOnly: columnFilters.urgentOnly,
-        ...(columnFilters.updatedDate && {
-          updatedDate: columnFilters.updatedDate,
-        }),
-        ...(columnFilters.deadlineDate && {
-          deadlineDate: columnFilters.deadlineDate,
-        }),
-        onlyMyTasks,
-        assigneeAccountId,
-        postId,
-        executorId,
-        ...periodRange,
-      },
-      {
-        page: gridPage + 1,
-        limit: rowsPerPage,
-      }
-    );
-  }, [
-    isGridView,
-    isCompany,
-    columnFilters,
-    onlyMyTasks,
-    assigneeAccountId,
-    postId,
-    executorId,
-    periodRange,
-    gridPage,
-    rowsPerPage,
-  ]);
+  const pagedGridQueryParams = useMemo(() => {
+    if (!isGridView || groupByPost) return undefined;
+
+    return toDashboardTasksQueryParams(gridFilterInput, {
+      page: gridPage + 1,
+      limit: rowsPerPage,
+    });
+  }, [isGridView, groupByPost, gridFilterInput, gridPage, rowsPerPage]);
+
+  const groupedGridQueryParams = useMemo(() => {
+    if (!isGridView || !groupByPost) return undefined;
+
+    const params = toDashboardTasksQueryParams(gridFilterInput, {
+      page: 1,
+      limit: 1,
+    });
+
+    return Object.fromEntries(
+      Object.entries(params).filter(([key]) => key !== 'page' && key !== 'limit'),
+    ) as Omit<typeof params, 'page' | 'limit'>;
+  }, [isGridView, groupByPost, gridFilterInput]);
 
   const {
-    data: gridData,
-    isLoading: isGridLoading,
-    isError: isGridError,
-  } = useTasksQuery(gridQueryParams, { enabled: Boolean(gridQueryParams) });
+    data: pagedGridData,
+    isLoading: isPagedGridLoading,
+    isError: isPagedGridError,
+  } = useTasksQuery(pagedGridQueryParams, {
+    enabled: Boolean(pagedGridQueryParams),
+  });
 
-  const gridTasks = gridData?.items ?? [];
-  const gridTotal = gridData?.total ?? 0;
+  const {
+    data: allGridTasks,
+    isLoading: isGroupedGridLoading,
+    isError: isGroupedGridError,
+  } = useQuery({
+    queryKey: [...taskKeys.all, 'dashboard-upcoming-grouped', groupedGridQueryParams],
+    queryFn: () => fetchAllTasks(groupedGridQueryParams),
+    enabled: Boolean(groupedGridQueryParams),
+  });
+
+  const isGridLoading = groupByPost ? isGroupedGridLoading : isPagedGridLoading;
+  const isGridError = groupByPost ? isGroupedGridError : isPagedGridError;
+
+  const sourceTasks = useMemo(
+    () => (groupByPost ? (allGridTasks ?? []) : (pagedGridData?.items ?? [])),
+    [groupByPost, allGridTasks, pagedGridData?.items],
+  );
+
+  const groupedTasks = useMemo(
+    () =>
+      groupByPost ? pickRepresentativeTasksByPost(sourceTasks) : sourceTasks,
+    [groupByPost, sourceTasks],
+  );
+
+  const gridDisplayTotal = groupByPost
+    ? groupedTasks.length
+    : (pagedGridData?.total ?? 0);
+
+  const gridTasks = useMemo(() => {
+    if (!groupByPost) return sourceTasks;
+
+    const start = gridPage * rowsPerPage;
+    return groupedTasks.slice(start, start + rowsPerPage);
+  }, [groupByPost, sourceTasks, groupedTasks, gridPage, rowsPerPage]);
+
+  const hasMultipleTasksForOnePost = useMemo(
+    () => countTasksByPostId(sourceTasks),
+    [sourceTasks],
+  );
 
   const gridListState = useMemo<TaskTableListState>(
     () => ({
-      total: gridTotal,
+      total: gridDisplayTotal,
       isLoading: isGridLoading,
       isError: isGridError,
       isEmpty: !isGridLoading && gridTasks.length === 0,
     }),
-    [gridTotal, isGridLoading, isGridError, gridTasks.length]
+    [gridDisplayTotal, isGridLoading, isGridError, gridTasks.length]
   );
 
   const listState = isGridView ? gridListState : tableListState;
@@ -313,6 +374,21 @@ export const DashboardUpcomingTasksTable = ({
             />
           )}
 
+          {isGridView && isPrime && (
+            <NSTooltip title={groupByPost ? "Включить группировку по объявлениям" : "Выключить группировку по объявлениям"}>
+              <IconButton
+                size="small"
+                aria-label="Сгруппировать по объявлениям"
+                onClick={() => setGroupByPost(!groupByPost)}
+                sx={{
+                  color: groupByPost ? 'primary.main' : 'text.secondary',
+                }}
+              >
+                <FilterNoneOutlined fontSize="small" />
+              </IconButton>
+            </NSTooltip>
+          )}
+
           <DashboardUpcomingViewModeToggle
             viewMode={viewMode}
             onChange={handleViewModeChange}
@@ -408,16 +484,24 @@ export const DashboardUpcomingTasksTable = ({
                           compact
                           task={task}
                           isCompany={isCompany}
+                          groupByPost={groupByPost}
+                          multipleTasks={Math.max(
+                            0,
+                            (task.postId
+                              ? (hasMultipleTasksForOnePost.get(task.postId) ??
+                                0)
+                              : 0) - 1,
+                          )}
                         />
                       </Grid>
                     ))}
                   </Grid>
                 </Box>
 
-                {gridTotal > rowsPerPage && (
+                {gridDisplayTotal > rowsPerPage && (
                   <TablePagination
                     component="div"
-                    count={gridTotal}
+                    count={gridDisplayTotal}
                     page={gridPage}
                     rowsPerPage={rowsPerPage}
                     rowsPerPageOptions={[rowsPerPage]}

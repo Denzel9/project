@@ -3,6 +3,7 @@ import {
   Autocomplete,
   Avatar,
   Box,
+  Checkbox,
   Chip,
   Collapse,
   IconButton,
@@ -63,6 +64,7 @@ import {
   headerCellSx as getHeaderCellSx,
 } from '../model/styles';
 import { FILTER_AUTOCOMPLETE_SLOT_PROPS } from '../model/utils/taskTableColumnStyles';
+import { useTaskSelectionToggle } from '../model/utils/useTaskSelectionToggle';
 import {
   getTaskManagerName,
   getTaskPath,
@@ -438,6 +440,14 @@ export const TaskTable = ({
 
   const showColumnFilters = Boolean(columnFilters) && !forPrint;
   const showActions = !forPrint && querySource !== 'dashboard' && isCompany;
+  const {
+    isTaskSelectionMode,
+    isSelected,
+    onToggleSelection,
+  } = useTaskSelectionToggle();
+  const selectionEnabled =
+    isTaskSelectionMode && !forPrint && querySource !== 'dashboard';
+  const showActionsColumn = showActions || selectionEnabled;
 
   useLayoutEffect(() => {
     const row = headerRowRef.current;
@@ -454,7 +464,13 @@ export const TaskTable = ({
     observer.observe(row);
 
     return () => observer.disconnect();
-  }, [forPrint, showColumnFilters, showActions, showManagerColumn, isCompany]);
+  }, [
+    forPrint,
+    showColumnFilters,
+    showActionsColumn,
+    showManagerColumn,
+    isCompany,
+  ]);
   const statusFilterOptions = useMemo(
     () =>
       Object.entries(TASK_STATUS_LABELS).map(([id, label]) => ({ id, label })),
@@ -537,7 +553,7 @@ export const TaskTable = ({
     setIsFilterRowOpen(current => !current);
   };
 
-  const edgePadding = showActions ? '32px' : undefined;
+  const edgePadding = showActionsColumn ? '32px' : undefined;
   const compactSidePadding = showColumnFilters ? 1.5 : 3;
 
   const columnCellSx = (
@@ -665,7 +681,7 @@ export const TaskTable = ({
             )}
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.updatedAt }} />
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.finalDate }} />
-            {showActions && (
+            {showActionsColumn && (
               <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.actions }} />
             )}
           </colgroup>
@@ -862,7 +878,7 @@ export const TaskTable = ({
                 />
               </TableCell>
 
-              {showActions && <TableCell />}
+              {showActionsColumn && <TableCell />}
             </TableRow>
 
             {showColumnFilters && columnFilters && (
@@ -1111,7 +1127,7 @@ export const TaskTable = ({
                   )}
                 </TableCell>
 
-                {showActions && (
+                {showActionsColumn && (
                   <TableCell
                     sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.actions, {
                       actions: true,
@@ -1136,16 +1152,28 @@ export const TaskTable = ({
                 .slice(0, 2)
                 .map(part => part.charAt(0).toUpperCase())
                 .join('');
+              const selected = selectionEnabled && isSelected(task.id);
 
               return (
                 <TableRow
                   key={task.id}
                   hover={!forPrint}
                   onClick={
-                    forPrint ? undefined : () => navigate(getTaskPath(task))
+                    forPrint
+                      ? undefined
+                      : () => {
+                          if (selectionEnabled) {
+                            onToggleSelection(task);
+                            return;
+                          }
+                          navigate(getTaskPath(task));
+                        }
                   }
                   sx={{
                     cursor: forPrint ? 'default' : 'pointer',
+                    ...(selected && {
+                      bgcolor: 'action.selected',
+                    }),
                     ...(!forPrint && {
                       '&:hover': { bgcolor: 'secondary.light' },
                     }),
@@ -1334,7 +1362,7 @@ export const TaskTable = ({
                     )}
                   </TableCell>
 
-                  {showActions && (
+                  {showActionsColumn && (
                     <TableCell
                       sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.actions, {
                         actions: true,
@@ -1342,10 +1370,18 @@ export const TaskTable = ({
                       onClick={event => event.stopPropagation()}
                       onMouseDown={event => event.stopPropagation()}
                     >
-                      <TaskActionsMenu
-                        task={task}
-                        ownerOnly={isCompany}
-                      />
+                      {selectionEnabled ? (
+                        <Checkbox
+                          size="small"
+                          checked={selected}
+                          onChange={() => onToggleSelection(task)}
+                        />
+                      ) : (
+                        <TaskActionsMenu
+                          task={task}
+                          ownerOnly={isCompany}
+                        />
+                      )}
                     </TableCell>
                   )}
                 </TableRow>

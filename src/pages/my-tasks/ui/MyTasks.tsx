@@ -21,6 +21,8 @@ import {
   toMyTasksQueryParams,
   MyTaskFilter,
   AddTaskDialog,
+  pickRepresentativeTasksByPost,
+  countTasksByPostId,
 } from '@/features';
 import { EmptyBlock, ROUTES, stickyFilterSx } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
@@ -28,8 +30,10 @@ import { ConfirmDialog, PageLayout } from '@/widgets';
 import { TASK_TABLE_PAGE_SIZE } from '../model/constants/constants';
 import { exportTasksReport } from '../model/utils/exportTasksReport';
 import { fetchTasksForReport } from '../model/utils/fetchTasksForReport';
+import { useTaskSelectionToggle } from '../model/utils/useTaskSelectionToggle';
 import { useTaskTableColumnFilters } from '../model/utils/useTaskTableColumnFilters';
 
+import { GroupActionDialog } from './GroupActionDialog';
 import { KanbanBoard, type KanbanBoardHandle } from './KanbanBoard';
 import { TaskItem } from './TaskItem';
 import { TasksLoadMoreButton } from './TasksLoadMoreButton';
@@ -46,9 +50,11 @@ type InitialPost = {
 export const MyTasks = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
   const pendingDashboardNavRef = useRef(false);
   const pendingKanbanScrollRef = useRef<TaskStatus | null>(null);
   const kanbanBoardRef = useRef<KanbanBoardHandle>(null);
+
   const [initialPosts, setInitialPosts] = useState<InitialPost[]>([]);
   const [isOpenPrimeRecommendation, setIsOpenPrimeRecommendation] =
     useState(false);
@@ -87,7 +93,16 @@ export const MyTasks = () => {
     visibleKanbanColumns,
     isSearchOpen,
     searchQuery,
+    groupByPost,
+    isTaskSelectionMode,
+    selectedTaskIds,
+    selectedTasks,
+    removeTasksFromSelection,
+    clearTaskSelection,
   } = useMyTaskFilterStore();
+
+  const { onToggleSelection: handleToggleTaskSelection } =
+    useTaskSelectionToggle();
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -309,8 +324,19 @@ export const MyTasks = () => {
     [infiniteData?.pages],
   );
 
-  const filteredTasks = isTableView ? (tableData?.items ?? []) : listTasks;
+  const filteredTasks = useMemo(
+    () => (isTableView ? (tableData?.items ?? []) : listTasks),
+    [isTableView, tableData?.items, listTasks],
+  );
   const totalTasks = isTableView ? tableData?.total : infiniteData?.pages[0]?.total;
+
+  const gridTasks = useMemo(
+    () =>
+      groupByPost && viewMode === 'grid'
+        ? pickRepresentativeTasksByPost(filteredTasks)
+        : filteredTasks,
+    [filteredTasks, groupByPost, viewMode],
+  );
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -321,20 +347,16 @@ export const MyTasks = () => {
 
   const isLoading = isTableView ? isTableLoading : isInfiniteLoading;
 
-  const hasMultipleTasksForOnePost = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const task of listTasks) {
-      if (!task.postId) continue
-      counts.set(task.postId, (counts.get(task.postId) ?? 0) + 1)
-    }
-    return [...counts.values()].some(count => count > 1)
-  }, [listTasks])
+  const hasMultipleTasksForOnePost = useMemo(
+    () => countTasksByPostId(listTasks),
+    [listTasks],
+  );
 
   useEffect(() => {
     if (isPrime) return;
     if (localStorage.getItem('prime-recommendation-closed')) return;
 
-    if (hasMultipleTasksForOnePost) {
+    if ([...hasMultipleTasksForOnePost.values()].some(count => count > 1)) {
       setTimeout(() => {
         setIsOpenPrimeRecommendation(true);
       }, 0);
@@ -395,6 +417,14 @@ export const MyTasks = () => {
     setIsSearchOpen,
   ]);
 
+  const prevViewModeRef = useRef(viewMode);
+
+  useEffect(() => {
+    if (prevViewModeRef.current === viewMode) return;
+    prevViewModeRef.current = viewMode;
+    resetColumnFilters();
+  }, [viewMode, resetColumnFilters]);
+
   useEffect(() => {
     const column = pendingKanbanScrollRef.current;
 
@@ -448,6 +478,12 @@ export const MyTasks = () => {
   const gridHiddenCount = hasNextPage
     ? Math.max((totalTasks ?? 0) - filteredTasks.length, 0)
     : 0;
+
+  const showGridLoadMore =
+    hasNextPage &&
+    (groupByPost && viewMode === 'grid'
+      ? gridTasks.length > TASK_TABLE_PAGE_SIZE
+      : gridHiddenCount > 0);
 
   useEffect(() => {
     if (!pendingPrint || viewMode !== 'table' || !reportTasks) return;
@@ -639,7 +675,8 @@ export const MyTasks = () => {
                     spacing={1}
                     sx={{ width: '100%', }}
                   >
-                    {filteredTasks.map(task => (
+
+                    {gridTasks.map(task => (
                       <Grid
                         key={task.id}
                         size={{ xs: 12, sm: 6, md: 4 }}
@@ -648,12 +685,17 @@ export const MyTasks = () => {
                         <TaskItem
                           task={task}
                           isCompany={isCompany}
+                          groupByPost={groupByPost}
+                          multipleTasks={(hasMultipleTasksForOnePost?.get(task?.postId) ?? 0) - 1}
+                          isSelectionMode={isTaskSelectionMode}
+                          isSelected={selectedTaskIds.includes(task.id)}
+                          onToggleSelection={handleToggleTaskSelection}
                         />
                       </Grid>
                     ))}
                   </Grid>
 
-                  {hasNextPage && (
+                  {showGridLoadMore && (
                     <Box sx={{ mt: 1 }}>
                       <TasksLoadMoreButton
                         hiddenCount={gridHiddenCount}
@@ -782,6 +824,13 @@ export const MyTasks = () => {
             onClose={() => setIsAddTaskOpen(false)}
           />
         )}
+
+        <GroupActionDialog
+          open={isTaskSelectionMode}
+          tasks={selectedTasks}
+          onClose={clearTaskSelection}
+          onRemoveTasks={removeTasksFromSelection}
+        />
       </Box>
     </PageLayout>
   );

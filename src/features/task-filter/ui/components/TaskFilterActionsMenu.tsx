@@ -1,4 +1,5 @@
 import {
+  Check,
   DownloadOutlined,
   MoreVert,
   PrintOutlined,
@@ -15,6 +16,9 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
+import { useAuthStore } from '@/features/auth';
+
+import { useMyTaskFilterStore } from '../../model/store';
 import { AddTaskDialog } from '../AddTaskDialog';
 
 export type TaskTableReportControls = {
@@ -37,7 +41,22 @@ export const TaskFilterActionsMenu = ({
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const showMenu = isCompany || Boolean(tableReport);
+  const { isPrime } = useAuthStore()
+
+  const viewMode = useMyTaskFilterStore(state => state.viewMode);
+  const groupByPost = useMyTaskFilterStore(state => state.groupByPost);
+  const setGroupByPost = useMyTaskFilterStore(state => state.setGroupByPost);
+  const isTaskSelectionMode = useMyTaskFilterStore(
+    state => state.isTaskSelectionMode,
+  );
+  const setTaskSelectionMode = useMyTaskFilterStore(
+    state => state.setTaskSelectionMode,
+  );
+
+  const showGroupByPost = viewMode === 'grid' && isPrime;
+  const showSelectionMode = true;
+  const showMenu =
+    isCompany || Boolean(tableReport) || showGroupByPost || showSelectionMode;
 
   if (!showMenu) return null;
 
@@ -69,9 +88,63 @@ export const TaskFilterActionsMenu = ({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         sx={{
-          overflow: 'hidden'
+          overflow: 'hidden',
         }}
       >
+        {showSelectionMode && (
+          <MenuItem
+            onClick={() => {
+              setTaskSelectionMode(!isTaskSelectionMode);
+              closeMenu();
+            }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <ListItemText>Выбрать</ListItemText>
+
+            {isTaskSelectionMode && (
+              <Check
+                fontSize="small"
+                color="primary"
+              />
+            )}
+          </MenuItem>
+        )}
+
+        {showGroupByPost && (
+          <MenuItem
+            disabled={isTaskSelectionMode}
+            onClick={() => {
+              setGroupByPost(!groupByPost);
+              closeMenu();
+            }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <ListItemText>Сгруппировать по объявлениям</ListItemText>
+
+            {groupByPost && (
+              <Check
+                fontSize="small"
+                color="primary"
+              />
+            )}
+          </MenuItem>
+        )}
+
+        {isCompany && <Divider
+          component="li"
+          sx={{ my: 0.5 }}
+        />}
+
         {isCompany && (
           <MenuItem
             onClick={() => {
@@ -83,7 +156,7 @@ export const TaskFilterActionsMenu = ({
           </MenuItem>
         )}
 
-        {isCompany && tableReport && (
+        {tableReport && (isCompany || showGroupByPost) && (
           <Divider
             component="li"
             sx={{ my: 0.5 }}

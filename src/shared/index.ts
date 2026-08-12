@@ -9,7 +9,7 @@ export * from './ui/markdown';
 export * from './ui/rhf'
 export * from './ui/location-autocomplete/LocationAutocomplete';
 export * from './ui/filter-autocomplete/FilterAutocomplete';
-
+export * from './ui/tooltip/index';
 export * from './api';
 export * from './lib/share/shareTargets';
 export * from './lib/formatActionActorLabel';

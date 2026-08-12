@@ -328,6 +328,10 @@ export type PostTasksParams = {
   postId: string
   page?: number
   limit?: number
+  status?: string
+  statuses?: string
+  active?: boolean
+  isArchived?: boolean
 }
 
 export type UploadMediaResponse = {

@@ -219,14 +219,14 @@ const applyExtraFilterQueryParams = (
   extraFilter: TaskExtraFilter | null,
 ): Omit<TaskListParams, 'page' | 'limit'> => {
   if (extraFilter === 'overdue') {
-    return { ...params, overdue: true, active: true };
+    return { ...params, overdue: true, active: true, isArchived: false };
   }
 
   if (extraFilter === 'urgent') {
-    return { ...params, urgent: true, active: true };
+    return { ...params, urgent: true, active: true, isArchived: false };
   }
 
-  return params;
+  return { ...params, isArchived: false };
 };
 
 export const toMyTasksQueryParams = (filters: {

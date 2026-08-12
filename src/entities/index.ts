@@ -15,4 +15,6 @@ export * from './settings'
 export * from './geo'
 export * from './billing'
 export * from './integrations'
+export * from './task-template'
+
 

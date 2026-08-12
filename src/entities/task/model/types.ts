@@ -193,6 +193,7 @@ export type Task = {
   photoCount: string
   videoCount: string
   urgent: boolean
+  isArchived?: boolean
   isExecutorApprove: boolean | null
   isCompanyAction: boolean
   location?: PostLocation | null
@@ -254,6 +255,7 @@ export type TaskListParams = {
   tzOffset?: number
   dateField?: TaskCalendarDateField
   urgent?: boolean
+  isArchived?: boolean
   ownerId?: string
   executorId?: string
   taskId?: string
@@ -570,6 +572,7 @@ export type UpdateTaskDto = {
   photoCount?: string
   videoCount?: string
   urgent?: boolean
+  isArchived?: boolean
   postId?: string
   executorId?: string | null
   assigneeAccountId?: string

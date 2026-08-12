@@ -73,7 +73,7 @@ export const SideBarContent = ({
           minHeight: 0,
           overflowY: 'auto',
           overflowX: 'hidden',
-          scrollbarWidth: 'thin',
+          scrollbarWidth: 'none',
         }}
       >
         <List

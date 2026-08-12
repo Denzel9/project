@@ -1,5 +1,5 @@
 import { MoreVertOutlined } from '@mui/icons-material';
-import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Divider, IconButton, Menu, MenuItem, } from '@mui/material';
 import { useMemo, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -10,17 +10,17 @@ import {
   TASK_STATUS_ENUM,
   useConversationsQuery,
   useCreateTaskMutation,
+  useCreateTaskTemplateFromTaskMutation,
+  useUpdateTaskMutation,
   type Task,
 } from '@/entities';
 import { useAuthStore } from '@/features';
 import { RequestCancelTaskDialog } from '@/pages/task/ui/RequestCancelTaskDialog';
 import { RequestDeadlineExtensionDialog } from '@/pages/task/ui/RequestDeadlineExtensionDialog';
-import { TaskTargetPostDialog } from '@/pages/task/ui/TaskTargetPostDialog';
+import { TaskTargetPostDialog, type DuplicateTarget } from '@/pages/task/ui/TaskTargetPostDialog';
 import { ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
-
-type TaskTargetPostMode = 'duplicate' | 'duplicate-same';
 
 type TaskActionsMenuProps = {
   task: Task;
@@ -47,13 +47,16 @@ export const TaskActionsMenu = ({
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
-  const [targetPostMode, setTargetPostMode] =
-    useState<TaskTargetPostMode | null>(null);
+  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
 
   const { mutateAsync: createTask, isPending: isCopying } =
     useCreateTaskMutation();
+  const { mutateAsync: updateTask, isPending: isUpdatingArchive } =
+    useUpdateTaskMutation();
+  const { mutateAsync: createTemplateFromTask, isPending: isSavingTemplate } =
+    useCreateTaskTemplateFromTaskMutation();
 
-  const isDialogOpen = Boolean(targetPostMode);
+  const isDialogOpen = isDuplicateOpen;
 
   const { data: conversations = [] } = useConversationsQuery(undefined, {
     enabled: isDialogOpen,
@@ -74,6 +77,7 @@ export const TaskActionsMenu = ({
 
   const canRequestAnnulment = Boolean(
     task &&
+    !task.isArchived &&
     task.status !== TASK_STATUS_ENUM.ANNULLED &&
     task.status !== TASK_STATUS_ENUM.COMPLETED &&
     task.executorId &&
@@ -83,6 +87,7 @@ export const TaskActionsMenu = ({
 
   const canRequestDeadlineExtension = Boolean(
     task &&
+    !task.isArchived &&
     task.status !== TASK_STATUS_ENUM.ANNULLED &&
     task.status !== TASK_STATUS_ENUM.COMPLETED &&
     task.executorId &&
@@ -126,16 +131,18 @@ export const TaskActionsMenu = ({
     setMenuAnchor(event.currentTarget);
   };
 
-  const handleTargetPostConfirm = async ({
-    postId,
-    executorId,
-  }: {
-    postId: string;
-    executorId: string | null;
-  }) => {
+  const handleTargetPostConfirm = async (payload: DuplicateTarget) => {
+    const postId =
+      payload.target === 'current' ? currentPostId : payload.postId;
+
+    if (!postId) {
+      setSnackbarOpen(true, 'Не удалось дублировать задачу');
+      throw new Error('Нет объявления');
+    }
+
     try {
       const created = await createTask(
-        buildCreateTaskPayload(task, postId, executorId)
+        buildCreateTaskPayload(task, postId, payload.executorId)
       );
       return created;
     } catch (error) {
@@ -153,6 +160,42 @@ export const TaskActionsMenu = ({
   const handleAssign = () => {
     closeMenu();
     setIsAssignDialogOpen(true);
+  };
+
+  const handleToggleArchive = async () => {
+    closeMenu();
+    const nextArchived = !task.isArchived;
+
+    try {
+      await updateTask({
+        id: task.id,
+        body: { isArchived: nextArchived },
+      });
+      setSnackbarOpen(
+        true,
+        nextArchived
+          ? 'Задача перемещена в архив'
+          : 'Задача возвращена из архива',
+      );
+    } catch {
+      setSnackbarOpen(
+        true,
+        nextArchived
+          ? 'Не удалось переместить задачу в архив'
+          : 'Не удалось вернуть задачу из архива',
+      );
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    closeMenu();
+
+    try {
+      await createTemplateFromTask(task.id);
+      setSnackbarOpen(true, 'Задача сохранена как шаблон');
+    } catch {
+      setSnackbarOpen(true, 'Не удалось сохранить шаблон');
+    }
   };
 
   const showMenu =
@@ -191,7 +234,7 @@ export const TaskActionsMenu = ({
       >
         {canAssign && (
           <MenuItem
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 160, fontSize: 14 }}
             onClick={runMenuAction(handleAssign)}
           >
             Назначить
@@ -200,29 +243,14 @@ export const TaskActionsMenu = ({
 
         {showOwnerActions && (
           <MenuItem
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 160, fontSize: 14 }}
             disabled={isCopying}
             onClick={runMenuAction(() => {
               closeMenu();
-              setTargetPostMode('duplicate-same');
+              setIsDuplicateOpen(true);
             })}
           >
             Дублировать
-          </MenuItem>
-        )}
-
-        {showOwnerActions && <Divider sx={{ my: 0.5 }} />}
-
-        {showOwnerActions && (
-          <MenuItem
-            sx={{ minWidth: 160 }}
-            disabled={isCopying}
-            onClick={runMenuAction(() => {
-              closeMenu();
-              setTargetPostMode('duplicate');
-            })}
-          >
-            Дублировать в другое объявление
           </MenuItem>
         )}
 
@@ -232,13 +260,13 @@ export const TaskActionsMenu = ({
 
         {canRequestAnnulment && (
           <MenuItem
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 160, fontSize: 14 }}
             onClick={runMenuAction(() => {
               closeMenu();
               setIsCancelDialogOpen(true);
             })}
           >
-            <Typography>Запросить аннулирование</Typography>
+            Запросить аннулирование
           </MenuItem>
         )}
 
@@ -248,14 +276,41 @@ export const TaskActionsMenu = ({
 
         {canRequestDeadlineExtension && (
           <MenuItem
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: 160, fontSize: 14 }}
             onClick={runMenuAction(() => {
               closeMenu();
               setIsDeadlineDialogOpen(true);
             })}
           >
-            <Typography>Запросить перенос дедлайна</Typography>
+            Запросить перенос дедлайна
           </MenuItem>
+        )}
+
+        {showOwnerActions && (
+          <>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem
+              sx={{ minWidth: 160, fontSize: 14 }}
+              disabled={isSavingTemplate}
+              onClick={runMenuAction(() => {
+                void handleSaveAsTemplate();
+              })}
+            >
+              Сохранить как шаблон
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem
+              sx={{ minWidth: 160, fontSize: 14 }}
+              disabled={isUpdatingArchive}
+              onClick={runMenuAction(() => {
+                void handleToggleArchive();
+              })}
+            >
+              {task.isArchived
+                ? 'Вернуть из архива'
+                : 'Переместить в архив'}
+            </MenuItem>
+          </>
         )}
       </Menu>
 
@@ -280,15 +335,12 @@ export const TaskActionsMenu = ({
 
       <TaskTargetPostDialog
         open={isDialogOpen}
-        mode={targetPostMode ?? 'duplicate'}
-        fixedPostId={currentPostId}
-        excludePostId={
-          targetPostMode === 'duplicate' ? currentPostId : null
-        }
+        currentPostId={currentPostId}
+        currentPostTitle={task.post?.title}
         initialExecutorId={task.executorId}
         executorOptions={executorOptions}
         isPending={isCopying}
-        onClose={() => setTargetPostMode(null)}
+        onClose={() => setIsDuplicateOpen(false)}
         onConfirm={handleTargetPostConfirm}
         onGoToCreatedTask={handleGoToCreatedTask}
       />

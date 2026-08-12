@@ -4,9 +4,13 @@ import { ru } from 'date-fns/locale';
 
 type TasksPrintHeaderProps = {
   total: number;
+  title?: string;
 };
 
-export const TasksPrintHeader = ({ total }: TasksPrintHeaderProps) => (
+export const TasksPrintHeader = ({
+  total,
+  title = 'Мои задачи',
+}: TasksPrintHeaderProps) => (
   <Stack
     className="print-only"
     spacing={0.5}
@@ -24,7 +28,7 @@ export const TasksPrintHeader = ({ total }: TasksPrintHeaderProps) => (
       variant="h6"
       sx={{ fontWeight: 600 }}
     >
-      Мои задачи
+      {title}
     </Typography>
 
     <Typography variant="body2">Таблица</Typography>

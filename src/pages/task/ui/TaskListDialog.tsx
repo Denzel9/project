@@ -1,34 +1,82 @@
-import { Close, ExpandLess, ExpandMore } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 import {
   Box,
   Chip,
-  Collapse,
+  CircularProgress,
   Dialog,
   IconButton,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
+  TASK_STATUS_ENUM,
   TASK_STATUS_LABELS,
   executorToUserPartial,
   getTaskStatusColor,
   getUserName,
+  usePostTasksQuery,
   type Task,
 } from '@/entities';
+
+type TaskListTab = 'active' | 'archived' | 'completed' | 'cancelled';
+
+const TAB_ITEMS: { value: TaskListTab; label: string }[] = [
+  { value: 'active', label: 'Активные' },
+  { value: 'archived', label: 'Архивные' },
+  { value: 'completed', label: 'Завершенные' },
+  { value: 'cancelled', label: 'Отменённые' },
+];
+
+const TAB_QUERY_PARAMS: Record<
+  TaskListTab,
+  {
+    page: number;
+    limit: number;
+    isArchived?: boolean;
+    active?: boolean;
+    status?: string;
+  }
+> = {
+  active: { page: 1, limit: 100, isArchived: false, active: true },
+  archived: { page: 1, limit: 100, isArchived: true },
+  completed: {
+    page: 1,
+    limit: 100,
+    isArchived: false,
+    status: TASK_STATUS_ENUM.COMPLETED,
+  },
+  cancelled: {
+    page: 1,
+    limit: 100,
+    isArchived: false,
+    status: TASK_STATUS_ENUM.ANNULLED,
+  },
+};
+
+const resolveTabForTask = (task?: Task | null): TaskListTab => {
+  if (!task) return 'active';
+  if (task.isArchived) return 'archived';
+  if (task.status === TASK_STATUS_ENUM.ANNULLED) return 'cancelled';
+  if (task.status === TASK_STATUS_ENUM.COMPLETED) return 'completed';
+  return 'active';
+};
 
 type TaskListDialogProps = {
   open: boolean;
   onClose: () => void;
-  tasks: Task[];
+  /** Если задан — вкладки и загрузка задач этого поста */
+  postId?: string | null;
+  tasks?: Task[];
   currentTaskId?: string;
+  currentTask?: Task | null;
   title?: string;
-  onSelectTask: (taskId: string) => void;
-  /** Показывать исполнителя у пунктов основного списка (для диалога «Отменённые») */
+  onSelectTask: (task: Task) => void;
+  /** Показывать исполнителя у пунктов списка */
   showExecutor?: boolean;
-  /** Для mobile: отдельный список под основными задачами */
-  cancelledTasks?: Task[];
 };
 
 const getExecutorLabel = (task: Task) =>
@@ -42,13 +90,13 @@ const TaskListItem = ({
 }: {
   task: Task;
   isActive: boolean;
-  onSelect: (taskId: string) => void;
+  onSelect: (task: Task) => void;
   showExecutor?: boolean;
 }) => (
   <Stack
     direction="row"
     spacing={1.5}
-    onClick={() => onSelect(task.id)}
+    onClick={() => onSelect(task)}
     sx={{
       p: 1.5,
       cursor: 'pointer',
@@ -102,29 +150,47 @@ const TaskListItem = ({
 export const TaskListDialog = ({
   open,
   onClose,
-  tasks,
+  postId,
+  tasks = [],
   currentTaskId,
+  currentTask,
   title = 'Список задач',
   onSelectTask,
   showExecutor = false,
-  cancelledTasks = [],
 }: TaskListDialogProps) => {
-  const [isCancelledOpen, setIsCancelledOpen] = useState(false);
-
-  const showCancelledSection = cancelledTasks.length > 0;
+  const isPostMode = Boolean(postId);
+  const [tab, setTab] = useState<TaskListTab>('active');
 
   useEffect(() => {
-    if (!open) {
-      setTimeout(() => {
-        setIsCancelledOpen(false);
-      }, 0);
-    }
-  }, [open]);
+    if (!open) return;
 
-  const handleSelect = (taskId: string) => {
-    onSelectTask(taskId);
+    setTimeout(() => {
+      setTab(resolveTabForTask(currentTask));
+    }, 0);
+  }, [open, currentTask]);
+
+  const queryParams = TAB_QUERY_PARAMS[tab];
+
+  const { data, isLoading, isFetching } = usePostTasksQuery(
+    postId ?? null,
+    queryParams,
+    !open || !isPostMode,
+  );
+
+  const listItems = useMemo(() => {
+    if (isPostMode) {
+      return data?.items ?? [];
+    }
+
+    return tasks;
+  }, [data?.items, isPostMode, tasks]);
+
+  const handleSelect = (task: Task) => {
+    onSelectTask(task);
     onClose();
   };
+
+  const showLoader = isPostMode && (isLoading || isFetching) && !listItems.length;
 
   return (
     <Dialog
@@ -134,7 +200,12 @@ export const TaskListDialog = ({
       maxWidth="sm"
       slotProps={{
         paper: {
-          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, width: '100%', m: 0 },
+          sx: {
+            borderRadius: '24px',
+            p: { xs: 2, sm: 3 },
+            width: '100%',
+            m: 0,
+          },
         },
       }}
     >
@@ -151,8 +222,30 @@ export const TaskListDialog = ({
         </IconButton>
       </Stack>
 
+      {isPostMode && (
+        <Tabs
+          value={tab}
+          onChange={(_, value: TaskListTab) => setTab(value)}
+          aria-label="Фильтр задач поста"
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ mb: 2, minHeight: 40 }}
+        >
+          {TAB_ITEMS.map(item => (
+            <Tab
+              key={item.value}
+              value={item.value}
+              label={item.label}
+              sx={{ minHeight: 40, textTransform: 'none' }}
+            />
+          ))}
+        </Tabs>
+      )}
+
       <Box
         sx={{
+          height: 420,
+          minHeight: 420,
           maxHeight: 420,
           overflowY: 'auto',
           border: '1px solid',
@@ -162,81 +255,45 @@ export const TaskListDialog = ({
           scrollbarWidth: 'none',
         }}
       >
-        {!tasks.length && (
+        {showLoader ? (
+          <Stack
+            sx={{
+              height: '100%',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CircularProgress size={28} />
+          </Stack>
+        ) : !listItems.length ? (
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ textAlign: 'center', py: 3 }}
+            sx={{
+              display: 'flex',
+              height: '100%',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+            }}
           >
             Нет задач
           </Typography>
-        )}
-
-        <Stack
-          spacing={1}
-          direction="column"
-        >
-          {tasks.map(task => (
-            <TaskListItem
-              key={task.id}
-              task={task}
-              isActive={currentTaskId === task.id}
-              onSelect={handleSelect}
-              showExecutor={showExecutor}
-            />
-          ))}
-        </Stack>
-
-        {showCancelledSection && (
-          <Box sx={{ display: { xs: 'block', md: 'none' }, mt: tasks.length ? 1 : 0 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              onClick={() => setIsCancelledOpen(prev => !prev)}
-              sx={{
-                p: 1.5,
-                cursor: 'pointer',
-                borderRadius: '12px',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 600, color: 'error.main' }}
-              >
-                Отменённые {cancelledTasks.length}
-              </Typography>
-              {isCancelledOpen ? (
-                <ExpandLess sx={{ color: 'error.main' }} />
-              ) : (
-                <ExpandMore sx={{ color: 'error.main' }} />
-              )}
-            </Stack>
-
-            <Collapse
-              in={isCancelledOpen}
-              timeout="auto"
-              unmountOnExit
-            >
-              <Stack
-                spacing={1}
-                direction="column"
-                sx={{ pt: 0.5 }}
-              >
-                {cancelledTasks.map(task => (
-                  <TaskListItem
-                    key={task.id}
-                    task={task}
-                    isActive={currentTaskId === task.id}
-                    onSelect={handleSelect}
-                    showExecutor
-                  />
-                ))}
-              </Stack>
-            </Collapse>
-          </Box>
+        ) : (
+          <Stack
+            spacing={1}
+            direction="column"
+          >
+            {listItems.map(task => (
+              <TaskListItem
+                key={task.id}
+                task={task}
+                isActive={currentTaskId === task.id}
+                onSelect={handleSelect}
+                showExecutor={showExecutor || isPostMode}
+              />
+            ))}
+          </Stack>
         )}
       </Box>
     </Dialog>

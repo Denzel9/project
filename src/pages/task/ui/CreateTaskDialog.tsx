@@ -8,7 +8,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { useTaskTemplatesQuery } from '@/entities';
 
 export type CreateTaskExecutorOption = {
   id: string;
@@ -24,10 +26,12 @@ type CreateTaskDialogProps = {
   onConfirm: (payload: {
     title: string;
     executorId: string | null;
+    templateId: string | null;
   }) => Promise<void> | void;
 };
 
 const UNASSIGNED_ID = 'unassigned';
+const NO_TEMPLATE_ID = 'none';
 
 export const CreateTaskDialog = ({
   open,
@@ -39,13 +43,38 @@ export const CreateTaskDialog = ({
 }: CreateTaskDialogProps) => {
   const [title, setTitle] = useState('');
   const [executorId, setExecutorId] = useState(initialExecutorId);
+  const [templateId, setTemplateId] = useState(NO_TEMPLATE_ID);
+
+  const { data: templates = [], isLoading: isTemplatesLoading } =
+    useTaskTemplatesQuery({ enabled: open });
+
+  const selectedTemplate = useMemo(
+    () => templates.find(item => item.id === templateId) ?? null,
+    [templates, templateId]
+  );
 
   useEffect(() => {
     if (!open) return;
 
     setTitle('');
     setExecutorId(initialExecutorId || UNASSIGNED_ID);
+    setTemplateId(NO_TEMPLATE_ID);
   }, [open, initialExecutorId]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (templateId === NO_TEMPLATE_ID) return;
+
+    const template = templates.find(item => item.id === templateId);
+    if (!template) {
+      setTemplateId(NO_TEMPLATE_ID);
+      return;
+    }
+
+    if (template.title?.trim()) {
+      setTitle(template.title.trim());
+    }
+  }, [open, templateId, templates]);
 
   const handleClose = () => {
     if (isPending) return;
@@ -56,13 +85,13 @@ export const CreateTaskDialog = ({
     await onConfirm({
       title: title.trim(),
       executorId: executorId === UNASSIGNED_ID ? null : executorId,
+      templateId: templateId === NO_TEMPLATE_ID ? null : templateId,
     });
   };
 
-  const options =
-    executorOptions.some(option => option.id === UNASSIGNED_ID)
-      ? executorOptions
-      : [{ id: UNASSIGNED_ID, label: 'Не назначен' }, ...executorOptions];
+  const options = executorOptions.some(option => option.id === UNASSIGNED_ID)
+    ? executorOptions
+    : [{ id: UNASSIGNED_ID, label: 'Не назначен' }, ...executorOptions];
 
   return (
     <Dialog
@@ -91,6 +120,30 @@ export const CreateTaskDialog = ({
       </Stack>
 
       <Stack spacing={2}>
+        <TextField
+          select
+          fullWidth
+          label="Шаблон"
+          value={templateId}
+          disabled={isPending || isTemplatesLoading}
+          onChange={event => setTemplateId(event.target.value)}
+          helperText={
+            selectedTemplate
+              ? `Будут применены поля шаблона «${selectedTemplate.name}»`
+              : 'Необязательно'
+          }
+        >
+          <MenuItem value={NO_TEMPLATE_ID}>Без шаблона</MenuItem>
+          {templates.map(template => (
+            <MenuItem
+              key={template.id}
+              value={template.id}
+            >
+              {template.name}
+            </MenuItem>
+          ))}
+        </TextField>
+
         <TextField
           autoFocus
           fullWidth

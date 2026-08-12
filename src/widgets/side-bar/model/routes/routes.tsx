@@ -11,6 +11,8 @@ import {
   TaskOutlined,
   PeopleOutlined,
   ImageOutlined,
+  Inventory2Outlined,
+  ContentCopyOutlined,
 } from '@mui/icons-material';
 
 import { ROUTES } from '@/shared/config/routes';
@@ -101,6 +103,16 @@ export const CRM_MENU_ITEMS: MenuRoute[] = [
     label: 'Публикации',
     path: ROUTES.PUBLICATIONS,
     icon: <ImageOutlined />,
+  },
+  {
+    label: 'Архив',
+    path: ROUTES.ARCHIVE,
+    icon: <Inventory2Outlined />,
+  },
+  {
+    label: 'Шаблоны',
+    path: ROUTES.TEMPLATES,
+    icon: <ContentCopyOutlined />,
   },
 ];
 

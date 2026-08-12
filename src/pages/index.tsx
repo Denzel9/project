@@ -55,6 +55,8 @@ const DashboardPage = lazy(() => import('./dashboard'));
 const CalendarPage = lazy(() => import('./calendar'));
 const ExecutorsPage = lazy(() => import('./executors'));
 const PublicationsPage = lazy(() => import('./publications'));
+const ArchivePage = lazy(() => import('./archive'));
+const TemplatesPage = lazy(() => import('./templates'));
 const UserAgreementPage = lazy(() =>
   import('./legal').then(module => ({ default: module.UserAgreementPage }))
 );
@@ -214,6 +216,16 @@ export const Router = () => {
             <Route
               path={ROUTES.PUBLICATIONS}
               element={<PublicationsPage />}
+            />
+
+            <Route
+              path={ROUTES.ARCHIVE}
+              element={<ArchivePage />}
+            />
+
+            <Route
+              path={ROUTES.TEMPLATES}
+              element={<TemplatesPage />}
             />
 
             <Route

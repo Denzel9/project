@@ -39,8 +39,6 @@ export const PageLayout = ({
         gap: 1,
         boxSizing: 'border-box',
         pt: SAFE_AREA.top,
-        // pb: SAFE_AREA.bottom,
-        // pl: SAFE_AREA.left,
         ...(isScreenHeight && {
           height: '100%',
           flex: 1,

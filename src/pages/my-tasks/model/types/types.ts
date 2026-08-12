@@ -53,6 +53,10 @@ export type TaskTableProps = {
   rowsPerPage?: number;
   querySource?: 'dashboard';
   emptyText?: string;
+  /** Внешний признак активных фильтров (например, поиск в шапке) */
+  filtersActive?: boolean;
+  /** Сразу показать строку фильтров колонок */
+  defaultFiltersOpen?: boolean;
   columnFilters?: TaskTableColumnFilters;
   onPageChange?: (event: unknown, nextPage: number) => void;
   onListStateChange?: (state: TaskTableListState) => void;

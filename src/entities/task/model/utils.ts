@@ -73,6 +73,7 @@ const TASK_FIELD_LABELS: Record<string, string> = {
   photoCount: 'Кол-во фото',
   videoCount: 'Кол-во видео',
   urgent: 'Срочность',
+  isArchived: 'Архив',
   status: 'Статус',
   assignee: 'Ответственный',
   deliverables: 'Материалы',
@@ -299,7 +300,7 @@ const formatActivityValue = (
     return formatExecutorApproveLabel(value)
   }
 
-  if (field === 'isCompanyAction' || field === 'urgent') {
+  if (field === 'isCompanyAction' || field === 'urgent' || field === 'isArchived') {
     if (value === null || value === undefined || value === '') return '—'
     return formatTriStateLabel(value)
   }

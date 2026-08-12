@@ -97,6 +97,8 @@ export const TaskTable = ({
   forPrint = false,
   querySource,
   emptyText,
+  filtersActive = false,
+  defaultFiltersOpen = false,
   page: controlledPage,
   rowsPerPage = TASK_TABLE_PAGE_SIZE,
   onListStateChange,
@@ -130,7 +132,7 @@ export const TaskTable = ({
   const [internalPage, setInternalPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<TaskSortOrder>('desc');
   const [sortField, setSortField] = useState<TaskSortField>('updatedAt');
-  const [isFilterRowOpen, setIsFilterRowOpen] = useState(false);
+  const [isFilterRowOpen, setIsFilterRowOpen] = useState(defaultFiltersOpen);
   const [headerRowHeight, setHeaderRowHeight] = useState(56);
   const [taskFilterInput, setTaskFilterInput] = useState('');
   const [personFilterInput, setPersonFilterInput] = useState('');
@@ -386,6 +388,26 @@ export const TaskTable = ({
   const showPagination =
     paginated && paginationCount > rowsPerPage && !forPrint;
 
+  const hasActiveFilters =
+    filtersActive ||
+    Boolean(
+      columnFilters &&
+        (columnFilters.status !== 'all' ||
+          columnFilters.taskId !== 'all' ||
+          Boolean(columnFilters.taskQuery.trim()) ||
+          columnFilters.personId !== 'all' ||
+          columnFilters.manager !== 'all' ||
+          columnFilters.urgentOnly ||
+          columnFilters.updatedDate !== null ||
+          columnFilters.deadlineDate !== null),
+    );
+
+  const isEmptyList =
+    Boolean(emptyText) &&
+    !forPrint &&
+    visibleTasks.length === 0 &&
+    !(isSelfFetching && isListLoading);
+
   const scrollTableToTop = () => {
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -604,13 +626,22 @@ export const TaskTable = ({
     </Collapse>
   );
 
-  if (isSelfFetching && visibleTasks.length === 0 && emptyText) {
-    return <Stack sx={{ height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-      <EmptyBlock
-        title={emptyText}
-        description={emptyText}
-      />
-    </Stack>
+  // Без фильтров — пустой экран целиком. С фильтрами оставляем шапку.
+  if (isEmptyList && !hasActiveFilters) {
+    return (
+      <Stack
+        sx={{
+          height: '100%',
+          width: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: embedded ? 'transparent' : 'white',
+          borderRadius: embedded ? 0 : '24px',
+        }}
+      >
+        <EmptyBlock title={emptyText} />
+      </Stack>
+    );
   }
 
   return (
@@ -657,11 +688,16 @@ export const TaskTable = ({
               maxHeight: 'none',
               overflow: 'visible',
             }
-            : {
-              flex: 1,
-              minHeight: 0,
-              overflow: 'auto',
-            }),
+            : visibleTasks.length
+              ? {
+                flex: 1,
+                minHeight: 0,
+                overflow: 'auto',
+              }
+              : {
+                flex: '0 0 auto',
+                overflow: 'visible',
+              }),
         }}
       >
         <Table
@@ -1390,6 +1426,20 @@ export const TaskTable = ({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {isEmptyList && hasActiveFilters && (
+        <Stack
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <EmptyBlock title={emptyText} />
+        </Stack>
+      )}
 
       {showPagination && (
         <TablePagination

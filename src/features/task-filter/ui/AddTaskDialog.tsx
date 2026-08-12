@@ -1,4 +1,4 @@
-import { HelpOutlineOutlined, } from '@mui/icons-material';
+import { HelpOutlineOutlined } from '@mui/icons-material';
 import {
   Button,
   Checkbox,
@@ -11,13 +11,15 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
   useCreatePostMutation,
   useCreateTaskMutation,
+  useInstantiateTaskTemplateMutation,
   useMyPostOptionsQuery,
+  useTaskTemplatesQuery,
 } from '@/entities';
 import { useRequireEmailConfirmed } from '@/features';
 import { FilterAutocomplete, ROUTES } from '@/shared';
@@ -33,9 +35,12 @@ type AddTaskDialogProps = {
   onClose: () => void;
 };
 
+const NO_TEMPLATE_ID = 'none';
+
 export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
   const [postId, setPostId] = useState<string | null>(null);
   const [executorId, setExecutorId] = useState(EXECUTOR_UNASSIGNED_ID);
+  const [templateId, setTemplateId] = useState(NO_TEMPLATE_ID);
   const [tab, setTab] = useState(0);
   const [postTitle, setPostTitle] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -48,6 +53,8 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
   const { data: posts, isLoading: isPostsLoading } = useMyPostOptionsQuery(open);
+  const { data: templates = [], isLoading: isTemplatesLoading } =
+    useTaskTemplatesQuery({ enabled: open });
   const { options: executorOptions, isLoading: isExecutorsLoading } =
     useExecutorPickerOptions(open);
 
@@ -55,6 +62,43 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     useCreatePostMutation();
   const { mutateAsync: createTask, isPending: isCreatingTask } =
     useCreateTaskMutation();
+  const { mutateAsync: instantiateTemplate, isPending: isInstantiating } =
+    useInstantiateTaskTemplateMutation();
+
+  const selectedTemplate = useMemo(
+    () => templates.find(item => item.id === templateId) ?? null,
+    [templates, templateId]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    if (templateId === NO_TEMPLATE_ID) return;
+    if (!templates.some(item => item.id === templateId)) {
+      setTemplateId(NO_TEMPLATE_ID);
+    }
+  }, [open, templateId, templates]);
+
+  const createTaskForPost = async (targetPostId: string) => {
+    const resolvedExecutorId =
+      executorId === EXECUTOR_UNASSIGNED_ID ? undefined : executorId;
+
+    if (templateId !== NO_TEMPLATE_ID) {
+      const task = await instantiateTemplate({
+        id: templateId,
+        body: {
+          postId: targetPostId,
+          ...(resolvedExecutorId && { executorId: resolvedExecutorId }),
+        },
+      });
+
+      return task;
+    }
+
+    return createTask({
+      postId: targetPostId,
+      ...(resolvedExecutorId && { executorId: resolvedExecutorId }),
+    });
+  };
 
   const handleCreatePost = async () => {
     if (!requireEmailConfirmed()) return;
@@ -75,15 +119,16 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     if (!postId) return;
     if (!requireEmailConfirmed()) return;
 
-    const res = await createTask({
-      postId,
-      ...(executorId !== EXECUTOR_UNASSIGNED_ID && { executorId }),
-    });
+    try {
+      const res = await createTaskForPost(postId);
 
-    if (res.id) {
-      setSnackbarOpen(true, 'Задача успешно создана');
-      setNewTaskId(res.id);
-      setNewPostId(res.postId || postId);
+      if (res.id) {
+        setSnackbarOpen(true, 'Задача успешно создана');
+        setNewTaskId(res.id);
+        setNewPostId(res.postId || postId);
+      }
+    } catch {
+      setSnackbarOpen(true, 'Не удалось создать задачу');
     }
   };
 
@@ -92,6 +137,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     setTab(0);
     setPostId(null);
     setExecutorId(EXECUTOR_UNASSIGNED_ID);
+    setTemplateId(NO_TEMPLATE_ID);
     setPostTitle('');
     setIsPrivate(false);
     setNewTaskId(undefined);
@@ -107,7 +153,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     [posts]
   );
 
-  const isPending = isCreatingPost || isCreatingTask;
+  const isPending = isCreatingPost || isCreatingTask || isInstantiating;
 
   return (
     <Dialog
@@ -161,6 +207,30 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
           <TextField
             select
             fullWidth
+            label="Шаблон"
+            value={templateId}
+            disabled={isPending || isTemplatesLoading}
+            onChange={event => setTemplateId(event.target.value)}
+            helperText={
+              selectedTemplate
+                ? `Будут применены поля шаблона «${selectedTemplate.name}»`
+                : 'Необязательно'
+            }
+          >
+            <MenuItem value={NO_TEMPLATE_ID}>Без шаблона</MenuItem>
+            {templates.map(template => (
+              <MenuItem
+                key={template.id}
+                value={template.id}
+              >
+                {template.name}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            fullWidth
             label="Исполнитель"
             value={executorId}
             disabled={isPending || isExecutorsLoading}
@@ -191,6 +261,30 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             disabled={isPending}
             onChange={e => setPostTitle(e.target.value)}
           />
+
+          <TextField
+            select
+            fullWidth
+            label="Шаблон"
+            value={templateId}
+            disabled={isPending || isTemplatesLoading}
+            onChange={event => setTemplateId(event.target.value)}
+            helperText={
+              selectedTemplate
+                ? `После создания поста задача будет создана из шаблона «${selectedTemplate.name}»`
+                : 'Необязательно — применится при создании задачи'
+            }
+          >
+            <MenuItem value={NO_TEMPLATE_ID}>Без шаблона</MenuItem>
+            {templates.map(template => (
+              <MenuItem
+                key={template.id}
+                value={template.id}
+              >
+                {template.name}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             select
@@ -255,8 +349,7 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             color="primary"
             loading={isPending}
             disabled={
-              isPending ||
-              (tab === 1 ? !postTitle.trim() : !postId)
+              isPending || (tab === 1 ? !postTitle.trim() : !postId)
             }
             onClick={() =>
               void (tab === 0 ? handleCreateTask() : handleCreatePost())
@@ -272,9 +365,10 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             color="primary"
             onClick={() =>
               navigate(
-                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${executorId !== EXECUTOR_UNASSIGNED_ID
-                  ? `&userId=${executorId}`
-                  : '&userId=unassigned'
+                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${
+                  executorId !== EXECUTOR_UNASSIGNED_ID
+                    ? `&userId=${executorId}`
+                    : '&userId=unassigned'
                 }`
               )
             }

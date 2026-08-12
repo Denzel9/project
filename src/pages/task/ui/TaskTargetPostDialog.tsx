@@ -23,42 +23,40 @@ export type DuplicateTaskExecutorOption = {
   label: string;
 };
 
-type TaskTargetPostMode = 'duplicate' | 'duplicate-same';
+export type DuplicateTarget =
+  | { target: 'current'; executorId: string | null }
+  | { target: 'post'; postId: string; executorId: string | null };
+
+type DuplicateTab = 'current' | 'existing' | 'new';
 
 type TaskTargetPostDialogProps = {
   open: boolean;
-  mode: TaskTargetPostMode;
-  /** Для duplicate-same — пост, в который дублируем по умолчанию */
-  fixedPostId?: string | null;
-  excludePostId?: string | null;
+  /** Текущий пост задачи — для подписи во вкладке «Текущее объявление» */
+  currentPostId?: string | null;
+  currentPostTitle?: string | null;
+  /** Показать вкладку «Текущее объявление» (по умолчанию — если есть currentPostId) */
+  showCurrentTab?: boolean;
   initialExecutorId?: string | null;
   executorOptions: DuplicateTaskExecutorOption[];
   isPending?: boolean;
   onClose: () => void;
-  onConfirm: (payload: {
-    postId: string;
-    executorId: string | null;
-  }) => Promise<Task | void>;
+  onConfirm: (payload: DuplicateTarget) => Promise<Task | void>;
   onGoToCreatedTask: (task: Task) => void;
-};
-
-const TITLES: Record<TaskTargetPostMode, string> = {
-  duplicate: 'Дублировать в другой пост',
-  'duplicate-same': 'Дублировать задачу',
-};
-
-const CONFIRM_LABELS: Record<TaskTargetPostMode, string> = {
-  duplicate: 'Дублировать',
-  'duplicate-same': 'Дублировать',
 };
 
 const UNASSIGNED_ID = 'unassigned';
 
+const TAB_ITEMS: { value: DuplicateTab; label: string }[] = [
+  { value: 'current', label: 'Текущее объявление' },
+  { value: 'existing', label: 'Имеющийся пост' },
+  { value: 'new', label: 'Новый пост' },
+];
+
 export const TaskTargetPostDialog = ({
   open,
-  mode,
-  fixedPostId = null,
-  excludePostId,
+  currentPostId = null,
+  currentPostTitle = null,
+  showCurrentTab,
   initialExecutorId = null,
   executorOptions,
   isPending = false,
@@ -66,7 +64,16 @@ export const TaskTargetPostDialog = ({
   onConfirm,
   onGoToCreatedTask,
 }: TaskTargetPostDialogProps) => {
-  const [tab, setTab] = useState(0);
+  const hasCurrentTab = showCurrentTab ?? Boolean(currentPostId);
+  const visibleTabs = useMemo(
+    () =>
+      TAB_ITEMS.filter(item => item.value !== 'current' || hasCurrentTab),
+    [hasCurrentTab]
+  );
+
+  const [tab, setTab] = useState<DuplicateTab>(
+    hasCurrentTab ? 'current' : 'existing'
+  );
   const [postId, setPostId] = useState<string | null>(null);
   const [executorId, setExecutorId] = useState(UNASSIGNED_ID);
   const [postTitle, setPostTitle] = useState('');
@@ -77,7 +84,6 @@ export const TaskTargetPostDialog = ({
   const { mutateAsync: createPost, isPending: isCreatingPost } =
     useCreatePostMutation();
 
-  const isSamePost = mode === 'duplicate-same';
   const isSuccess = Boolean(createdTask);
   const showForm = !isSuccess;
 
@@ -87,13 +93,12 @@ export const TaskTargetPostDialog = ({
 
   const postOptions = useMemo(() => {
     const items = (posts?.items ?? [])
-      .filter(post => post.id !== excludePostId)
+      .filter(post => post.id !== currentPostId)
       .map(post => ({
         id: post.id,
         label: post.title,
       }));
 
-    // После создания нового поста он может ещё не попасть в список — добавляем вручную
     if (
       postId &&
       postTitle.trim() &&
@@ -103,7 +108,7 @@ export const TaskTargetPostDialog = ({
     }
 
     return items;
-  }, [posts, excludePostId, postId, postTitle]);
+  }, [posts, currentPostId, postId, postTitle]);
 
   const resolvedExecutorOptions = useMemo(() => {
     const base = executorOptions.some(option => option.id === UNASSIGNED_ID)
@@ -116,7 +121,7 @@ export const TaskTargetPostDialog = ({
   useEffect(() => {
     if (!open) {
       setTimeout(() => {
-        setTab(0);
+        setTab(hasCurrentTab ? 'current' : 'existing');
         setPostId(null);
         setExecutorId(UNASSIGNED_ID);
         setPostTitle('');
@@ -127,21 +132,21 @@ export const TaskTargetPostDialog = ({
     }
 
     setTimeout(() => {
-      setTab(0);
-      setPostId(isSamePost ? fixedPostId : null);
+      setTab(hasCurrentTab ? 'current' : 'existing');
+      setPostId(null);
       setExecutorId(initialExecutorId || UNASSIGNED_ID);
       setPostTitle('');
       setIsPrivate(false);
       setCreatedTask(null);
     }, 0);
-  }, [open, isSamePost, fixedPostId, initialExecutorId]);
+  }, [open, hasCurrentTab, initialExecutorId]);
 
   const busy = isPending || isCreatingPost;
 
   const handleClose = () => {
     if (busy) return;
     onClose();
-    setTab(0);
+    setTab(hasCurrentTab ? 'current' : 'existing');
     setPostId(null);
     setExecutorId(UNASSIGNED_ID);
     setPostTitle('');
@@ -164,7 +169,7 @@ export const TaskTargetPostDialog = ({
 
       if (created.id) {
         setPostId(created.id);
-        setTab(0);
+        setTab('existing');
       }
     } catch {
       // Ошибка обрабатывается глобально / остаёмся на форме
@@ -172,14 +177,24 @@ export const TaskTargetPostDialog = ({
   };
 
   const handleConfirm = async () => {
-    if (!postId) return;
     if (!requireEmailConfirmed()) return;
 
     try {
-      const result = await onConfirm({
-        postId,
-        executorId: resolvedExecutorId,
-      });
+      let result: Task | void;
+
+      if (tab === 'current') {
+        result = await onConfirm({
+          target: 'current',
+          executorId: resolvedExecutorId,
+        });
+      } else {
+        if (!postId) return;
+        result = await onConfirm({
+          target: 'post',
+          postId,
+          executorId: resolvedExecutorId,
+        });
+      }
 
       if (result) {
         setCreatedTask(result);
@@ -198,8 +213,19 @@ export const TaskTargetPostDialog = ({
     handleClose();
   };
 
+  const canSubmitCurrent = hasCurrentTab && !busy;
   const canSubmitExisting = Boolean(postId) && !busy;
   const canSubmitNewPost = Boolean(postTitle.trim()) && !busy;
+
+  const submitDisabled =
+    tab === 'current'
+      ? !canSubmitCurrent
+      : tab === 'existing'
+        ? !canSubmitExisting
+        : !canSubmitNewPost;
+
+  const currentLabel =
+    currentPostTitle?.trim() || 'Текущее объявление';
 
   return (
     <Dialog
@@ -209,8 +235,13 @@ export const TaskTargetPostDialog = ({
       maxWidth="sm"
       slotProps={{
         paper: {
-          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, m: 0, width: { xs: '100%', md: 560 }, maxWidth: { xs: '100%', md: '90%' } },
-
+          sx: {
+            borderRadius: '24px',
+            p: { xs: 2, sm: 3 },
+            m: 0,
+            width: { xs: '100%', md: 560 },
+            maxWidth: { xs: '100%', md: '90%' },
+          },
         },
       }}
     >
@@ -219,7 +250,7 @@ export const TaskTargetPostDialog = ({
         sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
       >
         <Typography variant="h6">
-          {isSuccess ? 'Задача успешно дублирована' : TITLES[mode]}
+          {isSuccess ? 'Задача успешно дублирована' : 'Дублировать задачу'}
         </Typography>
         <IconButton
           aria-label="Закрыть"
@@ -265,20 +296,51 @@ export const TaskTargetPostDialog = ({
         <>
           <Tabs
             value={tab}
-            onChange={(_, value) => setTab(value)}
+            onChange={(_, value: DuplicateTab) => setTab(value)}
+            variant="scrollable"
+            allowScrollButtonsMobile
             sx={{ mb: 3 }}
           >
-            <Tab
-              label="Имеющийся пост"
-              disabled={busy}
-            />
-            <Tab
-              label="Новый пост"
-              disabled={busy}
-            />
+            {visibleTabs.map(item => (
+              <Tab
+                key={item.value}
+                value={item.value}
+                label={item.label}
+                disabled={busy}
+              />
+            ))}
           </Tabs>
 
-          {tab === 0 && (
+          {tab === 'current' && (
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                label="Объявление"
+                value={currentLabel}
+                disabled
+              />
+
+              <TextField
+                select
+                fullWidth
+                label="Исполнитель"
+                value={executorId}
+                disabled={busy}
+                onChange={event => setExecutorId(event.target.value)}
+              >
+                {resolvedExecutorOptions.map(option => (
+                  <MenuItem
+                    key={option.id}
+                    value={option.id}
+                  >
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          )}
+
+          {tab === 'existing' && (
             <Stack spacing={2}>
               <FilterAutocomplete
                 label="Объявление"
@@ -309,7 +371,7 @@ export const TaskTargetPostDialog = ({
             </Stack>
           )}
 
-          {tab === 1 && (
+          {tab === 'new' && (
             <Stack
               direction="column"
               spacing={2}
@@ -384,12 +446,12 @@ export const TaskTargetPostDialog = ({
               variant="contained"
               color="primary"
               loading={busy}
-              disabled={tab === 0 ? !canSubmitExisting : !canSubmitNewPost}
+              disabled={submitDisabled}
               onClick={() =>
-                void (tab === 0 ? handleConfirm() : handleCreatePost())
+                void (tab === 'new' ? handleCreatePost() : handleConfirm())
               }
             >
-              {tab === 0 ? CONFIRM_LABELS[mode] : 'Создать пост'}
+              {tab === 'new' ? 'Создать пост' : 'Дублировать'}
             </Button>
           </Stack>
         </>

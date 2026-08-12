@@ -347,6 +347,7 @@ export const TaskItem = ({
     pendingDeadlineExtension?.requestedById !== currentUserId &&
     (task.ownerId === currentUserId || task.executorId === currentUserId);
   const canRequestDeadlineExtension = Boolean(
+    !task.isArchived &&
     task.status !== TASK_STATUS_ENUM.ANNULLED &&
     task.status !== TASK_STATUS_ENUM.COMPLETED &&
     task.executorId &&

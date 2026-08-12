@@ -16,8 +16,8 @@ import {
 } from '@/shared/lib/media'
 import { fetchAllPages } from '@/shared/lib/pagination/fetchAllPages'
 
-import { toTaskCommentMedia, normalizeTaskWithCommentsItem, getCommentsTailPage, normalizeTaskComment } from './utils'
 import { TASK_STATUS_ENUM } from './types'
+import { toTaskCommentMedia, normalizeTaskWithCommentsItem, getCommentsTailPage, normalizeTaskComment } from './utils'
 
 import type {
   CreateTaskCommentDto,
@@ -1026,7 +1026,7 @@ export const applyTaskCommentsReadInCache = (
   patchAllTaskCommentsCache(queryClient, taskId, comments =>
     comments.map(comment =>
       comment.authorId === currentUserId &&
-      new Date(comment.createdAt).getTime() <= readAtTime
+        new Date(comment.createdAt).getTime() <= readAtTime
         ? { ...comment, isRead: true }
         : comment,
     ),

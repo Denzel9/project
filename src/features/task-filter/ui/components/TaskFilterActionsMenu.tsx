@@ -140,10 +140,10 @@ export const TaskFilterActionsMenu = ({
           </MenuItem>
         )}
 
-        {isCompany && <Divider
+        <Divider
           component="li"
           sx={{ my: 0.5 }}
-        />}
+        />
 
         {isCompany && (
           <MenuItem

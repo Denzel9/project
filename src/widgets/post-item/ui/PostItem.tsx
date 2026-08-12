@@ -211,6 +211,7 @@ const PostItem = ({
                   <>
                     <MenuItem
                       key={action.key}
+                      sx={{ fontSize: 14 }}
                       onClick={() => {
                         handleAction(action.key);
                         handleClose();

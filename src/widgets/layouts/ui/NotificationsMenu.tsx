@@ -98,7 +98,7 @@ export const NotificationsMenu = () => {
 
   return (
     <>
-      <IconButton onClick={handleOpen} sx={{ mr: '16px !important' }}>
+      <IconButton onClick={handleOpen} sx={{ mr: { xs: 0, md: '16px !important' } }}>
         <Badge
           badgeContent={unreadCount}
           color="primary"

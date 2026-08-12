@@ -56,10 +56,18 @@ export const TaskPage = () => {
     syncTaskInUrl(task);
   };
 
+  const handleSelectTaskItem = (task: Task) => {
+    setCurrentTask(task);
+    syncTaskInUrl(task);
+  };
+
   const activeTasks = useMemo(
     () =>
       tasks?.items?.filter(
-        task => task.status !== TASK_STATUS_ENUM.ANNULLED
+        task =>
+          task.status !== TASK_STATUS_ENUM.ANNULLED &&
+          task.status !== TASK_STATUS_ENUM.COMPLETED &&
+          !task.isArchived,
       ) || [],
     [tasks?.items]
   );
@@ -106,6 +114,7 @@ export const TaskPage = () => {
         groupedTasks={groupedTasks}
         cancelledTasks={cancelledTasks}
         onSelectTask={handleChangeTask}
+        onSelectTaskItem={handleSelectTaskItem}
         onSelectExecutor={handleChangeExecutor}
         onTaskCreated={handleTaskCreated}
         onEditTask={() => setEditRequestId(value => value + 1)}

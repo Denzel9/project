@@ -19,19 +19,21 @@ import {
     TASK_STATUS_ENUM,
     useConversationsQuery,
     useCreateTaskMutation,
+    useUpdateTaskMutation,
     type Task,
 } from '@/entities';
 import { MAX_SELECTED_TASKS, useAuthStore } from '@/features';
 import { RequestCancelTaskDialog } from '@/pages/task/ui/RequestCancelTaskDialog';
 import { RequestDeadlineExtensionDialog } from '@/pages/task/ui/RequestDeadlineExtensionDialog';
-import { TaskTargetPostDialog } from '@/pages/task/ui/TaskTargetPostDialog';
+import { TaskTargetPostDialog, type DuplicateTarget } from '@/pages/task/ui/TaskTargetPostDialog';
 import { useSnackbarStore } from '@/widgets';
 
 type GroupAction =
     | 'duplicate'
-    | 'duplicate-other'
     | 'annulment'
     | 'deadline'
+    | 'archive'
+    | 'unarchive'
     | '';
 
 type GroupActionDialogProps = {
@@ -43,9 +45,10 @@ type GroupActionDialogProps = {
 
 const ACTION_OPTIONS: { value: Exclude<GroupAction, ''>; label: string }[] = [
     { value: 'duplicate', label: 'Дублировать' },
-    { value: 'duplicate-other', label: 'Дублировать в другое объявление' },
     { value: 'annulment', label: 'Запросить аннулирование' },
     { value: 'deadline', label: 'Запросить перенос дедлайна' },
+    { value: 'archive', label: 'Переместить в архив' },
+    { value: 'unarchive', label: 'Вернуть из архива' },
 ];
 
 const getExecutorLabel = (task: Task) => {
@@ -62,6 +65,7 @@ const canRequestAnnulmentForTask = (task: Task, currentUserId: string | null) =>
         task.annulment?.status === 'PENDING' ? task.annulment : null;
 
     return Boolean(
+        !task.isArchived &&
         task.status !== TASK_STATUS_ENUM.ANNULLED &&
         task.status !== TASK_STATUS_ENUM.COMPLETED &&
         task.executorId &&
@@ -77,6 +81,7 @@ const canRequestDeadlineForTask = (task: Task, currentUserId: string | null) => 
             : null;
 
     return Boolean(
+        !task.isArchived &&
         task.status !== TASK_STATUS_ENUM.ANNULLED &&
         task.status !== TASK_STATUS_ENUM.COMPLETED &&
         task.executorId &&
@@ -90,7 +95,7 @@ const isTaskEligibleForAction = (
     action: Exclude<GroupAction, ''>,
     currentUserId: string | null,
 ) => {
-    if (action === 'duplicate' || action === 'duplicate-other') {
+    if (action === 'duplicate') {
         return isTaskOwner(task, currentUserId);
     }
 
@@ -100,6 +105,14 @@ const isTaskEligibleForAction = (
 
     if (action === 'deadline') {
         return canRequestDeadlineForTask(task, currentUserId);
+    }
+
+    if (action === 'archive') {
+        return isTaskOwner(task, currentUserId) && !task.isArchived;
+    }
+
+    if (action === 'unarchive') {
+        return isTaskOwner(task, currentUserId) && task.isArchived;
     }
 
     return false;
@@ -119,11 +132,13 @@ export const GroupActionDialog = ({
     const [action, setAction] = useState<GroupAction>('');
     const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
     const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
-    const [isDuplicateOtherOpen, setIsDuplicateOtherOpen] = useState(false);
+    const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
     const [isExecuting, setIsExecuting] = useState(false);
 
     const { mutateAsync: createTask, isPending: isCopying } =
         useCreateTaskMutation();
+    const { mutateAsync: updateTask, isPending: isUpdating } =
+        useUpdateTaskMutation();
 
     const eligibleTasks = useMemo(() => {
         if (!action) return [];
@@ -141,7 +156,7 @@ export const GroupActionDialog = ({
     }, [action, tasks, eligibleTasks]);
 
     const { data: conversations = [] } = useConversationsQuery(undefined, {
-        enabled: isDuplicateOtherOpen,
+        enabled: isDuplicateOpen,
     });
 
     const executorOptions = useMemo(() => {
@@ -179,7 +194,7 @@ export const GroupActionDialog = ({
         setAction('');
         setIsCancelDialogOpen(false);
         setIsDeadlineDialogOpen(false);
-        setIsDuplicateOtherOpen(false);
+        setIsDuplicateOpen(false);
     };
 
     const handleClose = () => {
@@ -192,70 +207,31 @@ export const GroupActionDialog = ({
         onRemoveTasks(ineligibleTasks.map(task => task.id));
     };
 
-    const handleDuplicateSame = async () => {
-        if (eligibleTasks.length === 0) return;
-
-        setIsExecuting(true);
-        try {
-            const results = await Promise.allSettled(
-                eligibleTasks.map(task => {
-                    const postId = task.postId || task.post?.id;
-                    if (!postId) {
-                        return Promise.reject(new Error('Нет объявления'));
-                    }
-
-                    return createTask(
-                        buildCreateTaskPayload(task, postId, task.executorId),
-                    );
-                }),
-            );
-
-            const successCount = results.filter(result => result.status === 'fulfilled').length;
-            const failCount = results.length - successCount;
-
-            if (successCount > 0 && failCount === 0) {
-                setSnackbarOpen(
-                    true,
-                    successCount === 1
-                        ? 'Задача продублирована'
-                        : `Продублировано задач: ${successCount}`,
-                );
-                handleClose();
-                return;
-            }
-
-            if (successCount > 0) {
-                setSnackbarOpen(
-                    true,
-                    `Продублировано: ${successCount}, не удалось: ${failCount}`,
-                    'error',
-                );
-                handleClose();
-                return;
-            }
-
-            setSnackbarOpen(true, 'Не удалось дублировать задачи', 'error');
-        } finally {
-            setIsExecuting(false);
+    const sharedCurrentPost = useMemo(() => {
+        if (eligibleTasks.length === 0) {
+            return { id: null as string | null, title: null as string | null };
         }
-    };
 
-    const handleDuplicateOtherConfirm = async ({
-        postId,
-        executorId,
-    }: {
-        postId: string;
-        executorId: string | null;
-    }) => {
-        const results = await Promise.allSettled(
-            eligibleTasks.map(task =>
-                createTask(buildCreateTaskPayload(task, postId, executorId)),
-            ),
+        const firstId = eligibleTasks[0]?.postId || eligibleTasks[0]?.post?.id || null;
+        if (!firstId) {
+            return { id: null, title: null };
+        }
+
+        const allSame = eligibleTasks.every(
+            task => (task.postId || task.post?.id) === firstId,
         );
 
-        const successCount = results.filter(result => result.status === 'fulfilled').length;
-        const failCount = results.length - successCount;
+        if (!allSame) {
+            return { id: null, title: null };
+        }
 
+        return {
+            id: firstId,
+            title: eligibleTasks[0]?.post?.title ?? null,
+        };
+    }, [eligibleTasks]);
+
+    const reportDuplicateResults = (successCount: number, failCount: number) => {
         if (successCount > 0 && failCount === 0) {
             setSnackbarOpen(
                 true,
@@ -281,18 +257,104 @@ export const GroupActionDialog = ({
         throw new Error('bulk duplicate failed');
     };
 
+    const handleDuplicateConfirm = async (payload: DuplicateTarget) => {
+        if (eligibleTasks.length === 0) return;
+
+        const results = await Promise.allSettled(
+            eligibleTasks.map(task => {
+                const postId =
+                    payload.target === 'current'
+                        ? task.postId || task.post?.id
+                        : payload.postId;
+
+                if (!postId) {
+                    return Promise.reject(new Error('Нет объявления'));
+                }
+
+                return createTask(
+                    buildCreateTaskPayload(task, postId, payload.executorId),
+                );
+            }),
+        );
+
+        const successCount = results.filter(result => result.status === 'fulfilled').length;
+        const failCount = results.length - successCount;
+        reportDuplicateResults(successCount, failCount);
+    };
+
+    const handleArchiveToggle = async (nextArchived: boolean) => {
+        if (eligibleTasks.length === 0) return;
+
+        setIsExecuting(true);
+        try {
+            const results = await Promise.allSettled(
+                eligibleTasks.map(task =>
+                    updateTask({
+                        id: task.id,
+                        body: { isArchived: nextArchived },
+                    }),
+                ),
+            );
+
+            const successCount = results.filter(
+                result => result.status === 'fulfilled',
+            ).length;
+            const failCount = results.length - successCount;
+
+            if (successCount > 0 && failCount === 0) {
+                setSnackbarOpen(
+                    true,
+                    nextArchived
+                        ? successCount === 1
+                            ? 'Задача перемещена в архив'
+                            : `В архив перемещено задач: ${successCount}`
+                        : successCount === 1
+                            ? 'Задача возвращена из архива'
+                            : `Из архива возвращено задач: ${successCount}`,
+                );
+                handleClose();
+                return;
+            }
+
+            if (successCount > 0) {
+                setSnackbarOpen(
+                    true,
+                    `Успешно: ${successCount}, не удалось: ${failCount}`,
+                    'error',
+                );
+                handleClose();
+                return;
+            }
+
+            setSnackbarOpen(
+                true,
+                nextArchived
+                    ? 'Не удалось переместить задачи в архив'
+                    : 'Не удалось вернуть задачи из архива',
+                'error',
+            );
+        } finally {
+            setIsExecuting(false);
+        }
+    };
+
     const handleExecute = () => {
         if (!action || eligibleTasks.length === 0 || ineligibleTasks.length > 0) {
             return;
         }
 
         if (action === 'duplicate') {
-            void handleDuplicateSame();
+            setIsDuplicateOpen(true);
             return;
         }
 
-        if (action === 'duplicate-other') {
-            setIsDuplicateOtherOpen(true);
+        if (action === 'archive') {
+            void handleArchiveToggle(true);
+            return;
+        }
+
+        if (action === 'unarchive') {
+            void handleArchiveToggle(false);
             return;
         }
 
@@ -308,7 +370,7 @@ export const GroupActionDialog = ({
 
     if (!open) return null;
 
-    const busy = isExecuting || isCopying;
+    const busy = isExecuting || isCopying || isUpdating;
     const canExecute =
         Boolean(action) &&
         eligibleTasks.length > 0 &&
@@ -480,14 +542,20 @@ export const GroupActionDialog = ({
             />
 
             <TaskTargetPostDialog
-                open={isDuplicateOtherOpen}
-                mode="duplicate"
-                excludePostId={null}
+                open={isDuplicateOpen}
+                showCurrentTab
+                currentPostId={sharedCurrentPost.id}
+                currentPostTitle={
+                    sharedCurrentPost.title ??
+                    (eligibleTasks.length > 1
+                        ? 'Каждая задача — в своё объявление'
+                        : null)
+                }
                 initialExecutorId={eligibleTasks[0]?.executorId ?? null}
                 executorOptions={executorOptions}
                 isPending={isCopying}
-                onClose={() => setIsDuplicateOtherOpen(false)}
-                onConfirm={handleDuplicateOtherConfirm}
+                onClose={() => setIsDuplicateOpen(false)}
+                onConfirm={handleDuplicateConfirm}
                 onGoToCreatedTask={() => handleClose()}
             />
         </>

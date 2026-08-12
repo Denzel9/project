@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { taskKeys } from '@/entities/task'
+import { serializeTaskListParams, taskKeys } from '@/entities/task'
 import { mainAxios } from '@/shared/api'
 import {
   mapInBatches,
@@ -30,7 +30,7 @@ import type {
   PostList,
   PostOptionsList,
 } from './types'
-import type { Task, TaskList } from '@/entities/task'
+import type { Task, TASK_STATUS_ENUM, TaskList } from '@/entities/task'
 
 export const postKeys = {
   all: ['posts'] as const,
@@ -77,7 +77,10 @@ export const useMyPostOptionsQuery = (enabled = true) =>
 
 export const usePostsInfiniteQuery = (
   params?: Omit<PostListParams, 'page'>,
-  options?: { placeholderData?: typeof keepPreviousData },
+  options?: {
+    placeholderData?: typeof keepPreviousData
+    enabled?: boolean
+  },
 ) => {
   const limit = params?.limit ?? 20
 
@@ -96,6 +99,7 @@ export const usePostsInfiniteQuery = (
     initialPageParam: 1,
     getNextPageParam: getPostListNextPageParam,
     placeholderData: options?.placeholderData,
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -307,7 +311,7 @@ export const usePostTasksQuery = (
     queryKey: postKeys.postTasks(postId ?? '', params),
     queryFn: async () => {
       const { data } = await mainAxios.get<TaskList>('/tasks', {
-        params: { ...params, postId },
+        params: serializeTaskListParams({ ...params, postId: postId!, status: params?.status as TASK_STATUS_ENUM }),
       })
       return data
     },

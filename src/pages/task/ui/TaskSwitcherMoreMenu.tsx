@@ -1,5 +1,5 @@
 import { MoreVert } from '@mui/icons-material';
-import { Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Divider, IconButton, Menu, MenuItem, } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -10,6 +10,8 @@ import {
   TASK_STATUS_ENUM,
   useConversationsQuery,
   useCreateTaskMutation,
+  useCreateTaskTemplateFromTaskMutation,
+  useUpdateTaskMutation,
   type Task,
 } from '@/entities';
 import { useAuthStore } from '@/features';
@@ -18,9 +20,7 @@ import { useSnackbarStore } from '@/widgets';
 
 import { RequestCancelTaskDialog } from './RequestCancelTaskDialog';
 import { RequestDeadlineExtensionDialog } from './RequestDeadlineExtensionDialog';
-import { TaskTargetPostDialog } from './TaskTargetPostDialog';
-
-type TaskTargetPostMode = 'duplicate' | 'duplicate-same';
+import { TaskTargetPostDialog, type DuplicateTarget } from './TaskTargetPostDialog';
 
 type TaskSwitcherMoreMenuProps = {
   task?: Task | null;
@@ -46,14 +46,17 @@ export const TaskSwitcherMoreMenu = ({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
-  const [targetPostMode, setTargetPostMode] =
-    useState<TaskTargetPostMode | null>(null);
+  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
 
   const { mutateAsync: createTask, isPending: isCreating } =
     useCreateTaskMutation();
+  const { mutateAsync: updateTask, isPending: isUpdatingArchive } =
+    useUpdateTaskMutation();
+  const { mutateAsync: createTemplateFromTask, isPending: isSavingTemplate } =
+    useCreateTaskTemplateFromTaskMutation();
 
   const isOwner = Boolean(task && isTaskOwner(task, currentUserId));
-  const isDialogOpen = Boolean(targetPostMode);
+  const isDialogOpen = isDuplicateOpen;
 
   const { data: conversations = [] } = useConversationsQuery(undefined, {
     enabled: isDialogOpen,
@@ -77,6 +80,7 @@ export const TaskSwitcherMoreMenu = ({
 
   const canRequestAnnulment = Boolean(
     task &&
+    !task.isArchived &&
     task.status !== TASK_STATUS_ENUM.ANNULLED &&
     task.status !== TASK_STATUS_ENUM.COMPLETED &&
     task.executorId &&
@@ -86,6 +90,7 @@ export const TaskSwitcherMoreMenu = ({
 
   const canRequestDeadlineExtension = Boolean(
     task &&
+    !task.isArchived &&
     task.status !== TASK_STATUS_ENUM.ANNULLED &&
     task.status !== TASK_STATUS_ENUM.COMPLETED &&
     task.executorId &&
@@ -118,7 +123,7 @@ export const TaskSwitcherMoreMenu = ({
   const closeMenu = () => setMenuAnchor(null);
 
   const handleCloseTargetDialog = () => {
-    setTargetPostMode(null);
+    setIsDuplicateOpen(false);
   };
 
   const handleGoToCreatedTask = (created: Task) => {
@@ -135,24 +140,64 @@ export const TaskSwitcherMoreMenu = ({
     }
   };
 
-  const handleTargetPostConfirm = async ({
-    postId,
-    executorId,
-  }: {
-    postId: string;
-    executorId: string | null;
-  }) => {
-    if (!task || !targetPostMode) return;
+  const handleTargetPostConfirm = async (payload: DuplicateTarget) => {
+    if (!task) return;
+
+    const postId =
+      payload.target === 'current' ? currentPostId : payload.postId;
+
+    if (!postId) {
+      setSnackbarOpen(true, 'Не удалось дублировать задачу');
+      throw new Error('Нет объявления');
+    }
 
     try {
       const created = await createTask(
-        buildCreateTaskPayload(task, postId, executorId)
+        buildCreateTaskPayload(task, postId, payload.executorId)
       );
 
       return created;
     } catch (error) {
       setSnackbarOpen(true, 'Не удалось дублировать задачу');
       throw error;
+    }
+  };
+
+  const handleToggleArchive = async () => {
+    if (!task) return;
+    closeMenu();
+    const nextArchived = !task.isArchived;
+
+    try {
+      await updateTask({
+        id: task.id,
+        body: { isArchived: nextArchived },
+      });
+      setSnackbarOpen(
+        true,
+        nextArchived
+          ? 'Задача перемещена в архив'
+          : 'Задача возвращена из архива',
+      );
+    } catch {
+      setSnackbarOpen(
+        true,
+        nextArchived
+          ? 'Не удалось переместить задачу в архив'
+          : 'Не удалось вернуть задачу из архива',
+      );
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!task) return;
+    closeMenu();
+
+    try {
+      await createTemplateFromTask(task.id);
+      setSnackbarOpen(true, 'Задача сохранена как шаблон');
+    } catch {
+      setSnackbarOpen(true, 'Не удалось сохранить шаблон');
     }
   };
 
@@ -177,40 +222,29 @@ export const TaskSwitcherMoreMenu = ({
       >
         {canEditTask && (
           <MenuItem
+            sx={{ fontSize: 14 }}
             onClick={() => {
               closeMenu();
               onEdit?.();
             }}
           >
-            <Typography>Редактировать</Typography>
+            Редактировать
           </MenuItem>
         )}
 
         {canEditTask && isOwner && <Divider sx={{ my: 0.5 }} />}
 
         {isOwner && (
-          <>
-            <MenuItem
-              disabled={isCreating}
-              onClick={() => {
-                closeMenu();
-                setTargetPostMode('duplicate-same');
-              }}
-            >
-              <Typography>Дублировать</Typography>
-            </MenuItem>
-
-            <Divider sx={{ my: 0.5 }} />
-
-            <MenuItem
-              onClick={() => {
-                closeMenu();
-                setTargetPostMode('duplicate');
-              }}
-            >
-              <Typography>Дублировать в другое объявление</Typography>
-            </MenuItem>
-          </>
+          <MenuItem
+            sx={{ fontSize: 14 }}
+            disabled={isCreating}
+            onClick={() => {
+              closeMenu();
+              setIsDuplicateOpen(true);
+            }}
+          >
+            Дублировать
+          </MenuItem>
         )}
 
         {isOwner && (canRequestAnnulment || canRequestDeadlineExtension) && (
@@ -219,12 +253,13 @@ export const TaskSwitcherMoreMenu = ({
 
         {canRequestAnnulment && (
           <MenuItem
+            sx={{ fontSize: 14 }}
             onClick={() => {
               closeMenu();
               setIsCancelDialogOpen(true);
             }}
           >
-            <Typography>Запросить аннулирование</Typography>
+            Запросить аннулирование
           </MenuItem>
         )}
 
@@ -234,13 +269,41 @@ export const TaskSwitcherMoreMenu = ({
 
         {canRequestDeadlineExtension && (
           <MenuItem
+            sx={{ fontSize: 14 }}
             onClick={() => {
               closeMenu();
               setIsDeadlineDialogOpen(true);
             }}
           >
-            <Typography>Запросить перенос дедлайна</Typography>
+            Запросить перенос дедлайна
           </MenuItem>
+        )}
+
+        {isOwner && (
+          <>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem
+              sx={{ fontSize: 14 }}
+              disabled={isSavingTemplate}
+              onClick={() => {
+                void handleSaveAsTemplate();
+              }}
+            >
+              Сохранить как шаблон
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem
+              sx={{ fontSize: 14 }}
+              disabled={isUpdatingArchive}
+              onClick={() => {
+                void handleToggleArchive();
+              }}
+            >
+              {task.isArchived
+                ? 'Вернуть из архива'
+                : 'Переместить в архив'}
+            </MenuItem>
+          </>
         )}
       </Menu>
 
@@ -259,11 +322,8 @@ export const TaskSwitcherMoreMenu = ({
 
       <TaskTargetPostDialog
         open={isDialogOpen}
-        mode={targetPostMode ?? 'duplicate'}
-        fixedPostId={currentPostId}
-        excludePostId={
-          targetPostMode === 'duplicate' ? currentPostId : null
-        }
+        currentPostId={currentPostId}
+        currentPostTitle={task.post?.title}
         initialExecutorId={task.executorId}
         executorOptions={executorOptions}
         isPending={isCreating}

@@ -19,6 +19,8 @@ export const ROUTES = {
     MY_RESPONSES: "/my-responses",
     SETTINGS_APPS: "/settings/apps",
     PUBLICATIONS: "/crm/publications",
+    ARCHIVE: "/crm/archive",
+    TEMPLATES: "/crm/templates",
     USER_AGREEMENT: "/user-agreement",
     PRIVACY_POLICY: "/privacy-policy",
     SETTINGS_GENERAL: "/settings/general",

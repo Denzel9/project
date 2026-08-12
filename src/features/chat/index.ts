@@ -12,4 +12,4 @@ export {
   formatProfileLinkForChat,
   sendProfileLinkToChat,
 } from './model/sendProfileLinkToChat'
-export { ChatContactSearch } from './ui/ChatContactSearch'
+export { ChatContactSearch, type ChatFilter } from './ui/ChatContactSearch'

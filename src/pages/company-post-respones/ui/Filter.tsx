@@ -55,7 +55,6 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
     setStatus,
     updatedDate,
     setUpdatedDate,
-    viewMode,
   } = useMyPostFilterStore()
 
   const { data: applicantsData, isLoading: isApplicantsLoading } =
@@ -212,7 +211,7 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
             <CalendarMonthOutlined />
           </IconButton>
 
-          {viewMode === 'table' && tableReport && (
+          {tableReport && (
             <>
               <Tooltip title="Печать">
                 <IconButton

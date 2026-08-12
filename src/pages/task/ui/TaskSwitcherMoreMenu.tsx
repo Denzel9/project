@@ -208,7 +208,7 @@ export const TaskSwitcherMoreMenu = ({
                 setTargetPostMode('duplicate');
               }}
             >
-              <Typography>Дублировать в другой пост</Typography>
+              <Typography>Дублировать в другое объявление</Typography>
             </MenuItem>
           </>
         )}

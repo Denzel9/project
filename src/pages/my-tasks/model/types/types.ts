@@ -17,8 +17,8 @@ export type FilterOption = {
 
 export type TaskTableColumnFilters = {
   status: TaskStatus | 'all';
+  manager: string | 'all';
   taskId: string;
-  /** Свободный поиск по названию (частичное вхождение), пока не выбран конкретный taskId */
   taskQuery: string;
   personId: string;
   urgentOnly: boolean;

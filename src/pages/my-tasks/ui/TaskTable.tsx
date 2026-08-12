@@ -37,6 +37,10 @@ import {
   type User,
 } from '@/entities/user';
 import {
+  MemberRole,
+  useGetProfileMembersQuery,
+} from '@/entities/workspace-member';
+import {
   AddTaskDialog,
   getDashboardPeriodRange,
   getTaskConfig,
@@ -100,6 +104,9 @@ export const TaskTable = ({
   const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
   const assigneeAccountId = useMyTaskFilterStore(
     state => state.assigneeAccountId
+  );
+  const setAssigneeAccountId = useMyTaskFilterStore(
+    state => state.setAssigneeAccountId
   );
   const postId = useMyTaskFilterStore(state => state.postId);
   const executorId = useMyTaskFilterStore(state => state.executorId);
@@ -454,6 +461,22 @@ export const TaskTable = ({
     [],
   );
 
+  const {
+    data: profileMembers,
+    isLoading: isManagersLoading,
+  } = useGetProfileMembersQuery(showManagerColumn && showColumnFilters);
+
+  const managerFilterOptions = useMemo(() => {
+    if (!profileMembers) return [] as FilterOption[];
+
+    return profileMembers
+      .filter(member => member.membershipRole === MemberRole.ADMIN)
+      .map(member => ({
+        id: member.accountId,
+        label: member.displayName || member.email || 'Менеджер',
+      }));
+  }, [profileMembers]);
+
   const taskFilterOptions = useMemo(() => {
     if (!canSearchTasks) return [] as FilterOption[];
 
@@ -656,6 +679,7 @@ export const TaskTable = ({
                 })}
               >
                 <TaskTableHeaderWithFilter
+                  isActive={assigneeAccountId !== 'all'}
                   field="title"
                   label="Название"
                   sortField={sortField}
@@ -716,6 +740,7 @@ export const TaskTable = ({
                 sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.status)}
               >
                 <TaskTableHeaderWithFilter
+                  isActive={columnFilters?.status !== 'all'}
                   field="status"
                   label="Статус"
                   sortField={sortField}
@@ -740,6 +765,7 @@ export const TaskTable = ({
                 sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.customer)}
               >
                 <TaskTableHeaderWithFilter
+                  isActive={columnFilters?.personId !== 'all'}
                   field="customer"
                   label={isCompany ? 'Исполнитель' : 'Заказчик'}
                   sortField={sortField}
@@ -765,12 +791,23 @@ export const TaskTable = ({
                   sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
                 >
                   <TaskTableHeaderWithFilter
+                    isActive={assigneeAccountId !== 'all'}
                     field="manager"
                     label="Менеджер"
                     sortField={sortField}
                     sortOrder={sortOrder}
                     forPrint={forPrint}
                     onSort={handleSort}
+                    filter={
+                      showColumnFilters && columnFilters ? (
+                        <ColumnFilterButton
+                          title="Менеджер"
+                          open={isFilterRowOpen}
+                          active={assigneeAccountId !== 'all'}
+                          onClick={toggleFilterRow}
+                        />
+                      ) : undefined
+                    }
                   />
                 </TableCell>
               )}
@@ -780,6 +817,7 @@ export const TaskTable = ({
                 sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}
               >
                 <TaskTableHeaderWithFilter
+                  isActive={Boolean(columnFilters?.updatedDate)}
                   field="updatedAt"
                   label="Обновлено"
                   sortField={sortField}
@@ -804,6 +842,7 @@ export const TaskTable = ({
                 sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
               >
                 <TaskTableHeaderWithFilter
+                  isActive={Boolean(columnFilters?.deadlineDate)}
                   field="finalDate"
                   label="Дедлайн"
                   sortField={sortField}
@@ -1011,7 +1050,43 @@ export const TaskTable = ({
                 {showManagerColumn && (
                   <TableCell
                     sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.manager)}
-                  />
+                  >
+                    {renderFilterCellContent(
+                      <Box onClick={event => event.stopPropagation()}>
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          loading={isManagersLoading}
+                          options={managerFilterOptions}
+                          slotProps={FILTER_AUTOCOMPLETE_SLOT_PROPS}
+                          value={
+                            assigneeAccountId === 'all'
+                              ? null
+                              : (managerFilterOptions.find(
+                                option =>
+                                  option.id === assigneeAccountId,
+                              ) ?? null)
+                          }
+                          onChange={(_, option) => {
+                            setAssigneeAccountId(option?.id ?? 'all');
+                          }}
+                          getOptionLabel={option => option.label}
+                          isOptionEqualToValue={(option, current) =>
+                            option.id === current.id
+                          }
+                          clearOnEscape
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              size="small"
+                              variant="standard"
+                              placeholder="Все менеджеры"
+                            />
+                          )}
+                        />
+                      </Box>,
+                    )}
+                  </TableCell>
                 )}
 
                 <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.updatedAt)}>

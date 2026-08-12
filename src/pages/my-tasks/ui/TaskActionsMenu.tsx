@@ -1,22 +1,26 @@
 import { MoreVertOutlined } from '@mui/icons-material';
-import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import { useMemo, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
   buildCreateTaskPayload,
-  canEditTaskFields,
+  isTaskExecutor,
+  isTaskOwner,
   TASK_STATUS_ENUM,
   useConversationsQuery,
   useCreateTaskMutation,
-  useDeleteTaskMutation,
   type Task,
 } from '@/entities';
 import { useAuthStore } from '@/features';
-import { ROUTES } from '@/shared';
-import { ConfirmDialog, useSnackbarStore } from '@/widgets';
-import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
+import { RequestCancelTaskDialog } from '@/pages/task/ui/RequestCancelTaskDialog';
+import { RequestDeadlineExtensionDialog } from '@/pages/task/ui/RequestDeadlineExtensionDialog';
 import { TaskTargetPostDialog } from '@/pages/task/ui/TaskTargetPostDialog';
+import { ROUTES } from '@/shared';
+import { useSnackbarStore } from '@/widgets';
+import { AddExecutorDialog } from '@/widgets/contact-card/ui/AddExecutorDialog';
+
+type TaskTargetPostMode = 'duplicate' | 'duplicate-same';
 
 type TaskActionsMenuProps = {
   task: Task;
@@ -40,25 +44,51 @@ export const TaskActionsMenu = ({
   const { setSnackbarOpen } = useSnackbarStore();
 
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
+  const [targetPostMode, setTargetPostMode] =
+    useState<TaskTargetPostMode | null>(null);
 
   const { mutateAsync: createTask, isPending: isCopying } =
     useCreateTaskMutation();
-  const { mutateAsync: deleteTask } = useDeleteTaskMutation();
+
+  const isDialogOpen = Boolean(targetPostMode);
 
   const { data: conversations = [] } = useConversationsQuery(undefined, {
-    enabled: isDuplicateDialogOpen,
+    enabled: isDialogOpen,
   });
 
-  const isOwner = canEditTaskFields(task, currentUserId);
-
-  const canAssign = task.executorId == null && (ownerOnly || isOwner);
+  const isOwner = Boolean(task && isTaskOwner(task, currentUserId));
   const showOwnerActions = ownerOnly || isOwner;
-  const canDelete =
-    task.status === TASK_STATUS_ENUM.PREPARING ||
-    task.status === TASK_STATUS_ENUM.PENDING_APPROVAL;
+
+  const canAssign = task.executorId == null && showOwnerActions;
+
+  const pendingAnnulment =
+    task?.annulment?.status === 'PENDING' ? task.annulment : null;
+
+  const pendingDeadlineExtension =
+    task?.deadlineExtension?.status === 'PENDING'
+      ? task.deadlineExtension
+      : null;
+
+  const canRequestAnnulment = Boolean(
+    task &&
+    task.status !== TASK_STATUS_ENUM.ANNULLED &&
+    task.status !== TASK_STATUS_ENUM.COMPLETED &&
+    task.executorId &&
+    !pendingAnnulment &&
+    (isOwner || isTaskExecutor(task, currentUserId))
+  );
+
+  const canRequestDeadlineExtension = Boolean(
+    task &&
+    task.status !== TASK_STATUS_ENUM.ANNULLED &&
+    task.status !== TASK_STATUS_ENUM.COMPLETED &&
+    task.executorId &&
+    !pendingDeadlineExtension &&
+    (isOwner || isTaskExecutor(task, currentUserId))
+  );
 
   const currentPostId = task.postId || task.post?.id || null;
 
@@ -96,7 +126,7 @@ export const TaskActionsMenu = ({
     setMenuAnchor(event.currentTarget);
   };
 
-  const handleDuplicateConfirm = async ({
+  const handleTargetPostConfirm = async ({
     postId,
     executorId,
   }: {
@@ -120,20 +150,18 @@ export const TaskActionsMenu = ({
     navigate(`${ROUTES.TASK}/${postId}?taskId=${created.id}`);
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteTask(task.id);
-      setSnackbarOpen(true, 'Задача успешно удалена');
-      setIsDeleteDialogOpen(false);
-    } catch {
-      setSnackbarOpen(true, 'Не удалось удалить задачу');
-    }
-  };
-
   const handleAssign = () => {
     closeMenu();
     setIsAssignDialogOpen(true);
   };
+
+  const showMenu =
+    canAssign ||
+    showOwnerActions ||
+    canRequestAnnulment ||
+    canRequestDeadlineExtension;
+
+  if (!showMenu) return null;
 
   return (
     <Box
@@ -176,33 +204,60 @@ export const TaskActionsMenu = ({
             disabled={isCopying}
             onClick={runMenuAction(() => {
               closeMenu();
-              setIsDuplicateDialogOpen(true);
+              setTargetPostMode('duplicate-same');
             })}
           >
             Дублировать
           </MenuItem>
         )}
 
-        {showOwnerActions && canDelete && (
+        {showOwnerActions && <Divider sx={{ my: 0.5 }} />}
+
+        {showOwnerActions && (
+          <MenuItem
+            sx={{ minWidth: 160 }}
+            disabled={isCopying}
+            onClick={runMenuAction(() => {
+              closeMenu();
+              setTargetPostMode('duplicate');
+            })}
+          >
+            Дублировать в другое объявление
+          </MenuItem>
+        )}
+
+        {(canRequestAnnulment || canRequestDeadlineExtension) && (
+          <Divider sx={{ my: 0.5 }} />
+        )}
+
+        {canRequestAnnulment && (
           <MenuItem
             sx={{ minWidth: 160 }}
             onClick={runMenuAction(() => {
               closeMenu();
-              setIsDeleteDialogOpen(true);
+              setIsCancelDialogOpen(true);
             })}
           >
-            <Typography color="error">Удалить</Typography>
+            <Typography>Запросить аннулирование</Typography>
+          </MenuItem>
+        )}
+
+        {canRequestAnnulment && canRequestDeadlineExtension && (
+          <Divider sx={{ my: 0.5 }} />
+        )}
+
+        {canRequestDeadlineExtension && (
+          <MenuItem
+            sx={{ minWidth: 160 }}
+            onClick={runMenuAction(() => {
+              closeMenu();
+              setIsDeadlineDialogOpen(true);
+            })}
+          >
+            <Typography>Запросить перенос дедлайна</Typography>
           </MenuItem>
         )}
       </Menu>
-
-      <ConfirmDialog
-        title="Удалить задачу"
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onSuccess={() => void handleDelete()}
-        description="Вы уверены, что хотите удалить задачу? Все данные будут удалены."
-      />
 
       <AddExecutorDialog
         taskId={task.id}
@@ -210,15 +265,31 @@ export const TaskActionsMenu = ({
         onClose={() => setIsAssignDialogOpen(false)}
       />
 
+      <RequestCancelTaskDialog
+        open={isCancelDialogOpen && Boolean(task.id)}
+        taskId={task.id}
+        onClose={() => setIsCancelDialogOpen(false)}
+      />
+
+      <RequestDeadlineExtensionDialog
+        open={isDeadlineDialogOpen && Boolean(task.id)}
+        taskId={task.id}
+        currentFinalDate={task.finalDate}
+        onClose={() => setIsDeadlineDialogOpen(false)}
+      />
+
       <TaskTargetPostDialog
-        open={isDuplicateDialogOpen}
-        mode="duplicate-same"
+        open={isDialogOpen}
+        mode={targetPostMode ?? 'duplicate'}
         fixedPostId={currentPostId}
+        excludePostId={
+          targetPostMode === 'duplicate' ? currentPostId : null
+        }
         initialExecutorId={task.executorId}
         executorOptions={executorOptions}
         isPending={isCopying}
-        onClose={() => setIsDuplicateDialogOpen(false)}
-        onConfirm={handleDuplicateConfirm}
+        onClose={() => setTargetPostMode(null)}
+        onConfirm={handleTargetPostConfirm}
         onGoToCreatedTask={handleGoToCreatedTask}
       />
     </Box>

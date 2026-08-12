@@ -225,7 +225,7 @@ export const PublicationsFilter = ({
             ml: isTableMode && !hasActiveFilters ? 'auto' : undefined,
           }}
         >
-          {isTableMode && tableReport && (
+          {tableReport && (
             <>
               <Tooltip title="Печать">
                 <IconButton

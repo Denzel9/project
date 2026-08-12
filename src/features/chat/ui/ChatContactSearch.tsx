@@ -15,11 +15,15 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useSearchUsersQuery, type UserSearchItem } from '@/entities/user';
 
+export type ChatFilter = 'all' | 'unread';
+
 type ChatContactSearchProps = {
   placeholder?: string;
   disabled?: boolean;
   size?: 'small' | 'medium';
   excludeUserIds?: string[];
+  filter?: ChatFilter;
+  onFilterChange?: (filter: ChatFilter) => void;
   onSelect: (user: UserSearchItem) => void | Promise<void>;
 };
 
@@ -28,6 +32,8 @@ export const ChatContactSearch = ({
   disabled = false,
   size = 'medium',
   excludeUserIds,
+  filter = 'all',
+  onFilterChange,
   onSelect,
 }: ChatContactSearchProps) => {
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
@@ -179,13 +185,19 @@ export const ChatContactSearch = ({
           },
         }}
       >
-        <MenuItem sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <MenuItem
+          onClick={() => { onFilterChange?.('all'); setMenuAnchorEl(null); }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+        >
           <Typography>Все</Typography>
-          <Check />
+          {filter === 'all' && <Check fontSize="small" color="primary" />}
         </MenuItem>
-        <MenuItem sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <MenuItem
+          onClick={() => { onFilterChange?.('unread'); setMenuAnchorEl(null); }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+        >
           <Typography>Непрочитано</Typography>
-          <Check />
+          {filter === 'unread' && <Check fontSize="small" color="primary" />}
         </MenuItem>
       </Menu>
     </Stack>

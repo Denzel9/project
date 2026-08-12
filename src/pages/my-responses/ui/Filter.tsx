@@ -204,7 +204,7 @@ const MyResponsesFilter = ({
             {isSearchOpen ? <Close /> : <Search />}
           </IconButton>
 
-          {viewMode === 'table' && tableReport && (
+          {tableReport && (
             <>
               <Tooltip title="Печать">
                 <IconButton

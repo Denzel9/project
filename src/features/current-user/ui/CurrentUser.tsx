@@ -150,8 +150,8 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
             <Add
               sx={{ mr: 1 }}
               color="primary"
-            />{' '}
-            {role === 'MANAGER' ? 'К компаниям' : 'Команда'}
+            />
+            Добавить
           </MenuItem>
         </Menu>
       </>
@@ -200,8 +200,8 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
           <Add
             sx={{ mr: 1 }}
             color="primary"
-          />{' '}
-          {role === 'MANAGER' ? 'К компаниям' : 'Команда'}
+          />
+          Добавить
         </MenuItem>
       </TextField>
     </Box>

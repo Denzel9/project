@@ -94,7 +94,6 @@ export const TaskCommentAttachmentsPanel = ({
   const handleOpenAttachment = (item: TaskCommentAttachment, index: number) => {
     if (isGalleryMedia(item.mimeType)) {
       const galleryItems = toGalleryItems(items);
-      // TODO: fix type
       onOpenGallery(
         galleryItems as { url: string; mimeType: string }[],
         getAttachmentGalleryIndex(items, index)

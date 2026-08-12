@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import { useEffect, useState } from 'react';
 
+import { useScroll } from '@/shared';
+
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
 import { hasActiveCalendarFilters, toCalendarDateKey, type CalendarEvent } from '../model/utils';
 
@@ -55,6 +57,8 @@ export const CalendarFilters = ({
   const isActive = hasActiveCalendarFilters(value);
   const draftHasFilters = hasActiveCalendarFilters(draft);
 
+  const { isScrolled, ref } = useScroll(80);
+
   const dayEventsCount = events.filter(
     event => event.dateKey === toCalendarDateKey(selectedDate),
   ).length;
@@ -88,15 +92,21 @@ export const CalendarFilters = ({
 
   if (isMobile) {
     return (
-      <>
+      <Box ref={ref} sx={{ position: 'sticky', top: 0, zIndex: 1000 }}>
         <Stack
           direction="row"
           sx={{
-            mb: 2,
-            mt: 1,
-            px: 2,
+            mb: 1,
+            p: 2,
+            bgcolor: 'white',
+            border: '1px solid',
+            borderRadius: '24px',
             alignItems: 'center',
+            borderColor: 'divider',
             justifyContent: 'space-between',
+            borderTopLeftRadius: isScrolled ? 0 : '24px',
+            borderTopRightRadius: isScrolled ? 0 : '24px',
+            borderTopColor: isScrolled ? 'transparent' : 'divider',
           }}
         >
           <Stack
@@ -203,12 +213,12 @@ export const CalendarFilters = ({
             </Button>
           </Stack>
         </Drawer>
-      </>
+      </Box>
     );
   }
 
   return (
-    <Box sx={{ mb: 2, mt: 1, px: 2 }}>
+    <Box ref={ref} sx={{ mb: 1, border: '1px solid', borderColor: 'divider', borderRadius: '24px', bgcolor: 'white', p: 2 }}>
       <CalendarFilterFields
         value={value}
         onChange={onChange}

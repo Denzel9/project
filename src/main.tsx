@@ -1,4 +1,4 @@
-import { Box } from '@mui/material'
+import { Box, Button, Stack, Typography } from '@mui/material'
 import * as Sentry from '@sentry/react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
@@ -38,8 +38,21 @@ const updateSW = registerSW({
 createRoot(document.getElementById('root')!).render(
   <Sentry.ErrorBoundary
     fallback={
-      <Box style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-        Что-то пошло не так. Обновите страницу или попробуйте позже.
+      <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <img src="/Primary.png" alt="error" width={277} height={64} style={{ position: 'absolute', top: 32, left: 32 }} />
+
+        <Stack direction='column' spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography variant='h5'>Что-то пошло не так</Typography>
+          <Typography variant='body1'>Обновите страницу или попробуйте позже</Typography>
+
+          <Button
+            variant='text'
+            color='inherit'
+            onClick={() => window.location.reload()}
+          >
+            Обновить страницу
+          </Button>
+        </Stack>
       </Box>
     }
   >

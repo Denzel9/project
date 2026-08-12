@@ -4,23 +4,25 @@ import type { TaskSortField, TaskSortOrder } from '../model/types/types'
 import type { ReactNode } from 'react'
 
 type TaskTableHeaderWithFilterProps = {
-  field: TaskSortField
   label: string
-  sortField: TaskSortField
-  sortOrder: TaskSortOrder
+  isActive?: boolean
   forPrint?: boolean
   filter?: ReactNode
+  field: TaskSortField
+  sortField: TaskSortField
+  sortOrder: TaskSortOrder
   onSort: (field: TaskSortField) => void
 }
 
 export const TaskTableHeaderWithFilter = ({
   field,
   label,
+  filter,
+  onSort,
   sortField,
   sortOrder,
   forPrint = false,
-  filter,
-  onSort,
+  isActive = false,
 }: TaskTableHeaderWithFilterProps) => (
   <TableSortLabel
     active={sortField === field}
@@ -34,7 +36,7 @@ export const TaskTableHeaderWithFilter = ({
       spacing={0.25}
       sx={{ alignItems: 'center', minWidth: 0, mr: 0.25 }}
     >
-      <Box component="span">{label}</Box>
+      <Box component="span" color={isActive ? 'primary.main' : 'text.primary'}>{label}</Box>
       {filter}
     </Stack>
   </TableSortLabel>

@@ -183,6 +183,9 @@ const applyFastButtonQueryParams = (
         ...params,
         role: isCompany ? 'owner' : 'executor',
         isCompanyAction: isCompany,
+        // Не показываем задачи, где исполнитель ещё не подтвердил назначение
+        // (отдельная карточка: `pending-executor-assign`).
+        isExecutorApprove: true,
         active: true,
       };
     case 'pending-executor-assign':

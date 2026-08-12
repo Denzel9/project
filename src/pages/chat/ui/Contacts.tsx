@@ -1,5 +1,5 @@
 import { Box, CircularProgress, Stack } from '@mui/material';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   sortConversationsByUnread,
@@ -7,7 +7,7 @@ import {
 } from '@/entities/chat';
 import { USER_ROLE, type UserSearchItem } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
-import { ChatContactSearch } from '@/features/chat';
+import { ChatContactSearch, type ChatFilter } from '@/features/chat';
 import { ConversationItem } from '@/widgets/chat';
 
 type ContactsProps = {
@@ -29,10 +29,19 @@ export const Contacts = ({
 }: ContactsProps) => {
   const role = useAuthStore(state => state.role);
   const canSearchContacts = role !== USER_ROLE.MANAGER;
+  const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
 
   const sortedConversations = useMemo(
     () => sortConversationsByUnread(conversations),
     [conversations]
+  );
+
+  const filteredConversations = useMemo(
+    () =>
+      chatFilter === 'unread'
+        ? sortedConversations.filter(c => (c.unreadCount ?? 0) > 0 || c.isMarkedUnread)
+        : sortedConversations,
+    [chatFilter, sortedConversations]
   );
 
   return (
@@ -62,6 +71,8 @@ export const Contacts = ({
           <ChatContactSearch
             onSelect={onStartChat}
             size="small"
+            filter={chatFilter}
+            onFilterChange={setChatFilter}
           />
         </Stack>
       )}
@@ -83,7 +94,7 @@ export const Contacts = ({
           </Box>
         )}
 
-        {sortedConversations.map(conversation => {
+        {filteredConversations.map(conversation => {
           const isDraft = !conversation.id;
           const isSelected = isDraft
             ? conversation.peer.id === selectedPeerId

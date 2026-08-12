@@ -212,14 +212,15 @@ export const DashboardCommentsPanel = () => {
   return (
     <Box
       sx={{
+        p: 2,
         width: '100%',
-        height: '600px',
+        minHeight: 300,
+        maxHeight: 600,
         display: 'flex',
         bgcolor: 'white',
         overflow: 'hidden',
         border: '1px solid',
         borderRadius: '24px',
-        p: 2,
         borderColor: 'divider',
         flexDirection: 'column',
       }}

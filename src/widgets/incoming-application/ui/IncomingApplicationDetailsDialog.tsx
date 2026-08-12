@@ -37,8 +37,8 @@ import { useAuthStore } from '@/features/auth';
 import { ActionActorCaption } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { ConfirmDialog } from '@/widgets/confirm-dialog';
-import { useSnackbarStore } from '@/widgets/snackbar';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
+import { useSnackbarStore } from '@/widgets/snackbar';
 
 type IncomingApplicationDetailsDialogProps = {
   open: boolean;
@@ -315,6 +315,7 @@ export const IncomingApplicationDetailsDialog = ({
             </Stack>
 
             <Box>
+              {/* TODO: где тот тут должна отображаться иныормация о том, что работа ли ранее коипания с исполнителем и если да, то сколько откликов было, сколько задач и публикаций было */}
               <Typography
                 variant="subtitle2"
                 sx={{ mb: 2, ml: 2, mt: 1, color: 'text.secondary' }}

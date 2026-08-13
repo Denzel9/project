@@ -49,6 +49,7 @@ export default defineConfig({
       includeAssets: [
         'Mark.png',
         'Primary.png',
+        'logo.png',
         'pwa-192.png',
         'pwa-512.png',
         'robots.txt',

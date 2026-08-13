@@ -39,6 +39,10 @@ export const unsubscribePush = async (endpoint: string) => {
   await mainAxios.delete('/push/subscribe', { data: { endpoint } })
 }
 
+export const unsubscribeAllPush = async () => {
+  await mainAxios.delete('/push/subscriptions')
+}
+
 export const usePushVapidQuery = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: pushKeys.vapid(),
@@ -106,17 +110,21 @@ export async function enableWebPush(publicKey: string): Promise<void> {
 }
 
 export async function disableWebPush(): Promise<void> {
+  // Always clear server first: PWA often has stale endpoints in DB while
+  // pushManager.getSubscription() is null (SW update / reinstall).
+  await unsubscribeAllPush()
+
   if (!('serviceWorker' in navigator)) {
     return
   }
 
-  const registration = await navigator.serviceWorker.ready
-  const subscription = await registration.pushManager.getSubscription()
-  if (!subscription) {
-    return
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.getSubscription()
+    if (subscription) {
+      await subscription.unsubscribe()
+    }
+  } catch {
+    // Server already cleared; local unsubscribe is best-effort.
   }
-
-  const endpoint = subscription.endpoint
-  await subscription.unsubscribe()
-  await unsubscribePush(endpoint)
 }

@@ -57,8 +57,8 @@ export const MediaItem = ({
   )
 
   const kind = getMediaKind(src, mimeType)
-  const objectFit: CSSProperties['objectFit'] =
-    withControls || fit === 'contain' ? 'contain' : 'cover'
+  // Explicit fit wins; video controls no longer force contain
+  const objectFit: CSSProperties['objectFit'] = fit
   const showBlurBackdrop = fit === 'contain' && kind === 'image'
 
   const mediaStyle: CSSProperties = {

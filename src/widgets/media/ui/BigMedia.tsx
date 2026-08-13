@@ -21,6 +21,9 @@ type BigMediaProps = {
   handleClickOpen: () => void
   thumbsSwiper: SwiperType | null
   onActiveIndexChange?: (index: number) => void
+  showPagination?: boolean
+  showNavigation?: boolean
+  fit?: 'cover' | 'contain'
 }
 
 export const BigMedia = ({
@@ -31,6 +34,9 @@ export const BigMedia = ({
   handleClickOpen,
   initialSlide = 0,
   onActiveIndexChange,
+  showPagination = true,
+  showNavigation = true,
+  fit = 'contain',
 }: BigMediaProps) => {
   const loadingKey = `${items.map(item => item.url).join(',')}-${initialSlide}`
   const [readyKey, setReadyKey] = useState<string | null>(null)
@@ -83,9 +89,9 @@ export const BigMedia = ({
       }}
       pagination={{
         clickable: true,
-        enabled: !isLoading && items.length > 1,
+        enabled: showPagination && !isLoading && items.length > 1,
       }}
-      navigation={!isLoading && items.length > 1}
+      navigation={showNavigation && !isLoading && items.length > 1}
       modules={[Thumbs, Pagination, Navigation, Mousewheel]}
       style={{
         height: '100%',
@@ -115,10 +121,10 @@ export const BigMedia = ({
               src={item.url}
               mimeType={item.mimeType}
               alt={`Media ${index + 1}`}
-              fit="contain"
+              fit={fit}
               onLoad={() => handleImageReady(index)}
               onError={() => handleImageReady(index)}
-              key={`${item.url}-${item.mimeType ?? ''}`}
+              key={`${item.url}-${item.mimeType ?? ''}-${fit}`}
               loading={index === initialSlide ? 'eager' : 'lazy'}
               withControls={isDialog && isVideo}
               isActive={isGalleryOpen && (!isDialog || activeIndex === index)}

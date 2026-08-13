@@ -16,6 +16,20 @@ type ScalarFieldProps = {
   value: string | boolean;
 };
 
+const FieldLabel = ({ label }: { label: string }) => (
+  <Typography
+    variant="caption"
+    sx={{
+      color: 'info.main',
+      fontWeight: 500,
+      display: 'block',
+      mb: 0.25,
+    }}
+  >
+    {label}
+  </Typography>
+);
+
 export const ScalarField = ({ field, isEdit, value }: ScalarFieldProps) => {
   const { control } = useFormContext<TaskFormType>();
 
@@ -24,9 +38,12 @@ export const ScalarField = ({ field, isEdit, value }: ScalarFieldProps) => {
       if (!value) return null;
 
       return (
-        <Typography variant="body2">
-          {formatBooleanValue(Boolean(value))}
-        </Typography>
+        <Box sx={{ width: '50%' }}>
+          <FieldLabel label={field.label} />
+          <Typography variant="body2">
+            {formatBooleanValue(Boolean(value))}
+          </Typography>
+        </Box>
       );
     }
 
@@ -50,18 +67,7 @@ export const ScalarField = ({ field, isEdit, value }: ScalarFieldProps) => {
     ) {
       return (
         <Box sx={{ width: '50%' }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'info.main',
-              fontWeight: 500,
-              display: 'block',
-              mb: 0.25,
-            }}
-          >
-            {field.label}
-          </Typography>
-
+          <FieldLabel label={field.label} />
           <Link
             href={stringValue.trim()}
             target="_blank"
@@ -75,12 +81,15 @@ export const ScalarField = ({ field, isEdit, value }: ScalarFieldProps) => {
     }
 
     return (
-      <Typography
-        variant="body2"
-        sx={{ whiteSpace: 'pre-wrap', width: '50%' }}
-      >
-        {stringValue}
-      </Typography>
+      <Box sx={{ width: '50%' }}>
+        <FieldLabel label={field.label} />
+        <Typography
+          variant="body2"
+          sx={{ whiteSpace: 'pre-wrap' }}
+        >
+          {stringValue}
+        </Typography>
+      </Box>
     );
   }
 

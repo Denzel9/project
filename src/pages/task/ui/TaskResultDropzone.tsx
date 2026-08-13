@@ -835,6 +835,7 @@ export const TaskResultDropzone = ({
       <FullScreenGallery
         isOpen={galleryOpen}
         isMobile={isMobile}
+        variant="phone"
         items={galleryItems}
         initialSlide={galleryInitialSlide}
         onClose={() => setGalleryOpen(false)}

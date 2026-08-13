@@ -22,8 +22,8 @@ import { TASK_TABLE_PAGE_SIZE } from '@/pages/my-tasks/model/constants/constants
 import { exportTasksReport } from '@/pages/my-tasks/model/utils/exportTasksReport';
 import { useTaskTableColumnFilters } from '@/pages/my-tasks/model/utils/useTaskTableColumnFilters';
 import { TaskItem } from '@/pages/my-tasks/ui/TaskItem';
-import { TaskTable } from '@/pages/my-tasks/ui/TaskTable';
 import { TasksPrintHeader } from '@/pages/my-tasks/ui/TasksPrintHeader';
+import { TaskTable } from '@/pages/my-tasks/ui/TaskTable';
 import { EmptyBlock, InfiniteScrollSentinel } from '@/shared';
 
 import {
@@ -245,9 +245,7 @@ export const ArchivedTasksTab = ({
   };
 
   const fetchReportTasks = useCallback(async () => {
-    const { limit: _limit, ...params } = baseParams;
-
-    return fetchAllTasks(params);
+    return fetchAllTasks(baseParams);
   }, [baseParams]);
 
   const handlePrint = useCallback(async () => {
@@ -328,7 +326,7 @@ export const ArchivedTasksTab = ({
       sx={{
         flex: 1,
         minHeight: 0,
-        ...(isTableView && { height: '100%' }),
+        // ...(isTableView && { height: '100%' }),
         '@media print': {
           height: 'auto',
           minHeight: 'auto',

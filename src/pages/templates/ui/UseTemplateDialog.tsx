@@ -3,12 +3,18 @@ import {
   Button,
   Dialog,
   IconButton,
+  MenuItem,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useMyPostOptionsQuery, type TaskTemplate } from '@/entities';
+import {
+  EXECUTOR_UNASSIGNED_ID,
+  useExecutorPickerOptions,
+} from '@/features/task-filter/model/useExecutorPickerOptions';
 import { FilterAutocomplete } from '@/shared';
 
 type UseTemplateDialogProps = {
@@ -16,7 +22,10 @@ type UseTemplateDialogProps = {
   template: TaskTemplate | null;
   isPending?: boolean;
   onClose: () => void;
-  onSubmit: (postId: string) => Promise<void> | void;
+  onSubmit: (values: {
+    postId: string;
+    executorId?: string;
+  }) => Promise<void> | void;
 };
 
 export const UseTemplateDialog = ({
@@ -27,7 +36,10 @@ export const UseTemplateDialog = ({
   onSubmit,
 }: UseTemplateDialogProps) => {
   const [postId, setPostId] = useState<string | null>(null);
+  const [executorId, setExecutorId] = useState(EXECUTOR_UNASSIGNED_ID);
   const { data: posts, isLoading } = useMyPostOptionsQuery(open);
+  const { options: executorOptions, isLoading: isExecutorsLoading } =
+    useExecutorPickerOptions(open);
 
   const options = useMemo(
     () =>
@@ -40,7 +52,10 @@ export const UseTemplateDialog = ({
 
   useEffect(() => {
     if (!open) {
-      setPostId(null);
+      setTimeout(() => {
+        setPostId(null);
+        setExecutorId(EXECUTOR_UNASSIGNED_ID);
+      }, 0)
     }
   }, [open]);
 
@@ -49,6 +64,15 @@ export const UseTemplateDialog = ({
   const handleClose = () => {
     if (isPending) return;
     onClose();
+  };
+
+  const handleSubmit = () => {
+    if (!postId) return;
+
+    void onSubmit({
+      postId,
+      ...(executorId !== EXECUTOR_UNASSIGNED_ID && { executorId }),
+    });
   };
 
   return (
@@ -98,16 +122,34 @@ export const UseTemplateDialog = ({
           placeholder="Выберите пост"
           onChange={id => setPostId(id === 'all' ? null : id)}
         />
+        <TextField
+          select
+          fullWidth
+          label="Исполнитель"
+          value={executorId}
+          disabled={isPending || isExecutorsLoading}
+          onChange={event => setExecutorId(event.target.value)}
+        >
+          {executorOptions.map(option => (
+            <MenuItem
+              key={option.id}
+              value={option.id}
+            >
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
       </Stack>
 
       <Stack
         direction="row"
         spacing={2}
-        sx={{ mt: 3 }}
+        sx={{ mt: 3, justifyContent: 'flex-end' }}
       >
         <Button
           variant="outlined"
           color="primary"
+          sx={{ px: { xs: 2, md: 'auto' } }}
           disabled={isPending}
           onClick={handleClose}
         >
@@ -116,12 +158,10 @@ export const UseTemplateDialog = ({
         <Button
           variant="contained"
           color="primary"
+          sx={{ px: { xs: 2, md: 'auto' } }}
           loading={isPending}
           disabled={!canSubmit}
-          onClick={() => {
-            if (!postId) return;
-            void onSubmit(postId);
-          }}
+          onClick={handleSubmit}
         >
           Создать задачу
         </Button>

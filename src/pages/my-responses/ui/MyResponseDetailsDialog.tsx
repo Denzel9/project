@@ -416,7 +416,7 @@ export const MyResponseDetailsDialog = ({
                       <Button
                         variant="contained"
                         component={Link}
-                        to={`${ROUTES.TASK}/${post?.id}?inviteId=${taskId}`}
+                        to={`${ROUTES.TASK}/${post?.id}?taskId=${taskId}`}
                         onClick={onClose}
                         sx={{ flex: { xs: 1, sm: 'none' } }}
                       >

@@ -3,12 +3,32 @@ export type TaskTableCellOptions = {
   actions?: boolean
 }
 
+type ThemeSpacing = {
+  spacing: (value: number) => string
+}
+
+const withExtraPx = (value: string | number, extraPx: number) => {
+  if (!extraPx) return value
+  if (typeof value === 'number') {
+    return (theme: ThemeSpacing) => `calc(${theme.spacing(value)} + ${extraPx}px)`
+  }
+
+  return `calc(${value} + ${extraPx}px)`
+}
+
+const firstColumnPl = (
+  compactSidePadding: string | number,
+  edgePadding: string | number | undefined,
+  extraFirstPaddingPx: number,
+) => withExtraPx(edgePadding ?? compactSidePadding, extraFirstPaddingPx)
+
 export const filterCellSx = (
   width: string | number,
   edgePadding: string | number | undefined,
   isFilterRowOpen: boolean,
   headerRowHeight: number,
   options?: TaskTableCellOptions,
+  extraFirstPaddingPx = 0,
 ) => ({
   width,
   maxWidth: width,
@@ -17,7 +37,9 @@ export const filterCellSx = (
   verticalAlign: 'top' as const,
   borderBottom: 'none',
   py: 0,
-  pl: options?.first && edgePadding ? edgePadding : 1.5,
+  pl: options?.first
+    ? firstColumnPl(1.5, edgePadding, extraFirstPaddingPx)
+    : 1.5,
   pr: options?.actions && edgePadding ? edgePadding : 1.5,
   ...(options?.actions && { minWidth: 72 }),
   ...(isFilterRowOpen
@@ -42,13 +64,16 @@ export const columnCellSx = (
   compactSidePadding: string | number,
   edgePadding: string | number | undefined,
   options?: TaskTableCellOptions,
+  extraFirstPaddingPx = 0,
 ) => ({
   width,
   maxWidth: width,
   overflow: 'hidden',
   boxSizing: 'border-box' as const,
   py: isSelfFetching || showColumnFilters ? 2.75 : compactSidePadding,
-  pl: options?.first && edgePadding ? edgePadding : compactSidePadding,
+  pl: options?.first
+    ? firstColumnPl(compactSidePadding, edgePadding, extraFirstPaddingPx)
+    : compactSidePadding,
   pr: options?.actions && edgePadding ? edgePadding : compactSidePadding,
   ...(options?.actions && {
     textAlign: 'right' as const,
@@ -63,6 +88,7 @@ export const headerCellSx = (
   compactSidePadding: string | number,
   edgePadding: string | number | undefined,
   options?: TaskTableCellOptions,
+  extraFirstPaddingPx = 0,
 ) => ({
   ...columnCellSx(
     width,
@@ -71,8 +97,17 @@ export const headerCellSx = (
     compactSidePadding,
     edgePadding,
     options,
+    extraFirstPaddingPx,
   ),
   top: 0,
   zIndex: 4,
   bgcolor: 'background.paper',
 })
+
+export const filteredColumnLabelSx = {
+  color: 'primary.main',
+  fontWeight: 600,
+  '&:hover, &:focus, &.Mui-active, &.Mui-active:hover': {
+    color: 'primary.main',
+  },
+} as const

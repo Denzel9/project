@@ -190,24 +190,23 @@ export const TaskTable = ({
     return () => window.clearTimeout(timeoutId);
   }, [taskFilterInput]);
 
-  useEffect(() => {
-    if (!columnFilters?.onTaskQueryChange) return;
+  const onTaskQueryChange = columnFilters?.onTaskQueryChange;
+  const taskIdFilter = columnFilters?.taskId;
 
-    if (columnFilters.taskId !== 'all') {
-      columnFilters.onTaskQueryChange('');
+  useEffect(() => {
+    if (!onTaskQueryChange) return;
+
+    if (taskIdFilter !== 'all') {
+      onTaskQueryChange('');
       return;
     }
 
-    columnFilters.onTaskQueryChange(
+    onTaskQueryChange(
       debouncedTaskQuery.length >= COLUMN_FILTER_SEARCH_MIN
         ? debouncedTaskQuery
         : '',
     );
-  }, [
-    columnFilters?.onTaskQueryChange,
-    columnFilters?.taskId,
-    debouncedTaskQuery,
-  ]);
+  }, [onTaskQueryChange, taskIdFilter, debouncedTaskQuery]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -392,14 +391,14 @@ export const TaskTable = ({
     filtersActive ||
     Boolean(
       columnFilters &&
-        (columnFilters.status !== 'all' ||
-          columnFilters.taskId !== 'all' ||
-          Boolean(columnFilters.taskQuery.trim()) ||
-          columnFilters.personId !== 'all' ||
-          columnFilters.manager !== 'all' ||
-          columnFilters.urgentOnly ||
-          columnFilters.updatedDate !== null ||
-          columnFilters.deadlineDate !== null),
+      (columnFilters.status !== 'all' ||
+        columnFilters.taskId !== 'all' ||
+        Boolean(columnFilters.taskQuery.trim()) ||
+        columnFilters.personId !== 'all' ||
+        columnFilters.manager !== 'all' ||
+        columnFilters.urgentOnly ||
+        columnFilters.updatedDate !== null ||
+        columnFilters.deadlineDate !== null),
     );
 
   const isEmptyList =
@@ -577,6 +576,7 @@ export const TaskTable = ({
 
   const edgePadding = showActionsColumn ? '32px' : undefined;
   const compactSidePadding = showColumnFilters ? 1.5 : 3;
+  const extraFirstPaddingPx = querySource === 'dashboard' ? 0 : 16;
 
   const columnCellSx = (
     width: string | number,
@@ -589,6 +589,7 @@ export const TaskTable = ({
       compactSidePadding,
       edgePadding,
       options,
+      extraFirstPaddingPx,
     );
 
   const headerCellSx = (
@@ -602,6 +603,7 @@ export const TaskTable = ({
       compactSidePadding,
       edgePadding,
       options,
+      extraFirstPaddingPx,
     );
 
   const filterCellSx = (
@@ -614,6 +616,7 @@ export const TaskTable = ({
       isFilterRowOpen,
       headerRowHeight,
       options,
+      extraFirstPaddingPx,
     );
 
   const renderFilterCellContent = (content: ReactNode) => (
@@ -731,7 +734,11 @@ export const TaskTable = ({
                 })}
               >
                 <TaskTableHeaderWithFilter
-                  isActive={assigneeAccountId !== 'all'}
+                  isActive={
+                    columnFilters?.taskId !== 'all' ||
+                    Boolean(columnFilters?.taskQuery.trim()) ||
+                    Boolean(columnFilters?.urgentOnly)
+                  }
                   field="title"
                   label="Название"
                   sortField={sortField}
@@ -741,8 +748,8 @@ export const TaskTable = ({
                   filter={
                     showColumnFilters && columnFilters ? (
                       <Stack
-                        direction="row"
                         spacing={0}
+                        direction="row"
                         sx={{ alignItems: 'center' }}
                       >
                         <ColumnFilterButton
@@ -777,7 +784,7 @@ export const TaskTable = ({
                               color={
                                 columnFilters.urgentOnly ? 'error' : 'action'
                               }
-                              sx={{ fontSize: 16 }}
+                              sx={{ fontSize: 18 }}
                             />
                           </IconButton>
                         </Tooltip>
@@ -1198,12 +1205,12 @@ export const TaskTable = ({
                     forPrint
                       ? undefined
                       : () => {
-                          if (selectionEnabled) {
-                            onToggleSelection(task);
-                            return;
-                          }
-                          navigate(getTaskPath(task));
+                        if (selectionEnabled) {
+                          onToggleSelection(task);
+                          return;
                         }
+                        navigate(getTaskPath(task));
+                      }
                   }
                   sx={{
                     cursor: forPrint ? 'default' : 'pointer',

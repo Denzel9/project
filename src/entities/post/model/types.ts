@@ -220,6 +220,7 @@ export type Post = {
   description: string
   isPrivate?: boolean
   isArchived: boolean
+  isTemplate?: boolean
   categories: string[]
   permissions: string[]
   keyWords?: string[]
@@ -247,6 +248,7 @@ export type CreatePostDto = {
   keyWords?: string[]
   categories?: string[]
   isPrivate?: boolean
+  isTemplate?: boolean
   platforms?: Platform[]
   placementFormats?: PlacementFormat[]
   niche?: string[]
@@ -265,6 +267,7 @@ export type CreatePostDto = {
 export type UpdatePostDto = Partial<CreatePostDto> & {
   isArchived?: boolean
   isPrivate?: boolean
+  isTemplate?: boolean
 }
 
 export type PostListParams = {
@@ -272,6 +275,7 @@ export type PostListParams = {
   type?: PostType
   isArchived?: boolean
   isPrivate?: boolean
+  isTemplate?: boolean
   page?: number
   limit?: number
   q?: string

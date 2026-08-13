@@ -19,6 +19,7 @@ export const TaskPage = () => {
     currentTask,
     setCurrentTask,
     tasks,
+    isSolo,
     isLoading,
     isPostLoading,
     id,
@@ -26,21 +27,23 @@ export const TaskPage = () => {
   } = useTaskData();
 
   const syncTaskInUrl = (task: Task) => {
-    setSearchParams(
-      {
-        userId: getTaskUserKey(task),
-        taskId: task.id,
-      },
-      { replace: true },
-    );
+    const params: Record<string, string> = {
+      userId: getTaskUserKey(task),
+      taskId: task.id,
+    };
+
+    if (task.isArchived) {
+      params.solo = '1';
+    }
+
+    setSearchParams(params, { replace: true });
   };
 
   useEffect(() => {
     if (!currentTask) return;
 
     const nextUserId = getTaskUserKey(currentTask);
-    const urlUserId =
-      searchParams.get('userId') ?? searchParams.get('inviteId');
+    const urlUserId = searchParams.get('userId');
     const urlTaskId = searchParams.get('taskId');
 
     if (urlTaskId === currentTask.id && urlUserId !== nextUserId) {
@@ -108,17 +111,19 @@ export const TaskPage = () => {
 
   return (
     <PageLayout>
-      <TaskSwitcher
-        postId={id}
-        currentTask={currentTask}
-        groupedTasks={groupedTasks}
-        cancelledTasks={cancelledTasks}
-        onSelectTask={handleChangeTask}
-        onSelectTaskItem={handleSelectTaskItem}
-        onSelectExecutor={handleChangeExecutor}
-        onTaskCreated={handleTaskCreated}
-        onEditTask={() => setEditRequestId(value => value + 1)}
-      />
+      {!isSolo && (
+        <TaskSwitcher
+          postId={id}
+          currentTask={currentTask}
+          groupedTasks={groupedTasks}
+          cancelledTasks={cancelledTasks}
+          onSelectTask={handleChangeTask}
+          onSelectTaskItem={handleSelectTaskItem}
+          onSelectExecutor={handleChangeExecutor}
+          onTaskCreated={handleTaskCreated}
+          onEditTask={() => setEditRequestId(value => value + 1)}
+        />
+      )}
 
       {currentTask && (
         <TaskItem

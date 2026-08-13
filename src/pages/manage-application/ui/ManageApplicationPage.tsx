@@ -16,6 +16,9 @@ export const ManageApplicationPage = () => {
 
   const isCompany = role === USER_ROLE.COMPANY;
   const isCreator = role === USER_ROLE.CREATOR;
+  const saveAsTemplate = isEdit
+    ? Boolean(post?.isTemplate)
+    : searchParams.get('asTemplate') === '1';
 
   const showLoader = isEdit && isLoading;
 
@@ -40,6 +43,7 @@ export const ManageApplicationPage = () => {
                 data={post}
                 isEdit={isEdit}
                 isLoading={false}
+                saveAsTemplate={saveAsTemplate}
               />
             )}
 
@@ -48,6 +52,7 @@ export const ManageApplicationPage = () => {
                 data={post}
                 isEdit={isEdit}
                 isLoading={false}
+                saveAsTemplate={saveAsTemplate}
               />
             )}
           </>

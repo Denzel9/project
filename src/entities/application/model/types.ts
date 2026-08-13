@@ -38,6 +38,8 @@ export type ApplicationApplicant = {
 export type ApplicantStatistics = {
   completedWorks: number
   cancelledWorks: number
+  totalPublications: number
+  sharedInProgressWorks: number
   sharedCompletedWorks: number
   sharedPublications: number
   favoritedByCount: number
@@ -48,8 +50,6 @@ export type Application = {
   postId: string
   message: string
   status: ApplicationStatus
-  /** false — кандидат скрыл статистику; undefined у старых ответов = показывать если есть stats */
-  attachStatistics?: boolean
   createdAt: string
   updatedAt: string
   post?: ApplicationPostSummary
@@ -78,7 +78,6 @@ export type ApplicationStats = {
 export type CreateApplicationDto = {
   postId: string
   message: string
-  attachStatistics?: boolean
 }
 
 export type UpdateApplicationStatusDto = {

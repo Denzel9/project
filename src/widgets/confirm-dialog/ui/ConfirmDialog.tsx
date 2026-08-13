@@ -36,15 +36,25 @@ export const ConfirmDialog = ({
     <Dialog
       open={isOpen}
       onClose={onClose}
-      sx={{
-        minWidth: `${width}px`,
-        maxHeight: '100vh',
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-          width: `${width}px`,
+      fullWidth
+      maxWidth={false}
+      slotProps={{
+        paper: {
+          sx: {
+            m: 0,
+            outline: 'none',
+            position: 'relative',
+            overflow: 'visible',
+            borderRadius: '24px',
+            width: {
+              xs: '100%',
+              md: `${width}px`,
+            },
+            maxWidth: {
+              xs: '100%',
+              md: `${width}px`,
+            },
+          },
         },
       }}
     >
@@ -56,6 +66,7 @@ export const ConfirmDialog = ({
           right: -60,
           position: 'absolute',
           bgcolor: 'secondary.main',
+          display: { xs: 'none', md: 'inline-flex' },
           ':hover': {
             bgcolor: 'secondary.light',
           },
@@ -64,13 +75,13 @@ export const ConfirmDialog = ({
         <Close />
       </IconButton>
 
-      <Box sx={{ p: 4, overflow: 'hidden' }}>
+      <Box sx={{ p: { xs: 3, md: 4 }, overflow: 'hidden' }}>
         <Typography variant="h6">{title}</Typography>
 
         <Box
           sx={{
             maxHeight: 'calc(100vh - 110px)',
-            overflow: 'scroll',
+            overflow: 'auto',
           }}
         >
           {children}
@@ -79,7 +90,7 @@ export const ConfirmDialog = ({
         {!children && typeof description === 'string' ? (
           <Typography
             variant="body1"
-            sx={{ mt: 2 }}
+            sx={{ mt: 2, wordBreak: 'break-word' }}
           >
             {description}
           </Typography>
@@ -90,6 +101,7 @@ export const ConfirmDialog = ({
         {withButtons && (onClose || onSuccess) && (
           <Stack
             direction="row"
+            spacing={1}
             sx={{ mt: 4, justifyContent: 'flex-end' }}
           >
             {onClose && (

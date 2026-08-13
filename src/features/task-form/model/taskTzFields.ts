@@ -79,6 +79,65 @@ export const TASK_TZ_GROUPS: TaskTzGroup[] = [
     header: 'Гайдлайны',
     scalarFields: [{ key: 'brandGuidelinesUrl', label: 'Гайдлайны' }],
   },
+  {
+    title: 'Требования к блогеру',
+    header: 'Требования к блогеру',
+    scalarFields: [
+      { key: 'bloggerMinFollowers', label: 'Подписчики от' },
+      { key: 'bloggerMaxFollowers', label: 'Подписчики до' },
+      { key: 'bloggerMinEngagementRate', label: 'ER от, %' },
+      {
+        key: 'bloggerVerifiedAccount',
+        label: 'Верифицированный аккаунт',
+        type: 'boolean',
+      },
+      {
+        key: 'bloggerExperienceWithAds',
+        label: 'Опыт рекламы',
+        type: 'boolean',
+      },
+    ],
+  },
+  {
+    title: 'Языки',
+    header: 'Языки',
+    listFields: [{ key: 'bloggerLanguages', label: 'Языки', itemLabel: 'Язык' }],
+  },
+  {
+    title: 'Стили контента',
+    header: 'Стили контента',
+    listFields: [
+      {
+        key: 'bloggerContentStyles',
+        label: 'Стили контента',
+        itemLabel: 'Стиль',
+      },
+    ],
+  },
+  {
+    title: 'Условия сотрудничества',
+    header: 'Условия сотрудничества',
+    scalarFields: [
+      { key: 'cooperationExclusivity', label: 'Эксклюзив', type: 'boolean' },
+      { key: 'cooperationExclusivityDays', label: 'Срок эксклюзива, дней' },
+      { key: 'cooperationUsageRights', label: 'Права на использование' },
+      {
+        key: 'cooperationUsageDurationDays',
+        label: 'Срок использования, дней',
+      },
+      {
+        key: 'cooperationRequiresMarking',
+        label: 'Маркировка рекламы',
+        type: 'boolean',
+      },
+      {
+        key: 'cooperationRequiresContract',
+        label: 'Договор',
+        type: 'boolean',
+      },
+      { key: 'cooperationNdaRequired', label: 'NDA', type: 'boolean' },
+    ],
+  },
 ]
 
 export const mapUsageRightsToForm = (rights?: UsageRights) =>

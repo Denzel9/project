@@ -19,8 +19,6 @@ import {
 import { useAuthStore } from '@/features/auth'
 import { RHFInput, RHFSwitch } from '@/shared/ui/rhf'
 
-import MenuButton from './MenuButton'
-
 const ADVANTAGE_OPTIONS = [
   'Удаленно',
   'На месте работодателя',
@@ -29,14 +27,12 @@ const ADVANTAGE_OPTIONS = [
 
 type Props = {
   isEdit?: boolean
-  menuOptions?: string[]
-  onMenuAction?: (action: string) => void
+  saveAsTemplate?: boolean
 }
 
 export const MainInfo = ({
   isEdit = false,
-  menuOptions = [],
-  onMenuAction,
+  saveAsTemplate = false,
 }: Props) => {
   const { control, setValue } = useFormContext()
   const { role } = useAuthStore()
@@ -76,18 +72,15 @@ export const MainInfo = ({
               display: { xs: 'none', lg: 'block' },
             }}
           >
-            {isEdit
-              ? `Редактирование ${role === 'company' ? 'объявления' : 'поста'}`
-              : `Новый ${role === 'company' ? 'объявление' : 'пост'}`}
+            {saveAsTemplate
+              ? isEdit
+                ? 'Редактирование шаблона'
+                : `Новый шаблон ${role === 'company' ? 'объявления' : 'поста'}`
+              : isEdit
+                ? `Редактирование ${role === 'company' ? 'объявления' : 'поста'}`
+                : `Новый ${role === 'company' ? 'объявление' : 'пост'}`}
           </Typography>
         </Box>
-
-        {isEdit && menuOptions.length > 0 && onMenuAction && (
-          <MenuButton
-            options={menuOptions}
-            onAction={onMenuAction}
-          />
-        )}
       </Box>
 
       <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
@@ -183,14 +176,16 @@ export const MainInfo = ({
           />
         </Box>
 
-        <Box sx={{ mb: 2 }}>
-          <RHFSwitch
-            name="isPrivate"
-            control={control}
-            label="Приватный пост"
-            description="Видно только вам"
-          />
-        </Box>
+        {!saveAsTemplate && (
+          <Box sx={{ mb: 2 }}>
+            <RHFSwitch
+              name="isPrivate"
+              control={control}
+              label="Приватный пост"
+              description="Видно только вам"
+            />
+          </Box>
+        )}
       </Box>
     </Box>
   )

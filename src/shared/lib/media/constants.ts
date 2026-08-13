@@ -12,3 +12,15 @@ export const MEDIA_VIDEO_ACCEPT =
   'video/mp4,video/webm,video/quicktime'
 
 export const MEDIA_POST_ACCEPT = `${MEDIA_IMAGE_ACCEPT},${MEDIA_VIDEO_ACCEPT}`
+
+export const MEDIA_DOCUMENT_MIME_TYPES = [
+  'application/pdf',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+] as const
+
+export const MEDIA_DOCUMENT_ACCEPT = MEDIA_DOCUMENT_MIME_TYPES.join(',')
+
+export const MEDIA_FILE_TEMPLATE_ACCEPT = `${MEDIA_POST_ACCEPT},${MEDIA_DOCUMENT_ACCEPT}`

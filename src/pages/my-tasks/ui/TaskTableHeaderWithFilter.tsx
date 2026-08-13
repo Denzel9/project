@@ -1,4 +1,6 @@
-import { Box, Stack, TableSortLabel } from '@mui/material'
+import { TableSortLabel } from '@mui/material'
+
+import { filteredColumnLabelSx } from '../model/styles'
 
 import type { TaskSortField, TaskSortOrder } from '../model/types/types'
 import type { ReactNode } from 'react'
@@ -29,15 +31,15 @@ export const TaskTableHeaderWithFilter = ({
     direction={sortField === field ? sortOrder : 'asc'}
     onClick={() => onSort(field)}
     hideSortIcon={forPrint}
-    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1,
+      ...(forPrint && { pointerEvents: 'none' }),
+      ...(isActive && filteredColumnLabelSx),
+    }}
   >
-    <Stack
-      direction="row"
-      spacing={0.25}
-      sx={{ alignItems: 'center', minWidth: 0, mr: 0.25 }}
-    >
-      <Box component="span" color={isActive ? 'primary.main' : 'text.primary'}>{label}</Box>
-      {filter}
-    </Stack>
+    {label}
+    {filter}
   </TableSortLabel>
 )

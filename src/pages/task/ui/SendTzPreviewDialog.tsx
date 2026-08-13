@@ -110,6 +110,8 @@ export const SendTzPreviewDialog = ({
                 src={item.url}
                 mimeType={item.mimeType}
                 alt={item.key}
+                fileName={item.fileName ?? undefined}
+                fill
               />
             </Box>
           ))}

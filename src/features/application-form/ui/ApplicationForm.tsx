@@ -1,7 +1,7 @@
 'use client';
 
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Button, CircularProgress } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
@@ -61,12 +61,14 @@ type ApplicationFormProps = {
   data?: Post;
   isEdit?: boolean;
   isLoading?: boolean;
+  saveAsTemplate?: boolean;
 };
 
 export const ApplicationForm = ({
   data,
   isEdit = false,
   isLoading = false,
+  saveAsTemplate = false,
 }: ApplicationFormProps) => {
   const navigate = useNavigate();
 
@@ -91,11 +93,7 @@ export const ApplicationForm = ({
 
   const { handleSubmit, setValue, getValues, formState: { errors } } = methods;
 
-  console.log(errors);
-
   const {
-    menuOptions,
-    handleMenuAction,
     handleGoToPreview,
     deleteApplication,
   } = useActions({
@@ -247,20 +245,31 @@ export const ApplicationForm = ({
       if (isEdit && data?.id) {
         const post = await updatePost({
           id: data.id,
-          body: mapFormToUpdatePost(formData),
+          body: {
+            ...mapFormToUpdatePost(formData),
+            ...(saveAsTemplate && { isTemplate: true, isPrivate: true }),
+          },
         });
 
         await uploadFiles(post.id);
-        navigate(ROUTES.PROFILE);
+        navigate(saveAsTemplate ? ROUTES.TEMPLATES : ROUTES.PROFILE);
         return;
       }
 
-      const post = await createPost(mapFormToCreatePost(formData));
+      const post = await createPost({
+        ...mapFormToCreatePost(formData),
+        ...(saveAsTemplate && { isTemplate: true, isPrivate: true }),
+      });
       await uploadFiles(post.id);
-      navigate(ROUTES.PROFILE);
+      navigate(saveAsTemplate ? ROUTES.TEMPLATES : ROUTES.PROFILE);
     } catch (error) {
       setSubmitError(
-        getEmailConfirmErrorMessage(error, 'Не удалось сохранить пост')
+        getEmailConfirmErrorMessage(
+          error,
+          saveAsTemplate
+            ? 'Не удалось сохранить шаблон'
+            : 'Не удалось сохранить пост',
+        )
       );
     } finally {
       setIsSubmitting(false);
@@ -311,8 +320,7 @@ export const ApplicationForm = ({
       <form onSubmit={handleSubmit(onSubmit)}>
         <MainInfo
           isEdit={isEdit}
-          menuOptions={menuOptions}
-          onMenuAction={handleMenuAction}
+          saveAsTemplate={saveAsTemplate}
         />
 
         <Gallery
@@ -333,7 +341,14 @@ export const ApplicationForm = ({
         <BriefSection />
 
         {submitError && (
-          <Box sx={{ color: 'error.main', mt: 2 }}>{submitError}</Box>
+          <Alert severity="error" sx={{ mt: 2, borderRadius: '24px', width: { xs: '100%', md: '50%' } }}>{submitError}</Alert>
+        )}
+
+        {errors && Object.values(errors).length > 0 && (
+          <Alert severity="error" sx={{ mt: 2, borderRadius: '24px', width: { xs: '100%', md: '50%' } }}>
+            {Object.values(errors).map(error =>
+              <Typography key={error.message}>{error.message}</Typography>)}
+          </Alert>
         )}
 
         <Box
@@ -345,7 +360,11 @@ export const ApplicationForm = ({
         >
           <Button
             variant="outlined"
-            onClick={handleGoToPreview}
+            onClick={
+              saveAsTemplate
+                ? () => navigate(ROUTES.TEMPLATES)
+                : handleGoToPreview
+            }
             sx={{ display: { xs: 'none', lg: 'block' } }}
           >
             Назад
@@ -357,7 +376,11 @@ export const ApplicationForm = ({
             variant="outlined"
             disabled={isSubmitting || hasPreparingMedia(images)}
           >
-            {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+            {isSubmitting
+              ? 'Сохранение...'
+              : saveAsTemplate
+                ? 'Сохранить как шаблон'
+                : 'Сохранить'}
           </Button>
         </Box>
       </form>

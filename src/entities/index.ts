@@ -16,5 +16,6 @@ export * from './geo'
 export * from './billing'
 export * from './integrations'
 export * from './task-template'
+export * from './file-template'
 
 

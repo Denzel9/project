@@ -16,8 +16,8 @@ const deliverableSchema = yup.object({
 })
 
 export const schema = yup.object().shape({
-  title: yup.string().default('').required('Обязательно для заполнения'),
-  description: yup.string().default('').required('Обязательно для заполнения'),
+  title: yup.string().default('').required('Заголовок обязателен для заполнения'),
+  description: yup.string().default('').required('Описание обязательно для заполнения'),
   urgent: yup.boolean().default(false),
   isPrivate: yup.boolean().default(false),
   workFormat: yup.string().default(WorkFormatEnum.REMOTE),

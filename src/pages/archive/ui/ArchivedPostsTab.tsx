@@ -340,10 +340,15 @@ export const ArchivedPostsTab = ({
           className="print-no-print"
           sx={{
             py: 6,
+            flex: 1,
+            height: '100%',
+            display: 'flex',
+            bgcolor: 'white',
             border: '1px solid',
+            alignItems: 'center',
             borderRadius: '24px',
             borderColor: 'divider',
-            bgcolor: 'white',
+            justifyContent: 'center',
           }}
         >
           <EmptyBlock title="Архивных постов нет" />

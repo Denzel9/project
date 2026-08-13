@@ -169,7 +169,7 @@ export const AuthPage = () => {
             variant="body2"
             color="white"
           >
-            NIKSSENSES © 2026
+            Nikssens © 2026
           </Typography>
 
           <Link
@@ -181,7 +181,19 @@ export const AuthPage = () => {
               '&:hover': { color: BASE_COLOR },
             }}
           >
-            <Typography variant="body2">Корпоративный сайт</Typography>
+            <Typography variant="body2">База знаний</Typography>
+          </Link>
+
+          <Link
+            href="/help"
+            sx={{
+              textDecoration: 'none',
+              color: 'inherit',
+              transition: 'color 0.2s ease',
+              '&:hover': { color: BASE_COLOR },
+            }}
+          >
+            <Typography variant="body2">Сценарии</Typography>
           </Link>
 
           <Link

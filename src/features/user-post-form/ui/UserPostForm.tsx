@@ -59,12 +59,14 @@ type UserPostFormProps = {
   data?: Post;
   isEdit?: boolean;
   isLoading?: boolean;
+  saveAsTemplate?: boolean;
 };
 
 export const UserPostForm = ({
   data,
   isEdit = false,
   isLoading = false,
+  saveAsTemplate = false,
 }: UserPostFormProps) => {
   const navigate = useNavigate();
 
@@ -86,7 +88,7 @@ export const UserPostForm = ({
 
   const { handleSubmit, setValue, getValues, control } = methods;
 
-  const { handleGoToPreview, handleMenuAction, menuOptions } = useActions({
+  const { handleGoToPreview } = useActions({
     getValues,
     id: data?.id || '',
     isEdit,
@@ -233,20 +235,31 @@ export const UserPostForm = ({
       if (isEdit && data?.id) {
         const post = await updatePost({
           id: data.id,
-          body: mapFormToUpdatePost(formData),
+          body: {
+            ...mapFormToUpdatePost(formData),
+            ...(saveAsTemplate && { isTemplate: true, isPrivate: true }),
+          },
         });
 
         await uploadFiles(post.id);
-        navigate(ROUTES.PROFILE);
+        navigate(saveAsTemplate ? ROUTES.TEMPLATES : ROUTES.PROFILE);
         return;
       }
 
-      const post = await createPost(mapFormToCreatePost(formData));
+      const post = await createPost({
+        ...mapFormToCreatePost(formData),
+        ...(saveAsTemplate && { isTemplate: true, isPrivate: true }),
+      });
       await uploadFiles(post.id);
-      navigate(ROUTES.PROFILE);
+      navigate(saveAsTemplate ? ROUTES.TEMPLATES : ROUTES.PROFILE);
     } catch (error) {
       setSubmitError(
-        getEmailConfirmErrorMessage(error, 'Не удалось сохранить пост'),
+        getEmailConfirmErrorMessage(
+          error,
+          saveAsTemplate
+            ? 'Не удалось сохранить шаблон'
+            : 'Не удалось сохранить пост',
+        ),
       );
     } finally {
       setIsSubmitting(false);
@@ -284,8 +297,7 @@ export const UserPostForm = ({
       <form onSubmit={handleSubmit(onSubmit)}>
         <MainInfo
           isEdit={isEdit}
-          menuOptions={menuOptions}
-          onMenuAction={handleMenuAction}
+          saveAsTemplate={saveAsTemplate}
         />
 
         <Gallery
@@ -321,8 +333,15 @@ export const UserPostForm = ({
         )}
 
         <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-          <Button variant="outlined" onClick={handleGoToPreview}>
-            Предпросмотр
+          <Button
+            variant="outlined"
+            onClick={
+              saveAsTemplate
+                ? () => navigate(ROUTES.TEMPLATES)
+                : handleGoToPreview
+            }
+          >
+            {saveAsTemplate ? 'Назад' : 'Предпросмотр'}
           </Button>
           <Button
             type="submit"
@@ -330,7 +349,7 @@ export const UserPostForm = ({
             loading={isSubmitting}
             disabled={hasPreparingMedia(images)}
           >
-            Сохранить
+            {saveAsTemplate ? 'Сохранить как шаблон' : 'Сохранить'}
           </Button>
         </Box>
       </form>

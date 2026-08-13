@@ -125,9 +125,8 @@ export const ArchivePage = () => {
         }}
       >
         <Stack
-          direction="row"
-          spacing={1}
           className="print-no-print"
+          spacing={1}
           sx={{
             p: 2,
             bgcolor: 'white',
@@ -135,7 +134,8 @@ export const ArchivePage = () => {
             borderRadius: '24px',
             borderColor: 'divider',
             flexShrink: 0,
-            alignItems: 'center',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'stretch', md: 'center' },
             justifyContent: 'space-between',
             gap: 1,
           }}
@@ -145,7 +145,7 @@ export const ArchivePage = () => {
             onChange={handleTabChange}
             variant="scrollable"
             allowScrollButtonsMobile
-            sx={{ minWidth: 0, flex: 1 }}
+            sx={{ minWidth: 0, width: { xs: '100%', md: 'auto' }, flex: { md: 1 } }}
           >
             {TAB_ITEMS.map(item => (
               <Tab
@@ -159,7 +159,12 @@ export const ArchivePage = () => {
           <Stack
             direction="row"
             spacing={0.5}
-            sx={{ alignItems: 'center', flexShrink: 0 }}
+            sx={{
+              alignItems: 'center',
+              flexShrink: 0,
+              justifyContent: { xs: 'flex-end', md: 'flex-start' },
+              width: { xs: '100%', md: 'auto' },
+            }}
           >
             {isSearchOpen && (
               <TextField
@@ -170,7 +175,9 @@ export const ArchivePage = () => {
                 onChange={event => setSearchQuery(event.target.value)}
                 autoFocus
                 sx={{
-                  width: { xs: 140, sm: 220 },
+                  width: { xs: '100%', sm: 220 },
+                  maxWidth: { xs: 220, sm: 220 },
+                  flex: { xs: 1, sm: 'none' },
                   transition: 'width .3s ease-in-out',
                 }}
               />

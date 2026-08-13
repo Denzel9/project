@@ -8,6 +8,7 @@ import {
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
   useGetUserByIdQuery,
@@ -44,6 +45,7 @@ import {
   type TaskFormType,
 } from '@/features';
 import { sendTaskTzToChat } from '@/features/chat';
+import { getTaskPath } from '@/pages/my-tasks/model/utils/utils';
 import { scrollMainToTop } from '@/shared';
 import { useSnackbarStore, ContactCard } from '@/widgets';
 
@@ -85,6 +87,8 @@ export const TaskItem = ({
   editRequestId = 0,
 }: TaskItemProps) => {
   const currentUserId = useAuthStore(state => state.id);
+
+  const navigate = useNavigate();
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -273,7 +277,7 @@ export const TaskItem = ({
   };
 
   const handleSendTzToExecutor = useCallback(async () => {
-    if (!task?.executorId || isSendingTz) {
+    if (!task?.executorId || task.isArchived || isSendingTz) {
       return;
     }
 
@@ -299,6 +303,21 @@ export const TaskItem = ({
       setIsSendingTz(false);
     }
   }, [conversations, createConversation, isSendingTz, setSnackbarOpen, task]);
+
+  const handleUnarchive = async () => {
+    if (!task || !isOwner || isUpdating) return;
+
+    try {
+      await updateTask({
+        id: task.id,
+        body: { isArchived: false },
+      });
+      setSnackbarOpen?.(true, 'Задача возвращена из архива');
+      navigate(getTaskPath({ ...task, isArchived: false }), { replace: true });
+    } catch {
+      setSnackbarOpen?.(true, 'Не удалось вернуть задачу из архива', 'error');
+    }
+  };
 
   const isLoadingTask = isUpdating || isMediaSaving || isReportMediaSaving;
   const isCancelled = CANCELLED_STATUSES.includes(
@@ -479,7 +498,44 @@ export const TaskItem = ({
         />
       )}
 
-      {!isCancelled && <TaskStatusStepper status={status} />}
+      {task.isArchived ? (
+        <Box
+          sx={{
+            p: 2,
+            mb: 1,
+            bgcolor: 'white',
+            border: '1px solid',
+            borderRadius: '24px',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography variant="h6" color="info" sx={{ fontWeight: 600 }}>
+              Задача в архиве
+            </Typography>
+
+            {isOwner && (
+              <Button
+                color="primary"
+                sx={{ px: { xs: 0, md: 2 }, flexShrink: 0 }}
+                disabled={isUpdating}
+                onClick={() => void handleUnarchive()}
+              >
+                Вернуть из архива
+              </Button>
+            )}
+          </Stack>
+        </Box>
+      ) : (
+        !isCancelled && <TaskStatusStepper status={status} />
+      )}
 
       {task && (
         <Stack spacing={1}>
@@ -543,9 +599,11 @@ export const TaskItem = ({
                   </Typography>
 
                   {!isCancelled &&
+                    !task.isArchived &&
                     status !== TASK_STATUS_ENUM.COMPLETED &&
                     isOwner &&
-                    Boolean(task.executorId) && (
+                    Boolean(task.executorId) &&
+                    task.isExecutorApprove === true && (
                       <Button
                         color="primary"
                         sx={{ px: { xs: 0, md: 2 } }}
@@ -677,6 +735,7 @@ export const TaskItem = ({
             isOwner={isOwner}
             contact={resolvedContact}
             isExecutorApprove={task.isExecutorApprove}
+            isArchived={Boolean(task.isArchived)}
             disabled={isCancelled || status === TASK_STATUS_ENUM.COMPLETED}
           />
         </Stack>

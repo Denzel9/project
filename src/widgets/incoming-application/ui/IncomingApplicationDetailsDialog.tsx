@@ -1,12 +1,12 @@
 import {
   AccessTime,
   ArticleOutlined,
-  CancelOutlined,
   CheckCircleOutlined,
   Close,
   FavoriteBorder,
   HandshakeOutlined,
   OpenInNew,
+  WorkOutlined,
   Person2Outlined,
   Update,
 } from '@mui/icons-material';
@@ -16,6 +16,7 @@ import {
   Button,
   Chip,
   Dialog,
+  Grid,
   IconButton,
   Stack,
   Typography,
@@ -58,46 +59,77 @@ const getStatusColor = (status: Application['status']) => {
 const isGalleryMedia = (mimeType: string) =>
   mimeType.startsWith('image/') || mimeType.startsWith('video/');
 
-type StatItemProps = {
+type StatProps = {
   icon: ReactNode;
   value: number;
   label: string;
   accent?: string;
+  to?: string;
+  onNavigate?: () => void;
 };
 
-const StatItem = ({ icon, value, label, accent = 'primary.main' }: StatItemProps) => (
+const Stat = ({
+  icon,
+  value,
+  label,
+  accent = 'primary.main',
+  to,
+  onNavigate,
+}: StatProps) => (
   <Stack
     spacing={1}
+    {...(to
+      ? {
+        component: Link,
+        to,
+        onClick: onNavigate,
+      }
+      : {})}
     sx={{
-      flex: '1 1 140px',
-      minWidth: 0,
       p: 2,
-      borderRadius: '20px',
-      bgcolor: 'common.white',
+      height: '100%',
+      minWidth: 0,
       border: '1px solid',
+      borderRadius: '20px',
       borderColor: 'divider',
+      bgcolor: 'common.white',
+      justifyContent: 'space-between',
+      color: 'inherit',
+      textDecoration: 'none',
+      ...(to && {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+        },
+      }),
     }}
   >
-    <Box
-      sx={{
-        width: 36,
-        height: 36,
-        borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: accent,
-        bgcolor: 'info.light',
-      }}
-    >
-      {icon}
-    </Box>
-    <Typography
-      variant="h5"
-      sx={{ fontWeight: 700, lineHeight: 1.1, letterSpacing: '-0.03em' }}
-    >
-      {value}
-    </Typography>
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: accent,
+          bgcolor: 'info.light',
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography
+        variant="h5"
+        color="info"
+        sx={{ fontWeight: 700 }}
+      >
+        {value}
+      </Typography>
+    </Stack>
+
     <Typography
       variant="caption"
       color="text.secondary"
@@ -128,10 +160,20 @@ export const IncomingApplicationDetailsDialog = ({
   const canRespond =
     application.status === APPLICATION_STATUS_ENUM.NEW ||
     application.status === APPLICATION_STATUS_ENUM.VIEWED;
-  const showStatistics =
-    application.attachStatistics !== false &&
-    Boolean(application.applicantStatistics);
   const stats = application.applicantStatistics;
+  const applicantId = application.applicant?.id;
+  const sharedTasksHref = applicantId
+    ? `${ROUTES.MY_TASKS}?executorId=${encodeURIComponent(applicantId)}`
+    : undefined;
+  const sharedInProgressHref = sharedTasksHref
+    ? `${sharedTasksHref}&active=1`
+    : undefined;
+  const sharedCompletedHref = sharedTasksHref
+    ? `${sharedTasksHref}&status=COMPLETED`
+    : undefined;
+  const sharedPublicationsHref = applicantId
+    ? `${ROUTES.PUBLICATIONS}?executorId=${encodeURIComponent(applicantId)}`
+    : undefined;
 
   useEffect(() => {
     if (!open) return;
@@ -166,14 +208,16 @@ export const IncomingApplicationDetailsDialog = ({
         sx={{
           maxHeight: '100vh',
           '& .MuiDialog-paper': {
+            m: 0,
             outline: 'none',
             maxWidth: 960,
-            m: { xs: 2, sm: 4 },
             overflow: 'visible',
             position: 'relative',
-            borderRadius: '32px',
-            width: { xs: '100%', sm: 960 },
             bgcolor: 'secondary.light',
+            width: { xs: '100%', md: 960 },
+            borderRadius: { xs: 0, md: '24px' },
+            height: { xs: '100%', md: 'auto' },
+            maxHeight: { xs: '100%', md: 'auto' },
           },
         }}
       >
@@ -182,7 +226,7 @@ export const IncomingApplicationDetailsDialog = ({
           color="primary"
           aria-label="Закрыть"
           sx={{
-            top: 0,
+            top: { xs: 8, md: 0 },
             right: { xs: 8, sm: -60 },
             position: 'absolute',
             bgcolor: 'secondary.main',
@@ -197,11 +241,11 @@ export const IncomingApplicationDetailsDialog = ({
 
         <Box
           sx={{
+            p: 2,
+            mt: { xs: 5, md: 0 },
             overflow: 'auto',
-            p: { xs: 2.5, md: 3.5 },
-            maxHeight: 'calc(100vh - 48px)',
             scrollbarWidth: 'none',
-
+            maxHeight: { xs: '100%', md: 'calc(100vh - 48px)' },
           }}
         >
           <Stack spacing={1}>
@@ -237,7 +281,7 @@ export const IncomingApplicationDetailsDialog = ({
                   <Stack
                     direction="row"
                     spacing={1}
-                    sx={{ alignItems: 'center', flexWrap: 'wrap', }}
+                    sx={{ alignItems: 'center', flexWrap: 'wrap' }}
                   >
                     <UserDisplayName
                       user={applicantToUserPartial(application.applicant)}
@@ -294,7 +338,16 @@ export const IncomingApplicationDetailsDialog = ({
                     )}
 
                     {actor && (
-                      <ActionActorCaption actor={actor} direction="row" withKind={false} icon={<Person2Outlined sx={{ fontSize: 15, color: 'info.main' }} />} />
+                      <ActionActorCaption
+                        actor={actor}
+                        direction="row"
+                        withKind={false}
+                        icon={
+                          <Person2Outlined
+                            sx={{ fontSize: 15, color: 'info.main' }}
+                          />
+                        }
+                      />
                     )}
                   </Stack>
                 </Box>
@@ -307,7 +360,10 @@ export const IncomingApplicationDetailsDialog = ({
                   to={`${ROUTES.PROFILE}?userId=${application.applicant.id}`}
                   onClick={onClose}
                   endIcon={<OpenInNew sx={{ fontSize: 16 }} />}
-                  sx={{ alignSelf: { xs: 'stretch', md: 'center' }, flexShrink: 0 }}
+                  sx={{
+                    alignSelf: { xs: 'stretch', md: 'center' },
+                    flexShrink: 0,
+                  }}
                 >
                   Профиль
                 </Button>
@@ -315,7 +371,6 @@ export const IncomingApplicationDetailsDialog = ({
             </Stack>
 
             <Box>
-              {/* TODO: где тот тут должна отображаться иныормация о том, что работа ли ранее коипания с исполнителем и если да, то сколько откликов было, сколько задач и публикаций было */}
               <Typography
                 variant="subtitle2"
                 sx={{ mb: 2, ml: 2, mt: 1, color: 'text.secondary' }}
@@ -323,57 +378,70 @@ export const IncomingApplicationDetailsDialog = ({
                 Статистика кандидата
               </Typography>
 
-              {showStatistics && stats ? (
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1}
-                  sx={{ flexWrap: { sm: 'wrap' } }}
-                >
-                  <StatItem
-                    icon={<CheckCircleOutlined fontSize="small" />}
-                    value={stats.completedWorks}
-                    label="Сделанных работ"
-                    accent="success.main"
-                  />
-                  <StatItem
-                    icon={<CancelOutlined fontSize="small" />}
-                    value={stats.cancelledWorks}
-                    label="Аннулированных работ"
-                    accent="error.main"
-                  />
-                  <StatItem
-                    icon={<HandshakeOutlined fontSize="small" />}
-                    value={stats.sharedCompletedWorks}
-                    label="Совместных выполненных задач"
-                    accent="info.main"
-                  />
-                  <StatItem
-                    icon={<ArticleOutlined fontSize="small" />}
-                    value={stats.sharedPublications}
-                    label="Совместных публикаций"
-                    accent="warning.main"
-                  />
-                  <StatItem
+              <Grid
+                container
+                spacing={1}
+              >
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <Stat
                     icon={<FavoriteBorder fontSize="small" />}
-                    value={stats.favoritedByCount}
+                    value={stats?.favoritedByCount ?? 0}
                     label="Добавили в избранное"
                     accent="primary.main"
                   />
-                </Stack>
-              ) : (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ px: 2, py: 1 }}
-                >
-                  Кандидат не прикрепил статистику к этому отклику
-                </Typography>
-              )}
+                </Grid>
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <Stat
+                    icon={<ArticleOutlined fontSize="small" />}
+                    value={stats?.totalPublications ?? 0}
+                    label="Публикаций всего"
+                    accent="success.main"
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <Stat
+                    icon={<CheckCircleOutlined fontSize="small" />}
+                    value={stats?.completedWorks ?? 0}
+                    label="Выполненных задач всего"
+                    accent="info.main"
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <Stat
+                    icon={<WorkOutlined fontSize="small" />}
+                    value={stats?.sharedInProgressWorks ?? 0}
+                    label="Совместных задач в работе"
+                    accent="warning.main"
+                    to={sharedInProgressHref}
+                    onNavigate={onClose}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <Stat
+                    icon={<ArticleOutlined fontSize="small" />}
+                    value={stats?.sharedPublications ?? 0}
+                    label="Совместных публикаций"
+                    accent="warning.main"
+                    to={sharedPublicationsHref}
+                    onNavigate={onClose}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <Stat
+                    icon={<HandshakeOutlined fontSize="small" />}
+                    value={stats?.sharedCompletedWorks ?? 0}
+                    label="Совместных выполненных задач"
+                    accent="info.main"
+                    to={sharedCompletedHref}
+                    onNavigate={onClose}
+                  />
+                </Grid>
+              </Grid>
             </Box>
 
             <Stack
               spacing={1}
-              sx={{ alignItems: 'stretch' }}
+              sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
               direction={{ xs: 'column', md: 'row' }}
             >
               <Box
@@ -404,76 +472,79 @@ export const IncomingApplicationDetailsDialog = ({
                       : 'text.secondary',
                   }}
                 >
-                  {application.message?.trim() || 'Кандидат не оставил сообщение'}
+                  {application.message?.trim() ||
+                    'Кандидат не оставил сообщение'}
                 </Typography>
               </Box>
 
-              <Box
-                sx={{
-                  p: 2,
-                  flex: 1,
-                  borderRadius: '28px',
-                  bgcolor: 'common.white',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  minWidth: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1.5,
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                >
-                  Объявление
-                </Typography>
-
-                {previewMedia && (
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: 140,
-                      borderRadius: '18px',
-                      overflow: 'hidden',
-                      bgcolor: 'secondary.light',
-                    }}
-                  >
-                    <MediaItem
-                      src={previewMedia.url}
-                      alt={post?.title ?? 'Объявление'}
-                      mimeType={previewMedia.mimeType}
-                    />
-                  </Box>
-                )}
-
-                <Typography
-                  variant="subtitle1"
+              {post && (
+                <Box
                   sx={{
-                    fontWeight: 700,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
+                    p: 2,
+                    flex: 1,
+                    borderRadius: '28px',
+                    bgcolor: 'common.white',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.5,
                   }}
                 >
-                  {post?.title ?? 'Объявление'}
-                </Typography>
-
-                {post?.id && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    component={Link}
-                    to={`${ROUTES.POST}/${post.id}`}
-                    onClick={onClose}
-                    endIcon={<OpenInNew sx={{ fontSize: 14 }} />}
-                    sx={{ alignSelf: 'flex-start', px: 0 }}
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
                   >
-                    Открыть объявление
-                  </Button>
-                )}
-              </Box>
+                    Объявление
+                  </Typography>
+
+                  {previewMedia && (
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: 140,
+                        borderRadius: '18px',
+                        overflow: 'hidden',
+                        bgcolor: 'secondary.light',
+                      }}
+                    >
+                      <MediaItem
+                        src={previewMedia.url}
+                        alt={post?.title ?? 'Объявление'}
+                        mimeType={previewMedia.mimeType}
+                      />
+                    </Box>
+                  )}
+
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 700,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {post?.title ?? 'Объявление'}
+                  </Typography>
+
+                  {post?.id && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      component={Link}
+                      to={`${ROUTES.POST}/${post.id}`}
+                      onClick={onClose}
+                      endIcon={<OpenInNew sx={{ fontSize: 14 }} />}
+                      sx={{ alignSelf: 'flex-start', px: 0 }}
+                    >
+                      Открыть объявление
+                    </Button>
+                  )}
+                </Box>
+              )}
             </Stack>
 
             {(canRespond ||
@@ -522,7 +593,7 @@ export const IncomingApplicationDetailsDialog = ({
                         <Button
                           variant="outlined"
                           component={Link}
-                          to={`${ROUTES.TASK}/${post?.id}?inviteId=${application.id}`}
+                          to={`${ROUTES.TASK}/${post?.id}?userId=${application.applicant?.id ?? ''}`}
                           onClick={onClose}
                         >
                           В задачу

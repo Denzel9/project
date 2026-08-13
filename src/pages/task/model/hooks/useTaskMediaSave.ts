@@ -209,6 +209,7 @@ export const useTaskMediaSave = ({
             key: uploaded.key,
             mimeType: uploaded.mimeType,
             size: String(uploaded.size),
+            filename: uploaded.fileName ?? undefined,
           },
         ]
       })
@@ -271,6 +272,7 @@ export const useTaskMediaSave = ({
       key: upload.key,
       mimeType: upload.mimeType,
       size: String(upload.size),
+      filename: upload.fileName ?? undefined,
     }))
 
     setFiles(prev => prev.filter(file => !succeeded.has(file.localId)))

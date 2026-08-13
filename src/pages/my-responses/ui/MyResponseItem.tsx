@@ -363,7 +363,7 @@ export const MyResponseItem = ({
                         size="small"
                         component={Link}
                         variant="contained"
-                        to={`${ROUTES.TASK}/${post?.id}?inviteId=${taskId}`}
+                        to={`${ROUTES.TASK}/${post?.id}?taskId=${taskId}`}
                       >
                         К задаче
                       </Button>

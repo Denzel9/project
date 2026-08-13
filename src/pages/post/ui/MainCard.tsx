@@ -7,6 +7,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Divider,
 } from '@mui/material';
 import { useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -15,6 +16,7 @@ import {
   UserDisplayName,
   UserStatsRow,
   useFavoritePostIds,
+  useUpdatePostMutation,
   type Post,
   type User,
   type Application,
@@ -25,6 +27,7 @@ import {
   Media,
   Action,
   useApplicationItemStore,
+  useSnackbarStore,
 } from '@/widgets';
 
 type MediaItem = {
@@ -58,6 +61,9 @@ export const MainCard = ({
 
   const navigate = useNavigate();
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
+  const { mutateAsync: updatePost, isPending: isUpdatingPost } =
+    useUpdatePostMutation();
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const closeMenu = () => {
     setAnchorEl(null);
@@ -65,6 +71,56 @@ export const MainCard = ({
 
   const handleMenuClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
+  };
+
+  const runOwnerAction = (action: () => void | Promise<void>) => {
+    closeMenu();
+    if (!requireEmailConfirmed()) return;
+    void action();
+  };
+
+  const handleToggleArchive = async () => {
+    if (!post) return;
+
+    const nextArchived = !post.isArchived;
+
+    try {
+      await updatePost({ id: post.id, body: { isArchived: nextArchived } });
+      setSnackbarOpen?.(
+        true,
+        nextArchived ? 'Пост перемещен в архив' : 'Пост возвращен из архива',
+      );
+    } catch {
+      setSnackbarOpen?.(
+        true,
+        nextArchived
+          ? 'Не удалось переместить пост в архив'
+          : 'Не удалось вернуть пост из архива',
+        'error',
+      );
+    }
+  };
+
+  const handleTogglePrivate = async () => {
+    if (!post) return;
+
+    const nextPrivate = !post.isPrivate;
+
+    try {
+      await updatePost({ id: post.id, body: { isPrivate: nextPrivate } });
+      setSnackbarOpen?.(
+        true,
+        nextPrivate ? 'Пост сделан приватным' : 'Пост сделан публичным',
+      );
+    } catch {
+      setSnackbarOpen?.(
+        true,
+        nextPrivate
+          ? 'Не удалось сделать пост приватным'
+          : 'Не удалось сделать пост публичным',
+        'error',
+      );
+    }
   };
 
   const { favoritePostIds } = useFavoritePostIds();
@@ -179,33 +235,54 @@ export const MainCard = ({
                 onClose={closeMenu}
               >
                 {isOwner && (
-                  <MenuItem
-                    onClick={() => {
-                      closeMenu();
-                      if (!requireEmailConfirmed()) return;
-                      navigate(
-                        `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`,
-                      );
-                    }}
-                  >
-                    Редактировать
-                  </MenuItem>
-                )}
-
-                {isOwner && (
-                  <MenuItem
-                    onClick={() => {
-                      closeMenu();
-                      if (!requireEmailConfirmed()) return;
-                      setIsOpenDeleteDialog(true);
-                    }}
-                  >
-                    Удалить
-                  </MenuItem>
+                  <>
+                    <MenuItem
+                      sx={{ fontSize: '14px' }}
+                      onClick={() => {
+                        runOwnerAction(() => {
+                          navigate(
+                            `${ROUTES.MANAGE_APPLICATION}?id=${post?.id ?? ''}`,
+                          );
+                        });
+                      }}
+                    >
+                      Редактировать
+                    </MenuItem>
+                    <Divider sx={{ my: .5 }} />
+                    <MenuItem
+                      sx={{ fontSize: '14px' }}
+                      disabled={isUpdatingPost}
+                      onClick={() => runOwnerAction(handleToggleArchive)}
+                    >
+                      {post?.isArchived
+                        ? 'Вернуть из архива'
+                        : 'Переместить в архив'}
+                    </MenuItem>
+                    <Divider sx={{ my: .5 }} />
+                    <MenuItem
+                      sx={{ fontSize: '14px' }}
+                      disabled={isUpdatingPost}
+                      onClick={() => runOwnerAction(handleTogglePrivate)}
+                    >
+                      {post?.isPrivate
+                        ? 'Сделать публичным'
+                        : 'Сделать приватным'}
+                    </MenuItem>
+                    <Divider sx={{ my: .5 }} />
+                    <MenuItem
+                      sx={{ fontSize: '14px' }}
+                      onClick={() => {
+                        runOwnerAction(() => setIsOpenDeleteDialog(true));
+                      }}
+                    >
+                      Удалить
+                    </MenuItem>
+                  </>
                 )}
 
                 {!isOwner && (
                   <MenuItem
+                    sx={{ fontSize: '14px' }}
                     onClick={() => {
                       closeMenu();
                       if (!requireEmailConfirmed()) return;
@@ -277,7 +354,7 @@ export const MainCard = ({
         open={isOpenDeleteDialog}
         postId={post?.id ?? null}
         onClose={() => setIsOpenDeleteDialog(false)}
-        onSuccess={() => navigate(ROUTES.INDEX)}
+        onSuccess={() => navigate(ROUTES.MY_ANNOUNCEMENTS)}
       />
     </Box>
   );

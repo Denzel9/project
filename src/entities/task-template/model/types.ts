@@ -1,3 +1,11 @@
+import type {
+  BloggerRequirements,
+  CooperationDetails,
+  PostBrief,
+  PostDeliverable,
+  PostLocation,
+} from '@/entities/post'
+
 export type TaskTemplate = {
   id: string
   ownerId: string
@@ -7,8 +15,12 @@ export type TaskTemplate = {
   photoCount: string
   videoCount: string
   urgent: boolean
-  brief: unknown | null
-  deliverables: unknown | null
+  finalDate?: string | null
+  location?: PostLocation | null
+  bloggerRequirements?: BloggerRequirements | null
+  cooperationDetails?: CooperationDetails | null
+  brief?: PostBrief | null
+  deliverables?: PostDeliverable[] | null
   createdAt: string
   updatedAt: string
 }
@@ -20,8 +32,12 @@ export type CreateTaskTemplateDto = {
   photoCount?: string
   videoCount?: string
   urgent?: boolean
-  brief?: unknown | null
-  deliverables?: unknown | null
+  finalDate?: string | null
+  location?: PostLocation | null
+  bloggerRequirements?: BloggerRequirements | null
+  cooperationDetails?: CooperationDetails | null
+  brief?: PostBrief | null
+  deliverables?: PostDeliverable[] | null
 }
 
 export type UpdateTaskTemplateDto = Partial<CreateTaskTemplateDto>

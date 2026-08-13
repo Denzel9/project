@@ -70,6 +70,7 @@ type MyTaskFilterStore = {
     visibleKanbanColumns: TaskStatus[];
     fastButtonValue: FastButtonFilter;
     extraFilter: TaskExtraFilter | null;
+    activeOnly: boolean;
     onlyMyTasks: boolean;
     assigneeAccountId: string;
     period: DashboardPeriod;
@@ -86,6 +87,7 @@ type MyTaskFilterStore = {
     setExecutorId: (executorId: string) => void;
     setStatus: (status: TaskStatusFilter) => void;
     setExtraFilter: (extraFilter: TaskExtraFilter | null) => void;
+    setActiveOnly: (activeOnly: boolean) => void;
     setOnlyMyTasks: (onlyMyTasks: boolean) => void;
     setAssigneeAccountId: (assigneeAccountId: string) => void;
     setPeriod: (period: DashboardPeriod) => void;
@@ -127,6 +129,8 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     extraFilter: null,
 
+    activeOnly: false,
+
     onlyMyTasks: false,
 
     assigneeAccountId: 'all',
@@ -149,6 +153,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
         set({
             postId,
             extraFilter: null,
+            activeOnly: false,
         }),
 
     setExecutorId: executorId =>
@@ -161,13 +166,25 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
         set({
             status,
             extraFilter: null,
+            activeOnly: false,
         }),
 
     setExtraFilter: extraFilter =>
         set({
             extraFilter,
             fastButtonValue: null,
+            activeOnly: false,
             ...(extraFilter && { status: 'all' as const }),
+        }),
+
+    setActiveOnly: activeOnly =>
+        set({
+            activeOnly,
+            ...(activeOnly && {
+                status: 'all' as const,
+                extraFilter: null,
+                fastButtonValue: null,
+            }),
         }),
 
     setOnlyMyTasks: onlyMyTasks =>
@@ -196,6 +213,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
                 extraFilter: null,
                 updatedDate: null,
                 fastButtonValue: null,
+                activeOnly: false,
                 onlyMyTasks: false,
                 assigneeAccountId: 'all',
                 isSearchOpen: false,
@@ -216,6 +234,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
             fastButtonValue,
             extraFilter: null,
             status: 'all' as const,
+            activeOnly: false,
             ...(state.viewMode === 'kanban' && {
                 visibleKanbanColumns:
                     getKanbanColumnsForFastButton(fastButtonValue),
@@ -263,6 +282,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
             updatedDate: null,
             fastButtonValue: null,
             extraFilter: null,
+            activeOnly: false,
             onlyMyTasks: false,
             assigneeAccountId: 'all',
             period: 'all',

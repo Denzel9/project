@@ -30,6 +30,6 @@ export const ColumnFilterButton = ({
       }),
     }}
   >
-    <FilterList sx={{ fontSize: 16 }} />
+    <FilterList sx={{ fontSize: 18 }} />
   </IconButton>
 )

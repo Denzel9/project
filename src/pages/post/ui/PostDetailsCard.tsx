@@ -406,17 +406,19 @@ const CompanyDetails = ({ post }: { post: Post }) => {
         </DetailSection>
       )}
 
-      {bloggerRequirements.length > 0 && (
-        <DetailSection title="Требования к блогеру">
-          <ListBlock items={bloggerRequirements} />
-        </DetailSection>
-      )}
+      <Stack spacing={1} direction={{ xs: 'column', md: 'row' }}>
+        {bloggerRequirements.length > 0 && (
+          <DetailSection title="Требования к блогеру">
+            <ListBlock items={bloggerRequirements} />
+          </DetailSection>
+        )}
 
-      {cooperationDetails.length > 0 && (
-        <DetailSection title="Условия сотрудничества">
-          <ListBlock items={cooperationDetails} />
-        </DetailSection>
-      )}
+        {cooperationDetails.length > 0 && (
+          <DetailSection title="Условия сотрудничества">
+            <ListBlock items={cooperationDetails} />
+          </DetailSection>
+        )}
+      </Stack>
 
       {briefItems.length > 0 && (
         <DetailSection title="Бриф">

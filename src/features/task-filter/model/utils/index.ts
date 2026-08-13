@@ -237,6 +237,7 @@ export const toMyTasksQueryParams = (filters: {
   viewMode: 'grid' | 'kanban' | 'table';
   fastButtonValue: FastButtonFilter;
   extraFilter: TaskExtraFilter | null;
+  activeOnly?: boolean;
   onlyMyTasks?: boolean;
   assigneeAccountId?: string;
   isCompany: boolean;
@@ -279,6 +280,10 @@ export const toMyTasksQueryParams = (filters: {
   }
 
   params = applyExtraFilterQueryParams(params, filters.extraFilter);
+
+  if (filters.activeOnly) {
+    params = { ...params, active: true };
+  }
 
   return {
     ...params,

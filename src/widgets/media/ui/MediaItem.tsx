@@ -23,6 +23,8 @@ type MediaItemProps = {
   onError?: () => void
   errorMessage?: string
   withControls?: boolean
+  /** Stretch document placeholder to fill a square tile */
+  fill?: boolean
   /** cover — grids/thumbs; contain — main viewer / fullscreen */
   fit?: MediaObjectFit
   loading?: ImgHTMLAttributes<HTMLImageElement>['loading']
@@ -40,6 +42,7 @@ export const MediaItem = ({
   isActive = true,
   fit = 'cover',
   errorMessage = 'Не удалось загрузить медиа',
+  fill = false,
 }: MediaItemProps) => {
   const imgRef = useRef<HTMLImageElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -113,7 +116,7 @@ export const MediaItem = ({
   }, [isActive, kind])
 
   if (kind === 'document') {
-    const displayName = getMediaDisplayName(fileName, src)
+    const displayName = getMediaDisplayName(fileName, src, mimeType)
 
     return (
       <Box
@@ -121,35 +124,53 @@ export const MediaItem = ({
         component="a"
         target="_blank"
         rel="noopener noreferrer"
-        download={displayName}
         onClick={event => event.stopPropagation()}
         sx={{
           gap: 1,
           p: 1.5,
           display: 'flex',
-          minHeight: 56,
-          borderRadius: '12px',
+          width: '100%',
+          height: fill ? '100%' : undefined,
+          minHeight: fill ? 0 : 56,
+          boxSizing: 'border-box',
+          flexDirection: fill ? 'column' : 'row',
           alignItems: 'center',
+          justifyContent: fill ? 'center' : 'flex-start',
+          textAlign: fill ? 'center' : 'left',
+          borderRadius: fill ? 0 : '12px',
           textDecoration: 'none',
           color: 'text.primary',
-          bgcolor: 'background.paper',
-          border: '1px solid',
+          bgcolor: fill ? 'grey.50' : 'background.paper',
+          border: fill ? 'none' : '1px solid',
           borderColor: 'divider',
           '&:hover': {
-            bgcolor: 'secondary.main',
+            bgcolor: fill ? 'action.hover' : 'secondary.main',
           },
         }}
       >
-        <Description color="action" />
+        <Description
+          color="action"
+          sx={fill ? { fontSize: 36, flexShrink: 0 } : undefined}
+        />
 
         <Typography
-          variant="body2"
+          variant={fill ? 'caption' : 'body2'}
           title={displayName}
           sx={{
             minWidth: 0,
+            width: fill ? '100%' : undefined,
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            ...(fill
+              ? {
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
+                  wordBreak: 'break-word',
+                }
+              : {
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }),
           }}
         >
           {displayName}

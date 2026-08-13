@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
   Stack,
@@ -16,11 +17,12 @@ import {
   useGetUserByIdQuery,
   useMyApplicationsMap,
   usePostApplicationsQuery,
+  useUpdatePostMutation,
   USER_ROLE,
 } from '@/entities';
 import { useAuthStore } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
-import { PageLayout, ContactCard } from '@/widgets';
+import { PageLayout, ContactCard, useSnackbarStore } from '@/widgets';
 
 import {
   getPostApplicationApplicantOptions,
@@ -53,6 +55,9 @@ export const PostPage = () => {
   const { id: currentUserId, role } = useAuthStore();
 
   const { data: post, isLoading } = usePostByIdQuery(id ?? null);
+  const { mutateAsync: updatePost, isPending: isUpdatingPost } =
+    useUpdatePostMutation();
+  const { setSnackbarOpen } = useSnackbarStore();
 
   const { data: user } = useGetUserByIdQuery(post?.owner?.id ?? null);
 
@@ -127,6 +132,28 @@ export const PostPage = () => {
   const isCompanyPost = post?.type === 'COMPANY';
   const application = myApplicationsMap.get(post?.id ?? '');
 
+  const handleUnarchive = async () => {
+    if (!post || !isOwner || isUpdatingPost) return;
+
+    try {
+      await updatePost({ id: post.id, body: { isArchived: false } });
+      setSnackbarOpen?.(true, 'Пост возвращен из архива');
+    } catch {
+      setSnackbarOpen?.(true, 'Не удалось вернуть пост из архива', 'error');
+    }
+  };
+
+  const handleTogglePrivate = async () => {
+    if (!post || !isOwner || isUpdatingPost) return;
+
+    try {
+      await updatePost({ id: post.id, body: { isPrivate: false } });
+      setSnackbarOpen?.(true, 'Пост сделан публичным');
+    } catch {
+      setSnackbarOpen?.(true, 'Не удалось сделать пост публичным', 'error');
+    }
+  };
+
   const mediaItems =
     post?.media?.map(media => ({
       url: media.url,
@@ -185,11 +212,14 @@ export const PostPage = () => {
           <Stack
             direction="row"
             sx={{
+              p: 2,
               width: '100%',
-              px: { xs: 1, md: 2 },
-              pt: { xs: 1, md: 0 },
               justifyContent: 'space-between',
               alignItems: 'center',
+              bgcolor: 'white',
+              borderRadius: '24px',
+              border: '1px solid',
+              borderColor: 'divider',
             }}
           >
             <Tabs
@@ -243,6 +273,70 @@ export const PostPage = () => {
 
         {tabValue === 0 && (
           <Stack spacing={1}>
+            {post.isArchived && (
+              <Stack
+                spacing={1}
+                direction="row"
+                sx={{
+                  p: 2,
+                  bgcolor: 'white',
+                  border: '1px solid',
+                  borderRadius: '24px',
+                  alignItems: 'center',
+                  borderColor: 'divider',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Typography variant="h6" color="info" sx={{ fontWeight: 600 }}>
+                  Обьявление в архиве
+                </Typography>
+
+                {isOwner && (
+                  <Button
+                    sx={{ px: 2 }}
+                    variant="text"
+                    color="primary"
+                    disabled={isUpdatingPost}
+                    onClick={() => void handleUnarchive()}
+                  >
+                    Вернуть из архива
+                  </Button>
+                )}
+              </Stack>
+            )}
+
+            {post.isPrivate && (
+              <Stack
+                spacing={1}
+                direction="row"
+                sx={{
+                  p: 2,
+                  bgcolor: 'white',
+                  border: '1px solid',
+                  borderRadius: '24px',
+                  alignItems: 'center',
+                  borderColor: 'divider',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Typography variant="h6" color="info" sx={{ fontWeight: 600 }}>
+                  Приватное обьявление
+                </Typography>
+
+                {isOwner && (
+                  <Button
+                    sx={{ px: 2 }}
+                    variant="text"
+                    color="primary"
+                    disabled={isUpdatingPost}
+                    onClick={() => void handleTogglePrivate()}
+                  >
+                    Сделать публичным
+                  </Button>
+                )}
+              </Stack>
+            )}
+
             <MainCard
               post={post}
               user={user?.data}
@@ -326,7 +420,7 @@ export const PostPage = () => {
           />
         )}
       </Stack>
-    </PageLayout>
+    </PageLayout >
   );
 };
 

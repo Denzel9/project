@@ -67,6 +67,14 @@ import type { Publication } from '@/entities/publication';
 import type { TaskMedia } from '@/entities/task';
 import type { MediaItemType } from '@/widgets/media/model/types';
 
+const filteredColumnLabelSx = {
+  color: 'primary.main',
+  fontWeight: 600,
+  '&:hover, &:focus, &.Mui-active, &.Mui-active:hover': {
+    color: 'primary.main',
+  },
+} as const;
+
 type PublicationTableProps = {
   publications: Publication[];
   total?: number;
@@ -339,7 +347,7 @@ export const PublicationTable = ({
                 >
                   <Stack
                     direction="row"
-                    spacing={0.25}
+                    spacing={1}
                     sx={{ alignItems: 'center', minWidth: 0 }}
                   >
                     <TableSortLabel
@@ -347,7 +355,11 @@ export const PublicationTable = ({
                       direction={sortField === 'title' ? sortOrder : 'asc'}
                       onClick={() => handleSort('title')}
                       hideSortIcon={forPrint}
-                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                      sx={{
+                        ...(forPrint && { pointerEvents: 'none' }),
+                        ...(columnFilters?.title.value !== 'all' &&
+                          filteredColumnLabelSx),
+                      }}
                     >
                       Название
                     </TableSortLabel>
@@ -369,7 +381,7 @@ export const PublicationTable = ({
                 >
                   <Stack
                     direction="row"
-                    spacing={0.25}
+                    spacing={1}
                     sx={{ alignItems: 'center', minWidth: 0 }}
                   >
                     <TableSortLabel
@@ -377,7 +389,11 @@ export const PublicationTable = ({
                       direction={sortField === 'post' ? sortOrder : 'asc'}
                       onClick={() => handleSort('post')}
                       hideSortIcon={forPrint}
-                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                      sx={{
+                        ...(forPrint && { pointerEvents: 'none' }),
+                        ...(columnFilters?.post.value !== 'all' &&
+                          filteredColumnLabelSx),
+                      }}
                     >
                       Пост
                     </TableSortLabel>
@@ -399,7 +415,7 @@ export const PublicationTable = ({
                 >
                   <Stack
                     direction="row"
-                    spacing={0.25}
+                    spacing={1}
                     sx={{ alignItems: 'center', minWidth: 0 }}
                   >
                     <TableSortLabel
@@ -407,7 +423,11 @@ export const PublicationTable = ({
                       direction={sortField === 'platform' ? sortOrder : 'asc'}
                       onClick={() => handleSort('platform')}
                       hideSortIcon={forPrint}
-                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                      sx={{
+                        ...(forPrint && { pointerEvents: 'none' }),
+                        ...(columnFilters?.platform.value !== 'all' &&
+                          filteredColumnLabelSx),
+                      }}
                     >
                       Площадки
                     </TableSortLabel>
@@ -429,7 +449,7 @@ export const PublicationTable = ({
                 >
                   <Stack
                     direction="row"
-                    spacing={0.25}
+                    spacing={1}
                     sx={{ alignItems: 'center', minWidth: 0 }}
                   >
                     <TableSortLabel
@@ -437,7 +457,11 @@ export const PublicationTable = ({
                       direction={sortField === 'executor' ? sortOrder : 'asc'}
                       onClick={() => handleSort('executor')}
                       hideSortIcon={forPrint}
-                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                      sx={{
+                        ...(forPrint && { pointerEvents: 'none' }),
+                        ...(columnFilters?.executor.value !== 'all' &&
+                          filteredColumnLabelSx),
+                      }}
                     >
                       Исполнитель
                     </TableSortLabel>
@@ -459,7 +483,7 @@ export const PublicationTable = ({
                 >
                   <Stack
                     direction="row"
-                    spacing={0.25}
+                    spacing={1}
                     sx={{ alignItems: 'center', minWidth: 0 }}
                   >
                     <TableSortLabel
@@ -467,7 +491,11 @@ export const PublicationTable = ({
                       direction={sortField === 'createdAt' ? sortOrder : 'asc'}
                       onClick={() => handleSort('createdAt')}
                       hideSortIcon={forPrint}
-                      sx={forPrint ? { pointerEvents: 'none' } : undefined}
+                      sx={{
+                        ...(forPrint && { pointerEvents: 'none' }),
+                        ...(Boolean(columnFilters?.createdDate) &&
+                          filteredColumnLabelSx),
+                      }}
                     >
                       Создано
                     </TableSortLabel>

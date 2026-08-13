@@ -1,5 +1,6 @@
 import {
   MEDIA_DOCUMENT_MAX_BYTES,
+  MEDIA_DOCUMENT_MIME_TYPES,
   MEDIA_IMAGE_MAX_BYTES,
   MEDIA_VIDEO_MAX_BYTES,
 } from './constants'
@@ -11,8 +12,7 @@ export const getMediaFileKind = (file: File): MediaFileKind => {
   if (file.type.startsWith('video/')) return 'video'
 
   if (
-    file.type === 'application/pdf' ||
-    file.type.startsWith('application/vnd.')
+    (MEDIA_DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type)
   ) {
     return 'document'
   }

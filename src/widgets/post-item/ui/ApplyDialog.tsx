@@ -1,14 +1,11 @@
-import { Close, HelpOutlineOutlined } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Checkbox,
   Dialog,
-  FormControlLabel,
   IconButton,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -17,10 +14,7 @@ type ApplyDialogProps = {
   open: boolean;
   isPending?: boolean;
   onClose: () => void;
-  onSubmit: (payload: {
-    message: string;
-    attachStatistics: boolean;
-  }) => void;
+  onSubmit: (payload: { message: string }) => void;
 };
 
 export const ApplyDialog = ({
@@ -30,11 +24,9 @@ export const ApplyDialog = ({
   onSubmit,
 }: ApplyDialogProps) => {
   const [message, setMessage] = useState('');
-  const [isAttachedStatistic, setIsAttachedStatistic] = useState(true);
 
   const handleClose = () => {
     setMessage('');
-    setIsAttachedStatistic(true);
     onClose();
   };
 
@@ -43,10 +35,7 @@ export const ApplyDialog = ({
 
     if (!trimmed) return;
 
-    onSubmit({
-      message: trimmed,
-      attachStatistics: isAttachedStatistic,
-    });
+    onSubmit({ message: trimmed });
   };
 
   return (
@@ -102,32 +91,6 @@ export const ApplyDialog = ({
           disabled={isPending}
           onChange={e => setMessage(e.target.value)}
           placeholder="Готов обсудить сотрудничество..."
-        />
-
-        <FormControlLabel
-          sx={{ mt: 1 }}
-          control={
-            <Checkbox
-              checked={isAttachedStatistic}
-              disabled={isPending}
-              onChange={() => setIsAttachedStatistic(!isAttachedStatistic)}
-            />
-          }
-          label={
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center' }}
-            >
-              <Typography variant="body2">Прикрепить статистику</Typography>
-              <Tooltip title="Владелец поста увидит ваши показатели: выполненные и аннулированные работы, совместные задачи и публикации, сколько раз вас добавили в избранное">
-                <HelpOutlineOutlined
-                  color="info"
-                  fontSize="small"
-                />
-              </Tooltip>
-            </Stack>
-          }
         />
 
         <Stack

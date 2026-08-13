@@ -1,6 +1,14 @@
 import { FilterList } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 
+export const filteredColumnLabelSx = {
+  color: 'primary.main',
+  fontWeight: 600,
+  '&:hover, &:focus, &.Mui-active, &.Mui-active:hover': {
+    color: 'primary.main',
+  },
+} as const;
+
 type PartnersColumnFilterButtonProps = {
   active?: boolean;
   open?: boolean;
@@ -30,6 +38,6 @@ export const PartnersColumnFilterButton = ({
       }),
     }}
   >
-    <FilterList sx={{ fontSize: 16 }} />
+    <FilterList sx={{ fontSize: 18 }} />
   </IconButton>
 );

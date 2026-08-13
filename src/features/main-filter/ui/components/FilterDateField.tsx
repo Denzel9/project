@@ -11,12 +11,14 @@ type FilterDateFieldProps = {
   label: string
   value: string
   onChange: (value: string) => void
+  size?: 'small' | 'medium'
 }
 
 export const FilterDateField = ({
   label,
   value,
   onChange,
+  size = 'medium',
 }: FilterDateFieldProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -38,6 +40,7 @@ export const FilterDateField = ({
     <Box>
       <TextField
         fullWidth
+        size={size}
         label={label}
         value={displayValue}
         onClick={event => setAnchorEl(event.currentTarget)}

@@ -70,11 +70,10 @@ export const useTaskData = () => {
   const { id: postId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get('taskId');
-  /** `inviteId` — совместимость со старыми ссылками */
-  const userId =
-    searchParams.get('userId') ?? searchParams.get('inviteId');
+  const userId = searchParams.get('userId');
+  const solo = searchParams.get('solo') === '1';
 
-  const routeKey = `${postId ?? ''}:${userId ?? ''}:${taskId ?? ''}`;
+  const routeKey = `${postId ?? ''}:${userId ?? ''}:${taskId ?? ''}:${solo ? '1' : '0'}`;
 
   const [overrideTask, setOverrideTask] = useState<Task | null>(null);
   const [routeKeySnapshot, setRouteKeySnapshot] = useState(routeKey);
@@ -83,8 +82,12 @@ export const useTaskData = () => {
     setRouteKeySnapshot(routeKey);
     // Не сбрасываем override, если он как раз выбранная по URL задача
     // (иначе архивные/вне списка теряются сразу после syncTaskInUrl).
-    setOverrideTask(prev => (prev && taskId && prev.id === taskId ? prev : null));
+    setOverrideTask(prev =>
+      prev && taskId && prev.id === taskId && solo ? prev : null,
+    );
   }
+
+  const skipPostTasks = solo;
 
   const { data: tasks, isLoading: isTasksLoading } = usePostTasksQuery(
     postId ?? null,
@@ -92,13 +95,14 @@ export const useTaskData = () => {
       page: 1,
       limit: 100,
     },
+    skipPostTasks,
   );
 
   const taskFromList = useMemo(() => {
-    if (!tasks?.items) return null;
+    if (skipPostTasks || !tasks?.items) return null;
 
     return pickTaskFromList(tasks.items, userId, taskId);
-  }, [tasks, userId, taskId]);
+  }, [skipPostTasks, tasks, userId, taskId]);
 
   const shouldFetchTaskById = Boolean(
     taskId &&
@@ -139,11 +143,16 @@ export const useTaskData = () => {
     currentTask?.postId ?? currentTask?.post?.id ?? postId ?? null,
   );
 
+  const isSolo = skipPostTasks || Boolean(currentTask?.isArchived);
+
   return {
     id: postId,
     post,
     tasks,
-    isLoading: isTasksLoading || (shouldFetchTaskById && isTaskByIdLoading),
+    isSolo,
+    isLoading:
+      (!skipPostTasks && isTasksLoading) ||
+      (shouldFetchTaskById && isTaskByIdLoading),
     isPostLoading,
     currentTask,
     setCurrentTask,

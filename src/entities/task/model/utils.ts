@@ -40,6 +40,7 @@ export const mapTaskMediaToPhotos = (media: TaskMedia[]): Photo[] =>
     key: item.key,
     size: item.size,
     mimeType: item.mimeType,
+    filename: item.fileName ?? undefined,
   }))
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
@@ -1005,11 +1006,12 @@ export const buildCreateTaskPayload = (
   brief: task.brief,
   // Без id/kind: CreateTaskDto на бэке принимает только url/key/size/mimeType
   // (forbidNonWhitelisted). Ключи старой задачи бэкенд скопирует в новую.
-  media: (task.media ?? []).map(({ url, key, size, mimeType }) => ({
+  media: (task.media ?? []).map(({ url, key, size, mimeType, fileName }) => ({
     url,
     key,
     size,
     mimeType,
+    ...(fileName ? { fileName } : {}),
   })),
   urgent: task.urgent,
   title: task.title,

@@ -18,6 +18,10 @@ export const getTaskPath = (task: Task) => {
     taskId: task.id,
   });
 
+  if (task.isArchived) {
+    params.set('solo', '1');
+  }
+
   return `${ROUTES.TASK}/${postId}?${params.toString()}`;
 };
 

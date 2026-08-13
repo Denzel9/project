@@ -58,6 +58,7 @@ type TaskCommentsProps = {
   contact?: User;
   isOwner?: boolean;
   disabled?: boolean;
+  isArchived?: boolean;
   isExecutorApprove?: boolean | null;
 };
 
@@ -66,11 +67,13 @@ export const TaskComments = ({
   contact,
   isOwner = false,
   disabled = false,
+  isArchived = false,
   isExecutorApprove,
 }: TaskCommentsProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const currentUserId = useAuthStore(state => state.id);
+  const commentsLocked = disabled || isArchived;
 
   useTaskCommentsRealtime({ taskId });
 
@@ -292,7 +295,7 @@ export const TaskComments = ({
   }, []);
 
   const handleCreate = async () => {
-    if (disabled) return;
+    if (commentsLocked) return;
 
     const trimmed = content.trim();
     const hasContent = Boolean(trimmed);
@@ -328,7 +331,7 @@ export const TaskComments = ({
   };
 
   const handleStartEdit = (commentId: string, text: string) => {
-    if (disabled) return;
+    if (commentsLocked) return;
 
     const comment = comments.find(item => item.id === commentId);
 
@@ -366,14 +369,14 @@ export const TaskComments = ({
   };
 
   const handleDelete = (commentId: string) => {
-    if (disabled) return;
+    if (commentsLocked) return;
 
     setDeletingId(commentId);
     setIsOpenDeleteDialog(true);
   };
 
   const handlePin = async (commentId: string, nextPinned: boolean) => {
-    if (disabled) return;
+    if (commentsLocked) return;
 
     try {
       await pinComment({
@@ -386,11 +389,13 @@ export const TaskComments = ({
     }
   };
 
-  const emptyMessage = disabled
-    ? 'Комментарии недоступны для этой задачи'
-    : isExecutorApprove
-      ? 'Комментариев пока нет — напишите первым'
-      : 'Комментарии станут доступны после назначения исполнителя';
+  const emptyMessage = isArchived
+    ? 'Комментарии недоступны для задачи в архиве'
+    : disabled
+      ? 'Комментарии недоступны для этой задачи'
+      : isExecutorApprove
+        ? 'Комментариев пока нет — напишите первым'
+        : 'Комментарии станут доступны после назначения исполнителя';
 
   const canUseCommentTools = Boolean(isExecutorApprove);
 
@@ -652,11 +657,11 @@ export const TaskComments = ({
                   onSaveEdit={handleSaveEdit}
                   onCancelEdit={() => setEditingId(null)}
                   onDelete={handleDelete}
-                  onReply={disabled ? undefined : setReplyToComment}
-                  onPin={disabled ? undefined : (id, next) => void handlePin(id, next)}
+                  onReply={commentsLocked ? undefined : setReplyToComment}
+                  onPin={commentsLocked ? undefined : (id, next) => void handlePin(id, next)}
                   onReplyJump={jumpToComment}
                   onOpenGallery={openGallery}
-                  showActions={!disabled}
+                  showActions={!commentsLocked}
                 />
               </Box>
             ))}
@@ -734,13 +739,13 @@ export const TaskComments = ({
               value={content}
               onChange={setContent}
               isSending={isPending}
-              disabled={disabled}
+              disabled={commentsLocked}
               executorId={contact?.id}
               pendingFiles={pendingFiles}
               onAttachFiles={addPendingFiles}
               onRemoveFile={removePendingFile}
               placeholder={
-                disabled
+                commentsLocked
                   ? 'Комментарии недоступны'
                   : 'Написать комментарий…'
               }

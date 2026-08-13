@@ -12,6 +12,7 @@ import {
   USER_ROLE,
   useTasksInfiniteQuery,
   useTasksQuery,
+  TASK_STATUS_ENUM,
   type Task,
   type TaskStatus,
 } from '@/entities';
@@ -75,6 +76,7 @@ export const MyTasks = () => {
     viewMode,
     updatedDate,
     extraFilter,
+    activeOnly,
     onlyMyTasks,
     assigneeAccountId,
     setViewMode,
@@ -82,6 +84,7 @@ export const MyTasks = () => {
     setStatus,
     setUpdatedDate,
     setExtraFilter,
+    setActiveOnly,
     setFastButtonValue,
     setPostId,
     setOnlyMyTasks,
@@ -139,6 +142,22 @@ export const MyTasks = () => {
     return value;
   }, [location.search]);
 
+  const statusFromUrl = useMemo(() => {
+    const value = new URLSearchParams(location.search).get('status');
+
+    if (!value) return null;
+
+    return (Object.values(TASK_STATUS_ENUM) as string[]).includes(value)
+      ? (value as TaskStatus)
+      : null;
+  }, [location.search]);
+
+  const activeOnlyFromUrl = useMemo(() => {
+    const value = new URLSearchParams(location.search).get('active');
+
+    return value === '1' || value === 'true';
+  }, [location.search]);
+
   const handleUrgentOnlyChange = useCallback(
     (value: boolean) => setExtraFilter(value ? 'urgent' : null),
     [setExtraFilter],
@@ -175,9 +194,17 @@ export const MyTasks = () => {
   }, [taskIdFilter, taskQueryFilter, searchQ]);
 
   useEffect(() => {
-    if (executorIdFromUrl) {
-      setExecutorId(executorIdFromUrl);
-      setFastButtonValue(null);
+    if (executorIdFromUrl || statusFromUrl || activeOnlyFromUrl) {
+      if (executorIdFromUrl) {
+        setExecutorId(executorIdFromUrl);
+        setFastButtonValue(null);
+      }
+
+      if (statusFromUrl) {
+        setStatus(statusFromUrl);
+      }
+
+      setActiveOnly(activeOnlyFromUrl && !statusFromUrl);
       pendingDashboardNavRef.current = true;
       navigate(location.pathname, { replace: true, state: null });
       return;
@@ -204,22 +231,27 @@ export const MyTasks = () => {
     }
   }, [
     executorIdFromUrl,
+    statusFromUrl,
+    activeOnlyFromUrl,
     location.key,
     location.pathname,
     location.state,
     navigate,
     setExecutorId,
     setFastButtonValue,
+    setStatus,
+    setActiveOnly,
   ]);
 
   const queryFilters = useMemo(
     () => ({
       postId,
       executorId: executorIdFromUrl ?? executorId,
-      status,
+      status: statusFromUrl ?? status,
       viewMode,
       updatedDate,
       extraFilter,
+      activeOnly: statusFromUrl ? false : activeOnlyFromUrl || activeOnly,
       onlyMyTasks,
       assigneeAccountId,
       fastButtonValue: executorIdFromUrl ? null : fastButtonValue,
@@ -233,9 +265,12 @@ export const MyTasks = () => {
       executorIdFromUrl,
       executorId,
       status,
+      statusFromUrl,
       viewMode,
       updatedDate,
       extraFilter,
+      activeOnly,
+      activeOnlyFromUrl,
       onlyMyTasks,
       assigneeAccountId,
       fastButtonValue,

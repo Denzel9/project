@@ -342,7 +342,7 @@ export const IncomingApplicationItem = ({
                         size="small"
                         variant="outlined"
                         component={Link}
-                        to={`${ROUTES.TASK}/${post?.id}?inviteId=${application.id}`}
+                        to={`${ROUTES.TASK}/${post?.id}?userId=${application.applicant?.id ?? ''}`}
                       >
                         В задачу
                       </Button>

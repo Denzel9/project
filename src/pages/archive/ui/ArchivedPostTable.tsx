@@ -41,6 +41,7 @@ import {
   columnCellSx as getColumnCellSx,
   filterCellSx as getFilterCellSx,
   headerCellSx as getHeaderCellSx,
+  filteredColumnLabelSx,
   type TaskTableCellOptions,
 } from '@/pages/my-tasks/model/styles';
 import { ColumnDateFilter } from '@/pages/my-tasks/ui/ColumnDateFilter';
@@ -196,19 +197,17 @@ const HeaderWithFilter = ({
     direction={sortField === field ? sortOrder : 'asc'}
     onClick={() => onSort(field)}
     hideSortIcon={forPrint}
-    sx={forPrint ? { pointerEvents: 'none' } : undefined}
+    sx={{
+      ...(forPrint && { pointerEvents: 'none' }),
+      ...(isActive && filteredColumnLabelSx),
+    }}
   >
     <Stack
       direction="row"
-      spacing={0.25}
-      sx={{ alignItems: 'center', minWidth: 0, mr: 0.25 }}
+      spacing={1}
+      sx={{ alignItems: 'center', minWidth: 0, mr: 0.5 }}
     >
-      <Box
-        component="span"
-        color={isActive ? 'primary.main' : 'text.primary'}
-      >
-        {label}
-      </Box>
+      {label}
       {filter}
     </Stack>
   </TableSortLabel>
@@ -244,6 +243,7 @@ export const ArchivedPostTable = ({
 
   const edgePadding = showActionsColumn ? '32px' : undefined;
   const compactSidePadding = showColumnFilters ? 1.5 : 3;
+  const extraFirstPaddingPx = 16;
 
   const columnCellSx = (
     width: string | number,
@@ -256,6 +256,7 @@ export const ArchivedPostTable = ({
       compactSidePadding,
       edgePadding,
       options,
+      extraFirstPaddingPx,
     );
 
   const headerCellSx = (
@@ -269,6 +270,7 @@ export const ArchivedPostTable = ({
       compactSidePadding,
       edgePadding,
       options,
+      extraFirstPaddingPx,
     );
 
   const filterCellSx = (
@@ -281,6 +283,7 @@ export const ArchivedPostTable = ({
       isFilterRowOpen,
       headerRowHeight,
       options,
+      extraFirstPaddingPx,
     );
 
   const renderFilterCellContent = (content: ReactNode) => (
@@ -491,7 +494,7 @@ export const ArchivedPostTable = ({
                               color={
                                 columnFilters.urgentOnly ? 'error' : 'action'
                               }
-                              sx={{ fontSize: 16 }}
+                              sx={{ fontSize: 18 }}
                             />
                           </IconButton>
                         </Tooltip>

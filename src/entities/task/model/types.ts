@@ -122,6 +122,7 @@ export type TaskMedia = {
   key: string
   size: string
   mimeType: string
+  fileName?: string | null
   kind: TaskMediaKind
 }
 
@@ -602,7 +603,7 @@ export type CreateTaskDto = {
   cooperationDetails?: CooperationDetails | null
   brief?: PostBrief | null
   deliverables?: PostDeliverable[] | null
-  media?: Array<Pick<TaskMedia, 'url' | 'key' | 'size' | 'mimeType'>> | null
+  media?: Array<Pick<TaskMedia, 'url' | 'key' | 'size' | 'mimeType' | 'fileName'>> | null
 }
 
 export type CreateTaskCommentDto = {

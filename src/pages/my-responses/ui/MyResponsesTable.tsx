@@ -96,7 +96,7 @@ const ResponseRowActions = ({
               <IconButton
                 size="small"
                 component={Link}
-                to={`${ROUTES.TASK}/${post?.id}?inviteId=${taskId}`}
+                to={`${ROUTES.TASK}/${post?.id}?taskId=${taskId}`}
               >
                 <Task />
               </IconButton>

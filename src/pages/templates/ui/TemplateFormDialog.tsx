@@ -1,16 +1,31 @@
+import { yupResolver } from '@hookform/resolvers/yup';
 import { Close } from '@mui/icons-material';
 import {
   Button,
   Checkbox,
   Dialog,
+  DialogActions,
+  DialogContent,
   IconButton,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 
-import type { CreateTaskTemplateDto, TaskTemplate } from '@/entities';
+import { TASK_STATUS_ENUM, type CreateTaskTemplateDto, type TaskTemplate } from '@/entities';
+import {
+  defaultValues,
+  schema,
+  type TaskFormType,
+} from '@/features/task-form/model/schema/schema';
+import { TaskFormFields } from '@/features/task-form/ui/TaskFormFields';
+
+import {
+  mapFormToTaskTemplateBody,
+  mapTaskTemplateToForm,
+} from '../model/mappers';
 
 type TemplateFormDialogProps = {
   open: boolean;
@@ -28,24 +43,23 @@ export const TemplateFormDialog = ({
   onSubmit,
 }: TemplateFormDialogProps) => {
   const [name, setName] = useState('');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [photoCount, setPhotoCount] = useState('0');
-  const [videoCount, setVideoCount] = useState('0');
   const [urgent, setUrgent] = useState(false);
+
+  const methods = useForm<TaskFormType>({
+    defaultValues,
+    mode: 'onSubmit',
+    resolver: yupResolver(schema),
+  });
 
   useEffect(() => {
     if (!open) return;
 
     setTimeout(() => {
       setName(initial?.name ?? '');
-      setTitle(initial?.title ?? '');
-      setDescription(initial?.description ?? '');
-      setPhotoCount(initial?.photoCount ?? '0');
-      setVideoCount(initial?.videoCount ?? '0');
       setUrgent(initial?.urgent ?? false);
+      methods.reset(mapTaskTemplateToForm(initial));
     }, 0);
-  }, [open, initial]);
+  }, [open, initial, methods]);
 
   const canSubmit = name.trim().length > 0 && !isPending;
 
@@ -54,140 +68,112 @@ export const TemplateFormDialog = ({
     onClose();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = methods.handleSubmit(async values => {
     if (!canSubmit) return;
 
-    await onSubmit({
-      name: name.trim(),
-      title: title.trim() || null,
-      description,
-      photoCount,
-      videoCount,
-      urgent,
-    });
-  };
+    await onSubmit(mapFormToTaskTemplateBody(name.trim(), values, urgent));
+  });
 
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="md"
+      scroll="paper"
       slotProps={{
         paper: {
           sx: {
-            borderRadius: '24px',
-            p: { xs: 2, sm: 3 },
             m: 0,
-            width: { xs: '100%', md: 560 },
+            p: { xs: 1, sm: 2 },
+            width: { xs: '100%', md: 720 },
+            borderRadius: { xs: 0, md: '24px' },
             maxWidth: { xs: '100%', md: '90%' },
+            maxHeight: { xs: '100%', sm: '90vh' },
           },
         },
       }}
     >
-      <Stack
-        direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
-      >
-        <Typography variant="h6">
-          {initial ? 'Редактировать шаблон' : 'Новый шаблон'}
-        </Typography>
-        <IconButton
-          aria-label="Закрыть"
-          disabled={isPending}
-          onClick={handleClose}
-        >
-          <Close />
-        </IconButton>
-      </Stack>
-
-      <Stack spacing={2}>
-        <TextField
-          required
-          label="Название шаблона"
-          value={name}
-          onChange={event => setName(event.target.value)}
-          fullWidth
-          disabled={isPending}
-        />
-        <TextField
-          label="Название задачи"
-          value={title}
-          onChange={event => setTitle(event.target.value)}
-          fullWidth
-          disabled={isPending}
-        />
-        <TextField
-          label="Описание"
-          value={description}
-          onChange={event => setDescription(event.target.value)}
-          fullWidth
-          multiline
-          minRows={3}
-          disabled={isPending}
-        />
+      <FormProvider {...methods}>
         <Stack
           direction="row"
-          spacing={2}
+          sx={{
+            px: { xs: 1, sm: 2 },
+            pt: { xs: 1, sm: 1 },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <TextField
-            label="Фото"
-            value={photoCount}
-            onChange={event => setPhotoCount(event.target.value)}
-            fullWidth
-            disabled={isPending}
-          />
-          <TextField
-            label="Видео"
-            value={videoCount}
-            onChange={event => setVideoCount(event.target.value)}
-            fullWidth
-            disabled={isPending}
-          />
-        </Stack>
-
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center' }}
-        >
-          <Checkbox
-            checked={urgent}
-            disabled={isPending}
-            onChange={event => setUrgent(event.target.checked)}
-          />
-          <Typography
-            variant="body1"
-            color="text.secondary"
-          >
-            Срочная
+          <Typography variant="h6">
+            {initial ? 'Редактировать шаблон' : 'Новый шаблон'}
           </Typography>
+          <IconButton
+            aria-label="Закрыть"
+            disabled={isPending}
+            onClick={handleClose}
+          >
+            <Close />
+          </IconButton>
         </Stack>
-      </Stack>
 
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{ mt: 3 }}
-      >
-        <Button
-          variant="outlined"
-          color="primary"
-          disabled={isPending}
-          onClick={handleClose}
-        >
-          Отменить
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          loading={isPending}
-          disabled={!canSubmit}
-          onClick={() => void handleSubmit()}
-        >
-          {initial ? 'Сохранить' : 'Создать'}
-        </Button>
-      </Stack>
+        <DialogContent sx={{ px: { xs: 1, sm: 2 }, pb: 1 }}>
+          <Stack spacing={3}>
+            <TextField
+              required
+              label="Название шаблона"
+              value={name}
+              onChange={event => setName(event.target.value)}
+              fullWidth
+              disabled={isPending}
+            />
+
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center' }}
+            >
+              <Checkbox
+                checked={urgent}
+                disabled={isPending}
+                onChange={event => setUrgent(event.target.checked)}
+              />
+              <Typography
+                variant="body1"
+                color="text.secondary"
+              >
+                Срочная
+              </Typography>
+            </Stack>
+
+            <TaskFormFields
+              isMe
+              isEdit
+              status={TASK_STATUS_ENUM.PREPARING}
+              onStartEdit={() => undefined}
+            />
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ px: { xs: 1, sm: 2 }, pb: { xs: 1, sm: 2 } }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            disabled={isPending}
+            onClick={handleClose}
+          >
+            Отменить
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            loading={isPending}
+            disabled={!canSubmit}
+            onClick={() => void handleSubmit()}
+          >
+            {initial ? 'Сохранить' : 'Создать'}
+          </Button>
+        </DialogActions>
+      </FormProvider>
     </Dialog>
   );
 };

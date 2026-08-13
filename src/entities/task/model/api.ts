@@ -145,6 +145,7 @@ const uploadsToTaskMedia = (
     key: upload.key,
     mimeType: upload.mimeType,
     size: String(upload.size),
+    fileName: upload.fileName ?? null,
     kind: (kind === 'report' ? 'REPORT' : 'MAIN') as TaskMediaKind,
   }))
 
@@ -1239,7 +1240,8 @@ export const uploadTaskMedia = async (
     ? file
     : await prepareFileForUpload(file)
   const formData = new FormData()
-  formData.append('file', prepared)
+  formData.append('file', prepared, file.name)
+  formData.append('fileName', file.name)
 
   const { data } = await mainAxios.post<UploadMediaResponse>(
     '/media/upload',

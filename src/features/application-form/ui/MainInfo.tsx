@@ -14,8 +14,6 @@ import { useNavigate } from 'react-router';
 import { WorkFormatEnum, getWorkFormatLabel, EmploymentTypeEnum, getEmploymentTypeLabel } from '@/entities/post';
 import { RHFInput, RHFRadio, RHFSwitch } from '@/shared/ui/rhf';
 
-import MenuButton from './MenuButton';
-
 const ADVANTAGE_OPTIONS = [
   'Удаленно',
   'На месте работодателя',
@@ -25,14 +23,12 @@ const ADVANTAGE_OPTIONS = [
 
 type Props = {
   isEdit?: boolean;
-  menuOptions?: string[];
-  onMenuAction?: (action: string) => void;
+  saveAsTemplate?: boolean;
 };
 
 export const MainInfo = ({
   isEdit = false,
-  menuOptions = [],
-  onMenuAction,
+  saveAsTemplate = false,
 }: Props) => {
   const { control, setValue } = useFormContext();
 
@@ -69,16 +65,15 @@ export const MainInfo = ({
               display: { xs: 'none', lg: 'block' },
             }}
           >
-            {isEdit ? 'Редактирование обьявления' : 'Новое обьявление'}
+            {saveAsTemplate
+              ? isEdit
+                ? 'Редактирование шаблона'
+                : 'Новый шаблон объявления'
+              : isEdit
+                ? 'Редактирование обьявления'
+                : 'Новое обьявление'}
           </Typography>
         </Box>
-
-        {Boolean(menuOptions.length) && onMenuAction && isEdit && (
-          <MenuButton
-            options={menuOptions}
-            onAction={onMenuAction}
-          />
-        )}
       </Box>
 
       <Box sx={{ width: { lg: '50%', xs: '100%' } }}>
@@ -173,14 +168,16 @@ export const MainInfo = ({
           />
         </Box>
 
-        <Box sx={{ my: 4 }}>
-          <RHFSwitch
-            name="isPrivate"
-            control={control}
-            label="Приватное объявление"
-            description="Видно только Вам"
-          />
-        </Box>
+        {!saveAsTemplate && (
+          <Box sx={{ my: 4 }}>
+            <RHFSwitch
+              name="isPrivate"
+              control={control}
+              label="Приватное объявление"
+              description="Видно только Вам"
+            />
+          </Box>
+        )}
 
         <Box sx={{ my: 4 }}>
           <Typography

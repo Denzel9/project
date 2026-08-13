@@ -1,10 +1,9 @@
-import { CalendarMonthOutlined } from '@mui/icons-material';
-import { IconButton, Popover, Stack } from '@mui/material';
-import { type Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
+import { Close, Tune } from '@mui/icons-material';
+import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
 
+import { FilterDateField } from '@/features/main-filter';
 import { FilterAutocomplete } from '@/shared';
-import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter';
 
 import {
   POST_APPLICATION_STATUS_FILTER_LABELS,
@@ -27,6 +26,12 @@ type PostApplicationsFilterProps = {
   onApplicantChange: (value: PostApplicationApplicantFilter) => void;
 };
 
+type Draft = {
+  status: PostApplicationStatusFilter;
+  applicantId: PostApplicationApplicantFilter;
+  createdDate: string | null;
+};
+
 export const PostApplicationsFilter = ({
   status,
   applicantId,
@@ -36,7 +41,12 @@ export const PostApplicationsFilter = ({
   onApplicantChange,
   onCreatedDateChange,
 }: PostApplicationsFilterProps) => {
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [draft, setDraft] = useState<Draft>({
+    status,
+    applicantId,
+    createdDate,
+  });
 
   const statusOptions = useMemo(
     () =>
@@ -49,14 +59,30 @@ export const PostApplicationsFilter = ({
     []
   );
 
-  const handleDateChange = (date: Dayjs | null) => {
-    onCreatedDateChange(date ? date.format('YYYY-MM-DD') : null);
-    setAnchorEl(null);
+  const hasMobileFilters =
+    status !== 'all' || applicantId !== 'all' || Boolean(createdDate);
+
+  useEffect(() => {
+    if (!isMobileFilterOpen) return;
+
+    setTimeout(() => {
+      setDraft({ status, applicantId, createdDate });
+    }, 0);
+  }, [isMobileFilterOpen, status, applicantId, createdDate]);
+
+  const handleApply = () => {
+    onStatusChange(draft.status);
+    onApplicantChange(draft.applicantId);
+    onCreatedDateChange(draft.createdDate);
+    setIsMobileFilterOpen(false);
   };
 
-  const handleClearDate = () => {
+  const handleReset = () => {
+    setDraft({ status: 'all', applicantId: 'all', createdDate: null });
+    onStatusChange('all');
+    onApplicantChange('all');
     onCreatedDateChange(null);
-    setAnchorEl(null);
+    setIsMobileFilterOpen(false);
   };
 
   return (
@@ -65,18 +91,12 @@ export const PostApplicationsFilter = ({
         direction="row"
         spacing={2}
         sx={{
+          minWidth: 0,
           px: { xs: 1, md: 2 },
           alignItems: 'center',
-          minWidth: 0,
+          display: { xs: 'none', md: 'flex' },
         }}
       >
-        <IconButton
-          color={createdDate ? 'primary' : 'default'}
-          onClick={event => setAnchorEl(event.currentTarget)}
-        >
-          <CalendarMonthOutlined />
-        </IconButton>
-
         <FilterAutocomplete
           label="Статус"
           size="small"
@@ -96,26 +116,121 @@ export const PostApplicationsFilter = ({
           onChange={onApplicantChange}
           sx={{ flex: 1, maxWidth: { md: 280 }, minWidth: 250 }}
         />
+
+        <Box sx={{ flex: 1, minWidth: 180, maxWidth: { md: 220 } }}>
+          <FilterDateField
+            size="small"
+            label="Дата создания"
+            value={createdDate ?? ''}
+            onChange={value => onCreatedDateChange(value || null)}
+          />
+        </Box>
       </Stack>
 
-      <Popover
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
+      <IconButton
+        onClick={() => setIsMobileFilterOpen(true)}
+        sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+        color={
+          isMobileFilterOpen || hasMobileFilters ? 'primary' : 'default'
+        }
+      >
+        <Tune />
+      </IconButton>
+
+      <Drawer
+        anchor="right"
+        open={isMobileFilterOpen}
+        onClose={() => setIsMobileFilterOpen(false)}
         sx={{
-          '& .MuiPopover-paper': {
-            borderRadius: '32px',
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
+            width: { xs: '100%', sm: '80%' },
           },
         }}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <DateCalendarFilter
-          value={createdDate}
-          onChange={handleDateChange}
-          onClear={handleClearDate}
-        />
-      </Popover>
+        <Stack
+          direction="column"
+          sx={{
+            height: '100%',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Stack spacing={3}>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Typography variant="h6">Фильтры</Typography>
+              <IconButton onClick={() => setIsMobileFilterOpen(false)}>
+                <Close />
+              </IconButton>
+            </Stack>
+
+            <FilterAutocomplete
+              label="Статус"
+              value={draft.status}
+              options={statusOptions}
+              onChange={value =>
+                setDraft(prev => ({
+                  ...prev,
+                  status: value as PostApplicationStatusFilter,
+                }))
+              }
+              sx={{ width: '100%' }}
+            />
+
+            <FilterAutocomplete
+              label="Кандидат"
+              value={draft.applicantId}
+              options={applicantOptions}
+              onChange={value =>
+                setDraft(prev => ({
+                  ...prev,
+                  applicantId: value,
+                }))
+              }
+              sx={{ width: '100%' }}
+            />
+
+            <FilterDateField
+              label="Дата создания"
+              value={draft.createdDate ?? ''}
+              onChange={value =>
+                setDraft(prev => ({
+                  ...prev,
+                  createdDate: value || null,
+                }))
+              }
+            />
+          </Stack>
+
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{ mt: 4 }}
+          >
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleReset}
+            >
+              Сбросить
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleApply}
+            >
+              Применить
+            </Button>
+          </Stack>
+        </Stack>
+      </Drawer>
     </>
   );
 };

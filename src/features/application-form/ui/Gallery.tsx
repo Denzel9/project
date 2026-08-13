@@ -24,6 +24,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { hasVideoMedia, type LocalMediaFile } from '@/shared/lib/media'
 import {
   FullScreenGallery,
+  getMediaKind,
   isGalleryMedia,
   MediaItem,
   UploadButton,
@@ -167,7 +168,9 @@ const DraggableImage = ({
 }: DraggableImageProps) => {
   const ref = useRef<HTMLDivElement>(null)
   const didDragRef = useRef(false)
+  const mediaKind = getMediaKind(image.url, image.mimeType)
   const canPreview = isGalleryMedia(image.mimeType, image.url)
+  const canOpenDocument = mediaKind === 'document' && Boolean(image.url)
 
   const [{ isDragging }, drag] = useDrag({
     type: DRAG_TYPE,
@@ -216,7 +219,14 @@ const DraggableImage = ({
       return
     }
 
-    if (!canPreview || isDragging) return
+    if (isDragging) return
+
+    if (canOpenDocument) {
+      window.open(image.url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    if (!canPreview) return
 
     onOpen(index)
   }
@@ -233,14 +243,26 @@ const DraggableImage = ({
       onClick={handleOpen}
       sx={{
         ...tileSx,
-        cursor: canDrag ? 'grab' : canPreview ? 'zoom-in' : 'default',
+        cursor: canDrag
+          ? 'grab'
+          : canPreview
+            ? 'zoom-in'
+            : canOpenDocument
+              ? 'pointer'
+              : 'default',
         opacity: isDragging ? 0.45 : 1,
         boxShadow: canDrag && isOver ? '0 0 0 2px' : 'none',
         borderColor: canDrag && isOver ? 'primary.main' : 'divider',
         transition:
           'opacity 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
         '&:active': {
-          cursor: canDrag ? 'grabbing' : canPreview ? 'zoom-in' : 'default',
+          cursor: canDrag
+            ? 'grabbing'
+            : canPreview
+              ? 'zoom-in'
+              : canOpenDocument
+                ? 'pointer'
+                : 'default',
         },
       }}
     >
@@ -285,6 +307,8 @@ const DraggableImage = ({
           src={image.url}
           mimeType={image.mimeType}
           alt={image.key}
+          fileName={image.filename}
+          fill={mediaKind === 'document'}
         />
       </Box>
     </Box>

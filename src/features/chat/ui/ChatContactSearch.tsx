@@ -23,6 +23,7 @@ type ChatContactSearchProps = {
   size?: 'small' | 'medium';
   excludeUserIds?: string[];
   filter?: ChatFilter;
+  withFilter?: boolean;
   onFilterChange?: (filter: ChatFilter) => void;
   onSelect: (user: UserSearchItem) => void | Promise<void>;
 };
@@ -33,6 +34,7 @@ export const ChatContactSearch = ({
   size = 'medium',
   excludeUserIds,
   filter = 'all',
+  withFilter = true,
   onFilterChange,
   onSelect,
 }: ChatContactSearchProps) => {
@@ -78,11 +80,9 @@ export const ChatContactSearch = ({
       setIsOpening(false);
     }
   };
-
+  console.log(filter);
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', width: '100%' }}>
-
-
       <Autocomplete
         fullWidth
         size={size}
@@ -157,6 +157,7 @@ export const ChatContactSearch = ({
           <TextField
             {...params}
             placeholder={placeholder}
+            size='small'
             slotProps={{
               input: {
                 startAdornment: (
@@ -170,42 +171,44 @@ export const ChatContactSearch = ({
         )}
       />
 
-      <IconButton onClick={(event) => setMenuAnchorEl(event.currentTarget)}>
-        <FilterList />
-      </IconButton>
+      {withFilter && <>
+        <IconButton onClick={(event) => setMenuAnchorEl(event.currentTarget)}>
+          <FilterList />
+        </IconButton>
 
-      <Menu
-        open={Boolean(menuAnchorEl)}
-        onClose={() => setMenuAnchorEl(null)}
-        anchorEl={menuAnchorEl}
-        sx={{
-          '& .MuiPaper-root': {
-            minWidth: 200,
-            borderRadius: '24px',
-          },
-        }}
-      >
-        <MenuItem
-          onClick={() => {
-            onFilterChange?.('all');
-            setMenuAnchorEl(null);
+        <Menu
+          open={Boolean(menuAnchorEl)}
+          onClose={() => setMenuAnchorEl(null)}
+          anchorEl={menuAnchorEl}
+          sx={{
+            '& .MuiPaper-root': {
+              minWidth: 200,
+              borderRadius: '24px',
+            },
           }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
         >
-          <Typography>Все</Typography>
-          {filter === 'all' && <Check fontSize="small" color="primary" />}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            onFilterChange?.('unread');
-            setMenuAnchorEl(null);
-          }}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
-        >
-          <Typography>Непрочитано</Typography>
-          {filter === 'unread' && <Check fontSize="small" color="primary" />}
-        </MenuItem>
-      </Menu>
+          <MenuItem
+            onClick={() => {
+              onFilterChange?.('all');
+              setMenuAnchorEl(null);
+            }}
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+          >
+            <Typography>Все</Typography>
+            {filter === 'all' && <Check fontSize="small" color="primary" />}
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              onFilterChange?.('unread');
+              setMenuAnchorEl(null);
+            }}
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+          >
+            <Typography>Непрочитано</Typography>
+            {filter === 'unread' && <Check fontSize="small" color="primary" />}
+          </MenuItem>
+        </Menu>
+      </>}
     </Stack>
   );
 };

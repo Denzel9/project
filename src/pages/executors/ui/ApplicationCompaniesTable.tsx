@@ -26,7 +26,7 @@ import {
   sortApplicationCompanyRows,
 } from '../model/utils';
 
-import { PartnersColumnFilterButton } from './PartnersColumnFilterButton';
+import { PartnersColumnFilterButton, filteredColumnLabelSx } from './PartnersColumnFilterButton';
 import { PartnersRowActionsMenu } from './PartnersRowActionsMenu';
 import { partnersTableShellSx } from './PartnersTableSkeleton';
 
@@ -170,13 +170,14 @@ export const ApplicationCompaniesTable = ({
               <TableCell sortDirection={getSortDirection('name')}>
                 <Stack
                   direction="row"
-                  spacing={0.25}
+                  spacing={1}
                   sx={{ alignItems: 'center', minWidth: 0 }}
                 >
                   <TableSortLabel
                     active={sortField === 'name'}
                     direction={sortField === 'name' ? sortOrder : 'asc'}
                     onClick={() => handleSort('name')}
+                    sx={hasActiveUserFilter ? filteredColumnLabelSx : undefined}
                   >
                     Компания
                   </TableSortLabel>

@@ -30,6 +30,6 @@ export const PublicationColumnFilterButton = ({
       }),
     }}
   >
-    <FilterList sx={{ fontSize: 16 }} />
+    <FilterList sx={{ fontSize: 18 }} />
   </IconButton>
 );

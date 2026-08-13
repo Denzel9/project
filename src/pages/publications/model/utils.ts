@@ -185,7 +185,7 @@ export const getPublicationPreviewMedia = (publication: Publication) =>
   publication.media.filter(item => isGalleryMedia(item.mimeType, item.url))
 
 export const getPublicationTaskPath = (publication: Publication) =>
-  `${ROUTES.TASK}/${publication.postId}?taskId=${publication.taskId}&inviteId=${publication.taskId}`
+  `${ROUTES.TASK}/${publication.postId}?taskId=${publication.taskId}`
 
 export const getPublicationExecutorName = (publication: Publication) => {
   if (publication.executor) {

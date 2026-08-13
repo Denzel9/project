@@ -21,7 +21,7 @@ import { EmptyBlock, FilterAutocomplete, ROUTES } from '@/shared';
 import { PARTNERS_TABLE_PAGE_SIZE } from '../model/constants';
 import { formatRelativeTime, sortTaskContactRows } from '../model/utils';
 
-import { PartnersColumnFilterButton } from './PartnersColumnFilterButton';
+import { PartnersColumnFilterButton, filteredColumnLabelSx } from './PartnersColumnFilterButton';
 import { PartnersRowActionsMenu } from './PartnersRowActionsMenu';
 import { partnersTableShellSx } from './PartnersTableSkeleton';
 
@@ -179,7 +179,7 @@ export const TaskContactsTable = ({
             <TableRow>
               <TableCell sortDirection={getSortDirection('name')}>
                 <Stack
-                  spacing={0}
+                  spacing={1}
                   direction="row"
                   sx={{ alignItems: 'center' }}
                 >
@@ -187,6 +187,7 @@ export const TaskContactsTable = ({
                     active={sortField === 'name'}
                     direction={sortField === 'name' ? sortOrder : 'asc'}
                     onClick={() => handleSort('name')}
+                    sx={hasActiveUserFilter ? filteredColumnLabelSx : undefined}
                   >
                     {contactColumnLabel}
                   </TableSortLabel>

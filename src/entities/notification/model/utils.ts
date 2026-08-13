@@ -49,11 +49,11 @@ const getTaskLink = (payload: NotificationPayload) => {
   const postId = payload.postId
 
   if (taskId && postId) {
-    return `${ROUTES.TASK}/${postId}?taskId=${taskId}&inviteId=${taskId}`
+    return `${ROUTES.TASK}/${postId}?taskId=${taskId}`
   }
 
   if (taskId) {
-    return `${ROUTES.TASK}/${taskId}?taskId=${taskId}&inviteId=${taskId}`
+    return `${ROUTES.TASK}/${taskId}?taskId=${taskId}`
   }
 
   if (postId) {

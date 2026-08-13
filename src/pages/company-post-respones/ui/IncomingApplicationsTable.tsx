@@ -128,7 +128,7 @@ const ApplicationRowActions = ({
             {isPrime && (
               <IconButton
                 component={Link}
-                to={`${ROUTES.TASK}/${application.post?.id}?inviteId=${application.id}`}
+                to={`${ROUTES.TASK}/${application.post?.id}?userId=${application.applicant?.id ?? ''}`}
               >
                 <Task />
               </IconButton>

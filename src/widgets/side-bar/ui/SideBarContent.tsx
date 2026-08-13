@@ -16,7 +16,7 @@ import { USER_ROLE } from '@/entities';
 import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
-import logoSmall from '../../../../public/Mark.png';
+import logoSmall from '../../../../public/logo.png';
 import logo from '../../../../public/Primary.png';
 import { TOP_MENU_ROUTES, BOTTOM_MENU_ROUTES } from '../model/routes/routes';
 import { useSideBarStore } from '../model/store/store';

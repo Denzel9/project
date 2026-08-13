@@ -23,7 +23,7 @@ self.addEventListener('push', event => {
     self.registration.showNotification(payload.title || 'Nikssens', {
       body: payload.body || '',
       icon: '/pwa-192.png',
-      badge: '/Mark.png',
+      badge: '/logo.png',
       data: { url: payload.url || '/' },
     }),
   )

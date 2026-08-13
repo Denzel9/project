@@ -12,6 +12,14 @@ import { useSnackbarStore } from './widgets/snackbar/model/store'
 
 initSentry()
 
+const hideAppSplash = () => {
+  const splash = document.getElementById('app-splash')
+  if (!splash) return
+
+  splash.classList.add('is-hidden')
+  window.setTimeout(() => splash.remove(), 280)
+}
+
 const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
@@ -61,3 +69,8 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </Sentry.ErrorBoundary>,
 )
+
+requestAnimationFrame(() => {
+  requestAnimationFrame(hideAppSplash)
+})
+

@@ -47,11 +47,13 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       includeAssets: [
-        'Mark.png',
         'Primary.png',
         'logo.png',
         'pwa-192.png',
         'pwa-512.png',
+        'splash-logo.png',
+        'splash-iphone-*.png',
+        'splash-ipad-*.png',
         'robots.txt',
         'push-handler.js',
       ],
@@ -60,8 +62,8 @@ export default defineConfig({
         short_name: 'Nikssens',
         description:
           'Платформа, где бренды находят исполнителей и ведут работу от объявления до результата',
-        theme_color: '#4d908e',
-        background_color: '#ffffff',
+        theme_color: '#1F2426',
+        background_color: '#1F2426',
         display: 'standalone',
         orientation: 'portrait-primary',
         lang: 'ru',

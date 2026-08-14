@@ -10,6 +10,7 @@ import {
   RecoveryPasswordForm,
   ResetPasswordForm,
 } from '@/features';
+import { WHITE_COLOR } from '@/features/auth/model/constants';
 import { ROUTES, SAFE_AREA } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -58,6 +59,7 @@ export const AuthPage = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'row',
+        // bgcolor: 'white',
         boxSizing: 'border-box',
         pt: SAFE_AREA.top,
         pb: SAFE_AREA.bottom,
@@ -87,16 +89,15 @@ export const AuthPage = () => {
           }}
         >
           <img
-            src="./Primary.png"
+            src="./splash-logo.png"
             alt="auth-background"
             width={277}
             height={64}
           />
 
           <Typography
-            color="info"
             variant="caption"
-            sx={{ width: { xs: 230, md: 'auto' } }}
+            sx={{ width: { xs: 230, md: 'auto' }, color: WHITE_COLOR }}
           >
             Лучший способ создавать и управлять своим контентом
           </Typography>
@@ -136,7 +137,7 @@ export const AuthPage = () => {
               {isResetPassword && (
                 <Typography
                   variant="h6"
-                  color="info"
+                  color={WHITE_COLOR}
                 >
                   Пароль успешно изменен! Войдите в систему
                 </Typography>
@@ -145,7 +146,7 @@ export const AuthPage = () => {
               {emailConfirmed && (
                 <Typography
                   variant="h6"
-                  color="info"
+                  color={WHITE_COLOR}
                   sx={{ mb: 2 }}
                 >
                   Почта подтверждена! Войдите в систему
@@ -167,7 +168,7 @@ export const AuthPage = () => {
         >
           <Typography
             variant="body2"
-            color="white"
+            sx={{ color: WHITE_COLOR }}
           >
             Nikssens © 2026
           </Typography>
@@ -175,37 +176,37 @@ export const AuthPage = () => {
           <Link
             href="/help"
             sx={{
+              color: WHITE_COLOR,
               textDecoration: 'none',
-              color: 'inherit',
               transition: 'color 0.2s ease',
               '&:hover': { color: BASE_COLOR },
             }}
           >
-            <Typography variant="body2">База знаний</Typography>
+            <Typography variant="body2" >База знаний</Typography>
           </Link>
 
           <Link
             href="/help"
             sx={{
               textDecoration: 'none',
-              color: 'inherit',
+              color: WHITE_COLOR,
               transition: 'color 0.2s ease',
               '&:hover': { color: BASE_COLOR },
             }}
           >
-            <Typography variant="body2">Сценарии</Typography>
+            <Typography variant="body2" >Сценарии</Typography>
           </Link>
 
           <Link
             href="/help"
             sx={{
               textDecoration: 'none',
-              color: 'inherit',
+              color: WHITE_COLOR,
               transition: 'color 0.2s ease',
               '&:hover': { color: BASE_COLOR },
             }}
           >
-            <Typography variant="body2">Помощь</Typography>
+            <Typography variant="body2" >Помощь</Typography>
           </Link>
         </Stack>
       </Box>

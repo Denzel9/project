@@ -61,7 +61,7 @@ export const ExecutorListDialog = ({
       maxWidth="sm"
       slotProps={{
         paper: {
-          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 } },
+          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, width: '100%', m: 2 },
         },
       }}
     >

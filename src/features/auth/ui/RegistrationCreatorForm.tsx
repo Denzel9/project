@@ -4,13 +4,14 @@ import {
   VisibilityOffOutlined,
   VisibilityOutlined,
 } from '@mui/icons-material';
-import { Box, Button, IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, Button, IconButton, Stack, } from '@mui/material';
 import axios from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { prefetchUserConfig } from '@/entities/user-config';
+import { NSTooltip } from '@/shared';
 import { queryClient } from '@/shared/api';
 import { RHFInput } from '@/shared/ui/rhf';
 
@@ -22,6 +23,7 @@ import {
   type RegistrationCreatorRequest,
 } from '../model';
 import { useRegistrationUserMutation } from '../model/api/api';
+import { WHITE_COLOR, WHITE_INPUT_VARIANT } from '../model/constants';
 import { useAuthStore } from '../model/store/store';
 import { PASSWORD_RULES_HINT } from '../model/utils/validation';
 
@@ -96,7 +98,7 @@ const RegistrationCreatorForm = ({
               control={control}
               props={{
                 label: 'Имя',
-                sx: { flex: 1 },
+                sx: { flex: 1, ...WHITE_INPUT_VARIANT },
               }}
             />
 
@@ -105,7 +107,7 @@ const RegistrationCreatorForm = ({
               control={control}
               props={{
                 label: 'Фамилия',
-                sx: { flex: 1 },
+                sx: { flex: 1, ...WHITE_INPUT_VARIANT },
               }}
             />
           </Box>
@@ -116,6 +118,7 @@ const RegistrationCreatorForm = ({
             props={{
               label: 'Почта',
               type: 'email',
+              sx: { ...WHITE_INPUT_VARIANT },
             }}
           />
 
@@ -128,29 +131,24 @@ const RegistrationCreatorForm = ({
                 direction="row"
                 sx={{ alignItems: 'center' }}
               >
-                <Tooltip
+                <NSTooltip
                   title={PASSWORD_RULES_HINT}
-                  slotProps={{
-                    tooltip: {
-                      sx: { whiteSpace: 'pre-line' },
-                    },
-                  }}
                 >
                   <HelpOutlineOutlined
-                    color="info"
-                    sx={{ cursor: 'help' }}
+                    sx={{ color: WHITE_COLOR, cursor: 'pointer' }}
                   />
-                </Tooltip>
+                </NSTooltip>
                 <IconButton onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? (
-                    <VisibilityOffOutlined />
+                    <VisibilityOffOutlined sx={{ color: WHITE_COLOR }} />
                   ) : (
-                    <VisibilityOutlined />
+                    <VisibilityOutlined sx={{ color: WHITE_COLOR }} />
                   )}
                 </IconButton>
               </Stack>
             }
             props={{
+              sx: { ...WHITE_INPUT_VARIANT },
               label: 'Пароль',
               type: showPassword ? 'text' : 'password',
             }}
@@ -164,13 +162,14 @@ const RegistrationCreatorForm = ({
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? (
-                  <VisibilityOffOutlined />
+                  <VisibilityOffOutlined sx={{ color: WHITE_COLOR }} />
                 ) : (
-                  <VisibilityOutlined />
+                  <VisibilityOutlined sx={{ color: WHITE_COLOR }} />
                 )}
               </IconButton>
             }
             props={{
+              sx: { ...WHITE_INPUT_VARIANT },
               label: 'Повторите пароль',
               type: showConfirmPassword ? 'text' : 'password',
             }}

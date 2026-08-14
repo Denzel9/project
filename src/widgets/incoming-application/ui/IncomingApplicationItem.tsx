@@ -300,67 +300,67 @@ export const IncomingApplicationItem = ({
 
           {(canRespond ||
             application.status === APPLICATION_STATUS_ENUM.ACCEPTED) && (
-            <Box
-              sx={{ flexShrink: 0, pt: 1.5 }}
-              onClick={event => event.stopPropagation()}
-            >
-              <Divider sx={{ mb: 1.5 }} />
-
-              <Stack
-                direction="row"
-                spacing={0.75}
-                sx={{ flexWrap: 'wrap', gap: 0.75 }}
+              <Box
+                sx={{ flexShrink: 0, pt: 1.5 }}
+                onClick={event => event.stopPropagation()}
               >
-                {canRespond && (
-                  <>
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      disabled={isPending}
-                      onClick={() => setIsOpenRejectDialog(true)}
-                    >
-                      Отклонить
-                    </Button>
+                <Divider sx={{ mb: 1.5 }} />
 
-                    <Button
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                      disabled={isPending}
-                      onClick={() => void handleAccept()}
-                    >
-                      Принять
-                    </Button>
-                  </>
-                )}
+                <Stack
+                  direction="row"
+                  spacing={0.75}
+                  sx={{ flexWrap: 'wrap', gap: 0.75 }}
+                >
+                  {canRespond && (
+                    <>
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={isPending}
+                        onClick={() => setIsOpenRejectDialog(true)}
+                      >
+                        Отклонить
+                      </Button>
 
-                {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
-                  <>
-                    {isPrime && (
+                      <Button
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        disabled={isPending}
+                        onClick={() => void handleAccept()}
+                      >
+                        Принять
+                      </Button>
+                    </>
+                  )}
+
+                  {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
+                    <>
+                      {isPrime && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          component={Link}
+                          to={`${ROUTES.TASK}/${post?.id}?userId=${application.applicant?.id ?? ''}`}
+                        >
+                          В задачу
+                        </Button>
+                      )}
+
                       <Button
                         size="small"
                         variant="outlined"
                         component={Link}
-                        to={`${ROUTES.TASK}/${post?.id}?userId=${application.applicant?.id ?? ''}`}
+                        to={`${ROUTES.CHATS}?recipientId=${application.applicant?.id ?? ''}`}
                       >
-                        В задачу
+                        Чат
                       </Button>
-                    )}
-
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      component={Link}
-                      to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
-                    >
-                      Чат
-                    </Button>
-                  </>
-                )}
-              </Stack>
-            </Box>
-          )}
+                    </>
+                  )}
+                </Stack>
+              </Box>
+            )}
         </Stack>
       </Stack>
 

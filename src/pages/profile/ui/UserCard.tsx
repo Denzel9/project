@@ -178,7 +178,7 @@ export const UserCard = ({
             <Button
               size="small"
               sx={{ px: 0 }}
-              onClick={() => navigate(`${ROUTES.CHAT}?recipientId=${user?.id}`)}
+              onClick={() => navigate(`${ROUTES.CHATS}?recipientId=${user?.id}`)}
             >
               Написать сообщение
             </Button>

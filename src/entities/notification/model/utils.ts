@@ -98,7 +98,7 @@ export const getNotificationLink = (
 
     case NOTIFICATION_TYPE.CHAT_MESSAGE: {
       const peerId = getPeerId(payload, actor)
-      return peerId ? `${ROUTES.CHAT}?recipientId=${peerId}` : ROUTES.CHAT
+      return peerId ? `${ROUTES.CHATS}?recipientId=${peerId}` : ROUTES.CHATS
     }
 
     case NOTIFICATION_TYPE.TEAM_INVITE: {

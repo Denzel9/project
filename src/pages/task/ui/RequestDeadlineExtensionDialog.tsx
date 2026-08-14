@@ -141,38 +141,28 @@ export const RequestDeadlineExtensionDialog = ({
       onClose={handleClose}
       sx={{
         '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
           borderRadius: '32px',
           width: { xs: '100%', md: 560 },
-          maxWidth: { xs: '100%', md: '90%' },
-          m: 0,
+          m: 2,
         },
       }}
     >
-      <IconButton
-        onClick={handleClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': {
-            bgcolor: 'secondary.light',
-          },
-        }}
-      >
-        <Close />
-      </IconButton>
 
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h6">
-          {ids.length > 1
-            ? `Запросить перенос дедлайна (${ids.length})`
-            : 'Запросить перенос дедлайна'}
-        </Typography>
+
+      <Box sx={{ p: 3 }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'start', justifyContent: 'space-between' }}>
+          <Typography variant="h6">
+            {ids.length > 1
+              ? `Запросить перенос дедлайна (${ids.length})`
+              : 'Запросить перенос дедлайна'}
+          </Typography>
+
+          <IconButton
+            onClick={handleClose}
+          >
+            <Close />
+          </IconButton>
+        </Stack>
 
         <Stack
           spacing={2}

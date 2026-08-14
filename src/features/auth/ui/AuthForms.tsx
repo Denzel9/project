@@ -3,6 +3,8 @@ import { useState } from 'react';
 
 import { BASE_COLOR } from '@/app/index';
 
+import { WHITE_COLOR } from '../model/constants';
+
 import LoginForm from './LoginForm';
 import RegistrationCompanyForm from './RegistrationCompanyForm';
 import RegistrationCreatorForm from './RegistrationCreatorForm';
@@ -86,9 +88,8 @@ export const AuthForms = ({
         }}
       >
         <Typography
-          variant="subtitle1"
-          color="info"
-          sx={{ mt: 2 }}
+          sx={{ mt: 2, color: WHITE_COLOR }}
+          variant="body2"
         >
           {isLogin ? 'Нет аккаунта?' : 'Уже зарегистрированы?'}{' '}
           <span

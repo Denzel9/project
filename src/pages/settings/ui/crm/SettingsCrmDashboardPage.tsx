@@ -194,6 +194,7 @@ export const SettingsCrmDashboardPage = () => {
               <Button
                 variant="outlined"
                 color="primary"
+                sx={{ px: 2 }}
                 onClick={() => {
                   if (isEditingTiles) {
                     setSelectedTiles(data.dashboardTiles ?? []);
@@ -248,6 +249,7 @@ export const SettingsCrmDashboardPage = () => {
                 <Button
                   size="small"
                   variant="outlined"
+                  sx={{ px: 2 }}
                   disabled={isPending}
                   onClick={() => setSelectedTiles([...availableTypes])}
                 >
@@ -256,6 +258,7 @@ export const SettingsCrmDashboardPage = () => {
                 <Button
                   size="small"
                   variant="outlined"
+                  sx={{ px: 2 }}
                   disabled={isPending || selectedTiles.length === 0}
                   onClick={() => setSelectedTiles([])}
                 >
@@ -264,6 +267,7 @@ export const SettingsCrmDashboardPage = () => {
                 <Button
                   size="small"
                   variant="outlined"
+                  sx={{ px: 2 }}
                   disabled={isPending}
                   onClick={() => {
                     setSelectedTiles(data.dashboardTiles ?? []);
@@ -275,6 +279,7 @@ export const SettingsCrmDashboardPage = () => {
                 <Button
                   size="small"
                   variant="contained"
+                  sx={{ px: 2 }}
                   disabled={!isTilesDirty || isPending}
                   onClick={() => void handleSaveTiles()}
                   startIcon={

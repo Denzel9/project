@@ -736,7 +736,7 @@ export const useMessenger = () => {
       setTimeout(() => {
         selectConversation(existing.id)
       }, 0)
-      navigate(ROUTES.CHAT, { replace: true })
+      navigate(ROUTES.CHATS, { replace: true })
       return
     }
 
@@ -756,7 +756,7 @@ export const useMessenger = () => {
       setTimeout(() => {
         setSocketError('Не удалось открыть диалог')
       }, 0)
-      navigate(ROUTES.CHAT, { replace: true })
+      navigate(ROUTES.CHATS, { replace: true })
       return
     }
 
@@ -768,7 +768,7 @@ export const useMessenger = () => {
         avatar: user.avatar ?? null,
         displayName: getUserName(user) || 'Пользователь',
       })
-      navigate(ROUTES.CHAT, { replace: true })
+      navigate(ROUTES.CHATS, { replace: true })
     }, 0)
   }, [
     recipientIdParam,
@@ -866,7 +866,7 @@ export const useMessenger = () => {
     if (conversation && conversation.canSendMessages === false) {
       setSocketError(
         conversation.sendBlockedReason ??
-          'Дождитесь первого сообщения от компании',
+        'Дождитесь первого сообщения от компании',
       )
       return
     }

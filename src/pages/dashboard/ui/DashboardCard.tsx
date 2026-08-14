@@ -110,7 +110,7 @@ export const DashboardCard = ({
 
               <Typography
                 variant="caption"
-                color={isEmpty ? 'disabled' : 'info'}
+                color={isEmpty ? 'textDisabled' : 'info'}
               >
                 {getTasksLabel(count)}
               </Typography>

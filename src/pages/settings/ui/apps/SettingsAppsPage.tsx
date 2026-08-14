@@ -86,6 +86,7 @@ const ProviderCard = ({
                 variant="outlined"
                 color="inherit"
                 disabled={isBusy}
+                sx={{ px: 2 }}
                 onClick={onDisconnect}
               >
                 Отключить
@@ -94,6 +95,7 @@ const ProviderCard = ({
               <Button
                 variant="contained"
                 disabled={!status.configured || isBusy}
+                sx={{ px: 2 }}
                 onClick={onConnect}
                 startIcon={
                   isBusy ? (
@@ -215,7 +217,7 @@ export const SettingsAppsPage = () => {
         </Button>
       </Stack>
 
-      <Typography variant="body2" color="info" sx={{ mb: 4 }}>
+      <Typography variant="body2" color="info" sx={{ mb: 4, mt: 2 }}>
         Подключите Telegram или MAX, чтобы получать уведомления Nikssens в
         мессенджере. Типы событий настраиваются в разделе «Уведомления».
       </Typography>

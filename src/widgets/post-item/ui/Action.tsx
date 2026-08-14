@@ -114,7 +114,7 @@ export const Action = ({
 
   const handleOpenChat = () => {
     if (!requireEmailConfirmed()) return;
-    navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
+    navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
   };
 
   const mainButton = isManager ? (
@@ -123,7 +123,7 @@ export const Action = ({
       variant="outlined"
       onClick={() => {
         if (!requireEmailConfirmed()) return;
-        navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
+        navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
       }}
     >
       Написать
@@ -145,7 +145,7 @@ export const Action = ({
       variant="outlined"
       onClick={() => {
         if (!requireEmailConfirmed()) return;
-        navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
+        navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
       }}
     >
       Написать

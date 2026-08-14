@@ -121,9 +121,9 @@ export const MainFilter = () => {
           </Box>
 
           <Stack
-            direction="row"
             spacing={1}
-            sx={{ alignItems: 'center', }}
+            direction="row"
+            sx={{ alignItems: 'center' }}
           >
             {isSearchOpen && !isMobile && (
               <TextField
@@ -137,11 +137,16 @@ export const MainFilter = () => {
               />
             )}
 
-            <IconButton onClick={() => setIsSearchOpen(!isSearchOpen)} sx={{ display: { xs: 'none', md: 'block' } }}>
+            <IconButton
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              sx={{ display: { xs: 'none', md: 'flex' } }}
+            >
               {isSearchOpen ? <Close /> : <Search />}
             </IconButton>
 
-            <IconButton onClick={() => setIsOpenMainFilter(!isOpenMainFilter)}>
+            <IconButton
+              onClick={() => setIsOpenMainFilter(!isOpenMainFilter)}
+            >
               {isOpenMainFilter || hasAnyFilters ? (
                 <Tune color="primary" />
               ) : (

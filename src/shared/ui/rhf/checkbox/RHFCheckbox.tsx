@@ -48,7 +48,7 @@ export const RHFCheckbox = <
           <Checkbox
             {...field}
             {...props}
-            sx={{ p: 0, mr: 1 }}
+            sx={{ p: 0, mr: 1, ...props?.sx }}
             checked={field.value}
             onChange={e => field.onChange(e.target.checked)}
           />
@@ -58,7 +58,7 @@ export const RHFCheckbox = <
             <Typography
               variant="body1"
               color={labelColor}
-              sx={{ fontSize: labelFontSize }}
+              sx={{ fontSize: labelFontSize, color: labelColor }}
             >
               {label}
             </Typography>

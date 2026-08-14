@@ -18,6 +18,7 @@ import {
   type LoginFormType,
 } from '../model';
 import { useLoginMutation } from '../model/api/api';
+import { WHITE_COLOR, WHITE_INPUT_VARIANT } from '../model/constants';
 
 import { AuthLegalNotice } from './AuthLegalNotice';
 
@@ -91,20 +92,22 @@ const LoginForm = ({
             autoCapitalize="off"
             props={{
               label: 'Почта',
+              sx: WHITE_INPUT_VARIANT,
             }}
           />
+
           <RHFInput
             name="password"
             control={control}
             autoCapitalize="off"
             endAdornment={
               <IconButton onClick={() => setShowPassword(!showPassword)}>
-                {showPassword ? <VisibilityOff /> : <Visibility />}
+                {showPassword ? <VisibilityOff sx={{ color: WHITE_COLOR }} /> : <Visibility sx={{ color: WHITE_COLOR }} />}
               </IconButton>
             }
             props={{
-              sx: { mt: 2 },
               label: 'Пароль',
+              sx: { mt: 2, ...WHITE_INPUT_VARIANT },
               type: showPassword ? 'text' : 'password',
             }}
           />
@@ -118,20 +121,19 @@ const LoginForm = ({
             <RHFCheckbox
               name="rememberMe"
               control={control}
-              labelColor="info"
+              labelColor="white"
               labelFontSize="13px"
               label="Запомнить меня"
               props={{
-                sx: { mt: 2 },
+                sx: { color: WHITE_COLOR },
               }}
             />
 
             <Button
               size="small"
               variant="text"
-              color="info"
               onClick={onRecoveryPassword}
-              sx={{ px: 2, textTransform: 'none' }}
+              sx={{ px: 2, textTransform: 'none', color: WHITE_COLOR }}
             >
               Забыли пароль?
             </Button>

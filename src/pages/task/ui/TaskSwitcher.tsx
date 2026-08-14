@@ -327,9 +327,9 @@ export const TaskSwitcher = ({
 
         <Button
           size="small"
-          sx={{ px: 2, display: { xs: 'none', md: 'block' } }}
           aria-label="Список исполнителей"
           onClick={() => setIsExecutorListOpen(true)}
+          sx={{ px: 2, display: { xs: 'none', md: 'flex' }, flexShrink: 0 }}
         >
           Все исполнители
         </Button>
@@ -342,27 +342,6 @@ export const TaskSwitcher = ({
         >
           <Group />
         </IconButton>
-
-        {Boolean(cancelledTasks.length) && (
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: { xs: 'none', md: 'flex' } }}>
-            <Divider
-              flexItem
-              orientation="vertical"
-              sx={{ alignSelf: 'stretch', my: 0.5 }}
-            />
-
-            <Tooltip title="Отменённые задачи">
-              <Chip
-                clickable
-                color="error"
-                size="small"
-                variant={isCancelledSelected ? 'filled' : 'outlined'}
-                label={`Отменённые ${cancelledTasks.length}`}
-                onClick={() => setIsCancelledListOpen(true)}
-              />
-            </Tooltip>
-          </Stack>
-        )}
 
         <TaskSwitcherMoreMenu
           task={currentTask}
@@ -402,21 +381,21 @@ export const TaskSwitcher = ({
                 onClick={() => onSelectTask(task.id)}
                 label={
                   <Stack
-                    direction="row"
                     spacing={1}
+                    direction="row"
                     sx={{ alignItems: 'center' }}
                   >
                     <Tooltip title={task.title}>
                       <Typography
                         variant="body2"
                         sx={{
-                          maxWidth: { xs: 140, sm: 220 },
                           fontWeight: isActive ? 600 : 400,
                         }}
                       >
                         {task.title && task.title.length > 20 ? task.title.slice(0, 20) + '...' : task.title || 'Без названия'}
                       </Typography>
                     </Tooltip>
+
                     <Chip
                       color={getTaskStatusColor(task.status, isActive)}
                       label={TASK_STATUS_LABELS[task.status]}
@@ -428,6 +407,7 @@ export const TaskSwitcher = ({
                         },
                       }}
                     />
+
                     {isAwaitAction && (
                       <Tooltip title="Ожидает вашего действия">
                         <Circle
@@ -437,7 +417,7 @@ export const TaskSwitcher = ({
                     )}
                   </Stack>
                 }
-                sx={{ height: 32, maxWidth: '100%', '& .MuiChip-label': { pl: '12px', pr: '6px' } }}
+                sx={{ maxWidth: '100%', '& .MuiChip-label': { pl: '12px', pr: '6px' } }}
               />
             );
           })}
@@ -445,7 +425,7 @@ export const TaskSwitcher = ({
 
         <Button
           size='small'
-          sx={{ px: 2, display: { xs: 'none', md: 'block' } }}
+          sx={{ px: 2, display: { xs: 'none', md: 'flex' }, flexShrink: 0 }}
           aria-label="Список задач"
           onClick={() => setIsTaskListOpen(true)}
         >

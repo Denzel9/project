@@ -603,7 +603,7 @@ export const IncomingApplicationDetailsDialog = ({
                       <Button
                         variant="outlined"
                         component={Link}
-                        to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
+                        to={`${ROUTES.CHATS}?recipientId=${application.applicant?.id ?? ''}`}
                         onClick={onClose}
                       >
                         Чат

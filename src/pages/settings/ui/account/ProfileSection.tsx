@@ -61,7 +61,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
       <Box sx={{ position: 'relative', mt: 4, mb: 2, width: 'fit-content' }}>
         <Avatar
           src={avatarUrl}
-          sx={{ width: 140, height: 140 }}
+          sx={{ width: 140, height: 140, border: '1px solid', borderColor: 'divider' }}
         />
         <Box sx={{ position: 'absolute', bottom: -5, right: -5 }}>
           <ProfileMediaUploadButton

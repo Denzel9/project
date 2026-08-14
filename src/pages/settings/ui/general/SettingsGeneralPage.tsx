@@ -1,4 +1,4 @@
-import { Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { Button, Chip, CircularProgress, Stack, Typography } from '@mui/material';
 import axios from 'axios';
 
 import { useAuthStore, useSendConfirmEmailMutation } from '@/features/auth';
@@ -43,15 +43,16 @@ export const SettingsGeneralPage = () => {
         title="Почта"
         description={
           isEmailConfirmed
-            ? 'Почта подтверждена'
+            ? undefined
             : 'Подтвердить почту, чтобы получить полный доступ к сервису'
         }
         action={
-          isEmailConfirmed ? undefined : (
+          isEmailConfirmed ? <Chip color="success" label="Почта подтверждена" /> : (
             <Button
               size="small"
               variant="outlined"
               color="primary"
+              sx={{ px: 2 }}
               disabled={isPending}
               onClick={() => void handleConfirm()}
               startIcon={
@@ -77,6 +78,7 @@ export const SettingsGeneralPage = () => {
             size="small"
             variant="outlined"
             color="primary"
+            sx={{ px: 2 }}
           >
             Верифицировать
           </Button>

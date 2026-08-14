@@ -4,13 +4,14 @@ import {
   VisibilityOutlined,
   HelpOutlineOutlined,
 } from '@mui/icons-material';
-import { Box, Button, IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, Button, IconButton, Stack, } from '@mui/material';
 import axios from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { prefetchUserConfig } from '@/entities/user-config';
+import { NSTooltip } from '@/shared';
 import { queryClient } from '@/shared/api';
 import { RHFInput } from '@/shared/ui/rhf';
 
@@ -22,6 +23,7 @@ import {
   type RegistrationCompanyRequest,
 } from '../model';
 import { useRegistrationCompanyMutation } from '../model/api/api';
+import { WHITE_COLOR, WHITE_INPUT_VARIANT } from '../model/constants';
 import { useAuthStore } from '../model/store/store';
 import { PASSWORD_RULES_HINT } from '../model/utils/validation';
 
@@ -95,7 +97,7 @@ const RegistrationCompanyForm = ({
               control={control}
               props={{
                 label: 'Название компании',
-                sx: { flex: 1 },
+                sx: { flex: 1, ...WHITE_INPUT_VARIANT },
               }}
             />
           </Box>
@@ -106,6 +108,7 @@ const RegistrationCompanyForm = ({
             props={{
               label: 'Почта',
               type: 'email',
+              sx: { ...WHITE_INPUT_VARIANT },
             }}
           />
 
@@ -118,24 +121,18 @@ const RegistrationCompanyForm = ({
                 direction="row"
                 sx={{ alignItems: 'center' }}
               >
-                <Tooltip
+                <NSTooltip
                   title={PASSWORD_RULES_HINT}
-                  slotProps={{
-                    tooltip: {
-                      sx: { whiteSpace: 'pre-line' },
-                    },
-                  }}
                 >
                   <HelpOutlineOutlined
-                    color="info"
-                    sx={{ cursor: 'help' }}
+                    sx={{ color: WHITE_COLOR, cursor: 'pointer' }}
                   />
-                </Tooltip>
+                </NSTooltip>
                 <IconButton onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? (
-                    <VisibilityOffOutlined />
+                    <VisibilityOffOutlined sx={{ color: WHITE_COLOR }} />
                   ) : (
-                    <VisibilityOutlined />
+                    <VisibilityOutlined sx={{ color: WHITE_COLOR }} />
                   )}
                 </IconButton>
               </Stack>
@@ -143,6 +140,7 @@ const RegistrationCompanyForm = ({
             props={{
               label: 'Пароль',
               type: showPassword ? 'text' : 'password',
+              sx: { ...WHITE_INPUT_VARIANT },
             }}
           />
 
@@ -154,15 +152,16 @@ const RegistrationCompanyForm = ({
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? (
-                  <VisibilityOffOutlined />
+                  <VisibilityOffOutlined sx={{ color: WHITE_COLOR }} />
                 ) : (
-                  <VisibilityOutlined />
+                  <VisibilityOutlined sx={{ color: WHITE_COLOR }} />
                 )}
               </IconButton>
             }
             props={{
               label: 'Повторите пароль',
               type: showConfirmPassword ? 'text' : 'password',
+              sx: { ...WHITE_INPUT_VARIANT },
             }}
           />
 

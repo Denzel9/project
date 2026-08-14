@@ -95,8 +95,8 @@ export const RHFInput = <
         const { slotProps: propsSlotProps, ...restProps } = props;
         const propsInputSlot =
           propsSlotProps &&
-          typeof propsSlotProps === 'object' &&
-          'input' in propsSlotProps
+            typeof propsSlotProps === 'object' &&
+            'input' in propsSlotProps
             ? propsSlotProps.input
             : undefined;
 

@@ -104,7 +104,7 @@ const ResponseRowActions = ({
             <IconButton
               size="small"
               component={Link}
-              to={`${ROUTES.CHAT}?recipientId=${post?.ownerId ?? ''}`}
+              to={`${ROUTES.CHATS}?recipientId=${post?.ownerId ?? ''}`}
             >
               <Chat />
             </IconButton>

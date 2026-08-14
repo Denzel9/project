@@ -35,7 +35,7 @@ import chatSocket from '@/shared/api/socket';
 import { getChatTaskLabel, useSnackbarStore } from '@/widgets';
 
 const TAB = {
-  CHAT: 0,
+  CHATS: 0,
   TASK: 1,
 } as const;
 
@@ -56,7 +56,7 @@ export const SendFileTemplateDialog = ({
   const queryClient = useQueryClient();
   const { setSnackbarOpen } = useSnackbarStore();
 
-  const [tab, setTab] = useState<(typeof TAB)[keyof typeof TAB]>(TAB.CHAT);
+  const [tab, setTab] = useState<(typeof TAB)[keyof typeof TAB]>(TAB.CHATS);
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState('all');
   const [selectedTaskOption, setSelectedTaskOption] =
@@ -93,7 +93,7 @@ export const SendFileTemplateDialog = ({
     if (open) return;
 
     setTimeout(() => {
-      setTab(TAB.CHAT);
+      setTab(TAB.CHATS);
 
       setSelectedPeerId(null);
       setSelectedTaskId('all');
@@ -105,7 +105,7 @@ export const SendFileTemplateDialog = ({
   }, [open]);
 
   const canSubmit =
-    tab === TAB.CHAT ? Boolean(selectedPeerId) : selectedTaskId !== 'all';
+    tab === TAB.CHATS ? Boolean(selectedPeerId) : selectedTaskId !== 'all';
 
   const handleClose = () => {
     if (isSending) return;
@@ -147,7 +147,7 @@ export const SendFileTemplateDialog = ({
       setIsSending(true);
       setError(null);
 
-      if (tab === TAB.CHAT && selectedPeerId) {
+      if (tab === TAB.CHATS && selectedPeerId) {
         await handleSendToChat(selectedPeerId);
         setSnackbarOpen(true, 'Файл отправлен в чат');
       } else if (tab === TAB.TASK && selectedTaskId !== 'all') {
@@ -158,7 +158,7 @@ export const SendFileTemplateDialog = ({
       onClose();
     } catch {
       setError(
-        tab === TAB.CHAT
+        tab === TAB.CHATS
           ? 'Не удалось отправить файл в чат'
           : 'Не удалось добавить файл в задачу'
       );
@@ -228,7 +228,7 @@ export const SendFileTemplateDialog = ({
         value={tab}
         onChange={(_, value) => {
           if (isSending) return;
-          setTab(value === TAB.TASK ? TAB.TASK : TAB.CHAT);
+          setTab(value === TAB.TASK ? TAB.TASK : TAB.CHATS);
           setError(null);
         }}
         sx={{ mb: 2 }}
@@ -244,7 +244,7 @@ export const SendFileTemplateDialog = ({
       </Tabs>
 
       <Box sx={{ minHeight: TAB_PANEL_MIN_HEIGHT }}>
-        {tab === TAB.CHAT && (
+        {tab === TAB.CHATS && (
           <>
             <Box sx={{ mb: 2, }}>
               <ChatContactSearch

@@ -28,7 +28,7 @@ export const PartnersRowActionsMenu = ({
     stopRowClick(event);
     handleClose();
     window.open(
-      `${ROUTES.CHAT}?recipientId=${encodeURIComponent(userId)}`,
+      `${ROUTES.CHATS}?recipientId=${encodeURIComponent(userId)}`,
       '_blank',
       'noopener,noreferrer'
     );

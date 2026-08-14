@@ -374,7 +374,7 @@ export const MyResponseItem = ({
                       component={Link}
                       variant="outlined"
                       startIcon={<ChatBubbleOutlined sx={{ fontSize: 16 }} />}
-                      to={`${ROUTES.CHAT}?recipientId=${post?.ownerId}`}
+                      to={`${ROUTES.CHATS}?recipientId=${post?.ownerId}`}
                     >
                       В чат
                     </Button>

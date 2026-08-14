@@ -85,7 +85,7 @@ export const TaskAssigneeCard = ({
     if (!canWrite || !chatRecipientId) return;
     if (!requireEmailConfirmed()) return;
 
-    navigate(`${ROUTES.CHAT}?recipientId=${chatRecipientId}`);
+    navigate(`${ROUTES.CHATS}?recipientId=${chatRecipientId}`);
   };
 
   const openAssignDialog = () => {

@@ -135,7 +135,7 @@ const ApplicationRowActions = ({
             )}
             <IconButton
               component={Link}
-              to={`${ROUTES.CHAT}?recipientId=${application.applicant?.id ?? ''}`}
+              to={`${ROUTES.CHATS}?recipientId=${application.applicant?.id ?? ''}`}
             >
               <Chat />
             </IconButton>

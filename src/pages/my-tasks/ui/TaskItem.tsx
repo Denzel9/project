@@ -111,7 +111,7 @@ export const TaskItem = ({
             >
               <Stack
                 direction="row"
-                spacing={0.5}
+                spacing={1}
                 sx={{ alignItems: 'center', minWidth: 0, flex: 1, flexWrap: 'wrap' }}
               >
                 <Chip
@@ -126,11 +126,12 @@ export const TaskItem = ({
                   <Whatshot sx={{ fontSize: 16, color: 'error.main', flexShrink: 0 }} />
                 )}
 
-                <TaskRequestStatusIcons task={task} fontSize={16} spacing={0.5} />
 
-                {multipleTasks > 0 && <NSTooltip title="Количество связанных задач">
+                {groupByPost && multipleTasks > 0 && <NSTooltip title="Количество связанных задач">
                   <Chip label={`+${multipleTasks}`} size="small" variant="outlined" color="primary" />
                 </NSTooltip>}
+
+                <TaskRequestStatusIcons task={task} fontSize={16} spacing={0.5} />
               </Stack>
 
               <Typography

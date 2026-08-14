@@ -3,10 +3,13 @@ import { Link as RouterLink } from 'react-router';
 
 import { ROUTES } from '@/shared';
 
+import { WHITE_COLOR } from '../model/constants';
+
 const linkSx = {
-  color: 'inherit',
+  color: 'primary.main',
   textDecoration: 'none',
-  '&:hover': { color: 'primary.main' },
+  transition: 'all 0.3s ease',
+  '&:hover': { textDecoration: 'underline' },
 } as const;
 
 type AuthLegalNoticeProps = {
@@ -15,9 +18,8 @@ type AuthLegalNoticeProps = {
 
 export const AuthLegalNotice = ({ actionLabel }: AuthLegalNoticeProps) => (
   <Typography
-    variant="caption"
-    color="info"
-    sx={{ mt: 2, textAlign: 'center' }}
+    variant="body2"
+    sx={{ mt: 2, textAlign: 'center', color: WHITE_COLOR }}
   >
     Нажимая «{actionLabel}», вы принимаете{' '}
     <Link

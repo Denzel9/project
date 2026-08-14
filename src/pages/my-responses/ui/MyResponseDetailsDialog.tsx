@@ -428,7 +428,7 @@ export const MyResponseDetailsDialog = ({
                       variant="outlined"
                       component={Link}
                       startIcon={<ChatBubbleOutlined sx={{ fontSize: 16 }} />}
-                      to={`${ROUTES.CHAT}?recipientId=${post?.ownerId ?? ''}`}
+                      to={`${ROUTES.CHATS}?recipientId=${post?.ownerId ?? ''}`}
                       onClick={onClose}
                       sx={{ flex: { xs: 1, sm: 'none' } }}
                     >

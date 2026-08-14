@@ -1,6 +1,7 @@
 import { Close } from '@mui/icons-material';
 import { Box, Dialog, IconButton, Typography } from '@mui/material';
 
+import { WHITE_COLOR } from '../model/constants';
 import { useAuthStore } from '../model/store/store';
 
 import LoginForm from './LoginForm';
@@ -48,7 +49,7 @@ export const AuthModal = () => {
 
         <Typography
           variant="body1"
-          sx={{ mb: 2, opacity: 0.7 }}
+          sx={{ mb: 2, color: WHITE_COLOR }}
         >
           Лучший способ создавать и управлять своим контентом
         </Typography>

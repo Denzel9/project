@@ -10,6 +10,7 @@ const AuthPage = lazy(() => import('./auth'));
 const ConfirmEmailPage = lazy(() => import('./auth/ui/ConfirmEmailPage'));
 const ProfilePage = lazy(() => import('./profile'));
 const FavoritePage = lazy(() => import('./favorite'));
+const ChatsPage = lazy(() => import('./chats'));
 const ChatPage = lazy(() => import('./chat'));
 const PostPage = lazy(() => import('./post'));
 const ManageApplicationPage = lazy(() => import('./manage-application'));
@@ -90,6 +91,11 @@ export const Router = () => {
             <Route
               path={ROUTES.FAVORITES}
               element={<FavoritePage />}
+            />
+
+            <Route
+              path={ROUTES.CHATS}
+              element={<ChatsPage />}
             />
 
             <Route

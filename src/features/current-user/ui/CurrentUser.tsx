@@ -134,6 +134,9 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
         >
           {profiles.map(item => (
             <MenuItem
+              sx={{
+                minWidth: 200,
+              }}
               key={item.id}
               disabled={item.userId === id}
               onClick={() => void handleChangeUser(item.userId || '')}

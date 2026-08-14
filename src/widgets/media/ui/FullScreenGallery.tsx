@@ -113,7 +113,7 @@ export const FullScreenGallery = ({
             },
           },
           '&:hover': {
-            bgcolor: 'rgba(255,255,255,0.08)',
+            bgcolor: 'rgba(255, 255, 255, 0.12)',
           },
         },
       }}
@@ -186,7 +186,7 @@ export const FullScreenGallery = ({
               borderRadius: '44px',
               bgcolor: '#0b0f14',
               boxShadow:
-                '0 28px 80px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255,255,255,0.08)',
+                '0 28px 80px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.12)',
               boxSizing: 'border-box',
             }}
           >

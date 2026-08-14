@@ -136,10 +136,10 @@ export const DashboardChatsPanel = () => {
     const filtered =
       chatFilter === 'unread'
         ? sorted.filter(
-            conversation =>
-              (conversation.unreadCount ?? 0) > 0 ||
-              Boolean(conversation.isMarkedUnread),
-          )
+          conversation =>
+            (conversation.unreadCount ?? 0) > 0 ||
+            Boolean(conversation.isMarkedUnread),
+        )
         : sorted;
 
     return hasActiveFilters ? filtered : filtered.slice(0, DASHBOARD_CHATS_LIMIT);
@@ -352,7 +352,7 @@ export const DashboardChatsPanel = () => {
       return;
     }
 
-    navigate(`${ROUTES.CHAT}?recipientId=${user.id}`);
+    navigate(`${ROUTES.CHATS}?recipientId=${user.id}`);
   };
 
   const handleBackToList = () => {
@@ -585,7 +585,7 @@ export const DashboardChatsPanel = () => {
               navigate={
                 hasActiveFilters
                   ? handleResetFilters
-                  : () => navigate(ROUTES.CHAT)
+                  : () => navigate(ROUTES.CHATS)
               }
             />
           )}

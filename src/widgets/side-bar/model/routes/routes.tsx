@@ -37,7 +37,7 @@ export const TOP_MENU_ROUTES: MenuRoute[] = [
   },
   {
     authTypes: [AUTH_TYPES.ALWAYS, AUTH_TYPES.MARKETPLACE],
-    path: ROUTES.CHAT,
+    path: ROUTES.CHATS,
     icon: <ChatOutlined />,
     label: 'Чат',
     badgeKey: 'chat',

@@ -20,6 +20,7 @@ import {
   useResetPasswordMutation,
   useVerifyPasswordMutation,
 } from '../model/api/api';
+import { WHITE_COLOR, WHITE_INPUT_VARIANT } from '../model/constants';
 import { validationEqualPassword } from '../model/utils/validation';
 
 const ResetPasswordForm = () => {
@@ -100,12 +101,12 @@ const ResetPasswordForm = () => {
             control={control}
             endAdornment={
               <IconButton onClick={() => setShowOldPassword(!showOldPassword)}>
-                {showOldPassword ? <VisibilityOff /> : <Visibility />}
+                {showOldPassword ? <VisibilityOff sx={{ color: WHITE_COLOR }} /> : <Visibility sx={{ color: WHITE_COLOR }} />}
               </IconButton>
             }
             props={{
               label: 'Старый пароль',
-              sx: { width: '500px' },
+              sx: { width: '500px', ...WHITE_INPUT_VARIANT },
               type: showOldPassword ? 'text' : 'password',
             }}
           />
@@ -115,12 +116,12 @@ const ResetPasswordForm = () => {
             control={control}
             endAdornment={
               <IconButton onClick={() => setShowNewPassword(!showNewPassword)}>
-                {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                {showNewPassword ? <VisibilityOff sx={{ color: WHITE_COLOR }} /> : <Visibility sx={{ color: WHITE_COLOR }} />}
               </IconButton>
             }
             props={{
               label: 'Новый пароль',
-              sx: { mt: 2, width: '500px' },
+              sx: { mt: 2, width: '500px', ...WHITE_INPUT_VARIANT },
               type: showNewPassword ? 'text' : 'password',
             }}
           />
@@ -132,11 +133,11 @@ const ResetPasswordForm = () => {
               <IconButton
                 onClick={() => setShowRepeatNewPassword(!showRepeatNewPassword)}
               >
-                {showRepeatNewPassword ? <VisibilityOff /> : <Visibility />}
+                {showRepeatNewPassword ? <VisibilityOff sx={{ color: WHITE_COLOR }} /> : <Visibility sx={{ color: WHITE_COLOR }} />}
               </IconButton>
             }
             props={{
-              sx: { mt: 2, width: '500px' },
+              sx: { mt: 2, ...WHITE_INPUT_VARIANT },
               label: 'Повторите новый пароль',
               type: showRepeatNewPassword ? 'text' : 'password',
             }}

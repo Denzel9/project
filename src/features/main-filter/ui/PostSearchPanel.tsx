@@ -73,7 +73,7 @@ export const PostSearchPanel = ({ open, onClose }: PostSearchPanelProps) => {
   };
 
   const handleOpenChat = (ownerId: string) => {
-    navigate(`${ROUTES.CHAT}?recipientId=${ownerId}`);
+    navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
     onClose();
   };
 

@@ -104,8 +104,9 @@ const ChannelSection = ({
         description={description}
         action={
           <Button
-            variant="outlined"
             color="primary"
+            variant="outlined"
+            sx={{ px: 2 }}
             onClick={isEditing ? onCancelEdit : onStartEdit}
           >
             {isEditing ? 'Отмена' : 'Редактировать'}
@@ -186,6 +187,7 @@ const ChannelSection = ({
           >
             <Button
               size="small"
+              sx={{ px: 2 }}
               variant="outlined"
               disabled={isPending}
               onClick={onEnableAll}
@@ -194,6 +196,7 @@ const ChannelSection = ({
             </Button>
             <Button
               size="small"
+              sx={{ px: 2 }}
               variant="outlined"
               disabled={isPending || selectedTypes.length === 0}
               onClick={onDisableAll}
@@ -202,6 +205,7 @@ const ChannelSection = ({
             </Button>
             <Button
               size="small"
+              sx={{ px: 2 }}
               variant="outlined"
               disabled={isPending}
               onClick={onCancelEdit}
@@ -210,6 +214,7 @@ const ChannelSection = ({
             </Button>
             <Button
               size="small"
+              sx={{ px: 2 }}
               variant="contained"
               disabled={!isDirty || isPending}
               onClick={onSave}
@@ -226,8 +231,8 @@ const ChannelSection = ({
             </Button>
           </Stack>
         </Stack>
-      </Collapse>
-    </Stack>
+      </Collapse >
+    </Stack >
   );
 };
 

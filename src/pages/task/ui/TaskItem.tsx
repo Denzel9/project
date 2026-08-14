@@ -487,6 +487,7 @@ export const TaskItem = ({
             canRequestDeadlineExtension ? (
               <Button
                 sx={{ px: 2 }}
+                variant='outlined'
                 color="secondary"
                 size="small"
                 onClick={() => setIsDeadlineDialogOpen(true)}

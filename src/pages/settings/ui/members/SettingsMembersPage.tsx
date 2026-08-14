@@ -1,12 +1,13 @@
-import { Box, Skeleton, Stack, Typography } from '@mui/material';
+import { Box, Skeleton, Stack, } from '@mui/material';
 import { useState } from 'react';
 
+import { USER_ROLE } from '@/entities';
 import {
   type ProfileMember,
   useGetProfileMembersQuery,
 } from '@/entities/workspace-member';
-import { USER_ROLE } from '@/entities';
 import { useAuthStore } from '@/features/auth';
+import { EmptyBlock } from '@/shared';
 
 import { AddMemberDialog } from './AddMemberDialog';
 import { DeleteMemberDialog } from './DeleteMemberDialog';
@@ -56,28 +57,16 @@ export const SettingsMembersPage = () => {
         <Box
           sx={{
             height: '100%',
+            minHeight: 500,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: 'center',
-              color: 'text.secondary',
-              fontSize: '24px',
-              fontWeight: 500,
-            }}
-          >
-            {isError ? (
-              <>Не удалось загрузить команду</>
-            ) : (
-              <>
-                В команде пока никого нет. <br /> Добавьте первого менеджера.
-              </>
-            )}
-          </Typography>
+          <EmptyBlock
+            title={isError ?
+              'Не удалось загрузить команду' :
+              'В команде пока никого нет'} />
         </Box>
       )}
 

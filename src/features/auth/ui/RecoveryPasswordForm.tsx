@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useState } from 'react';
 
 import { useRecoveryPasswordMutation } from '../model';
+import { WHITE_COLOR, WHITE_INPUT_VARIANT } from '../model/constants';
 
 type RecoveryPasswordFormProps = {
   onSuccess: () => void;
@@ -34,16 +35,17 @@ const RecoveryPasswordForm = ({
     <Box>
       <Typography
         variant="body1"
-        color="info"
+        sx={{ color: WHITE_COLOR, }}
       >
-        Мы отправим вам ссылку для восстановления пароля на вашу почту
+        Отправим ссылку для восстановления пароля на вашу почту
       </Typography>
 
+      {/* TODO: add validation */}
       <TextField
         fullWidth
-        sx={{ my: 2 }}
         label="Email"
         value={email}
+        sx={{ my: 2, ...WHITE_INPUT_VARIANT }}
         onChange={e => setEmail(e.target.value)}
       />
 
@@ -64,6 +66,7 @@ const RecoveryPasswordForm = ({
           variant="contained"
           color="primary"
           onClick={onRecoveryPassword}
+          sx={{ '&:disabled': { backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'rgba(255, 255, 255, 0.25)' } }}
         >
           Отправить
         </Button>

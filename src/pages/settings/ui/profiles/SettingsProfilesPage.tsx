@@ -75,7 +75,7 @@ export const SettingsProfilesPage = () => {
           <Typography
             variant="body2"
             color="info"
-            sx={{ mt: 1 }}
+            sx={{ mt: 2 }}
           >
             {description}
           </Typography>
@@ -85,7 +85,7 @@ export const SettingsProfilesPage = () => {
           <Button
             variant="contained"
             onClick={() => setIsAddOpen(true)}
-            sx={{ flexShrink: 0 }}
+            sx={{ flexShrink: 0, px: 2 }}
           >
             Добавить
           </Button>
@@ -194,6 +194,7 @@ export const SettingsProfilesPage = () => {
                   {!isActive && profile.canSwitch !== false && (
                     <Button
                       size="small"
+                      sx={{ px: 2 }}
                       variant="contained"
                       disabled={isPending}
                       onClick={() => void handleSwitch(profile.userId || '')}
@@ -204,6 +205,7 @@ export const SettingsProfilesPage = () => {
                   {isActive && (
                     <Button
                       size="small"
+                      sx={{ px: 2 }}
                       variant="outlined"
                       onClick={() => navigate(ROUTES.INDEX)}
                     >

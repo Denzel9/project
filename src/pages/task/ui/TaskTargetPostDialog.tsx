@@ -236,11 +236,10 @@ export const TaskTargetPostDialog = ({
       slotProps={{
         paper: {
           sx: {
+            m: 2,
             borderRadius: '24px',
             p: { xs: 2, sm: 3 },
-            m: 0,
             width: { xs: '100%', md: 560 },
-            maxWidth: { xs: '100%', md: '90%' },
           },
         },
       }}
@@ -298,7 +297,6 @@ export const TaskTargetPostDialog = ({
             value={tab}
             onChange={(_, value: DuplicateTab) => setTab(value)}
             variant="scrollable"
-            allowScrollButtonsMobile
             sx={{ mb: 3 }}
           >
             {visibleTabs.map(item => (

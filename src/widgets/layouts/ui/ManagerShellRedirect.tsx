@@ -16,7 +16,7 @@ const getManagerRedirectTarget = (pathname: string): string | null => {
     pathname === ROUTES.CRM ||
     isExactOrChild(pathname, ROUTES.MY_TASKS)
   ) {
-    return ROUTES.CHAT;
+    return ROUTES.CHATS;
   }
 
   if (

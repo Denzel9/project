@@ -320,7 +320,7 @@ export const ContactCard = ({
           component={Link}
           variant="contained"
           startIcon={<ChatBubbleOutlined />}
-          to={`${ROUTES.CHAT}?recipientId=${contact.id}`}
+          to={`${ROUTES.CHATS}?recipientId=${contact.id}`}
         >
           В чат
         </Button>

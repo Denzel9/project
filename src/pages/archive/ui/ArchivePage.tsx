@@ -2,6 +2,7 @@ import { Close, DownloadOutlined, PrintOutlined, Search } from '@mui/icons-mater
 import {
   CircularProgress,
   IconButton,
+  InputAdornment,
   Stack,
   Tab,
   Tabs,
@@ -103,6 +104,48 @@ export const ArchivePage = () => {
     });
   };
 
+  const reportActions = tableReport ? (
+    <>
+      <Tooltip title="Печать">
+        <span>
+          <IconButton
+            size="small"
+            disabled={tableReport.disabled || tableReport.isPrinting}
+            onClick={tableReport.onPrint}
+          >
+            {tableReport.isPrinting ? (
+              <CircularProgress
+                size={16}
+                color="inherit"
+              />
+            ) : (
+              <PrintOutlined fontSize="small" />
+            )}
+          </IconButton>
+        </span>
+      </Tooltip>
+
+      <Tooltip title="Экспорт CSV">
+        <span>
+          <IconButton
+            size="small"
+            disabled={tableReport.disabled || tableReport.isExporting}
+            onClick={tableReport.onExport}
+          >
+            {tableReport.isExporting ? (
+              <CircularProgress
+                size={16}
+                color="inherit"
+              />
+            ) : (
+              <DownloadOutlined fontSize="small" />
+            )}
+          </IconButton>
+        </span>
+      </Tooltip>
+    </>
+  ) : null;
+
   return (
     <PageLayout
       withFooter={!isTableView}
@@ -124,6 +167,93 @@ export const ArchivePage = () => {
           },
         }}
       >
+        {/* Mobile toolbar */}
+        <Stack
+          className="print-no-print"
+          spacing={2}
+          sx={{
+            p: 2,
+            bgcolor: 'white',
+            border: '1px solid',
+            borderRadius: '24px',
+            borderColor: 'divider',
+            flexShrink: 0,
+            display: { xs: 'flex', md: 'none' },
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 1,
+              minWidth: 0,
+            }}
+          >
+            <Tabs
+              value={tab}
+              onChange={handleTabChange}
+              variant="scrollable"
+              allowScrollButtonsMobile
+              sx={{ minWidth: 0, flex: 1 }}
+            >
+              {TAB_ITEMS.map(item => (
+                <Tab
+                  key={item.value}
+                  value={item.value}
+                  label={item.label}
+                />
+              ))}
+            </Tabs>
+
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ alignItems: 'center', flexShrink: 0 }}
+            >
+              {reportActions}
+            </Stack>
+          </Stack>
+
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
+          >
+            <TextField
+              size="small"
+              label={tab === 'tasks' ? 'Поиск задачи' : 'Поиск поста'}
+              variant="outlined"
+              value={searchQuery}
+              onChange={event => setSearchQuery(event.target.value)}
+              slotProps={{
+                input: {
+                  endAdornment: searchQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        aria-label="Очистить поиск"
+                        onClick={() => setSearchQuery('')}
+                        edge="end"
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : undefined,
+                },
+              }}
+              sx={{ flex: 1, minWidth: 0 }}
+            />
+
+            <ArchiveViewModeToggle
+              viewMode={viewMode}
+              onChange={handleViewModeChange}
+            />
+          </Stack>
+        </Stack>
+
+        {/* Desktop toolbar */}
         <Stack
           className="print-no-print"
           spacing={1}
@@ -134,8 +264,9 @@ export const ArchivePage = () => {
             borderRadius: '24px',
             borderColor: 'divider',
             flexShrink: 0,
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'stretch', md: 'center' },
+            display: { xs: 'none', md: 'flex' },
+            flexDirection: 'row',
+            alignItems: 'center',
             justifyContent: 'space-between',
             gap: 1,
           }}
@@ -145,7 +276,7 @@ export const ArchivePage = () => {
             onChange={handleTabChange}
             variant="scrollable"
             allowScrollButtonsMobile
-            sx={{ minWidth: 0, width: { xs: '100%', md: 'auto' }, flex: { md: 1 } }}
+            sx={{ minWidth: 0, flex: 1 }}
           >
             {TAB_ITEMS.map(item => (
               <Tab
@@ -159,12 +290,7 @@ export const ArchivePage = () => {
           <Stack
             direction="row"
             spacing={0.5}
-            sx={{
-              alignItems: 'center',
-              flexShrink: 0,
-              justifyContent: { xs: 'flex-end', md: 'flex-start' },
-              width: { xs: '100%', md: 'auto' },
-            }}
+            sx={{ alignItems: 'center', flexShrink: 0 }}
           >
             {isSearchOpen && (
               <TextField
@@ -174,12 +300,7 @@ export const ArchivePage = () => {
                 value={searchQuery}
                 onChange={event => setSearchQuery(event.target.value)}
                 autoFocus
-                sx={{
-                  width: { xs: '100%', sm: 220 },
-                  maxWidth: { xs: 220, sm: 220 },
-                  flex: { xs: 1, sm: 'none' },
-                  transition: 'width .3s ease-in-out',
-                }}
+                sx={{ width: 220 }}
               />
             )}
 
@@ -201,51 +322,7 @@ export const ArchivePage = () => {
               </IconButton>
             </Tooltip>
 
-            {tableReport && (
-              <>
-                <Tooltip title="Печать">
-                  <span>
-                    <IconButton
-                      size="small"
-                      disabled={
-                        tableReport.disabled || tableReport.isPrinting
-                      }
-                      onClick={tableReport.onPrint}
-                    >
-                      {tableReport.isPrinting ? (
-                        <CircularProgress
-                          size={16}
-                          color="inherit"
-                        />
-                      ) : (
-                        <PrintOutlined fontSize="small" />
-                      )}
-                    </IconButton>
-                  </span>
-                </Tooltip>
-
-                <Tooltip title="Экспорт CSV">
-                  <span>
-                    <IconButton
-                      size="small"
-                      disabled={
-                        tableReport.disabled || tableReport.isExporting
-                      }
-                      onClick={tableReport.onExport}
-                    >
-                      {tableReport.isExporting ? (
-                        <CircularProgress
-                          size={16}
-                          color="inherit"
-                        />
-                      ) : (
-                        <DownloadOutlined fontSize="small" />
-                      )}
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
-            )}
+            {reportActions}
 
             <ArchiveViewModeToggle
               viewMode={viewMode}

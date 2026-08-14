@@ -1,4 +1,4 @@
-import { Close } from '@mui/icons-material';
+import { Close, FolderOutlined, } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -21,6 +21,7 @@ import {
   usePostTasksQuery,
   type Task,
 } from '@/entities';
+import { EmptyBlock } from '@/shared';
 
 type TaskListTab = 'active' | 'archived' | 'completed' | 'cancelled';
 
@@ -204,7 +205,7 @@ export const TaskListDialog = ({
             borderRadius: '24px',
             p: { xs: 2, sm: 3 },
             width: '100%',
-            m: 0,
+            m: 2,
           },
         },
       }}
@@ -266,19 +267,10 @@ export const TaskListDialog = ({
             <CircularProgress size={28} />
           </Stack>
         ) : !listItems.length ? (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              display: 'flex',
-              height: '100%',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-            }}
-          >
-            Нет задач
-          </Typography>
+          <EmptyBlock
+            title="Список задач пуст"
+            icon={<FolderOutlined color="info" fontSize="large" />}
+          />
         ) : (
           <Stack
             spacing={1}

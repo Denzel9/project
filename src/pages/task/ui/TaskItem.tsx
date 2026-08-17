@@ -47,6 +47,7 @@ import {
 import { sendTaskTzToChat } from '@/features/chat';
 import { getTaskPath } from '@/pages/my-tasks/model/utils/utils';
 import { scrollMainToTop } from '@/shared';
+import { hasPreparingMedia } from '@/shared/lib/media';
 import { useSnackbarStore, ContactCard } from '@/widgets';
 
 import { useTaskMediaSave } from '../model/hooks/useTaskMediaSave';
@@ -116,6 +117,9 @@ export const TaskItem = ({
     string | null
   >(null);
   const [hiddenOverdueForTaskId, setHiddenOverdueForTaskId] = useState<
+    string | null
+  >(null);
+  const [hiddenRejectedForTaskId, setHiddenRejectedForTaskId] = useState<
     string | null
   >(null);
   const [isDeadlineDialogOpen, setIsDeadlineDialogOpen] = useState(false);
@@ -243,6 +247,15 @@ export const TaskItem = ({
 
     if (!isSaved) return false;
 
+    if (hasPreparingMedia(images)) {
+      setSnackbarOpen?.(
+        true,
+        'Дождитесь обработки фото и сохраните задачу ещё раз',
+        'error'
+      );
+      return false;
+    }
+
     if (files.length > 0) {
       await handleSaveMedia();
     }
@@ -269,15 +282,33 @@ export const TaskItem = ({
 
     const body: UpdateTaskDto = mapFormToUpdateTask(formValues);
 
-    return handleUpdateTask(body);
-  };
+    if (hasPreparingMedia(images)) {
+      setSnackbarOpen?.(
+        true,
+        'Дождитесь обработки фото и сохраните задачу ещё раз',
+        'error'
+      );
+      return false;
+    }
 
-  const handleCancel = () => {
-    handleCancelMedia();
+    const isSaved = await handleUpdateTask(body);
+
+    if (!isSaved) return false;
+
+    if (files.length > 0) {
+      await handleSaveMedia();
+    }
+
+    return true;
   };
 
   const handleSendTzToExecutor = useCallback(async () => {
-    if (!task?.executorId || task.isArchived || isSendingTz) {
+    if (
+      !task?.executorId ||
+      task.isArchived ||
+      isSendingTz ||
+      status !== TASK_STATUS_ENUM.PENDING_APPROVAL
+    ) {
       return;
     }
 
@@ -302,7 +333,14 @@ export const TaskItem = ({
     } finally {
       setIsSendingTz(false);
     }
-  }, [conversations, createConversation, isSendingTz, setSnackbarOpen, task]);
+  }, [
+    conversations,
+    createConversation,
+    isSendingTz,
+    setSnackbarOpen,
+    status,
+    task,
+  ]);
 
   const handleUnarchive = async () => {
     if (!task || !isOwner || isUpdating) return;
@@ -319,13 +357,18 @@ export const TaskItem = ({
     }
   };
 
-  const isLoadingTask = isUpdating || isMediaSaving || isReportMediaSaving;
+  const isLoadingTask =
+    isUpdating ||
+    isMediaSaving ||
+    isReportMediaSaving ||
+    hasPreparingMedia(images);
   const isCancelled = CANCELLED_STATUSES.includes(
     status as (typeof CANCELLED_STATUSES)[number]
   );
   const isOverdue = isTaskOverdue(task);
   const isCancelBannerHidden = hiddenCancelForTaskId === task.id;
   const isOverdueBannerHidden = hiddenOverdueForTaskId === task.id;
+  const isRejectedBannerHidden = hiddenRejectedForTaskId === task.id;
   const pendingAnnulment =
     task.annulment?.status === 'PENDING' ? task.annulment : null;
   const confirmedAnnulment =
@@ -486,7 +529,7 @@ export const TaskItem = ({
           action={
             canRequestDeadlineExtension ? (
               <Button
-                sx={{ px: 2 }}
+                sx={{ px: 2, flexShrink: 0 }}
                 variant='outlined'
                 color="secondary"
                 size="small"
@@ -499,12 +542,19 @@ export const TaskItem = ({
         />
       )}
 
+      {task.isExecutorApprove === false && !isRejectedBannerHidden && (
+        <TaskAlertBanner
+          message="Задача отклонена исполнителем"
+          onClose={() => setHiddenRejectedForTaskId(task.id)}
+        />
+      )}
+
       {task.isArchived ? (
         <Box
           sx={{
             p: 2,
             mb: 1,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
@@ -572,12 +622,13 @@ export const TaskItem = ({
                     onRemoveUploaded={handleRemoveReportImage}
                     postTitle={post?.title ?? task.post?.title}
                     postId={task.postId ?? task.post?.id ?? post?.id}
+                    deliverables={task.deliverables}
                   />
                 )}
 
               <Box
                 sx={{
-                  bgcolor: 'white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderRadius: '32px',
                   p: { xs: 2.5, md: 2 },
@@ -601,7 +652,7 @@ export const TaskItem = ({
 
                   {!isCancelled &&
                     !task.isArchived &&
-                    status !== TASK_STATUS_ENUM.COMPLETED &&
+                    status === TASK_STATUS_ENUM.PENDING_APPROVAL &&
                     isOwner &&
                     Boolean(task.executorId) &&
                     task.isExecutorApprove === true && (
@@ -630,36 +681,6 @@ export const TaskItem = ({
                         onRetryPrepare={handleRetryLocal}
                       />
                     }
-
-                    {Boolean(files.length) && isEdit && (
-                      <Stack
-                        spacing={2}
-                        direction="row"
-                        sx={{ mt: 2 }}
-                      >
-                        <Button
-                          size="small"
-                          color="error"
-                          variant="outlined"
-                          onClick={handleCancel}
-                          disabled={isMediaSaving}
-                        >
-                          Отменить
-                        </Button>
-
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          loading={isMediaSaving}
-                          disabled={images.some(
-                            image => image.uploadStatus === 'preparing',
-                          )}
-                          onClick={handleSaveMedia}
-                        >
-                          Сохранить
-                        </Button>
-                      </Stack>
-                    )}
                   </Box>
                 )}
 
@@ -683,6 +704,7 @@ export const TaskItem = ({
                     imagesLength={reportImages.length}
                     isExecutorApprove={task.isExecutorApprove}
                     handleSimpleSaveForm={handleSimpleSaveForm}
+                    onCancelEdit={handleCancelMedia}
                   />
                 )}
               </Box>
@@ -733,7 +755,6 @@ export const TaskItem = ({
 
           <TaskComments
             taskId={task.id}
-            isOwner={isOwner}
             contact={resolvedContact}
             isExecutorApprove={task.isExecutorApprove}
             isArchived={Boolean(task.isArchived)}

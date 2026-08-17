@@ -1,6 +1,7 @@
 import { ArrowBack, Close, MoreVert, Search, StickyNote2 } from '@mui/icons-material';
 import {
   Avatar,
+  Divider,
   IconButton,
   Menu,
   MenuItem,
@@ -93,7 +94,7 @@ export const ChatHeader = ({
         p: 2,
         width: '100%',
         flexShrink: 0,
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderRadius: '24px',
         alignItems: 'center',
@@ -210,19 +211,28 @@ export const ChatHeader = ({
             </MenuItem>
           )}
 
+          <Divider />
+
           <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
+
+          <Divider />
 
           {hasTaskTzMessages && (
             <MenuItem onClick={handleOpenTaskTz}>Посмотреть ТЗ</MenuItem>
           )}
 
           {role === USER_ROLE.COMPANY && (
-            <MenuItem onClick={handleOpenAddTask}>Добавить ТЗ</MenuItem>
+            <>
+              <Divider />
+              <MenuItem onClick={handleOpenAddTask}>Добавить ТЗ</MenuItem>
+            </>
           )}
+
+          <Divider />
 
           {role === USER_ROLE.CREATOR && hasActiveTasks && (
             <MenuItem onClick={handleOpenPhotoReport}>
-              Добавить фото-отчет
+              Результаты работы
             </MenuItem>
           )}
         </Menu>

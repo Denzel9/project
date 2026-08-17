@@ -26,7 +26,6 @@ import {
   revokeLocalPhotoUrl,
   type LocalMediaFile,
 } from '@/shared/lib/media';
-import { ConfirmDialog, useSnackbarStore } from '@/widgets';
 
 import { useActions } from '../hooks/useActions';
 import {
@@ -72,13 +71,10 @@ export const ApplicationForm = ({
 }: ApplicationFormProps) => {
   const navigate = useNavigate();
 
-  const { setSnackbarOpen } = useSnackbarStore();
-
   const [files, setFiles] = useState<LocalMediaFile[]>([]);
   const [images, setImages] = useState<Photo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const { mutateAsync: createPost } = useCreatePostMutation();
   const { mutateAsync: updatePost } = useUpdatePostMutation();
@@ -93,15 +89,11 @@ export const ApplicationForm = ({
 
   const { handleSubmit, setValue, getValues, formState: { errors } } = methods;
 
-  const {
-    handleGoToPreview,
-    deleteApplication,
-  } = useActions({
+  const { handleGoToPreview } = useActions({
     isEdit,
     setValue,
     getValues,
     id: data?.id || '',
-    setIsConfirmDialogOpen,
     isPrivate: data?.isPrivate ?? false,
     isArchived: data?.isArchived ?? false,
   });
@@ -294,19 +286,6 @@ export const ApplicationForm = ({
     }
   }, [data, setValue, files.length]);
 
-  const handleDeleteApplication = async () => {
-    if (!data?.id) return;
-
-    try {
-      await deleteApplication(data.id);
-      navigate(ROUTES.PROFILE);
-    } catch {
-      setSnackbarOpen?.(true, 'Не удалось удалить объявление');
-    }
-
-    setIsConfirmDialogOpen(false);
-  };
-
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -384,14 +363,6 @@ export const ApplicationForm = ({
           </Button>
         </Box>
       </form>
-
-      <ConfirmDialog
-        title="Удалить объявление"
-        isOpen={isConfirmDialogOpen}
-        onSuccess={handleDeleteApplication}
-        onClose={() => setIsConfirmDialogOpen(false)}
-        description="Вы уверены, что хотите удалить это объявление?"
-      />
     </FormProvider>
   );
 };

@@ -92,7 +92,7 @@ const Stat = ({
       border: '1px solid',
       borderRadius: '20px',
       borderColor: 'divider',
-      bgcolor: 'common.white',
+      bgcolor: 'background.paper',
       justifyContent: 'space-between',
       color: 'inherit',
       textDecoration: 'none',
@@ -232,7 +232,7 @@ export const IncomingApplicationDetailsDialog = ({
             bgcolor: 'secondary.main',
             zIndex: 1,
             ':hover': {
-              bgcolor: 'common.white',
+              bgcolor: 'background.paper',
             },
           }}
         >
@@ -255,7 +255,7 @@ export const IncomingApplicationDetailsDialog = ({
               sx={{
                 p: { xs: 2, md: 2.5 },
                 borderRadius: '28px',
-                bgcolor: 'common.white',
+                bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
                 alignItems: { xs: 'stretch', md: 'center' },
@@ -441,7 +441,7 @@ export const IncomingApplicationDetailsDialog = ({
 
             <Stack
               spacing={1}
-              sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
+              sx={{ alignItems: { xs: 'stretch', md: 'start' } }}
               direction={{ xs: 'column', md: 'row' }}
             >
               <Box
@@ -450,7 +450,7 @@ export const IncomingApplicationDetailsDialog = ({
                   flex: 1.4,
                   minWidth: 0,
                   borderRadius: '28px',
-                  bgcolor: 'common.white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                 }}
@@ -460,7 +460,7 @@ export const IncomingApplicationDetailsDialog = ({
                   color="text.secondary"
                   sx={{ mb: 2 }}
                 >
-                  Сообщение отклика
+                  Сопроводительное письмо
                 </Typography>
                 <Typography
                   variant="body1"
@@ -482,8 +482,9 @@ export const IncomingApplicationDetailsDialog = ({
                   sx={{
                     p: 2,
                     flex: 1,
+                    flexGrow: 1,
                     borderRadius: '28px',
-                    bgcolor: 'common.white',
+                    bgcolor: 'background.paper',
                     border: '1px solid',
                     borderColor: 'divider',
                     minWidth: 0,
@@ -557,7 +558,7 @@ export const IncomingApplicationDetailsDialog = ({
                     p: 2,
                     flexWrap: 'wrap',
                     borderRadius: '24px',
-                    bgcolor: 'common.white',
+                    bgcolor: 'background.paper',
                     border: '1px solid',
                     borderColor: 'divider',
                     justifyContent: { xs: 'stretch', sm: 'flex-end' },

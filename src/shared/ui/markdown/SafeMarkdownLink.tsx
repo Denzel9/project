@@ -1,5 +1,7 @@
 import type { ComponentProps } from 'react';
 
+import { ExternalLinkAnchor } from '@/shared/ui/links';
+
 const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
 const isSafeHref = (href: string): boolean => {
@@ -21,8 +23,6 @@ const isSafeHref = (href: string): boolean => {
   }
 };
 
-const isExternalHref = (href: string): boolean => /^https?:\/\//i.test(href);
-
 export const SafeMarkdownLink = ({
   href,
   children,
@@ -32,16 +32,17 @@ export const SafeMarkdownLink = ({
     return <span>{children}</span>;
   }
 
-  const isExternal = isExternalHref(href);
+  if (href.startsWith('mailto:')) {
+    return (
+      <a href={href} {...props}>
+        {children}
+      </a>
+    );
+  }
 
   return (
-    <a
-      href={href}
-      rel={isExternal ? 'noopener noreferrer' : undefined}
-      target={isExternal ? '_blank' : undefined}
-      {...props}
-    >
+    <ExternalLinkAnchor href={href} {...props}>
       {children}
-    </a>
+    </ExternalLinkAnchor>
   );
 };

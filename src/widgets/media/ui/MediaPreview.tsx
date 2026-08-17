@@ -9,6 +9,9 @@ type MediaPreviewProps = {
 };
 
 export const MediaPreview = ({ media }: MediaPreviewProps) => {
+  const visible = media.slice(0, 5)
+  const restCount = media.length - visible.length
+
   return (
     <Stack
       direction="row"
@@ -17,9 +20,9 @@ export const MediaPreview = ({ media }: MediaPreviewProps) => {
         width: '100%',
       }}
     >
-      {media.map((media, index) => (
+      {visible.map((item, index) => (
         <Box
-          key={media.id}
+          key={item.id}
           sx={{
             width: '50px',
             height: '50px',
@@ -29,14 +32,13 @@ export const MediaPreview = ({ media }: MediaPreviewProps) => {
           }}
         >
           <MediaItem
-            key={media.id}
-            src={media.url}
-            alt={media.key}
-            mimeType={media.mimeType}
+            src={item.url}
+            alt={item.key}
+            mimeType={item.mimeType}
           />
         </Box>
       ))}
-      {media.length > 5 && (
+      {restCount > 0 && (
         <Box
           sx={{
             width: '50px',
@@ -53,9 +55,9 @@ export const MediaPreview = ({ media }: MediaPreviewProps) => {
             zIndex: 1,
           }}
         >
-          +{media.length - 5}
+          +{restCount}
         </Box>
       )}
     </Stack>
-  );
-};
+  )
+}

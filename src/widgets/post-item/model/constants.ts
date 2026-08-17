@@ -2,7 +2,6 @@ import type { ActionButton } from "./types";
 
 export enum ACTION_BUTTONS_KEYS {
     EDIT = 'EDIT',
-    DELETE = 'DELETE',
     ADD_TO_ARCHIVE = 'ADD_TO_ARCHIVE',
     ADD_TO_COLLECTION = 'ADD_TO_COLLECTION',
     ADD_TO_FAVORITE_GROUP = 'ADD_TO_FAVORITE_GROUP',
@@ -33,10 +32,6 @@ export const ACTION_BUTTONS: ActionButton[] = [
     {
         label: 'Редактировать',
         key: ACTION_BUTTONS_KEYS.EDIT,
-    },
-    {
-        label: 'Удалить',
-        key: ACTION_BUTTONS_KEYS.DELETE,
     },
     {
         label: 'Переместить в архив',

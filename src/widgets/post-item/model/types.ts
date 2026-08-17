@@ -14,6 +14,10 @@ export type PostItemProps = {
     applicationId?: string;
     permissions?: ACTION_BUTTONS_KEYS[];
     applicationStatus?: ApplicationStatus;
+    isSelectionMode?: boolean;
+    isSelected?: boolean;
+    onToggleSelect?: () => void;
+    onEnterSelectionMode?: () => void;
 };
 
 export type ActionButton = {

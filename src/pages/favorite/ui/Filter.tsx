@@ -147,7 +147,7 @@ const FavoriteFilter = ({
         sx={{
           p: 2,
           mb: 1,
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderRadius: '24px',
           alignItems: 'center',

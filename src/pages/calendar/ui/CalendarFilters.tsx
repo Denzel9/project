@@ -100,7 +100,7 @@ export const CalendarFilters = ({
           sx={{
             mb: 1,
             p: 2,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '24px',
             alignItems: 'center',
@@ -220,7 +220,7 @@ export const CalendarFilters = ({
   }
 
   return (
-    <Box ref={ref} sx={{ mb: 1, border: '1px solid', borderColor: 'divider', borderRadius: '24px', bgcolor: 'white', p: 2 }}>
+    <Box ref={ref} sx={{ mb: 1, border: '1px solid', borderColor: 'divider', borderRadius: '24px', bgcolor: 'background.paper', p: 2 }}>
       <CalendarFilterFields
         value={value}
         onChange={onChange}

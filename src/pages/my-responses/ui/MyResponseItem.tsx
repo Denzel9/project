@@ -136,7 +136,7 @@ export const MyResponseItem = ({
         sx={{
           height: '100%',
           overflow: 'hidden',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
@@ -233,14 +233,12 @@ export const MyResponseItem = ({
                 )}
               </Box>
 
-              {!previewMedia && (
-                <Chip
-                  size="small"
-                  label={APPLICATION_STATUS_LABELS[application.status]}
-                  color={getStatusColor(application.status)}
-                  sx={{ flexShrink: 0 }}
-                />
-              )}
+              <Chip
+                size="small"
+                label={APPLICATION_STATUS_LABELS[application.status]}
+                color={getStatusColor(application.status)}
+                sx={{ flexShrink: 0 }}
+              />
             </Stack>
 
             {application.message && (

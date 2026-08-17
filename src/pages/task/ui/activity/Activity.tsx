@@ -94,7 +94,7 @@ export const Activity = ({
       sx={{
         width: '100%',
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         maxHeight: '560px',
         p: 2,

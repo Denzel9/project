@@ -19,6 +19,8 @@ type RHFRichTextEditorProps<
   disabled?: boolean;
 };
 
+export type { RHFRichTextEditorProps };
+
 export const RHFRichTextEditor = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,

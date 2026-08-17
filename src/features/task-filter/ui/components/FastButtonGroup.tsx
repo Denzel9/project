@@ -32,9 +32,9 @@ const FastChip = ({ label, count, isActive, onClick, sx }: FastChipProps) => (
   <Chip
     sx={{
       transition: 'all 0.1s ease-in-out',
-      bgcolor: isActive ? 'primary.main' : 'white',
+      bgcolor: isActive ? 'primary.main' : 'background.paper',
       ':hover': {
-        bgcolor: isActive ? 'primary.dark' : '#f0f0f0 !important',
+        bgcolor: isActive ? 'primary.dark' : 'action.hover',
       },
       ...sx,
     }}

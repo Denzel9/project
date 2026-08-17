@@ -2,10 +2,14 @@ import { Close } from '@mui/icons-material'
 import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
-import { APPLICATION_STATUS_LABELS } from '@/entities'
-import { FilterAutocomplete } from '@/shared'
+import { APPLICATION_STATUS_LABELS, type ApplicationStatus } from '@/entities'
+import { FilterAutocomplete, FilterStatusSelect } from '@/shared'
 
-import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils'
+import {
+  DEFAULT_APPLICATION_STATUS_FILTER,
+  type ApplicationStatusFilter,
+  type CompanyFilter,
+} from '../model/utils'
 
 type CompanyOption = {
   ownerId: string
@@ -48,8 +52,8 @@ export const MyResponsesMobileFilter = ({
 
   const statusOptions = useMemo(
     () =>
-      Object.entries(APPLICATION_STATUS_LABELS).map(([id, label]) => ({
-        id,
+      Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
+        value: value as ApplicationStatus,
         label,
       })),
     [],
@@ -71,8 +75,9 @@ export const MyResponsesMobileFilter = ({
   }
 
   const handleReset = () => {
-    setDraft({ status: 'all', companyId: 'all' })
-    onStatusChange('all')
+    const nextStatus = [...DEFAULT_APPLICATION_STATUS_FILTER]
+    setDraft({ status: nextStatus, companyId: 'all' })
+    onStatusChange(nextStatus)
     onCompanyChange('all')
     onClose()
   }
@@ -102,14 +107,13 @@ export const MyResponsesMobileFilter = ({
         </Stack>
 
         <Stack spacing={3}>
-          <FilterAutocomplete
-            label="Статус"
+          <FilterStatusSelect
             value={draft.status}
             options={statusOptions}
             onChange={value =>
               setDraft(prev => ({
                 ...prev,
-                status: value as ApplicationStatusFilter,
+                status: value,
               }))
             }
             sx={{ width: '100%' }}

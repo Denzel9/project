@@ -8,6 +8,7 @@ import {
   useConfirmEmailMutation,
   useRefreshTokenMutation,
 } from '@/features/auth';
+import { WHITE_COLOR, AUTH_BACKGROUND } from '@/features/auth/model/constants';
 import { ROUTES, SAFE_AREA } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -88,6 +89,8 @@ export const ConfirmEmailPage = () => {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 2,
+        bgcolor: AUTH_BACKGROUND,
+        color: WHITE_COLOR,
         p: 3,
         boxSizing: 'border-box',
         pt: `calc(24px + ${SAFE_AREA.top})`,
@@ -97,7 +100,9 @@ export const ConfirmEmailPage = () => {
       }}
     >
       <CircularProgress />
-      <Typography color="info">Подтверждаем почту…</Typography>
+      <Typography sx={{ color: WHITE_COLOR }}>
+        Подтверждаем почту…
+      </Typography>
     </Box>
   );
 };

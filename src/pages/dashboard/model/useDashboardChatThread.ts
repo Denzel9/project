@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   appendMessageToCache,
   chatKeys,
+  isMessageWindowDetached,
   setConversationUnreadCount,
   uploadConversationMediaBatch,
+  useLoadOlderChatMessages,
   useMessagesQuery,
   type ChatMessage,
 } from '@/entities/chat'
@@ -32,9 +34,27 @@ export const useDashboardChatThread = ({
     refetch,
   } = useMessagesQuery(conversationId)
 
+  const {
+    hasOlder,
+    hasNewer,
+    isLoadingOlder,
+    isLoadingNewer,
+    loadOlder,
+    loadNewer,
+    jumpToMessage,
+    resetToTail,
+  } = useLoadOlderChatMessages(
+    conversationId,
+    messages,
+    isLoading,
+    true,
+  )
+
   useEffect(() => {
-    setDraft('')
-    setPendingFiles([])
+    setTimeout(() => {
+      setDraft('')
+      setPendingFiles([])
+    }, 0)
   }, [conversationId])
 
   useEffect(() => {
@@ -47,7 +67,9 @@ export const useDashboardChatThread = ({
     const handleMessage = (message: ChatMessage) => {
       if (message.conversationId !== conversationId) return
 
-      appendMessageToCache(queryClient, conversationId, message)
+      if (!isMessageWindowDetached(conversationId)) {
+        appendMessageToCache(queryClient, conversationId, message)
+      }
       void queryClient.invalidateQueries({ queryKey: chatKeys.conversationsRoot() })
     }
 
@@ -82,6 +104,10 @@ export const useDashboardChatThread = ({
       chatSocket.connect()
       chatSocket.joinConversation(conversationId)
 
+      if (isMessageWindowDetached(conversationId)) {
+        await resetToTail()
+      }
+
       const media = hasFiles
         ? await uploadConversationMediaBatch(conversationId, pendingFiles)
         : undefined
@@ -100,10 +126,18 @@ export const useDashboardChatThread = ({
     } finally {
       setIsSending(false)
     }
-  }, [conversationId, draft, pendingFiles])
+  }, [conversationId, draft, pendingFiles, resetToTail])
 
   return {
     messages,
+    hasOlder,
+    hasNewer,
+    isLoadingOlder,
+    isLoadingNewer,
+    loadOlder,
+    loadNewer,
+    jumpToMessage,
+    resetToTail,
     isLoading,
     isError,
     refetch,

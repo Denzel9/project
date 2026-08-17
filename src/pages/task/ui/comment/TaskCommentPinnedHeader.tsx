@@ -46,7 +46,7 @@ export const TaskCommentPinnedHeader = ({
           py: 1.25,
           cursor: 'pointer',
           borderRadius: '16px',
-          bgcolor: 'common.white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
           boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',

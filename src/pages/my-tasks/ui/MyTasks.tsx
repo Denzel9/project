@@ -6,19 +6,19 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import {
   USER_ROLE,
   useTasksInfiniteQuery,
   useTasksQuery,
-  TASK_STATUS_ENUM,
   type Task,
   type TaskStatus,
 } from '@/entities';
 import { useAuthStore } from '@/features';
 import {
   useMyTaskFilterStore,
+  useTaskFiltersUrlSync,
   toMyTasksQueryParams,
   MyTaskFilter,
   AddTaskDialog,
@@ -41,20 +41,22 @@ import { TasksLoadMoreButton } from './TasksLoadMoreButton';
 import { TasksPrintHeader } from './TasksPrintHeader';
 import { TaskTable } from './TaskTable';
 
-import type { MyTasksLocationState } from '../model/types/navigation';
-
 type InitialPost = {
   id?: string;
   title?: string;
 };
 
 export const MyTasks = () => {
-  const location = useLocation();
   const navigate = useNavigate();
 
-  const pendingDashboardNavRef = useRef(false);
   const pendingKanbanScrollRef = useRef<TaskStatus | null>(null);
   const kanbanBoardRef = useRef<KanbanBoardHandle>(null);
+
+  const handleScrollColumn = useCallback((status: TaskStatus) => {
+    pendingKanbanScrollRef.current = status;
+  }, []);
+
+  useTaskFiltersUrlSync({ onScrollColumn: handleScrollColumn });
 
   const [initialPosts, setInitialPosts] = useState<InitialPost[]>([]);
   const [isOpenPrimeRecommendation, setIsOpenPrimeRecommendation] =
@@ -84,7 +86,6 @@ export const MyTasks = () => {
     setStatus,
     setUpdatedDate,
     setExtraFilter,
-    setActiveOnly,
     setFastButtonValue,
     setPostId,
     setOnlyMyTasks,
@@ -127,37 +128,6 @@ export const MyTasks = () => {
   const searchQ =
     debouncedQuery.length >= 2 ? debouncedQuery : undefined;
 
-  const executorIdFromUrl = useMemo(() => {
-    const value = new URLSearchParams(location.search).get('executorId');
-
-    if (
-      !value ||
-      value === 'all' ||
-      value === 'undefined' ||
-      value === 'null'
-    ) {
-      return null;
-    }
-
-    return value;
-  }, [location.search]);
-
-  const statusFromUrl = useMemo(() => {
-    const value = new URLSearchParams(location.search).get('status');
-
-    if (!value) return null;
-
-    return (Object.values(TASK_STATUS_ENUM) as string[]).includes(value)
-      ? (value as TaskStatus)
-      : null;
-  }, [location.search]);
-
-  const activeOnlyFromUrl = useMemo(() => {
-    const value = new URLSearchParams(location.search).get('active');
-
-    return value === '1' || value === 'true';
-  }, [location.search]);
-
   const handleUrgentOnlyChange = useCallback(
     (value: boolean) => setExtraFilter(value ? 'urgent' : null),
     [setExtraFilter],
@@ -174,7 +144,7 @@ export const MyTasks = () => {
     isCompany,
     status: { value: status, onChange: setStatus },
     personId: {
-      value: executorIdFromUrl ?? executorId,
+      value: executorId,
       onChange: setExecutorId,
     },
     urgentOnly: {
@@ -193,68 +163,18 @@ export const MyTasks = () => {
     return searchQ || undefined;
   }, [taskIdFilter, taskQueryFilter, searchQ]);
 
-  useEffect(() => {
-    if (executorIdFromUrl || statusFromUrl || activeOnlyFromUrl) {
-      if (executorIdFromUrl) {
-        setExecutorId(executorIdFromUrl);
-        setFastButtonValue(null);
-      }
-
-      if (statusFromUrl) {
-        setStatus(statusFromUrl);
-      }
-
-      setActiveOnly(activeOnlyFromUrl && !statusFromUrl);
-      pendingDashboardNavRef.current = true;
-      navigate(location.pathname, { replace: true, state: null });
-      return;
-    }
-
-    const state = location.state as MyTasksLocationState | null;
-    const fromDashboard = Boolean(
-      state?.fromDashboard || state?.skipDefaultFastFilter,
-    );
-
-    if (fromDashboard) {
-      pendingDashboardNavRef.current = true;
-
-      if (state?.scrollToKanbanColumn) {
-        pendingKanbanScrollRef.current = state.scrollToKanbanColumn;
-      }
-
-      navigate(location.pathname, { replace: true, state: null });
-      return;
-    }
-
-    if (pendingDashboardNavRef.current) {
-      pendingDashboardNavRef.current = false;
-    }
-  }, [
-    executorIdFromUrl,
-    statusFromUrl,
-    activeOnlyFromUrl,
-    location.key,
-    location.pathname,
-    location.state,
-    navigate,
-    setExecutorId,
-    setFastButtonValue,
-    setStatus,
-    setActiveOnly,
-  ]);
-
   const queryFilters = useMemo(
     () => ({
       postId,
-      executorId: executorIdFromUrl ?? executorId,
-      status: statusFromUrl ?? status,
+      executorId,
+      status,
       viewMode,
       updatedDate,
       extraFilter,
-      activeOnly: statusFromUrl ? false : activeOnlyFromUrl || activeOnly,
+      activeOnly,
       onlyMyTasks,
       assigneeAccountId,
-      fastButtonValue: executorIdFromUrl ? null : fastButtonValue,
+      fastButtonValue,
       isCompany,
       q: resolvedSearchQ,
       taskId: taskIdFilter,
@@ -262,15 +182,12 @@ export const MyTasks = () => {
     }),
     [
       postId,
-      executorIdFromUrl,
       executorId,
       status,
-      statusFromUrl,
       viewMode,
       updatedDate,
       extraFilter,
       activeOnly,
-      activeOnlyFromUrl,
       onlyMyTasks,
       assigneeAccountId,
       fastButtonValue,
@@ -632,7 +549,7 @@ export const MyTasks = () => {
               flex: 1,
               height: '100%',
               display: 'flex',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               border: '1px solid',
               alignItems: 'center',
               borderRadius: '32px',
@@ -715,7 +632,7 @@ export const MyTasks = () => {
                       <Grid
                         key={task.id}
                         size={{ xs: 12, sm: 6, md: 4 }}
-                        sx={{ bgcolor: 'white', borderRadius: '24px' }}
+                        sx={{ bgcolor: 'background.paper', borderRadius: '24px' }}
                       >
                         <TaskItem
                           task={task}

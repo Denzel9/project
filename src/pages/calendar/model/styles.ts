@@ -7,7 +7,7 @@ export const CALENDAR_DAY_CELL_HEIGHT = 52
 
 export const CALENDAR_CARD_SX: SxProps<Theme> = {
   p: { xs: 1.5, md: 2 },
-  bgcolor: 'white',
+  bgcolor: 'background.paper',
   borderRadius: '32px',
   border: '1px solid',
   borderColor: 'divider',

@@ -82,7 +82,7 @@ const DeliverableViewCard = ({ item }: { item: TaskDeliverableFormItem }) => {
         overflow: 'hidden',
         p: { xs: 2, sm: 2.5 },
         borderRadius: '20px',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
         // width: 'fit-content',

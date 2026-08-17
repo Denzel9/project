@@ -328,7 +328,7 @@ export const FavoritePage = () => {
             sx={{
               flex: 1,
               display: 'flex',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               borderRadius: '32px',
               justifyContent: 'center',
               py: 6,
@@ -353,7 +353,7 @@ export const FavoritePage = () => {
             sx={{
               flex: 1,
               minHeight: 0,
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               borderRadius: '32px',
               border: '1px solid',
               borderColor: 'divider',
@@ -367,7 +367,7 @@ export const FavoritePage = () => {
               flex: 1,
               height: '100%',
               display: 'flex',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               borderRadius: '32px',
               justifyContent: 'center',
             }}

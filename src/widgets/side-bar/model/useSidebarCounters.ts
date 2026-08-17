@@ -24,7 +24,7 @@ export const useSidebarCounters = (): SidebarCounters => {
   })
 
   const { data: applicationStats } = useApplicationStatsQuery({
-    enabled: isAuth && isMarketplaceTrader,
+    enabled: isAuth && role === USER_ROLE.COMPANY,
   })
 
   const { data: taskStats } = useTaskStatsQuery(undefined, {
@@ -32,11 +32,7 @@ export const useSidebarCounters = (): SidebarCounters => {
   })
 
   const applications =
-    role === USER_ROLE.COMPANY
-      ? (applicationStats?.incomingNew ?? 0)
-      : role === USER_ROLE.CREATOR
-        ? (applicationStats?.mineActive ?? 0)
-        : 0
+    role === USER_ROLE.COMPANY ? (applicationStats?.incomingNew ?? 0) : 0
 
   return {
     chat: chatUnread?.count ?? 0,

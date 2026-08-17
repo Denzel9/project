@@ -28,6 +28,8 @@ import { UnreadMessagesDivider } from './UnreadMessagesDivider';
 
 import type { ChatMessage, ChatMessagePin, ChatPeer } from '@/entities/chat';
 
+const SCROLL_LOAD_THRESHOLD_PX = 80;
+
 type ChatConversationProps = {
   messages: ChatMessage[];
   unreadDividerMessageId?: string | null;
@@ -62,12 +64,21 @@ type ChatConversationProps = {
   onRemoveFile: (index: number) => void;
   onSend: () => void;
   isLoading?: boolean;
+  hasOlder?: boolean;
+  isLoadingOlder?: boolean;
+  onLoadOlder?: () => void | Promise<unknown>;
+  hasNewer?: boolean;
+  isLoadingNewer?: boolean;
+  onLoadNewer?: () => void | Promise<unknown>;
+  onEnsureMessage?: (messageId: string) => Promise<boolean>;
+  onResetToTail?: () => void | Promise<unknown>;
   error?: string | null;
   onRetryError?: () => void;
   onDismissError?: () => void;
 
   pinnedMessages: ChatMessagePin[];
   isMessagePinned: (messageId: string) => boolean;
+  getMessagePinScope: (messageId: string) => 'PERSONAL' | 'SHARED' | null;
   canUnpinMessage: (messageId: string) => boolean;
   onTogglePinMessage: (
     messageId: string,
@@ -112,11 +123,20 @@ export const ChatConversation = ({
   onRemoveFile,
   onSend,
   isLoading = false,
+  hasOlder = false,
+  isLoadingOlder = false,
+  onLoadOlder,
+  hasNewer = false,
+  isLoadingNewer = false,
+  onLoadNewer,
+  onEnsureMessage,
+  onResetToTail,
   error = null,
   onRetryError,
   onDismissError,
   pinnedMessages,
   isMessagePinned,
+  getMessagePinScope,
   canUnpinMessage,
   onTogglePinMessage,
   focusMessageId = null,
@@ -127,6 +147,11 @@ export const ChatConversation = ({
   const prevPeerIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
   const highlightTimeoutRef = useRef<number | null>(null);
+  const scrollRestoreHeightRef = useRef<number | null>(null);
+  const skipAutoScrollRef = useRef(false);
+  const pendingJumpIdRef = useRef<string | null>(null);
+  const pendingScrollToBottomRef = useRef(false);
+  const [jumpRequestId, setJumpRequestId] = useState(0);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [pinnedDialogOpen, setPinnedDialogOpen] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(
@@ -176,61 +201,106 @@ export const ChatConversation = ({
   }, []);
 
   const updateScrollButtonVisibility = useCallback(() => {
-    setShowScrollToBottom(!isNearBottom());
-  }, [isNearBottom]);
+    setShowScrollToBottom(!isNearBottom() || hasNewer);
+  }, [hasNewer, isNearBottom]);
+
+  const handleLoadOlder = useCallback(() => {
+    const container = messagesContainerRef.current;
+
+    if (
+      !container ||
+      isLoadingOlder ||
+      !hasOlder ||
+      !onLoadOlder ||
+      pendingJumpIdRef.current
+    ) {
+      return;
+    }
+
+    scrollRestoreHeightRef.current = container.scrollHeight;
+    skipAutoScrollRef.current = true;
+    void onLoadOlder();
+  }, [hasOlder, isLoadingOlder, onLoadOlder]);
+
+  const handleLoadNewer = useCallback(() => {
+    if (
+      isLoadingNewer ||
+      !hasNewer ||
+      !onLoadNewer ||
+      pendingJumpIdRef.current
+    ) {
+      return;
+    }
+
+    skipAutoScrollRef.current = true;
+    void onLoadNewer();
+  }, [hasNewer, isLoadingNewer, onLoadNewer]);
 
   const handleScrollToBottomClick = useCallback(() => {
+    const jumpToTail = hasNewer && onResetToTail;
+
+    if (jumpToTail) {
+      pendingScrollToBottomRef.current = true;
+      skipAutoScrollRef.current = false;
+      void Promise.resolve(onResetToTail()).catch(() => {
+        pendingScrollToBottomRef.current = false;
+      });
+      return;
+    }
+
     scrollToBottom('smooth');
     setShowScrollToBottom(false);
-  }, [scrollToBottom]);
+  }, [hasNewer, onResetToTail, scrollToBottom]);
 
   const handleJumpToMessage = useCallback(
     (messageId: string) => {
       setPinnedDialogOpen(false);
+      setJumpError(null);
+      pendingJumpIdRef.current = messageId;
+      skipAutoScrollRef.current = true;
 
-      window.setTimeout(() => {
-        const container = messagesContainerRef.current;
-        const el = container?.querySelector(
-          `[data-message-id="${messageId}"]`,
-        ) as HTMLElement | null;
+      const container = messagesContainerRef.current;
+      const el = container?.querySelector(
+        `[data-message-id="${messageId}"]`,
+      ) as HTMLElement | null;
 
-        if (!container || !el) {
-          setJumpError('Сообщение не найдено в загруженной истории чата');
+      if (el) {
+        setJumpRequestId(value => value + 1);
+        return;
+      }
+
+      if (!onEnsureMessage) {
+        pendingJumpIdRef.current = null;
+        skipAutoScrollRef.current = false;
+        setJumpError('Сообщение не найдено в загруженной истории чата');
+        return;
+      }
+
+      void onEnsureMessage(messageId).then(found => {
+        if (!found) {
+          pendingJumpIdRef.current = null;
+          skipAutoScrollRef.current = false;
+          setJumpError('Сообщение не найдено');
           return;
         }
 
-        const stickyHeader = container.querySelector(
-          '[data-pinned-header="true"]',
-        ) as HTMLElement | null;
-        const stickyOffset = stickyHeader?.offsetHeight ?? 0;
-        const containerRect = container.getBoundingClientRect();
-        const elRect = el.getBoundingClientRect();
-        const targetTop =
-          container.scrollTop +
-          (elRect.top - containerRect.top) -
-          stickyOffset -
-          container.clientHeight / 3;
-
-        container.scrollTo({
-          top: Math.max(0, targetTop),
-          behavior: 'smooth',
-        });
-
-        if (highlightTimeoutRef.current) {
-          window.clearTimeout(highlightTimeoutRef.current);
-        }
-
-        setHighlightedMessageId(messageId);
-        highlightTimeoutRef.current = window.setTimeout(() => {
-          setHighlightedMessageId(null);
-          highlightTimeoutRef.current = null;
-        }, 2200);
-
-        setShowScrollToBottom(!isNearBottom());
-      }, 0);
+        setJumpRequestId(value => value + 1);
+      });
     },
-    [isNearBottom],
+    [onEnsureMessage],
   );
+
+  const highlightMessage = useCallback((messageId: string) => {
+    if (highlightTimeoutRef.current) {
+      window.clearTimeout(highlightTimeoutRef.current);
+    }
+
+    setHighlightedMessageId(messageId);
+    highlightTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightTimeoutRef.current = null;
+    }, 2200);
+  }, []);
 
   useEffect(() => {
     if (!focusMessageId) return;
@@ -250,6 +320,8 @@ export const ChatConversation = ({
 
   useEffect(() => {
     if (!peer) {
+      pendingJumpIdRef.current = null;
+      pendingScrollToBottomRef.current = false;
       setTimeout(() => {
         setShowScrollToBottom(false);
         setHighlightedMessageId(null);
@@ -265,6 +337,17 @@ export const ChatConversation = ({
 
     const handleScroll = () => {
       updateScrollButtonVisibility();
+
+      if (container.scrollTop <= SCROLL_LOAD_THRESHOLD_PX) {
+        handleLoadOlder();
+      }
+
+      const distanceToBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+
+      if (distanceToBottom <= SCROLL_LOAD_THRESHOLD_PX) {
+        handleLoadNewer();
+      }
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
@@ -273,7 +356,31 @@ export const ChatConversation = ({
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
-  }, [peer, messages.length, updateScrollButtonVisibility]);
+  }, [peer, messages.length, updateScrollButtonVisibility, handleLoadOlder, handleLoadNewer]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+
+    if (
+      !container ||
+      !hasOlder ||
+      isLoadingOlder ||
+      isLoading ||
+      messages.length === 0
+    ) {
+      return;
+    }
+
+    if (container.scrollHeight <= container.clientHeight + SCROLL_LOAD_THRESHOLD_PX) {
+      handleLoadOlder();
+    }
+  }, [
+    handleLoadOlder,
+    hasOlder,
+    isLoading,
+    isLoadingOlder,
+    messages.length,
+  ]);
 
   useEffect(() => {
     if (!peer) {
@@ -291,6 +398,28 @@ export const ChatConversation = ({
   useLayoutEffect(() => {
     if (!peer || isLoading || messages.length === 0) return;
 
+    const container = messagesContainerRef.current;
+    const previousHeight = scrollRestoreHeightRef.current;
+
+    if (container && previousHeight != null && !isLoadingOlder) {
+      container.scrollTop = container.scrollHeight - previousHeight;
+      scrollRestoreHeightRef.current = null;
+      skipAutoScrollRef.current = false;
+      prevPeerIdRef.current = peer.id;
+      prevMessagesLengthRef.current = messages.length;
+      return;
+    }
+
+    if (pendingScrollToBottomRef.current && !isLoading) {
+      pendingScrollToBottomRef.current = false;
+      skipAutoScrollRef.current = false;
+      prevPeerIdRef.current = peer.id;
+      prevMessagesLengthRef.current = messages.length;
+      scrollToBottom('auto');
+      setShowScrollToBottom(false);
+      return;
+    }
+
     const peerChanged = prevPeerIdRef.current !== peer.id;
     const messagesAdded = messages.length > prevMessagesLengthRef.current;
     const lastMessage = messages[messages.length - 1];
@@ -300,17 +429,66 @@ export const ChatConversation = ({
     prevPeerIdRef.current = peer.id;
     prevMessagesLengthRef.current = messages.length;
 
+    if (skipAutoScrollRef.current) {
+      return;
+    }
+
     if (peerChanged) {
       scrollToBottom('auto');
       setShowScrollToBottom(false);
       return;
     }
 
-    if (messagesAdded && (isOwnMessage || isNearBottom())) {
+    if (messagesAdded && !hasNewer && (isOwnMessage || isNearBottom())) {
       scrollToBottom('smooth');
       setShowScrollToBottom(false);
     }
-  }, [peer, messages, isLoading, currentUserId, isNearBottom, scrollToBottom]);
+  }, [
+    peer,
+    messages,
+    isLoading,
+    isLoadingOlder,
+    hasNewer,
+    currentUserId,
+    isNearBottom,
+    scrollToBottom,
+  ]);
+
+  useLayoutEffect(() => {
+    const messageId = pendingJumpIdRef.current;
+
+    if (!messageId) return;
+
+    const container = messagesContainerRef.current;
+    const el = container?.querySelector(
+      `[data-message-id="${messageId}"]`,
+    ) as HTMLElement | null;
+
+    if (!container || !el) return;
+
+    pendingJumpIdRef.current = null;
+    skipAutoScrollRef.current = false;
+
+    const stickyHeader = container.querySelector(
+      '[data-pinned-header="true"]',
+    ) as HTMLElement | null;
+    const stickyOffset = stickyHeader?.offsetHeight ?? 0;
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const targetTop =
+      container.scrollTop +
+      (elRect.top - containerRect.top) -
+      stickyOffset -
+      container.clientHeight / 3;
+
+    container.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: 'smooth',
+    });
+
+    highlightMessage(messageId);
+    setShowScrollToBottom(!isNearBottom() || hasNewer);
+  }, [hasNewer, highlightMessage, isNearBottom, jumpRequestId, messages]);
 
   useEffect(() => {
     const content = messagesContentRef.current;
@@ -320,7 +498,7 @@ export const ChatConversation = ({
     let frameId = 0;
 
     const observer = new ResizeObserver(() => {
-      if (!isNearBottom()) return;
+      if (skipAutoScrollRef.current || hasNewer || !isNearBottom()) return;
 
       cancelAnimationFrame(frameId);
       frameId = requestAnimationFrame(() => {
@@ -334,7 +512,7 @@ export const ChatConversation = ({
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, [isNearBottom, scrollToBottom, peer]);
+  }, [hasNewer, isNearBottom, scrollToBottom, peer]);
 
   if (!peer) {
     return (
@@ -344,7 +522,7 @@ export const ChatConversation = ({
           p: 4,
           borderRadius: '32px',
           alignItems: 'center',
-          bgcolor: 'common.white',
+          bgcolor: 'background.paper',
           justifyContent: 'center',
         }}
       >
@@ -372,7 +550,7 @@ export const ChatConversation = ({
         minHeight: 0,
         p: { xs: 2, md: 2 },
         borderRadius: '24px',
-        bgcolor: 'common.white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
       }}
     >
@@ -430,6 +608,12 @@ export const ChatConversation = ({
               </Box>
             )}
 
+            {isLoadingOlder && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 1.5 }}>
+                <CircularProgress size={20} />
+              </Box>
+            )}
+
             {!isLoading && messages.length === 0 && (
               <EmptyBlock sx={{ height: '100%', flex: 1 }} title="Сообщений пока нет" description="Отправьте первое сообщение" icon={<ChatOutlined sx={{ fontSize: 56, color: 'text.disabled' }} />} />
             )}
@@ -462,6 +646,7 @@ export const ChatConversation = ({
                   senderAvatar={peer?.avatar}
                   senderName={peer?.displayName}
                   isPinned={isMessagePinned(message.id)}
+                  pinScope={getMessagePinScope(message.id)}
                   canUnpin={canUnpinMessage(message.id)}
                   onPin={onTogglePinMessage}
                   onDelete={onDeleteMessage}
@@ -485,6 +670,12 @@ export const ChatConversation = ({
               </Box>
             ))}
 
+            {isLoadingNewer && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 1.5 }}>
+                <CircularProgress size={20} />
+              </Box>
+            )}
+
             {messages.length > 0 && (
               <Box
                 aria-hidden
@@ -496,17 +687,17 @@ export const ChatConversation = ({
 
         {showScrollToBottom && (
           <IconButton
-            aria-label="Прокрутить к последнему сообщению"
+            aria-label="К последним сообщениям"
             onClick={handleScrollToBottomClick}
             sx={{
               zIndex: 100,
               position: 'absolute',
               right: 16,
               bottom: 16,
-              bgcolor: 'common.white',
+              bgcolor: 'background.paper',
               boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
               '&:hover': {
-                bgcolor: 'common.white',
+                bgcolor: 'background.paper',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
               },
             }}

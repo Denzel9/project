@@ -240,7 +240,7 @@ export type TaskListParams = {
   role?: TaskRole
   postId?: string
   status?: TaskStatus
-  statuses?: string
+  statuses?: TaskStatus[]
   active?: boolean
   excludeCompleted?: boolean
   isCompanyAction?: boolean

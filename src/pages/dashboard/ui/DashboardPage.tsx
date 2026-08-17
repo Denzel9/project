@@ -16,8 +16,11 @@ import {
   getFastButtonLabel,
   useAuthStore,
   useMyTaskFilterStore,
+  useTaskFiltersUrlSync,
+  buildMyTasksHref,
   type DashboardCardVariant,
   type FastButtonValueType,
+  type TaskListUrlFilters,
 } from '@/features';
 import { EmptyBlock, ROUTES, } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
@@ -33,18 +36,12 @@ import { DashboardCommentsPanel } from './DashboardCommentsPanel';
 import { DashboardFiltersBar } from './DashboardFiltersBar';
 import { DashboardUpcomingTasksTable } from './DashboardUpcomingTasksTable';
 
-import type { MyTasksLocationState } from '@/pages/my-tasks/model/types/navigation';
-
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { role, isAuth } = useAuthStore();
   const [isUpcomingTasksError, setIsUpcomingTasksError] = useState(false);
   const [isSettingsTipOpen, setIsSettingsTipOpen] = useState(false);
-  const setFastButtonValue = useMyTaskFilterStore(
-    state => state.setFastButtonValue
-  );
-  const setExtraFilter = useMyTaskFilterStore(state => state.setExtraFilter);
-  const setStatus = useMyTaskFilterStore(state => state.setStatus);
+  useTaskFiltersUrlSync({ includePeriod: true });
   const viewMode = useMyTaskFilterStore(state => state.viewMode);
   const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
   const assigneeAccountId = useMyTaskFilterStore(
@@ -189,28 +186,73 @@ export const DashboardPage = () => {
   };
 
   const handleCardClick = (value: FastButtonValueType) => {
+    const state = useMyTaskFilterStore.getState();
+    const current: TaskListUrlFilters = {
+      postId: state.postId,
+      executorId: state.executorId,
+      status: state.status,
+      extraFilter: state.extraFilter,
+      fastButtonValue: state.fastButtonValue,
+      activeOnly: state.activeOnly,
+      onlyMyTasks: state.onlyMyTasks,
+      assigneeAccountId: state.assigneeAccountId,
+      updatedDate: state.updatedDate,
+      searchQuery: state.searchQuery,
+      period: state.period,
+    };
+
     if (value === 'checking' && viewMode === 'kanban') {
-      setFastButtonValue(null);
       ensureKanbanColumnVisible(TASK_STATUS_ENUM.CHECKING);
-      navigate(ROUTES.MY_TASKS, {
-        state: {
-          fromDashboard: true,
-          scrollToKanbanColumn: TASK_STATUS_ENUM.CHECKING,
-        } satisfies MyTasksLocationState,
-      });
+      navigate(
+        buildMyTasksHref(
+          {
+            ...current,
+            fastButtonValue: null,
+            extraFilter: null,
+            status: [],
+            activeOnly: false,
+          },
+          { scroll: TASK_STATUS_ENUM.CHECKING },
+        ),
+      );
       return;
     }
 
     if (value === 'checking') {
-      setFastButtonValue(null);
-      setStatus(TASK_STATUS_ENUM.CHECKING);
-    } else if (value === 'urgent') {
-      setExtraFilter('urgent');
-    } else {
-      setFastButtonValue(value);
+      navigate(
+        buildMyTasksHref({
+          ...current,
+          fastButtonValue: null,
+          extraFilter: null,
+          status: [TASK_STATUS_ENUM.CHECKING],
+          activeOnly: false,
+        }),
+      );
+      return;
     }
 
-    navigate(ROUTES.MY_TASKS, { state: { fromDashboard: true } });
+    if (value === 'urgent') {
+      navigate(
+        buildMyTasksHref({
+          ...current,
+          fastButtonValue: null,
+          extraFilter: 'urgent',
+          status: [],
+          activeOnly: false,
+        }),
+      );
+      return;
+    }
+
+    navigate(
+      buildMyTasksHref({
+        ...current,
+        fastButtonValue: value,
+        extraFilter: null,
+        status: [],
+        activeOnly: false,
+      }),
+    );
   };
 
   const isPageError = isStatsError || isUpcomingTasksError;
@@ -222,7 +264,7 @@ export const DashboardPage = () => {
           sx={{
             py: 4,
             display: 'flex',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '32px',
             borderColor: 'divider',

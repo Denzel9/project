@@ -98,7 +98,7 @@ export const CalendarTaskListItem = ({ event }: CalendarTaskListItemProps) => {
         p: 1.75,
         display: 'block',
         color: 'inherit',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         borderRadius: '16px',
         textDecoration: 'none',
         border: '1px solid',

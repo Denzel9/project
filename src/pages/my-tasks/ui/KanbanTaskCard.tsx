@@ -4,7 +4,6 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useRef } from 'react';
 import { useDrag } from 'react-dnd';
-import { useNavigate } from 'react-router';
 
 import {
   executorToUserPartial,
@@ -64,7 +63,6 @@ const getContact = (task: Task, isCompany: boolean) => {
 };
 
 export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
-  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const { role, id: currentUserId } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
@@ -110,7 +108,7 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
       return;
     }
 
-    navigate(getTaskPath(task));
+    window.open(getTaskPath(task), '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -132,7 +130,7 @@ export const KanbanTaskCard = ({ task, canDrag }: KanbanTaskCardProps) => {
           minHeight: 170,
           height: 170,
           overflow: 'hidden',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '14px',
           border: '1px solid',
           borderColor: selected ? 'primary.main' : 'divider',

@@ -52,6 +52,7 @@ export const ArchivePage = () => {
   const [postsSearchQuery, setPostsSearchQuery] = useState('');
   const [debouncedTasksSearch, setDebouncedTasksSearch] = useState('');
   const [debouncedPostsSearch, setDebouncedPostsSearch] = useState('');
+  const [isPostsSelectionMode, setIsPostsSelectionMode] = useState(false);
 
   const tab = useMemo(
     () => parseTab(searchParams.get('tab')),
@@ -75,6 +76,10 @@ export const ArchivePage = () => {
 
     return () => window.clearTimeout(timer);
   }, [tab, postsSearchQuery, tasksSearchQuery]);
+
+  useEffect(() => {
+    setIsPostsSelectionMode(false);
+  }, [tab, postsViewMode]);
 
   const handleViewModeChange = useCallback(
     (next: ArchiveViewMode) => {
@@ -153,7 +158,6 @@ export const ArchivePage = () => {
       printHide={isTableView}
     >
       <Stack
-        spacing={1}
         className={isTableView ? 'print-root' : undefined}
         sx={{
           flex: 1,
@@ -173,11 +177,12 @@ export const ArchivePage = () => {
           spacing={2}
           sx={{
             p: 2,
-            bgcolor: 'white',
+            mb: 1,
+            flexShrink: 0,
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
-            flexShrink: 0,
             display: { xs: 'flex', md: 'none' },
           }}
         >
@@ -259,7 +264,8 @@ export const ArchivePage = () => {
           spacing={1}
           sx={{
             p: 2,
-            bgcolor: 'white',
+            mb: 1,
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
@@ -268,7 +274,6 @@ export const ArchivePage = () => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 1,
           }}
         >
           <Tabs
@@ -337,6 +342,8 @@ export const ArchivePage = () => {
             onViewModeChange={setPostsViewMode}
             onTableReportChange={setTableReport}
             searchQuery={debouncedPostsSearch}
+            isSelectionMode={isPostsSelectionMode}
+            onSelectionModeChange={setIsPostsSelectionMode}
           />
         ) : (
           <ArchivedTasksTab

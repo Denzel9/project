@@ -1,4 +1,4 @@
-import { isPast, startOfDay } from 'date-fns'
+import { differenceInCalendarDays, isPast, startOfDay } from 'date-fns'
 
 import {
   formatBloggerRequirements,
@@ -61,6 +61,27 @@ export const TASK_ROLE_LABELS = {
 export const isTaskTerminal = (task: Task) =>
   task.status === TASK_STATUS_ENUM.COMPLETED ||
   task.status === TASK_STATUS_ENUM.ANNULLED
+
+const DEADLINE_SOON_DAYS = 2
+
+export type TaskDeadlineUrgency = 'overdue' | 'today' | 'soon'
+
+export const getTaskDeadlineUrgency = (
+  task: Pick<Task, 'finalDate' | 'status'>,
+): TaskDeadlineUrgency | null => {
+  if (!task.finalDate || isTaskTerminal(task as Task)) return null
+
+  const diffDays = differenceInCalendarDays(
+    startOfDay(new Date(task.finalDate)),
+    startOfDay(new Date()),
+  )
+
+  if (diffDays < 0) return 'overdue'
+  if (diffDays === 0) return 'today'
+  if (diffDays <= DEADLINE_SOON_DAYS) return 'soon'
+
+  return null
+}
 
 export const isTaskOverdue = (task: Task) =>
   Boolean(task.finalDate) &&
@@ -853,12 +874,11 @@ export const isCommentWithinModifyWindow = (
 
 export const canEditTaskComment = (
   comment: Pick<TaskComment, 'authorId' | 'createdAt'>,
-  context: { userId: string | null; isOwner: boolean },
+  context: { userId: string | null },
   now = Date.now(),
 ) => {
   if (!context.userId) return false
   if (!isCommentWithinModifyWindow(comment.createdAt, now)) return false
-  if (context.isOwner) return true
   return comment.authorId === context.userId
 }
 

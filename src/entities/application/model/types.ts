@@ -88,6 +88,7 @@ export type ApplicationListParams = {
   postId?: string
   userId?: string
   status?: ApplicationStatus
+  statuses?: ApplicationStatus[]
   type?: ApplicationPostSummary['type']
   createdDate?: string
   page?: number

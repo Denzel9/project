@@ -5,6 +5,7 @@ import {
   Link,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router';
 
@@ -22,6 +23,9 @@ import { footerSocialIcons } from '../model/socialIcons';
 
 export const PageFooter = () => {
   const year = new Date().getFullYear();
+  const theme = useTheme();
+
+  const isDarkMode = theme.palette.mode === 'dark';
 
   return (
     <Box
@@ -32,7 +36,7 @@ export const PageFooter = () => {
         flexShrink: 0,
         border: '1px solid',
         borderColor: 'divider',
-        bgcolor: 'common.white',
+        bgcolor: 'background.paper',
         color: 'text.primary',
         borderBottomLeftRadius: { xs: '16px', md: '24px' },
         borderTopLeftRadius: { xs: '16px', md: '24px' },
@@ -60,7 +64,7 @@ export const PageFooter = () => {
             <Box
               alt="NIKSSENS"
               component="img"
-              src={'/Primary.png'}
+              src={isDarkMode ? '/splash-logo.png' : '/Primary.png'}
               sx={{ width: 180, height: 40, objectFit: 'contain' }}
             />
           </Box>

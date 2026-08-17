@@ -28,7 +28,6 @@ import {
 type TaskCommentItemProps = {
   comment: TaskComment;
   currentUserId: string | null;
-  isOwner?: boolean;
   highlight?: string;
   isPending?: boolean;
   isEditing?: boolean;
@@ -92,7 +91,6 @@ const formatCommentTime = (date: string) => {
 export const TaskCommentItem = ({
   comment,
   currentUserId,
-  isOwner = false,
   highlight,
   isPending = false,
   isEditing = false,
@@ -112,7 +110,7 @@ export const TaskCommentItem = ({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const isOwn = canManageComment(comment.authorId, currentUserId);
-  const canModify = useIsCommentModifiable(comment, currentUserId, isOwner);
+  const canModify = useIsCommentModifiable(comment, currentUserId);
   const canEdit = canModify;
   const canDelete = canModify;
   const canReply = showActions && !isEditing && Boolean(onReply);

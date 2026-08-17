@@ -182,7 +182,7 @@ export const DashboardActivityPanel = () => {
         width: '100%',
         height: '600px',
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         border: '1px solid',
         borderRadius: '24px',

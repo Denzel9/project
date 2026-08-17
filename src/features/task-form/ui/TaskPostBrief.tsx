@@ -70,7 +70,7 @@ const ChipRow = ({ label, items }: { label: string; items: string[] }) => {
           <Chip
             key={item}
             label={item}
-            sx={{ bgcolor: 'white' }}
+            sx={{ bgcolor: 'background.paper' }}
           />
         ))}
       </Stack>

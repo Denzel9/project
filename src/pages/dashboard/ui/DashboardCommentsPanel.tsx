@@ -217,7 +217,7 @@ export const DashboardCommentsPanel = () => {
         minHeight: 300,
         maxHeight: 600,
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         border: '1px solid',
         borderRadius: '24px',
@@ -595,7 +595,7 @@ export const DashboardCommentsPanel = () => {
                         borderRadius: '50%',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        bgcolor: 'common.white',
+                        bgcolor: 'background.paper',
                         color: 'primary.main',
                       }}
                     >

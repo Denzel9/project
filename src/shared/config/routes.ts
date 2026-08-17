@@ -4,7 +4,6 @@ export const ROUTES = {
     AUTH: "/auth",
     AUTH_CONFIRM_EMAIL: "/auth/confirm-email",
     CHATS: "/chats",
-    CHAT: "/chats/:id",
     POST: "/post",
     TASK: "/task",
     PROFILE: "/profile",
@@ -38,3 +37,6 @@ export const ROUTES = {
     SETTINGS_CRM_PIPELINE: "/settings/crm/pipeline",
     SETTINGS_CRM_AUTOMATION: "/settings/crm/automation",
 } as const;
+
+export const getChatPath = (conversationId: string) =>
+    `${ROUTES.CHATS}/${conversationId}`;

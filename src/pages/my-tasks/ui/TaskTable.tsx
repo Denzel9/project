@@ -1,4 +1,4 @@
-import { Whatshot } from '@mui/icons-material';
+import { ScheduleOutlined, Whatshot } from '@mui/icons-material';
 import {
   Autocomplete,
   Avatar,
@@ -22,13 +22,14 @@ import {
 import { format, formatDistanceToNow, isToday } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   TASK_STATUS_LABELS,
+  getTaskDeadlineUrgency,
   isTaskOverdue,
   TaskRequestStatusIcons,
   useTasksQuery,
+  type TaskDeadlineUrgency,
   type TaskStatus,
 } from '@/entities';
 import {
@@ -49,7 +50,7 @@ import {
   useIsManagerAccount,
   useMyTaskFilterStore,
 } from '@/features';
-import { EmptyBlock, scrollMainToTop } from '@/shared';
+import { EmptyBlock, FilterStatusSelect, scrollMainToTop } from '@/shared';
 
 import {
   TASK_TABLE_PAGE_SIZE,
@@ -85,6 +86,18 @@ import type {
   TaskTableProps,
 } from '../model/types/types';
 
+const getDeadlineIconTitle = (
+  urgency: TaskDeadlineUrgency,
+  finalDate: string,
+) => {
+  const dateLabel = format(new Date(finalDate), 'dd.MM.yyyy');
+
+  if (urgency === 'overdue') return `Просрочено · ${dateLabel}`;
+  if (urgency === 'today') return `Дедлайн сегодня · ${dateLabel}`;
+
+  return `Дедлайн близко · ${dateLabel}`;
+};
+
 export const TaskTable = ({
   tasks,
   total,
@@ -103,7 +116,6 @@ export const TaskTable = ({
   rowsPerPage = TASK_TABLE_PAGE_SIZE,
   onListStateChange,
 }: TaskTableProps) => {
-  const navigate = useNavigate();
   const isManagerAccount = useIsManagerAccount();
   const onlyMyTasks = useMyTaskFilterStore(state => state.onlyMyTasks);
   const assigneeAccountId = useMyTaskFilterStore(
@@ -234,7 +246,7 @@ export const TaskTable = ({
     return toDashboardTasksQueryParams(
       {
         isCompany: Boolean(isCompany),
-        ...(columnFilters.status !== 'all' && { status: columnFilters.status }),
+        ...(columnFilters.status.length > 0 && { status: columnFilters.status }),
         ...(columnFilters.taskId !== 'all' && { taskId: columnFilters.taskId }),
         ...(columnFilters.personId !== 'all' && {
           personId: columnFilters.personId,
@@ -391,7 +403,7 @@ export const TaskTable = ({
     filtersActive ||
     Boolean(
       columnFilters &&
-      (columnFilters.status !== 'all' ||
+      (columnFilters.status.length > 0 ||
         columnFilters.taskId !== 'all' ||
         Boolean(columnFilters.taskQuery.trim()) ||
         columnFilters.personId !== 'all' ||
@@ -469,6 +481,7 @@ export const TaskTable = ({
   const selectionEnabled =
     isTaskSelectionMode && !forPrint && querySource !== 'dashboard';
   const showActionsColumn = showActions || selectionEnabled;
+  const showDeadlineColumn = querySource !== 'dashboard';
 
   useLayoutEffect(() => {
     const row = headerRowRef.current;
@@ -494,7 +507,10 @@ export const TaskTable = ({
   ]);
   const statusFilterOptions = useMemo(
     () =>
-      Object.entries(TASK_STATUS_LABELS).map(([id, label]) => ({ id, label })),
+      Object.entries(TASK_STATUS_LABELS).map(([value, label]) => ({
+        value: value as TaskStatus,
+        label,
+      })),
     [],
   );
 
@@ -638,7 +654,7 @@ export const TaskTable = ({
           width: '100%',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: embedded ? 'transparent' : 'white',
+          bgcolor: embedded ? 'transparent' : 'background.paper',
           borderRadius: embedded ? 0 : '24px',
         }}
       >
@@ -655,7 +671,7 @@ export const TaskTable = ({
         ...(forPrint
           ? {
             height: 'auto',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             display: 'block',
             overflow: 'visible',
           }
@@ -673,7 +689,7 @@ export const TaskTable = ({
               minHeight: 0,
               height: '100%',
               display: 'flex',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               overflow: 'hidden',
               flexDirection: 'column',
               borderRadius: '24px',
@@ -719,7 +735,9 @@ export const TaskTable = ({
               <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.manager }} />
             )}
             <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.updatedAt }} />
-            <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.finalDate }} />
+            {showDeadlineColumn && (
+              <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.finalDate }} />
+            )}
             {showActionsColumn && (
               <col style={{ width: TASK_TABLE_COLUMN_WIDTHS.actions }} />
             )}
@@ -799,7 +817,7 @@ export const TaskTable = ({
                 sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.status)}
               >
                 <TaskTableHeaderWithFilter
-                  isActive={columnFilters?.status !== 'all'}
+                  isActive={Boolean(columnFilters?.status.length)}
                   field="status"
                   label="Статус"
                   sortField={sortField}
@@ -811,7 +829,7 @@ export const TaskTable = ({
                       <ColumnFilterButton
                         title="Статус"
                         open={isFilterRowOpen}
-                        active={columnFilters.status !== 'all'}
+                        active={columnFilters.status.length > 0}
                         onClick={toggleFilterRow}
                       />
                     ) : undefined
@@ -896,30 +914,32 @@ export const TaskTable = ({
                 />
               </TableCell>
 
-              <TableCell
-                sortDirection={getSortDirection('finalDate')}
-                sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
-              >
-                <TaskTableHeaderWithFilter
-                  isActive={Boolean(columnFilters?.deadlineDate)}
-                  field="finalDate"
-                  label="Дедлайн"
-                  sortField={sortField}
-                  sortOrder={sortOrder}
-                  forPrint={forPrint}
-                  onSort={handleSort}
-                  filter={
-                    showColumnFilters && columnFilters ? (
-                      <ColumnFilterButton
-                        title="Дедлайн"
-                        open={isFilterRowOpen}
-                        active={Boolean(columnFilters.deadlineDate)}
-                        onClick={toggleFilterRow}
-                      />
-                    ) : undefined
-                  }
-                />
-              </TableCell>
+              {showDeadlineColumn && (
+                <TableCell
+                  sortDirection={getSortDirection('finalDate')}
+                  sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
+                >
+                  <TaskTableHeaderWithFilter
+                    isActive={Boolean(columnFilters?.deadlineDate)}
+                    field="finalDate"
+                    label="Дедлайн"
+                    sortField={sortField}
+                    sortOrder={sortOrder}
+                    forPrint={forPrint}
+                    onSort={handleSort}
+                    filter={
+                      showColumnFilters && columnFilters ? (
+                        <ColumnFilterButton
+                          title="Дедлайн"
+                          open={isFilterRowOpen}
+                          active={Boolean(columnFilters.deadlineDate)}
+                          onClick={toggleFilterRow}
+                        />
+                      ) : undefined
+                    }
+                  />
+                </TableCell>
+              )}
 
               {showActionsColumn && <TableCell />}
             </TableRow>
@@ -1002,36 +1022,11 @@ export const TaskTable = ({
                 <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.status)}>
                   {renderFilterCellContent(
                     <Box onClick={event => event.stopPropagation()}>
-                      <Autocomplete
+                      <FilterStatusSelect
                         size="small"
-                        fullWidth
+                        value={columnFilters.status}
                         options={statusFilterOptions}
-                        slotProps={FILTER_AUTOCOMPLETE_SLOT_PROPS}
-                        value={
-                          columnFilters.status === 'all'
-                            ? null
-                            : (statusFilterOptions.find(
-                              option => option.id === columnFilters.status,
-                            ) ?? null)
-                        }
-                        onChange={(_, option) =>
-                          columnFilters.onStatusChange(
-                            (option?.id as TaskStatus | undefined) ?? 'all',
-                          )
-                        }
-                        getOptionLabel={option => option.label}
-                        isOptionEqualToValue={(option, current) =>
-                          option.id === current.id
-                        }
-                        clearOnEscape
-                        renderInput={params => (
-                          <TextField
-                            {...params}
-                            size="small"
-                            variant="standard"
-                            placeholder="Все статусы"
-                          />
-                        )}
+                        onChange={columnFilters.onStatusChange}
                       />
                     </Box>,
                   )}
@@ -1134,6 +1129,9 @@ export const TaskTable = ({
                             option.id === current.id
                           }
                           clearOnEscape
+                          noOptionsText={
+                            isManagersLoading ? 'Загрузка…' : 'Ничего не найдено'
+                          }
                           renderInput={params => (
                             <TextField
                               {...params}
@@ -1159,16 +1157,18 @@ export const TaskTable = ({
                   )}
                 </TableCell>
 
-                <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}>
-                  {renderFilterCellContent(
-                    <ColumnDateFilter
-                      value={columnFilters.deadlineDate}
-                      placeholder="Все даты"
-                      todayLabel="Дедлайн сегодня"
-                      onChange={columnFilters.onDeadlineDateChange}
-                    />,
-                  )}
-                </TableCell>
+                {showDeadlineColumn && (
+                  <TableCell sx={filterCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}>
+                    {renderFilterCellContent(
+                      <ColumnDateFilter
+                        value={columnFilters.deadlineDate}
+                        placeholder="Все даты"
+                        todayLabel="Дедлайн сегодня"
+                        onChange={columnFilters.onDeadlineDateChange}
+                      />,
+                    )}
+                  </TableCell>
+                )}
 
                 {showActionsColumn && (
                   <TableCell
@@ -1188,6 +1188,7 @@ export const TaskTable = ({
               const columnConfig = getTaskConfig(task.status);
               const statusColor = columnConfig?.color ?? 'primary';
               const overdue = isTaskOverdue(task);
+              const deadlineUrgency = getTaskDeadlineUrgency(task);
               const managerName = getTaskManagerName(task);
               const managerInitials = managerName
                 .split(/\s+/)
@@ -1209,7 +1210,12 @@ export const TaskTable = ({
                           onToggleSelection(task);
                           return;
                         }
-                        navigate(getTaskPath(task));
+
+                        window.open(
+                          getTaskPath(task),
+                          '_blank',
+                          'noopener,noreferrer',
+                        );
                       }
                   }
                   sx={{
@@ -1259,6 +1265,27 @@ export const TaskTable = ({
                         </Tooltip>
                       </Stack>
                       {!forPrint && task.urgent && <Whatshot color="error" sx={{ fontSize: 20 }} />}
+                      {querySource === 'dashboard' &&
+                        !forPrint &&
+                        deadlineUrgency &&
+                        task.finalDate && (
+                          <Tooltip
+                            title={getDeadlineIconTitle(
+                              deadlineUrgency,
+                              task.finalDate,
+                            )}
+                          >
+                            <Box
+                              component="span"
+                              sx={{ display: 'flex', flexShrink: 0 }}
+                            >
+                              <ScheduleOutlined
+                                color={deadlineUrgency === 'overdue' ? "error" : "warning"}
+                                sx={{ fontSize: 20 }}
+                              />
+                            </Box>
+                          </Tooltip>
+                        )}
                       {!forPrint && <TaskRequestStatusIcons task={task} />}
                     </Stack>
                   </TableCell>
@@ -1372,38 +1399,40 @@ export const TaskTable = ({
                     </Typography>
                   </TableCell>
 
-                  <TableCell
-                    sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
-                  >
-                    {task.finalDate ? (
-                      forPrint ? (
-                        <Typography variant="body2">
-                          {format(new Date(task.finalDate), 'dd.MM.yyyy', {
-                            locale: ru,
-                          })}
-                        </Typography>
+                  {showDeadlineColumn && (
+                    <TableCell
+                      sx={columnCellSx(TASK_TABLE_COLUMN_WIDTHS.finalDate)}
+                    >
+                      {task.finalDate ? (
+                        forPrint ? (
+                          <Typography variant="body2">
+                            {format(new Date(task.finalDate), 'dd.MM.yyyy', {
+                              locale: ru,
+                            })}
+                          </Typography>
+                        ) : (
+                          <Chip
+                            size="small"
+                            label={
+                              isToday(new Date(task.finalDate))
+                                ? 'Дедлайн сегодня'
+                                : format(new Date(task.finalDate), 'dd.MM.yyyy')
+                            }
+                            color={overdue ? 'error' : 'default'}
+                            variant={overdue ? 'filled' : 'outlined'}
+                            sx={{ height: 24, fontSize: '0.7rem' }}
+                          />
+                        )
                       ) : (
-                        <Chip
-                          size="small"
-                          label={
-                            isToday(new Date(task.finalDate))
-                              ? 'Дедлайн сегодня'
-                              : format(new Date(task.finalDate), 'dd.MM.yyyy')
-                          }
-                          color={overdue ? 'error' : 'default'}
-                          variant={overdue ? 'filled' : 'outlined'}
-                          sx={{ height: 24, fontSize: '0.7rem' }}
-                        />
-                      )
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        color="info"
-                      >
-                        —
-                      </Typography>
-                    )}
-                  </TableCell>
+                        <Typography
+                          variant="body2"
+                          color="info"
+                        >
+                          —
+                        </Typography>
+                      )}
+                    </TableCell>
+                  )}
 
                   {showActionsColumn && (
                     <TableCell

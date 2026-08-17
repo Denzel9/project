@@ -56,7 +56,6 @@ import { UnreadCommentsDivider } from './UnreadCommentsDivider';
 type TaskCommentsProps = {
   taskId: string;
   contact?: User;
-  isOwner?: boolean;
   disabled?: boolean;
   isArchived?: boolean;
   isExecutorApprove?: boolean | null;
@@ -65,7 +64,6 @@ type TaskCommentsProps = {
 export const TaskComments = ({
   taskId,
   contact,
-  isOwner = false,
   disabled = false,
   isArchived = false,
   isExecutorApprove,
@@ -337,7 +335,7 @@ export const TaskComments = ({
 
     if (
       !comment ||
-      !canEditTaskComment(comment, { userId: currentUserId, isOwner })
+      !canEditTaskComment(comment, { userId: currentUserId })
     ) {
       return;
     }
@@ -402,7 +400,7 @@ export const TaskComments = ({
   return (
     <Box
       sx={{
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         borderRadius: '32px',
         border: '1px solid',
@@ -646,7 +644,6 @@ export const TaskComments = ({
 
                 <TaskCommentItem
                   comment={comment}
-                  isOwner={isOwner}
                   currentUserId={currentUserId}
                   isPending={isPending}
                   isPinned={pinnedCommentIds.has(comment.id)}

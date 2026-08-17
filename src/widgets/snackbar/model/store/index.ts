@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 
-type SnackbarSeverity = 'success' | 'error' | 'warning' | 'info'
+import { inferSnackbarSeverity } from '../inferSnackbarSeverity'
+
+
+export type SnackbarSeverity = 'success' | 'error' | 'warning' | 'info'
 
 type SnackbarStore = {
   message: string
@@ -28,11 +31,11 @@ export const useSnackbarStore = create<SnackbarStore>(set => ({
   actionLabel: null,
   onAction: null,
   autoHideDuration: 3000,
-  setSnackbarOpen: (snackbarOpen, message, severity = 'info', options) =>
+  setSnackbarOpen: (snackbarOpen, message, severity, options) =>
     set({
       snackbarOpen,
       message,
-      severity,
+      severity: severity ?? inferSnackbarSeverity(message),
       actionLabel: options?.actionLabel ?? null,
       onAction: options?.onAction ?? null,
       autoHideDuration:

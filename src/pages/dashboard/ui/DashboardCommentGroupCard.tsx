@@ -32,7 +32,6 @@ import {
 import { Link } from 'react-router';
 
 import {
-  isTaskOwner,
   usePinTaskCommentMutation,
   useSearchTaskCommentsQuery,
   useTaskCommentPinsQuery,
@@ -130,7 +129,6 @@ export const DashboardCommentGroupCard = ({
   const skipScrollToBottomRef = useRef(false);
   const prevItemsLengthRef = useRef(0);
   const taskId = item.task.id;
-  const isOwner = isTaskOwner(item.task, currentUserId);
 
   const [internalSearchOpen, setInternalSearchOpen] = useState(false);
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
@@ -815,7 +813,6 @@ export const DashboardCommentGroupCard = ({
 
                   <TaskCommentItem
                     comment={threadItem.comment}
-                    isOwner={isOwner}
                     currentUserId={currentUserId}
                     highlight={highlight}
                     isPending={isUpdating}

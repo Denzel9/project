@@ -1,3 +1,7 @@
+import {
+  DEFAULT_APPLICATION_STATUS_FILTER,
+  isDefaultApplicationStatusFilter,
+} from '@/entities/application';
 import { getPartnerName } from '@/entities';
 
 import type { ApplicationSortField, ApplicationSortOrder } from './types';
@@ -7,9 +11,19 @@ import type {
   ApplicationStatus,
 } from '@/entities';
 
-export type ApplicationStatusFilter = ApplicationStatus | 'all';
+export type ApplicationStatusFilter = ApplicationStatus[];
 
 export type ApplicationPostTypeFilter = 'CREATOR' | 'COMPANY' | 'all';
+
+export const APPLICATION_STATUS_VALUES: ApplicationStatus[] = [
+  'NEW',
+  'VIEWED',
+  'ACCEPTED',
+  'REJECTED',
+  'WITHDRAWN',
+];
+
+export { DEFAULT_APPLICATION_STATUS_FILTER, isDefaultApplicationStatusFilter };
 
 export const toIncomingApplicationsParams = (
   filters: {
@@ -24,7 +38,7 @@ export const toIncomingApplicationsParams = (
 ): ApplicationListParams => ({
   page: pagination?.page ?? 1,
   limit: pagination?.limit ?? 20,
-  ...(filters.status !== 'all' && { status: filters.status }),
+  ...(filters.status.length > 0 && { statuses: filters.status }),
   ...(filters.updatedDate && { createdDate: filters.updatedDate }),
   ...(filters.q?.trim() && { q: filters.q.trim() }),
   ...(filters.postId && filters.postId !== 'all' && { postId: filters.postId }),

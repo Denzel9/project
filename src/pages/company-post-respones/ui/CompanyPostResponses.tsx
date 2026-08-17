@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import {
   useIncomingApplicationsQuery,
@@ -13,11 +13,10 @@ import { IncomingApplicationItem, PageLayout } from '@/widgets';
 import { APPLICATION_TABLE_PAGE_SIZE } from '../model/constants';
 import { exportIncomingApplicationsReport } from '../model/exportIncomingApplicationsReport';
 import { fetchIncomingApplicationsForReport } from '../model/fetchIncomingApplicationsForReport';
-import { useMyPostFilterStore } from '../model/store';
-import {
-  toIncomingApplicationsParams,
-  type ApplicationStatusFilter,
-} from '../model/utils';
+import { useMyPostFilterStore } from '../model/store'
+import { useIncomingApplicationUrlSync } from '../model/useIncomingApplicationUrlSync';
+import { isDefaultApplicationStatusFilter } from '../model/utils';
+import { toIncomingApplicationsParams } from '../model/utils';
 
 import Filter from './Filter';
 import { IncomingApplicationItemSkeletonList } from './IncomingApplicationItemSkeleton';
@@ -26,7 +25,7 @@ import { IncomingApplicationsTable } from './IncomingApplicationsTable';
 
 const CompanyPostResponses = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  useIncomingApplicationUrlSync();
 
   const {
     status,
@@ -37,9 +36,6 @@ const CompanyPostResponses = () => {
     type: postType,
     viewMode,
     setPosts,
-    setPostId,
-    setUserId,
-    setStatus,
     setViewMode,
     posts,
     resetFilters,
@@ -52,86 +48,20 @@ const CompanyPostResponses = () => {
     Application[] | null
   >(null);
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const userIdFromUrl = searchParams.get('userId');
-    const postIdFromUrl = searchParams.get('postId');
-    const statusFromUrl = searchParams.get('status');
-
-    let shouldReplace = false;
-
-    if (
-      userIdFromUrl &&
-      userIdFromUrl !== 'all' &&
-      userIdFromUrl !== 'undefined' &&
-      userIdFromUrl !== 'null'
-    ) {
-      setUserId(userIdFromUrl);
-      shouldReplace = true;
-    }
-
-    if (
-      postIdFromUrl &&
-      postIdFromUrl !== 'all' &&
-      postIdFromUrl !== 'undefined' &&
-      postIdFromUrl !== 'null'
-    ) {
-      setPostId(postIdFromUrl);
-      shouldReplace = true;
-    }
-
-    if (
-      statusFromUrl &&
-      ['NEW', 'VIEWED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].includes(
-        statusFromUrl
-      )
-    ) {
-      setStatus(statusFromUrl as ApplicationStatusFilter);
-      shouldReplace = true;
-    }
-
-    if (shouldReplace) {
-      navigate(location.pathname, { replace: true });
-    }
-  }, [
-    location.pathname,
-    location.search,
-    navigate,
-    setPostId,
-    setStatus,
-    setUserId,
-  ]);
-
-  const userIdFromUrl = (() => {
-    const value = new URLSearchParams(location.search).get('userId');
-
-    if (
-      !value ||
-      value === 'all' ||
-      value === 'undefined' ||
-      value === 'null'
-    ) {
-      return null;
-    }
-
-    return value;
-  })();
-
-  const effectiveUserId = userIdFromUrl ?? userId;
   const isTableView = viewMode === 'table';
 
   const paginationResetKey = useMemo(
     () =>
       [
         viewMode,
-        status,
+        status.join(','),
         updatedDate,
         q,
         postId,
-        effectiveUserId,
+        userId,
         postType,
       ].join('|'),
-    [viewMode, status, updatedDate, q, postId, effectiveUserId, postType]
+    [viewMode, status, updatedDate, q, postId, userId, postType]
   );
 
   const [tablePageState, setTablePageState] = useState({
@@ -148,10 +78,10 @@ const CompanyPostResponses = () => {
       updatedDate,
       q,
       postId,
-      userId: effectiveUserId,
+      userId,
       type: postType,
     }),
-    [status, updatedDate, q, postId, effectiveUserId, postType]
+    [status, updatedDate, q, postId, userId, postType]
   );
 
   const {
@@ -179,17 +109,16 @@ const CompanyPostResponses = () => {
 
   const isFilterEmpty =
     !updatedDate &&
-    status === 'all' &&
+    isDefaultApplicationStatusFilter(status) &&
     !q.trim() &&
     postType === 'all' &&
     postId === 'all' &&
-    effectiveUserId === 'all';
+    userId === 'all';
 
   const hasActiveFilters = !isFilterEmpty;
   const isInitialLoading = isLoading && applicationItems.length === 0;
   const isEmpty =
     !isInitialLoading && !isError && applicationItems.length === 0;
-  const showFilter = Boolean(applicationItems.length || hasActiveFilters);
   const tableReportDisabled = isLoading || isEmpty;
 
   useEffect(() => {
@@ -270,17 +199,15 @@ const CompanyPostResponses = () => {
       isScreenHeight={isTableView}
       printHide={isTableView}
     >
-      {showFilter && (
-        <Box
-          className="print-no-print"
-          sx={{
-            ...stickyFilterSx,
-            flexShrink: 0,
-          }}
-        >
-          <Filter tableReport={tableReport} />
-        </Box>
-      )}
+      <Box
+        className="print-no-print"
+        sx={{
+          ...stickyFilterSx,
+          flexShrink: 0,
+        }}
+      >
+        <Filter tableReport={tableReport} />
+      </Box>
 
       {isInitialLoading && !isTableView && (
         <IncomingApplicationItemSkeletonList count={6} />
@@ -291,7 +218,7 @@ const CompanyPostResponses = () => {
           sx={{
             flex: 1,
             minHeight: 0,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
             border: '1px solid',
             borderColor: 'divider',
@@ -304,7 +231,7 @@ const CompanyPostResponses = () => {
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
             border: '1px solid',
             borderColor: 'divider',
@@ -326,7 +253,7 @@ const CompanyPostResponses = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
             border: '1px solid',
             borderColor: 'divider',

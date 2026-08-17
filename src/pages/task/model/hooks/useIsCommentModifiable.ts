@@ -9,14 +9,13 @@ import {
 export const useIsCommentModifiable = (
   comment: Pick<TaskComment, 'authorId' | 'createdAt'>,
   userId: string | null,
-  isOwner: boolean,
 ) => {
   const [canModify, setCanModify] = useState(() =>
-    canEditTaskComment(comment, { userId, isOwner }),
+    canEditTaskComment(comment, { userId }),
   )
 
   useEffect(() => {
-    const context = { userId, isOwner }
+    const context = { userId }
 
     const update = () => {
       setCanModify(canEditTaskComment(comment, context))
@@ -36,7 +35,7 @@ export const useIsCommentModifiable = (
     return () => {
       window.clearTimeout(timerId)
     }
-  }, [comment.authorId, comment.createdAt, userId, isOwner])
+  }, [comment.authorId, comment.createdAt, userId])
 
   return canModify
 }

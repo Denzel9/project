@@ -30,7 +30,7 @@ import type {
   PostList,
   PostOptionsList,
 } from './types'
-import type { Task, TASK_STATUS_ENUM, TaskList } from '@/entities/task'
+import type { Task, TaskList, TaskListParams } from '@/entities/task'
 
 export const postKeys = {
   all: ['posts'] as const,
@@ -179,6 +179,23 @@ export const useUpdatePostMutation = () => {
   })
 }
 
+export const usePublishPostTemplateMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await mainAxios.post<Post>(
+        `/posts/${id}/publish-template`,
+      )
+      return data
+    },
+    onSuccess: post => {
+      queryClient.invalidateQueries({ queryKey: postKeys.all })
+      queryClient.setQueryData(postKeys.detail(post.id), post)
+    },
+  })
+}
+
 export const useDeletePostMutation = () => {
   const queryClient = useQueryClient()
 
@@ -310,8 +327,12 @@ export const usePostTasksQuery = (
   useQuery({
     queryKey: postKeys.postTasks(postId ?? '', params),
     queryFn: async () => {
+      const listParams: TaskListParams = {
+        ...params,
+        postId: postId!,
+      }
       const { data } = await mainAxios.get<TaskList>('/tasks', {
-        params: serializeTaskListParams({ ...params, postId: postId!, status: params?.status as TASK_STATUS_ENUM }),
+        params: serializeTaskListParams(listParams),
       })
       return data
     },
@@ -333,26 +354,4 @@ export const useCreatePostTaskMutation = () => {
     },
   })
 }
-
-export const useDeletePostTaskMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({
-      taskId,
-    }: {
-      taskId: string
-      postId: string
-    }) => {
-      await mainAxios.delete(`/tasks/${taskId}`)
-    },
-    onSuccess: (_, { postId, taskId }) => {
-      queryClient.invalidateQueries({ queryKey: postKeys.postTasks(postId) })
-      queryClient.invalidateQueries({ queryKey: postKeys.all })
-      queryClient.invalidateQueries({ queryKey: taskKeys.all })
-      queryClient.removeQueries({ queryKey: taskKeys.detail(taskId) })
-    },
-  })
-}
-
 

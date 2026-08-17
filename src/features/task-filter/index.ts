@@ -1,5 +1,7 @@
 export * from './model/store'
 export * from './model/utils'
+export * from './model/url'
+export * from './model/useTaskFiltersUrlSync'
 export * from './model/constants'
 export * from './ui/Filter'
 export * from './ui/AddTaskDialog'

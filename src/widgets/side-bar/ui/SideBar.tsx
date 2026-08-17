@@ -15,7 +15,7 @@ export const SideBar = () => {
         flexShrink: 0,
         height: '100dvh',
         maxHeight: '100dvh',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         position: 'sticky',
         overflow: 'hidden',
         border: '1px solid',

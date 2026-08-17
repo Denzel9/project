@@ -1,4 +1,4 @@
-import { Description } from '@mui/icons-material'
+import { Description, PlayCircleOutlined } from '@mui/icons-material'
 import { Box, Skeleton, Typography } from '@mui/material'
 import {
   useEffect,
@@ -27,6 +27,8 @@ type MediaItemProps = {
   fill?: boolean
   /** cover — grids/thumbs; contain — main viewer / fullscreen */
   fit?: MediaObjectFit
+  /** Play hint on video preview (hidden when native controls are on) */
+  showPlayOverlay?: boolean
   loading?: ImgHTMLAttributes<HTMLImageElement>['loading']
 }
 
@@ -39,6 +41,7 @@ export const MediaItem = ({
   fileName,
   loading = 'lazy',
   withControls = false,
+  showPlayOverlay = false,
   isActive = true,
   fit = 'cover',
   errorMessage = 'Не удалось загрузить медиа',
@@ -84,7 +87,9 @@ export const MediaItem = ({
   useEffect(() => {
     if (kind === 'document') return
 
-    setStatus('loading')
+    setTimeout(() => {
+      setStatus('loading')
+    }, 0)
 
     if (kind === 'image') {
       const img = imgRef.current
@@ -110,10 +115,17 @@ export const MediaItem = ({
 
     const video = videoRef.current
 
-    if (!video || isActive) return
+    if (!video) return
 
-    video.pause()
-  }, [isActive, kind])
+    if (!isActive) {
+      video.pause()
+      return
+    }
+
+    if (withControls) {
+      void video.play().catch(() => undefined)
+    }
+  }, [isActive, kind, src, withControls])
 
   if (kind === 'document') {
     const displayName = getMediaDisplayName(fileName, src, mimeType)
@@ -162,15 +174,15 @@ export const MediaItem = ({
             overflow: 'hidden',
             ...(fill
               ? {
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  wordBreak: 'break-word',
-                }
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                wordBreak: 'break-word',
+              }
               : {
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }),
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }),
           }}
         >
           {displayName}
@@ -268,11 +280,40 @@ export const MediaItem = ({
           onCanPlay={handleLoad}
           controls={withControls}
           onLoadedData={handleLoad}
-          className="swiper-no-swiping"
-          onClick={event => event.stopPropagation()}
-          onPointerDown={event => event.stopPropagation()}
+          onClick={
+            withControls ? event => event.stopPropagation() : undefined
+          }
+          onPointerDown={
+            withControls ? event => event.stopPropagation() : undefined
+          }
+          className={withControls ? 'swiper-no-swiping' : undefined}
           style={mediaStyle}
         />
+      )}
+
+      {kind === 'video' && showPlayOverlay && !withControls && (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.28) 100%)',
+          }}
+        >
+          <PlayCircleOutlined
+            sx={{
+              fontSize: 72,
+              color: 'common.white',
+              filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))',
+            }}
+          />
+        </Box>
       )}
     </Box>
   )

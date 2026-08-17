@@ -1,6 +1,10 @@
 import { PLATFORM_LABELS, getPlatformLabel, type Platform } from '@/entities/post'
 import { getUserName, type User } from '@/entities/user'
 import { ROUTES } from '@/shared/config/routes'
+import {
+  isEmptyFilterValue,
+  setSearchParam,
+} from '@/shared/lib/url-filters'
 import { isGalleryMedia } from '@/widgets'
 
 import type { PublicationSortField, PublicationSortOrder } from './types'
@@ -21,7 +25,29 @@ type PublicationsFilterState = {
 }
 
 const isValidFilterId = (value?: string | null): value is string =>
-  Boolean(value) && value !== 'all' && value !== 'undefined' && value !== 'null'
+  !isEmptyFilterValue(value)
+
+const PUBLICATION_FILTER_KEYS = [
+  'q',
+  'postId',
+  'executorId',
+  'platform',
+  'taskId',
+  'date',
+  'postTitle',
+] as const
+
+const PLATFORM_IDS = new Set<string>(Object.keys(PLATFORM_LABELS))
+
+export type PublicationUrlFilters = {
+  q: string
+  postId: PublicationPostFilter
+  executorId: PublicationExecutorFilter
+  platform: PublicationPlatformFilter
+  taskId?: string
+  createdDate: string | null
+  postTitle?: string
+}
 
 export const PUBLICATION_PLATFORM_FILTER_OPTIONS: {
   id: Platform
@@ -65,16 +91,72 @@ export const hasActivePublicationFilters = ({
 
 export const parsePublicationSearchParams = (
   searchParams: URLSearchParams,
-): Pick<PublicationsFilterState, 'postId' | 'taskId' | 'executorId'> => {
+): PublicationUrlFilters => {
   const postId = searchParams.get('postId')
   const executorId = searchParams.get('executorId')
   const taskId = searchParams.get('taskId')
+  const platform = searchParams.get('platform')
+  const postTitle = searchParams.get('postTitle')?.trim()
 
   return {
-    ...(isValidFilterId(postId) && { postId }),
-    ...(isValidFilterId(executorId) && { executorId }),
+    q: searchParams.get('q') ?? '',
+    postId: isValidFilterId(postId) ? postId : 'all',
+    executorId: isValidFilterId(executorId) ? executorId : 'all',
+    platform:
+      platform && PLATFORM_IDS.has(platform)
+        ? (platform as Platform)
+        : 'all',
     ...(isValidFilterId(taskId) && { taskId }),
+    createdDate: searchParams.get('date'),
+    ...(postTitle && { postTitle }),
   }
+}
+
+export const writePublicationSearchParams = (
+  current: URLSearchParams,
+  filters: PublicationUrlFilters,
+) => {
+  const next = new URLSearchParams(current)
+
+  for (const key of PUBLICATION_FILTER_KEYS) {
+    next.delete(key)
+  }
+
+  setSearchParam(next, 'q', filters.q.trim() || null)
+  setSearchParam(next, 'postId', filters.postId)
+  setSearchParam(next, 'executorId', filters.executorId)
+  setSearchParam(next, 'platform', filters.platform)
+  setSearchParam(next, 'taskId', filters.taskId)
+  setSearchParam(next, 'date', filters.createdDate)
+  setSearchParam(
+    next,
+    'postTitle',
+    filters.postId !== 'all' ? filters.postTitle ?? null : null,
+  )
+
+  return next
+}
+
+export const getPublicationsHref = (filters: {
+  postId?: string
+  executorId?: string
+  taskId?: string
+  postTitle?: string | null
+}) => {
+  const params = writePublicationSearchParams(new URLSearchParams(), {
+    q: '',
+    postId: isValidFilterId(filters.postId) ? filters.postId : 'all',
+    executorId: isValidFilterId(filters.executorId)
+      ? filters.executorId
+      : 'all',
+    platform: 'all',
+    taskId: filters.taskId,
+    createdDate: null,
+    postTitle: filters.postTitle?.trim() || undefined,
+  })
+  const query = params.toString()
+
+  return query ? `${ROUTES.PUBLICATIONS}?${query}` : ROUTES.PUBLICATIONS
 }
 
 export const getPublicationPostOptions = (publications: Publication[]) => {

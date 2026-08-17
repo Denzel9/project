@@ -54,7 +54,7 @@ export const IncomingApplications = ({
           flex: 1,
           height: '100%',
           display: 'flex',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           alignItems: 'center',
           borderRadius: '32px',
           justifyContent: 'center',

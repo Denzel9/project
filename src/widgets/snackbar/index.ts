@@ -1,2 +1,2 @@
-export { useSnackbarStore } from './model/store';
+export { useSnackbarStore, type SnackbarSeverity } from './model/store';
 export { SnackbarLocal } from './ui/SnackbarLocal';

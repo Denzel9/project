@@ -22,7 +22,7 @@ export const ManagerAccountSection = ({ user }: ManagerAccountSectionProps) => {
 
   const handleMediaUploaded = (field: ProfileMediaField, url: string) => {
     setValue(field, url);
-    setSnackbarOpen?.(true, 'Аватар обновлён');
+    setSnackbarOpen?.(true, 'Аватар обновлён', 'success');
   };
 
   return (
@@ -58,7 +58,7 @@ export const ManagerAccountSection = ({ user }: ManagerAccountSectionProps) => {
           <ProfileMediaUploadButton
             field="avatar"
             onUploaded={url => handleMediaUploaded('avatar', url)}
-            onError={message => setSnackbarOpen?.(true, message)}
+            onError={message => setSnackbarOpen?.(true, message, 'error')}
           />
         </Box>
       </Box>

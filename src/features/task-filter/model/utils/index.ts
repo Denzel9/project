@@ -14,7 +14,7 @@ import { ALL_TASK_STATUSES } from '../constants';
 dayjs.locale('ru');
 
 export type TaskRoleFilter = TaskRole | 'all';
-export type TaskStatusFilter = TaskStatus | 'all';
+export type TaskStatusFilter = TaskStatus[];
 
 export type DashboardPeriod = 'all' | 'today' | 'week' | 'month';
 
@@ -133,7 +133,7 @@ const CANCELLED_KANBAN_STATUSES: TaskStatus[] = [
   TASK_STATUS_ENUM.ANNULLED,
 ];
 
-const CANCELLED_TASK_STATUSES = 'ANNULLED';
+const CANCELLED_TASK_STATUSES: TaskStatus[] = [TASK_STATUS_ENUM.ANNULLED];
 
 export const getKanbanColumnsForFastButton = (
   fastButtonValue: FastButtonFilter,
@@ -158,7 +158,7 @@ export const toTasksParams = (
 ): TaskListParams => ({
   page: pagination?.page ?? 1,
   limit: pagination?.limit ?? 20,
-  ...(filters.status !== 'all' && { status: filters.status }),
+  ...(filters.status.length > 0 && { statuses: filters.status }),
   ...(filters.postId && { postId: filters.postId }),
   ...(filters.executorId && { executorId: filters.executorId }),
   ...(filters.updatedDate && { updatedDate: filters.updatedDate }),
@@ -249,7 +249,7 @@ export const toMyTasksQueryParams = (filters: {
 }): TaskListParams => {
   const base = {
     ...toTaskFilterParams({
-      status: filters.viewMode === 'kanban' ? 'all' : filters.status,
+      status: filters.viewMode === 'kanban' ? [] : filters.status,
       postId: filters.postId === 'all' ? undefined : filters.postId,
       updatedDate: filters.updatedDate,
     }),
@@ -294,7 +294,7 @@ export const toMyTasksQueryParams = (filters: {
 
 export type DashboardTasksQueryFilters = {
   isCompany: boolean;
-  status?: TaskStatus;
+  status?: TaskStatus[];
   taskId?: string;
   personId?: string;
   urgentOnly?: boolean;
@@ -318,7 +318,8 @@ export const toDashboardTasksQueryParams = (
   page: pagination.page,
   limit: pagination.limit,
   role: filters.isCompany ? 'owner' : 'executor',
-  ...(filters.status && { status: filters.status }),
+  ...(filters.status &&
+    filters.status.length > 0 && { statuses: filters.status }),
   ...(filters.urgentOnly && { urgent: true }),
   ...(filters.taskId && { taskId: filters.taskId }),
   ...(filters.personId &&

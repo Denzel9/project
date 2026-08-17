@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 
 import { useUpdatePostMutation, useRemoveFavoriteMutation } from "@/entities";
-import { useDeletePostDialogStore, useRequireEmailConfirmed } from "@/features";
+import { useRequireEmailConfirmed } from "@/features";
 import { ROUTES } from "@/shared";
 import { useSnackbarStore } from "@/widgets";
 
@@ -18,7 +18,6 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
     const { setSnackbarOpen } = useSnackbarStore();
     const { requireEmailConfirmed } = useRequireEmailConfirmed();
 
-    const { openDeletePostDialog } = useDeletePostDialogStore();
     const { setOpenAddToCollectionDialog } = useApplicationItemStore();
 
 
@@ -34,11 +33,6 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
     const handleRemoveFromCollection = () => {
         if (!requireEmailConfirmed()) return;
         removeFavorite(id);
-    };
-
-    const handleDelete = () => {
-        if (!requireEmailConfirmed()) return;
-        openDeletePostDialog(id);
     };
 
     const handleEdit = () => {
@@ -77,8 +71,6 @@ export const useActions = ({ permissions, id }: UseActionsProps) => {
             handleAddToCollection();
         } else if (action === ACTION_BUTTONS_KEYS.REMOVE_FROM_COLLECTION) {
             handleRemoveFromCollection();
-        } else if (action === ACTION_BUTTONS_KEYS.DELETE) {
-            handleDelete();
         } else if (action === ACTION_BUTTONS_KEYS.EDIT) {
             handleEdit();
         } else if (action === ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE) {

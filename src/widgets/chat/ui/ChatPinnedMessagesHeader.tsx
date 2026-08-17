@@ -47,7 +47,7 @@ export const ChatPinnedMessagesHeader = ({
           px: 1.5,
           py: 1.25,
           borderRadius: '16px',
-          bgcolor: 'common.white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
           boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',

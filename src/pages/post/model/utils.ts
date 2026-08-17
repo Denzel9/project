@@ -9,11 +9,19 @@ import type {
   ApplicationStatus,
 } from '@/entities'
 
-export type PostApplicationStatusFilter = ApplicationStatus | 'all'
+export const POST_PAGE_TAB = {
+  DESCRIPTION: 0,
+  APPLICATIONS: 1,
+  TASKS: 2,
+} as const
+
+export type PostPageTab = (typeof POST_PAGE_TAB)[keyof typeof POST_PAGE_TAB]
+
+export type PostApplicationStatusFilter = ApplicationStatus[]
 export type PostApplicationApplicantFilter = 'all' | string
 
 export const POST_APPLICATION_STATUS_FILTER_LABELS: Record<
-  Exclude<PostApplicationStatusFilter, 'all'>,
+  ApplicationStatus,
   string
 > = APPLICATION_STATUS_LABELS
 
@@ -28,7 +36,7 @@ export const toPostApplicationsQueryParams = ({
 }): ApplicationListParams => ({
   page: 1,
   limit: 20,
-  ...(status !== 'all' && { status }),
+  ...(status.length > 0 && { statuses: status }),
   ...(applicantId !== 'all' && { userId: applicantId }),
   ...(createdDate && { createdDate }),
 })
@@ -59,6 +67,6 @@ export const hasActivePostApplicationFilters = ({
   applicantId: PostApplicationApplicantFilter
   createdDate: string | null
 }) =>
-  status !== 'all' ||
+  status.length > 0 ||
   applicantId !== 'all' ||
   Boolean(createdDate)

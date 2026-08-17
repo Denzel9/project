@@ -113,7 +113,7 @@ export const DashboardCalendarPanel = () => {
         height: { xs: 'auto', lg: '600px' },
         minHeight: { lg: '600px' },
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         border: '1px solid',
         borderRadius: '24px',

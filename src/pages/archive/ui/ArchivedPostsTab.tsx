@@ -1,3 +1,4 @@
+import { LockOutlined, UnarchiveOutlined } from '@mui/icons-material';
 import { Box, CircularProgress, Stack } from '@mui/material';
 import { keepPreviousData } from '@tanstack/react-query';
 import {
@@ -12,16 +13,19 @@ import {
   USER_ROLE,
   usePostsInfiniteQuery,
   usePostsQuery,
+  useUpdatePostMutation,
   type Post,
   type PostListParams,
 } from '@/entities';
-import { useAuthStore } from '@/features/auth';
+import { useAuthStore, useRequireEmailConfirmed } from '@/features/auth';
 import { TasksPrintHeader } from '@/pages/my-tasks/ui/TasksPrintHeader';
 import { EmptyBlock, InfiniteScrollSentinel } from '@/shared';
 import {
   ACTION_BUTTONS_KEYS,
   PostItem,
   PostItemSkeletonList,
+  PostSelectionBar,
+  useSnackbarStore,
 } from '@/widgets';
 
 import {
@@ -40,8 +44,8 @@ import {
 
 const ARCHIVED_POST_PERMISSIONS = [
   ACTION_BUTTONS_KEYS.EDIT,
-  ACTION_BUTTONS_KEYS.DELETE,
   ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
+  ACTION_BUTTONS_KEYS.MAKE_PRIVATE,
 ];
 
 type ArchivedPostsTabProps = {
@@ -49,6 +53,8 @@ type ArchivedPostsTabProps = {
   onViewModeChange: (viewMode: ArchiveViewMode) => void;
   onTableReportChange: (report: ArchiveTableReport | null) => void;
   searchQuery?: string;
+  isSelectionMode: boolean;
+  onSelectionModeChange: (value: boolean) => void;
 };
 
 export const ArchivedPostsTab = ({
@@ -56,6 +62,8 @@ export const ArchivedPostsTab = ({
   onViewModeChange,
   onTableReportChange,
   searchQuery = '',
+  isSelectionMode,
+  onSelectionModeChange,
 }: ArchivedPostsTabProps) => {
   const { id, role } = useAuthStore();
   const isCompany = role === USER_ROLE.COMPANY;
@@ -76,8 +84,31 @@ export const ArchivedPostsTab = ({
     filterKey: '',
     page: 0,
   });
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  const { setSnackbarOpen } = useSnackbarStore();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
+  const { mutateAsync: updatePost } = useUpdatePostMutation();
 
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds([]);
+    onSelectionModeChange(false);
+  }, [onSelectionModeChange]);
+
+  useEffect(() => {
+    if (!isSelectionMode) {
+      setTimeout(() => {
+        setSelectedIds([]);
+      }, 0);
+    }
+  }, [isSelectionMode]);
+
+  const handleEnterSelectionMode = useCallback(() => {
+    onSelectionModeChange(true);
+  }, [onSelectionModeChange]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -213,6 +244,101 @@ export const ArchivedPostsTab = ({
     [q, urgentOnly, isPrivate, createdDate, deadlineDate],
   );
 
+  useEffect(() => {
+    setTimeout(() => {
+      clearSelection();
+    }, 0);
+  }, [paginationResetKey, viewMode, clearSelection]);
+
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const allVisibleSelected =
+    filteredPosts.length > 0 &&
+    filteredPosts.every(post => selectedIdSet.has(post.id));
+
+  const handleToggleSelect = (postId: string) => {
+    setSelectedIds(prev =>
+      prev.includes(postId)
+        ? prev.filter(id => id !== postId)
+        : [...prev, postId],
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+
+    setSelectedIds(filteredPosts.map(post => post.id));
+  };
+
+  const applyBulkUpdate = async (
+    body: { isArchived?: boolean; isPrivate?: boolean },
+    successOne: string,
+    successMany: (count: number) => string,
+    failMessage: string,
+  ) => {
+    if (!requireEmailConfirmed()) return;
+    if (selectedIds.length === 0 || isBulkUpdating) return;
+
+    setIsBulkUpdating(true);
+
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map(id => updatePost({ id, body })),
+      );
+
+      const successCount = results.filter(
+        result => result.status === 'fulfilled',
+      ).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0 && failCount === 0) {
+        setSnackbarOpen(
+          true,
+          successCount === 1 ? successOne : successMany(successCount),
+        );
+        clearSelection();
+        return;
+      }
+
+      if (successCount > 0) {
+        const failedIds = selectedIds.filter(
+          (_, index) => results[index]?.status === 'rejected',
+        );
+        setSelectedIds(failedIds);
+        setSnackbarOpen(
+          true,
+          `Успешно: ${successCount}, не удалось: ${failCount}`,
+          'error',
+        );
+        return;
+      }
+
+      setSnackbarOpen(true, failMessage, 'error');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkUnarchive = () => {
+    void applyBulkUpdate(
+      { isArchived: false },
+      'Пост возвращен из архива',
+      count => `Из архива возвращено постов: ${count}`,
+      'Не удалось вернуть посты из архива',
+    );
+  };
+
+  const handleBulkMakePrivate = () => {
+    void applyBulkUpdate(
+      { isPrivate: true },
+      'Пост сделан приватным',
+      count => `Сделано приватными постов: ${count}`,
+      'Не удалось сделать посты приватными',
+    );
+  };
+
   const handleTablePageChange = (_: unknown, nextPage: number) => {
     setTablePageState({ filterKey: paginationResetKey, page: nextPage });
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -330,7 +456,7 @@ export const ArchivedPostsTab = ({
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
           }}
         >
           <CircularProgress size={32} />
@@ -343,7 +469,7 @@ export const ArchivedPostsTab = ({
             flex: 1,
             height: '100%',
             display: 'flex',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             alignItems: 'center',
             borderRadius: '24px',
@@ -398,6 +524,7 @@ export const ArchivedPostsTab = ({
                   sx={{
                     transition: 'opacity 120ms ease',
                     opacity: isPlaceholderData ? 0.72 : 1,
+                    pb: isSelectionMode ? 12 : 0,
                   }}
                 >
                   {filteredPosts.map(post => (
@@ -408,6 +535,10 @@ export const ArchivedPostsTab = ({
                       permissions={ARCHIVED_POST_PERMISSIONS}
                       isMyPost
                       isCompany={isCompany}
+                      isSelectionMode={isSelectionMode}
+                      isSelected={selectedIdSet.has(post.id)}
+                      onToggleSelect={() => handleToggleSelect(post.id)}
+                      onEnterSelectionMode={handleEnterSelectionMode}
                     />
                   ))}
                 </Stack>
@@ -469,6 +600,32 @@ export const ArchivedPostsTab = ({
             )}
           </Box>
         </Box>
+      )}
+
+      {isSelectionMode && viewMode === 'grid' && (
+        <PostSelectionBar
+          selectedCount={selectedIds.length}
+          totalCount={filteredPosts.length}
+          isUpdating={isBulkUpdating}
+          onClose={clearSelection}
+          onSelectAll={handleSelectAll}
+          actions={[
+            {
+              label: 'Вернуть из архива',
+              icon: <UnarchiveOutlined />,
+              variant: 'outlined',
+              color: 'inherit',
+              onClick: handleBulkUnarchive,
+            },
+            {
+              label: 'Сделать приватным',
+              icon: <LockOutlined />,
+              variant: 'contained',
+              color: 'primary',
+              onClick: handleBulkMakePrivate,
+            },
+          ]}
+        />
       )}
     </Stack>
   );

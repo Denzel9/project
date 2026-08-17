@@ -80,7 +80,7 @@ export const ChatContactSearch = ({
       setIsOpening(false);
     }
   };
-  console.log(filter);
+
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', width: '100%' }}>
       <Autocomplete

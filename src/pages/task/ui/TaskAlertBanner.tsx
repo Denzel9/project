@@ -62,7 +62,15 @@ export const TaskAlertBanner = ({
       ))}
     </Stack>
 
-    <Stack direction='row' spacing={1} sx={{ alignItems: 'center', justifyContent: { xs: 'flex-end', md: 'center' }, width: { xs: '100%', md: 'auto' } }}>
+    <Stack
+      direction='row'
+      spacing={1}
+      sx={{
+        pr: 2,
+        alignItems: 'center',
+        width: { xs: '100%', md: 'auto' },
+        justifyContent: { xs: 'flex-end', md: 'center' },
+      }}>
       {action}
 
       <IconButton
@@ -70,7 +78,7 @@ export const TaskAlertBanner = ({
         onClick={onClose}
         sx={{
           color: 'white',
-          display: { xs: 'none', md: 'block' },
+          display: { xs: 'none', md: 'flex' },
           '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)' },
         }}
       >

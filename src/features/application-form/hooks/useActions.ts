@@ -1,17 +1,13 @@
 import { type UseFormGetValues, type UseFormSetValue } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 
-import {
-  useDeletePostMutation,
-  useUpdatePostMutation,
-} from '@/entities/post'
+import { useUpdatePostMutation } from '@/entities/post'
 import { ROUTES } from '@/shared'
 import { useSnackbarStore } from '@/widgets'
 
 import { type FormProductType } from '../model/schema/schema'
 
 export const MENU_ACTION = {
-  DELETE: 'Удалить',
   ADD_TO_ARCHIVE: 'Переместить в архив',
   REMOVE_FROM_ARCHIVE: 'Вернуть из архива',
   MAKE_PRIVATE: 'Сделать приватным',
@@ -25,7 +21,6 @@ type Props = {
   isArchived?: boolean
   setValue?: UseFormSetValue<FormProductType>
   getValues: UseFormGetValues<FormProductType>
-  setIsConfirmDialogOpen?: (isOpen: boolean) => void
 }
 
 export const useActions = ({
@@ -35,9 +30,7 @@ export const useActions = ({
   isEdit = false,
   isPrivate = false,
   isArchived = false,
-  setIsConfirmDialogOpen,
 }: Props) => {
-  const { mutateAsync: deleteApplication } = useDeletePostMutation()
   const { mutateAsync: updatePost } = useUpdatePostMutation()
   const { setSnackbarOpen } = useSnackbarStore()
   const navigate = useNavigate()
@@ -48,11 +41,6 @@ export const useActions = ({
     if (Object.values(formData).filter(Boolean).length) {
       navigate(ROUTES.PROFILE)
     }
-  }
-
-  const handleDelete = async () => {
-    if (!id) return
-    setIsConfirmDialogOpen?.(true)
   }
 
   const handleAddToArchive = async () => {
@@ -82,28 +70,17 @@ export const useActions = ({
   }
 
   const menuOptions = (() => {
-    const options: string[] = [MENU_ACTION.DELETE]
+    if (!isEdit || !id) return []
 
-    if (!isEdit || !id) return options
-
-    options.push(
+    return [
       isArchived
         ? MENU_ACTION.REMOVE_FROM_ARCHIVE
         : MENU_ACTION.ADD_TO_ARCHIVE,
-    )
-    options.push(
       isPrivate ? MENU_ACTION.MAKE_PUBLIC : MENU_ACTION.MAKE_PRIVATE,
-    )
-
-    return options
+    ]
   })()
 
   const handleMenuAction = (action: string) => {
-    if (action === MENU_ACTION.DELETE) {
-      void handleDelete()
-      return
-    }
-
     if (action === MENU_ACTION.ADD_TO_ARCHIVE) {
       void handleAddToArchive()
       return
@@ -126,9 +103,7 @@ export const useActions = ({
 
   return {
     menuOptions,
-    handleDelete,
     handleMenuAction,
-    deleteApplication,
     handleGoToPreview,
   }
 }

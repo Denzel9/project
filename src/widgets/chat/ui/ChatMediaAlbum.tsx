@@ -115,7 +115,7 @@ export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
         >
           {visibleVisual.map((item, index) => {
             const kind = getMediaKind(item.url, item.mimeType)
-            const isImage = kind === 'image'
+            const canPreview = kind === 'image' || kind === 'video'
             const isLast = index === visibleVisual.length - 1
             const showOverflow = isLast && overflow > 0
 
@@ -124,14 +124,14 @@ export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
                 key={item.key}
                 onClick={event => {
                   event.stopPropagation()
-                  if (isImage) onOpenImage(item.url)
+                  if (canPreview) onOpenImage(item.url)
                 }}
                 sx={{
                   gridArea: getTileArea(index),
                   position: 'relative',
                   minWidth: 0,
                   minHeight: 0,
-                  cursor: isImage ? 'zoom-in' : 'default',
+                  cursor: canPreview ? 'zoom-in' : 'default',
                   overflow: 'hidden',
                   '& img, & video': {
                     borderRadius: '0 !important',
@@ -143,6 +143,7 @@ export const ChatMediaAlbum = ({ media, onOpenImage }: ChatMediaAlbumProps) => {
                   alt="Вложение"
                   mimeType={item.mimeType}
                   fileName={getMediaDisplayName(item.fileName, item.key)}
+                  showPlayOverlay={kind === 'video'}
                 />
 
                 {showOverflow && (

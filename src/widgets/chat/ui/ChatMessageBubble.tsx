@@ -19,10 +19,10 @@ import { format } from 'date-fns'
 import { useMemo, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router'
 
-import { parseChatTaskTzMessage, type ChatMessage, type ChatMessagePinScope } from '@/entities/chat'
-import { ROUTES, MarkdownContent } from '@/shared'
+import { parseChatApplicationMessage, parseChatTaskTzMessage, type ChatMessage, type ChatMessagePinScope } from '@/entities/chat'
+import { ROUTES, LinkifiedText, MarkdownContent } from '@/shared'
 import { ActionActorCaption } from '@/shared/ui/action-actor-caption/ActionActorCaption'
-import { FullScreenImageViewer, getMediaKind } from '@/widgets/media'
+import { FullScreenImageViewer, getMediaKind, isGalleryMedia } from '@/widgets/media'
 
 import { useIsMessageDeletable } from '../model/hooks/useIsMessageDeletable'
 
@@ -34,6 +34,7 @@ type ChatMessageBubbleProps = {
   senderAvatar?: string | null
   senderName?: string | null
   isPinned?: boolean
+  pinScope?: ChatMessagePinScope | null
   canUnpin?: boolean
   highlight?: string
   isDeleting?: boolean
@@ -56,40 +57,6 @@ type ChatMessageBubbleProps = {
   onMarkUnread?: (messageId: string) => void
   onEnterSelection?: (messageId: string) => void
   onReplyJump?: (messageId: string) => void
-}
-
-const escapeRegExp = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-const renderHighlightedText = (text: string, highlight?: string) => {
-  const trimmedHighlight = highlight?.trim()
-
-  if (!trimmedHighlight) {
-    return text
-  }
-
-  const parts = text.split(
-    new RegExp(`(${escapeRegExp(trimmedHighlight)})`, 'gi'),
-  )
-
-  return parts.map((part, index) =>
-    part.toLowerCase() === trimmedHighlight.toLowerCase() ? (
-      <Box
-        key={`${part}-${index}`}
-        component="mark"
-        sx={{
-          bgcolor: 'warning.light',
-          color: 'inherit',
-          px: 0.25,
-          borderRadius: 0.5,
-        }}
-      >
-        {part}
-      </Box>
-    ) : (
-      part
-    ),
-  )
 }
 
 const MetaRow = ({
@@ -183,6 +150,7 @@ export const ChatMessageBubble = ({
   senderAvatar = null,
   senderName = null,
   isPinned = false,
+  pinScope = null,
   canUnpin = false,
   highlight,
   isHighlighted = false,
@@ -224,7 +192,11 @@ export const ChatMessageBubble = ({
   const time = format(new Date(createdAt), 'HH:mm')
   const canEditByWindow = useIsMessageDeletable(createdAt, senderId, currentUserId)
   const hasText = Boolean(text.trim())
-  const hasResponse = text === 'Новый отклик'
+  const applicationMessage = useMemo(
+    () => parseChatApplicationMessage(text),
+    [text],
+  )
+  const hasResponse = Boolean(applicationMessage)
   const taskTzMessage = useMemo(() => parseChatTaskTzMessage(text), [text])
   const isTaskTzMessage = Boolean(taskTzMessage)
   const canEdit =
@@ -236,9 +208,10 @@ export const ChatMessageBubble = ({
   const canCopy = hasText || media.length > 0
   const canSelect = Boolean(onEnterSelection)
   const canMarkUnread = Boolean(onMarkUnread)
-  const canPin = Boolean(onPin) && !isPinned
+  const canPinPersonal = Boolean(onPin) && !isPinned
+  const canPinShared = Boolean(onPin) && (!isPinned || pinScope === 'PERSONAL')
   const canUnpinPin = Boolean(onPin) && isPinned && canUnpin
-  const showPinActions = canPin || canUnpinPin
+  const showPinActions = canPinPersonal || canPinShared || canUnpinPin
   const showMenu =
     !selectionMode &&
     (canEdit ||
@@ -259,7 +232,7 @@ export const ChatMessageBubble = ({
   const galleryImages = useMemo(
     () =>
       media
-        .filter(item => getMediaKind(item.url, item.mimeType) === 'image')
+        .filter(item => isGalleryMedia(item.mimeType, item.url))
         .map(item => ({ url: item.url, mimeType: item.mimeType })),
     [media],
   )
@@ -417,12 +390,12 @@ export const ChatMessageBubble = ({
       {canForward && onForward && (
         <MenuItem onClick={handleForward}>Переслать</MenuItem>
       )}
-      {canPin && (
+      {canPinPersonal && (
         <MenuItem onClick={() => handlePin('PERSONAL')}>
           Закрепить для себя
         </MenuItem>
       )}
-      {canPin && (
+      {canPinShared && (
         <MenuItem onClick={() => handlePin('SHARED')}>
           Закрепить для всех
         </MenuItem>
@@ -478,7 +451,7 @@ export const ChatMessageBubble = ({
         <Avatar
           alt={senderName ?? undefined}
           src={senderAvatar ?? undefined}
-          sx={{ width: 32, height: 32, display: { xs: 'none', md: 'block' } }}
+          sx={{ width: 32, height: 32, display: { xs: 'none', md: 'flex' } }}
         />
       )}
       <Box
@@ -692,16 +665,41 @@ export const ChatMessageBubble = ({
           </Box>
         )}
 
-        {hasResponse && (
+        {hasResponse && applicationMessage && (
           <Stack direction="column" spacing={1.5} sx={{ pt: 0.25 }}>
-            <Typography variant="body2" sx={{ lineHeight: 1.45 }}>
-              {text}
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.45, fontWeight: 600 }}
+            >
+              {applicationMessage.postTitle
+                ? `Новый отклик на объявление «${applicationMessage.postTitle}»`
+                : 'Новый отклик'}
             </Typography>
+
+            {Boolean(applicationMessage.letter) && (
+              <Typography variant="body2" sx={{ lineHeight: 1.45 }}>
+                <LinkifiedText text={applicationMessage.letter} />
+              </Typography>
+            )}
 
             <Button
               color={isOutgoing ? 'secondary' : 'primary'}
               variant="contained"
-              onClick={() => navigate(`${ROUTES.MY_RESPONSES}/${senderId}`)}
+              onClick={() => {
+                if (isOutgoing) {
+                  navigate(ROUTES.MY_RESPONSES)
+                  return
+                }
+
+                if (applicationMessage.postId) {
+                  navigate(
+                    `${ROUTES.POST}/${applicationMessage.postId}?tab=1`,
+                  )
+                  return
+                }
+
+                navigate(`${ROUTES.MY_RESPONSES}/${senderId}`)
+              }}
               sx={{
                 alignSelf: 'flex-start',
                 py: 0.75,
@@ -841,7 +839,7 @@ export const ChatMessageBubble = ({
                     fontSize: '0.9375rem',
                   }}
                 >
-                  {renderHighlightedText(text, highlight)}
+                  <LinkifiedText text={text} highlight={highlight} />
                 </Typography>
               )}
             </>

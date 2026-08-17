@@ -9,6 +9,7 @@ import {
 import {
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Divider,
@@ -22,7 +23,7 @@ import {
 } from '@mui/material';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -34,8 +35,8 @@ import {
   useFileTemplatesQuery,
   useInstantiateTaskTemplateMutation,
   usePostsQuery,
+  usePublishPostTemplateMutation,
   useTaskTemplatesQuery,
-  useUpdatePostMutation,
   useUpdateTaskTemplateMutation,
   type CreateTaskTemplateDto,
   type FileTemplate,
@@ -52,7 +53,13 @@ import {
   MEDIA_FILE_TEMPLATE_ACCEPT,
   validateMediaFile,
 } from '@/shared/lib/media';
-import { ConfirmDialog, PageLayout, useSnackbarStore } from '@/widgets';
+import { ConfirmDialog, PageLayout, PostSelectionBar, useSnackbarStore } from '@/widgets';
+import {
+  FullScreenImageViewer,
+  MediaItem,
+  getMediaKind,
+  isGalleryMedia,
+} from '@/widgets/media';
 
 import { SendFileTemplateDialog } from './SendFileTemplateDialog';
 import { TemplateFormDialog } from './TemplateFormDialog';
@@ -75,8 +82,10 @@ const getFileKindLabel = (mimeType: string) => {
   if (mimeType === 'application/pdf') return 'PDF';
   if (mimeType.includes('word')) return 'Документ';
   if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
-    return 'Таблица';
+    return 'Excel';
   }
+  if (mimeType.includes('zip')) return 'ZIP';
+  if (mimeType.includes('csv')) return 'CSV';
 
   return 'Файл';
 };
@@ -96,100 +105,104 @@ const TemplateCard = ({
 
   return (
     <Stack
-      spacing={1.5}
       sx={{
         p: 2,
         height: '100%',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderRadius: '24px',
         borderColor: 'divider',
       }}
     >
       <Stack
-        direction="row"
-        spacing={1}
-        sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
+        spacing={1.5}
+        sx={{ flex: 1, minHeight: 0 }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600 }}
-            noWrap
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 600 }}
+              noWrap
+            >
+              {template.name}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              noWrap
+            >
+              {template.title?.trim() || 'Без названия задачи'}
+            </Typography>
+          </Box>
+
+          <IconButton
+            size="small"
+            onClick={event => setMenuAnchor(event.currentTarget)}
           >
-            {template.name}
-          </Typography>
+            <MoreVert fontSize="small" />
+          </IconButton>
+        </Stack>
+
+        {template.description?.trim() ? (
           <Typography
             variant="body2"
             color="text.secondary"
-            noWrap
+            sx={{
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
           >
-            {template.title?.trim() || 'Без названия задачи'}
+            {template.description}
           </Typography>
-        </Box>
+        ) : null}
 
-        <IconButton
-          size="small"
-          onClick={event => setMenuAnchor(event.currentTarget)}
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ flexWrap: 'wrap', gap: 1 }}
         >
-          <MoreVert fontSize="small" />
-        </IconButton>
-      </Stack>
-
-      {template.description?.trim() ? (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {template.description}
-        </Typography>
-      ) : null}
-
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{ flexWrap: 'wrap', gap: 1 }}
-      >
-        <Chip
-          size="small"
-          label={`Фото: ${template.photoCount}`}
-        />
-        <Chip
-          size="small"
-          label={`Видео: ${template.videoCount}`}
-        />
-        {template.urgent && (
           <Chip
             size="small"
-            color="warning"
-            label="Срочная"
+            label={`Фото: ${template.photoCount}`}
           />
-        )}
-      </Stack>
+          <Chip
+            size="small"
+            label={`Видео: ${template.videoCount}`}
+          />
+          {template.urgent && (
+            <Chip
+              size="small"
+              color="warning"
+              label="Срочная"
+            />
+          )}
+        </Stack>
 
-      <Typography
-        variant="caption"
-        color="text.secondary"
-      >
-        обновлён{' '}
-        {formatDistanceToNow(new Date(template.updatedAt), {
-          addSuffix: true,
-          locale: ru,
-        })}
-      </Typography>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+        >
+          обновлён{' '}
+          {formatDistanceToNow(new Date(template.updatedAt), {
+            addSuffix: true,
+            locale: ru,
+          })}
+        </Typography>
+      </Stack>
 
       <Button
         size="small"
         variant="contained"
         startIcon={<PlayArrowOutlined />}
         onClick={onUse}
-        sx={{ alignSelf: 'flex-start', mt: 'auto' }}
+        sx={{ alignSelf: 'flex-start', mt: 1.5 }}
       >
         Создать задачу
       </Button>
@@ -235,25 +248,40 @@ const PostTemplateCard = ({
   onEdit,
   onDelete,
   isPublishing = false,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
+  onEnterSelectionMode,
 }: {
   post: Post;
   onPublish: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isPublishing?: boolean;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  onEnterSelectionMode?: () => void;
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+
+  const handleCardClick = () => {
+    if (!isSelectionMode) return;
+    onToggleSelect?.();
+  };
 
   return (
     <Stack
       spacing={1.5}
+      onClick={handleCardClick}
       sx={{
         p: 2,
         height: '100%',
-        bgcolor: 'white',
+        bgcolor: isSelected ? 'action.hover' : 'background.paper',
         border: '1px solid',
         borderRadius: '24px',
-        borderColor: 'divider',
+        borderColor: isSelected ? 'primary.main' : 'divider',
+        cursor: isSelectionMode ? 'pointer' : 'default',
       }}
     >
       <Stack
@@ -271,12 +299,24 @@ const PostTemplateCard = ({
           </Typography>
         </Box>
 
-        <IconButton
-          size="small"
-          onClick={event => setMenuAnchor(event.currentTarget)}
-        >
-          <MoreVert fontSize="small" />
-        </IconButton>
+        {isSelectionMode ? (
+          <Checkbox
+            size="small"
+            checked={isSelected}
+            onChange={() => onToggleSelect?.()}
+            onClick={event => event.stopPropagation()}
+          />
+        ) : (
+          <IconButton
+            size="small"
+            onClick={event => {
+              event.stopPropagation();
+              setMenuAnchor(event.currentTarget);
+            }}
+          >
+            <MoreVert fontSize="small" />
+          </IconButton>
+        )}
       </Stack>
 
       {post.description?.trim() ? (
@@ -305,23 +345,42 @@ const PostTemplateCard = ({
         })}
       </Typography>
 
-      <Button
-        size="small"
-        variant="contained"
-        startIcon={<PlayArrowOutlined />}
-        onClick={onPublish}
-        loading={isPublishing}
-        disabled={isPublishing}
-        sx={{ alignSelf: 'flex-start', mt: 'auto' }}
-      >
-        Опубликовать
-      </Button>
+      {!isSelectionMode && (
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<PlayArrowOutlined />}
+          onClick={event => {
+            event.stopPropagation();
+            onPublish();
+          }}
+          loading={isPublishing}
+          disabled={isPublishing}
+          sx={{ alignSelf: 'flex-start', mt: 'auto' }}
+        >
+          Опубликовать
+        </Button>
+      )}
 
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={() => setMenuAnchor(null)}
       >
+        {onEnterSelectionMode && (
+          <>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchor(null);
+                onEnterSelectionMode();
+              }}
+            >
+              Выбрать
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
+          </>
+        )}
+
         <MenuItem
           onClick={() => {
             setMenuAnchor(null);
@@ -362,7 +421,10 @@ const FileTemplateCard = ({
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [isSendOpen, setIsSendOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const sizeLabel = formatFileSize(file.size);
+  const kind = getMediaKind(file.url, file.mimeType);
+  const canPreview = isGalleryMedia(file.mimeType, file.url);
 
   return (
     <Stack
@@ -371,13 +433,39 @@ const FileTemplateCard = ({
         p: 2,
         minWidth: 0,
         height: '100%',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderRadius: '24px',
         borderColor: 'divider',
         overflow: 'hidden',
       }}
     >
+      <Box
+        onClick={() => {
+          if (canPreview) setIsViewerOpen(true);
+        }}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: 160,
+          flexShrink: 0,
+          overflow: 'hidden',
+          borderRadius: '16px',
+          bgcolor: 'grey.50',
+          cursor: canPreview ? 'pointer' : 'default',
+        }}
+      >
+        <MediaItem
+          src={file.url}
+          alt={file.name}
+          mimeType={file.mimeType}
+          fileName={file.name}
+          fill={kind === 'document'}
+          fit="cover"
+          showPlayOverlay={kind === 'video'}
+        />
+      </Box>
+
       <Stack
         spacing={1}
         direction="row"
@@ -443,6 +531,12 @@ const FileTemplateCard = ({
         open={isSendOpen}
         file={file}
         onClose={() => setIsSendOpen(false)}
+      />
+
+      <FullScreenImageViewer
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        items={[{ url: file.url, mimeType: file.mimeType }]}
       />
 
       <Menu
@@ -511,8 +605,8 @@ export const TemplatesPage = () => {
     useDeleteTaskTemplateMutation();
   const { mutateAsync: deletePostTemplate, isPending: isDeletingPost } =
     useDeletePostMutation();
-  const { mutateAsync: updatePostTemplate, isPending: isPublishingPost } =
-    useUpdatePostMutation();
+  const { mutateAsync: publishPostTemplate, isPending: isPublishingPost } =
+    usePublishPostTemplateMutation();
   const { mutateAsync: createFileTemplate, isPending: isUploadingFile } =
     useCreateFileTemplateMutation();
   const { mutateAsync: deleteFileTemplate, isPending: isDeletingFile } =
@@ -531,10 +625,53 @@ export const TemplatesPage = () => {
   const [deleteFileTarget, setDeleteFileTarget] = useState<FileTemplate | null>(
     null
   );
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
+  const clearPostSelection = useCallback(() => {
+    setSelectedPostIds([]);
+    setIsSelectionMode(false);
+  }, []);
+
+  useEffect(() => {
+    clearPostSelection();
+  }, [tab, clearPostSelection]);
 
   const templates = data ?? [];
   const postTemplates = postTemplatesData?.items ?? [];
   const fileTemplates = fileTemplatesData ?? [];
+
+  const selectedPostIdSet = useMemo(
+    () => new Set(selectedPostIds),
+    [selectedPostIds]
+  );
+  const allPostTemplatesSelected =
+    postTemplates.length > 0 &&
+    postTemplates.every(post => selectedPostIdSet.has(post.id));
+
+  const handleEnterSelectionMode = () => {
+    setIsSelectionMode(true);
+  };
+
+  const handleTogglePostSelect = (postId: string) => {
+    setSelectedPostIds(prev =>
+      prev.includes(postId)
+        ? prev.filter(id => id !== postId)
+        : [...prev, postId]
+    );
+  };
+
+  const handleSelectAllPosts = () => {
+    if (allPostTemplatesSelected) {
+      setSelectedPostIds([]);
+      return;
+    }
+
+    setSelectedPostIds(postTemplates.map(post => post.id));
+  };
+
   const isTasksTab = tab === TEMPLATE_TAB.TASKS;
   const isAnnouncementsTab = tab === TEMPLATE_TAB.ANNOUNCEMENTS;
   const isFilesTab = tab === TEMPLATE_TAB.FILES;
@@ -616,12 +753,9 @@ export const TemplatesPage = () => {
 
     try {
       setPublishingPostId(post.id);
-      await updatePostTemplate({
-        id: post.id,
-        body: { isTemplate: false, isPrivate: false },
-      });
+      const published = await publishPostTemplate(post.id);
       setSnackbarOpen(true, 'Объявление опубликовано');
-      navigate(`${ROUTES.POST}/${post.id}`);
+      navigate(`${ROUTES.POST}/${published.id}`);
     } catch (error) {
       setSnackbarOpen(
         true,
@@ -702,6 +836,100 @@ export const TemplatesPage = () => {
     }
   };
 
+  const handleBulkPublishPosts = async () => {
+    if (!requireEmailConfirmed()) return;
+    if (selectedPostIds.length === 0 || isBulkUpdating) return;
+
+    setIsBulkUpdating(true);
+
+    try {
+      const results = await Promise.allSettled(
+        selectedPostIds.map(id => publishPostTemplate(id))
+      );
+
+      const successCount = results.filter(
+        result => result.status === 'fulfilled'
+      ).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0 && failCount === 0) {
+        setSnackbarOpen(
+          true,
+          successCount === 1
+            ? 'Объявление опубликовано'
+            : `Опубликовано объявлений: ${successCount}`
+        );
+        clearPostSelection();
+        return;
+      }
+
+      if (successCount > 0) {
+        const failedIds = selectedPostIds.filter(
+          (_, index) => results[index]?.status === 'rejected'
+        );
+        setSelectedPostIds(failedIds);
+        setSnackbarOpen(
+          true,
+          `Успешно: ${successCount}, не удалось: ${failCount}`,
+          'error'
+        );
+        return;
+      }
+
+      setSnackbarOpen(true, 'Не удалось опубликовать объявления', 'error');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkDeletePosts = async () => {
+    if (!requireEmailConfirmed()) return;
+    if (selectedPostIds.length === 0 || isBulkUpdating) return;
+
+    setIsBulkUpdating(true);
+
+    try {
+      const results = await Promise.allSettled(
+        selectedPostIds.map(id => deletePostTemplate(id))
+      );
+
+      const successCount = results.filter(
+        result => result.status === 'fulfilled'
+      ).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0 && failCount === 0) {
+        setSnackbarOpen(
+          true,
+          successCount === 1
+            ? 'Шаблон удалён'
+            : `Удалено шаблонов: ${successCount}`
+        );
+        clearPostSelection();
+        setIsBulkDeleteOpen(false);
+        return;
+      }
+
+      if (successCount > 0) {
+        const failedIds = selectedPostIds.filter(
+          (_, index) => results[index]?.status === 'rejected'
+        );
+        setSelectedPostIds(failedIds);
+        setSnackbarOpen(
+          true,
+          `Успешно: ${successCount}, не удалось: ${failCount}`,
+          'error'
+        );
+        setIsBulkDeleteOpen(false);
+        return;
+      }
+
+      setSnackbarOpen(true, 'Не удалось удалить шаблоны', 'error');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   const handleConfirmDeleteFile = async () => {
     if (!deleteFileTarget) return;
 
@@ -725,7 +953,7 @@ export const TemplatesPage = () => {
           spacing={1}
           sx={{
             p: 2,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
@@ -745,7 +973,7 @@ export const TemplatesPage = () => {
 
           <IconButton
             onClick={handleOpenCreate}
-            sx={{ display: { xs: 'block', sm: 'none' } }}
+            sx={{ display: { xs: 'flex', md: 'none' } }}
           >
             <Add />
           </IconButton>
@@ -756,7 +984,7 @@ export const TemplatesPage = () => {
             loading={isUploadingFile}
             disabled={isUploadingFile}
             onClick={handleOpenCreate}
-            sx={{ display: { xs: 'none', sm: 'block' } }}
+            sx={{ display: { xs: 'none', md: 'flex' } }}
           >
             Добавить
           </Button>
@@ -781,7 +1009,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
             }}
           >
             <CircularProgress size={32} />
@@ -795,7 +1023,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
             }}
           >
             <EmptyBlock
@@ -813,7 +1041,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               flex: 1,
               display: 'flex',
               justifyContent: 'center',
@@ -832,6 +1060,7 @@ export const TemplatesPage = () => {
               sx={{
                 display: 'grid',
                 gap: 1,
+                pb: isSelectionMode ? 12 : 0,
                 gridTemplateColumns: {
                   xs: '1fr',
                   sm: '1fr 1fr',
@@ -846,6 +1075,10 @@ export const TemplatesPage = () => {
                   isPublishing={
                     isPublishingPost && publishingPostId === post.id
                   }
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedPostIdSet.has(post.id)}
+                  onToggleSelect={() => handleTogglePostSelect(post.id)}
+                  onEnterSelectionMode={handleEnterSelectionMode}
                   onPublish={() => void handlePublishPostTemplate(post)}
                   onEdit={() => handleEditPostTemplate(post)}
                   onDelete={() => {
@@ -867,7 +1100,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               alignItems: 'center',
             }}
           >
@@ -882,7 +1115,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
             }}
           >
             <EmptyBlock
@@ -900,7 +1133,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               flex: 1,
               display: 'flex',
               justifyContent: 'center',
@@ -952,7 +1185,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               flex: 1,
               display: 'flex',
               justifyContent: 'center',
@@ -970,7 +1203,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
             }}
           >
             <EmptyBlock
@@ -992,7 +1225,7 @@ export const TemplatesPage = () => {
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
             }}
           >
             <EmptyBlock title="Файловых шаблонов пока нет" />
@@ -1074,6 +1307,45 @@ export const TemplatesPage = () => {
         onClose={() => setDeleteFileTarget(null)}
         onSuccess={() => void handleConfirmDeleteFile()}
       />
+
+      <ConfirmDialog
+        isOpen={isBulkDeleteOpen}
+        title="Удалить выбранные шаблоны?"
+        description={`Будет удалено шаблонов: ${selectedPostIds.length}. Это действие нельзя отменить.`}
+        isPending={isBulkUpdating}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        onSuccess={() => void handleBulkDeletePosts()}
+      />
+
+      {isSelectionMode && isAnnouncementsTab && (
+        <PostSelectionBar
+          selectedCount={selectedPostIds.length}
+          totalCount={postTemplates.length}
+          isUpdating={isBulkUpdating}
+          onClose={clearPostSelection}
+          onSelectAll={handleSelectAllPosts}
+          actions={[
+            {
+              label: 'Опубликовать',
+              icon: <PlayArrowOutlined />,
+              variant: 'contained',
+              color: 'primary',
+              onClick: () => void handleBulkPublishPosts(),
+            },
+            {
+              label: 'Удалить',
+              icon: <DeleteOutlined />,
+              variant: 'outlined',
+              color: 'error',
+              onClick: () => {
+                if (!requireEmailConfirmed()) return;
+                if (selectedPostIds.length === 0) return;
+                setIsBulkDeleteOpen(true);
+              },
+            },
+          ]}
+        />
+      )}
     </PageLayout>
   );
 };

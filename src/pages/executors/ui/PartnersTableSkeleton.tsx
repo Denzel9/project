@@ -8,7 +8,7 @@ export const partnersTableShellSx = {
   display: 'flex',
   flexDirection: 'column' as const,
   overflow: 'hidden' as const,
-  bgcolor: 'white',
+  bgcolor: 'background.paper',
   borderRadius: { xs: '16px', md: '32px' },
   border: (theme: { palette: { secondary: { main: string } } }) =>
     `1px solid ${theme.palette.secondary.main}`,

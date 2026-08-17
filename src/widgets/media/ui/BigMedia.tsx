@@ -1,6 +1,7 @@
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
+import { Box } from '@mui/material'
 import { useCallback, useEffect, useState } from 'react'
 import { Mousewheel, Navigation, Pagination, Thumbs } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -127,8 +128,24 @@ export const BigMedia = ({
               key={`${item.url}-${item.mimeType ?? ''}-${fit}`}
               loading={index === initialSlide ? 'eager' : 'lazy'}
               withControls={isDialog && isVideo}
+              showPlayOverlay={!isDialog && isVideo}
               isActive={isGalleryOpen && (!isDialog || activeIndex === index)}
             />
+
+            {!isDialog && isVideo && (
+              <Box
+                onClick={event => {
+                  event.stopPropagation()
+                  handleClickOpen()
+                }}
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 3,
+                  cursor: 'pointer',
+                }}
+              />
+            )}
           </SwiperSlide>
         )
       })}

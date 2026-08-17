@@ -102,7 +102,7 @@ export const ChatErrorBanner = ({
             borderRadius: '12px',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: 'common.white',
+            bgcolor: 'background.paper',
           }}
         >
           <Icon

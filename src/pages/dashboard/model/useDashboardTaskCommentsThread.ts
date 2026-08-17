@@ -68,21 +68,25 @@ export const useDashboardTaskCommentsThread = ({
 
   useEffect(() => {
     if (!expanded) {
-      setOlderComments([])
-      setOldestLoadedPage(null)
-      setIsLoadingOlder(false)
-      scrollRestoreHeightRef.current = null
+      setTimeout(() => {
+        setOlderComments([])
+        setOldestLoadedPage(null)
+        setIsLoadingOlder(false)
+        scrollRestoreHeightRef.current = null
+      }, 0)
     }
   }, [expanded, taskId])
 
   useEffect(() => {
     if (tailData?.page) {
-      setOldestLoadedPage(tailData.page)
-      setOlderComments([])
+      setTimeout(() => {
+        setOldestLoadedPage(tailData.page)
+        setOlderComments([])
+      }, 0)
     }
   }, [tailData?.page, taskId])
 
-  const tailComments = tailData?.items ?? []
+  const tailComments = useMemo(() => tailData?.items ?? [], [tailData?.items])
   const total = allComments?.length ?? tailData?.total ?? 0
 
   const mergedComments = useMemo(() => {

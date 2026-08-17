@@ -149,11 +149,9 @@ export const FilterAutocomplete = ({
       filterOptions={isServerSearch ? opts => opts : undefined}
       clearOnEscape
       noOptionsText={
-        isServerSearch
-          ? canSearch
-            ? 'Ничего не найдено'
-            : `Введите минимум ${minInputLength} символа`
-          : undefined
+        isServerSearch && !canSearch
+          ? `Введите минимум ${minInputLength} символа`
+          : 'Ничего не найдено'
       }
       slotProps={{
         paper: {

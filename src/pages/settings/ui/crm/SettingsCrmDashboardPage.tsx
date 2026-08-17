@@ -112,9 +112,9 @@ export const SettingsCrmDashboardPage = () => {
 
       setSelectedTiles(next.dashboardTiles ?? []);
       setIsEditingTiles(false);
-      setSnackbarOpen(true, 'Настройки дашборда сохранены');
+      setSnackbarOpen(true, 'Настройки дашборда сохранены', 'success');
     } catch {
-      setSnackbarOpen(true, 'Не удалось сохранить настройки');
+      setSnackbarOpen(true, 'Не удалось сохранить настройки', 'error');
     }
   };
 
@@ -139,13 +139,13 @@ export const SettingsCrmDashboardPage = () => {
       const body = { [key]: checked } as UpdateUserConfigDto;
 
       await updateConfig(body);
-      setSnackbarOpen(true, 'Настройки дашборда сохранены');
+      setSnackbarOpen(true, 'Настройки дашборда сохранены', 'success');
     } catch {
       if (previous) {
         queryClient.setQueryData(userConfigKeys.config(), previous);
       }
 
-      setSnackbarOpen(true, 'Не удалось сохранить настройки');
+      setSnackbarOpen(true, 'Не удалось сохранить настройки', 'error');
     } finally {
       setPendingSwitchKey(null);
     }

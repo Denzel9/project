@@ -50,7 +50,7 @@ export const TaskContactsTable = ({
   items,
   contactColumnLabel,
   emptyMessage,
-  interactionsColumnLabel = 'Взаимодействий',
+  interactionsColumnLabel = 'Кол-во задач',
   total,
   page: controlledPage,
   rowsPerPage = PARTNERS_TABLE_PAGE_SIZE,
@@ -223,7 +223,7 @@ export const TaskContactsTable = ({
                   }
                   onClick={() => handleSort('publicationsCount')}
                 >
-                  Публикации
+                  Кол-во публикаций
                 </TableSortLabel>
               </TableCell>
 

@@ -256,7 +256,7 @@ export const MyResponsesTable = ({
         minHeight: 0,
         height: forPrint ? 'auto' : '100%',
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: forPrint ? 'visible' : 'hidden',
         flexDirection: 'column',
         borderRadius: forPrint ? 0 : { xs: '16px', md: '32px' },

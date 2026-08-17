@@ -8,10 +8,8 @@ import {
   CircularProgress,
   Drawer,
   IconButton,
-  MenuItem,
   Popover,
   Stack,
-  TextField,
   Tooltip,
 } from '@mui/material'
 import { type Dayjs } from 'dayjs'
@@ -23,17 +21,18 @@ import {
   mapPartnerUserToRow,
   normalizePartnerUser,
   usePartnerApplicantsQuery,
+  type ApplicationStatus,
 } from '@/entities'
-import { FilterAutocomplete, useScroll } from '@/shared'
+import { FilterAutocomplete, FilterStatusSelect, useScroll } from '@/shared'
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
 import { useMyPostFilterStore } from '../model/store'
+import { isDefaultApplicationStatusFilter } from '../model/utils'
 
 import { MyPostViewModeToggle } from './MyPostViewModeToggle'
 import { PostsResponsesMobileFilter } from './PostsResponsesMobileFilter'
 
 import type { ApplicationTableReportControls } from '../model/types'
-import type { ApplicationStatusFilter } from '../model/utils'
 
 type MyPostFilterProps = {
   tableReport?: ApplicationTableReportControls
@@ -99,8 +98,19 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }))
   }, [applicantsData?.items, posts])
 
+  const statusOptions = useMemo(
+    () =>
+      Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
+        value: value as ApplicationStatus,
+        label,
+      })),
+    [],
+  )
+
   const hasMobileDrawerFilters =
-    status !== 'all' || postId !== 'all' || userId !== 'all'
+    !isDefaultApplicationStatusFilter(status) ||
+    postId !== 'all' ||
+    userId !== 'all'
 
   const handleDateChange = (date: Dayjs | null) => {
     setUpdatedDate(date ? date.format('YYYY-MM-DD') : null)
@@ -120,7 +130,7 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
         sx={{
           p: 2,
           mb: 1,
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
@@ -135,7 +145,7 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
       >
         <Stack
           direction="row"
-          spacing={2}
+          spacing={1}
           sx={{
             flex: 1,
             minWidth: 0,
@@ -144,27 +154,14 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
             display: { xs: 'none', md: 'flex' },
           }}
         >
-          <TextField
-            select
-            fullWidth
+          <FilterStatusSelect
             label="Статус"
-            value={status}
             size="small"
-            onChange={event =>
-              setStatus(event.target.value as ApplicationStatusFilter)
-            }
+            value={status}
+            options={statusOptions}
+            onChange={setStatus}
             sx={{ flex: 1, minWidth: 0, maxWidth: 250 }}
-          >
-            <MenuItem value="all">Все</MenuItem>
-            {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
-              <MenuItem
-                key={value}
-                value={value}
-              >
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
 
           <FilterAutocomplete
             label="Объявление"

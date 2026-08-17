@@ -1,9 +1,8 @@
-import { ThemeProvider } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './app/providers/AuthProvider';
 import { NotificationsProvider } from './app/providers/NotificationsProvider';
-import { theme } from './app/theme/theme';
+import { ThemeModeProvider } from './app/providers/ThemeModeProvider';
 import { Router } from './pages';
 import { queryClient } from './shared';
 import {
@@ -15,7 +14,7 @@ import {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
+      <ThemeModeProvider>
         <DatePickerProvider>
           <AuthProvider>
             <NotificationsProvider>
@@ -25,7 +24,7 @@ function App() {
             </NotificationsProvider>
           </AuthProvider>
         </DatePickerProvider>
-      </ThemeProvider>
+      </ThemeModeProvider>
     </QueryClientProvider>
   );
 }

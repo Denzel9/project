@@ -10,7 +10,7 @@ import {
   RecoveryPasswordForm,
   ResetPasswordForm,
 } from '@/features';
-import { WHITE_COLOR } from '@/features/auth/model/constants';
+import { WHITE_COLOR, AUTH_BACKGROUND } from '@/features/auth/model/constants';
 import { ROUTES, SAFE_AREA } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
@@ -59,7 +59,7 @@ export const AuthPage = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'row',
-        // bgcolor: 'white',
+        bgcolor: AUTH_BACKGROUND,
         boxSizing: 'border-box',
         pt: SAFE_AREA.top,
         pb: SAFE_AREA.bottom,

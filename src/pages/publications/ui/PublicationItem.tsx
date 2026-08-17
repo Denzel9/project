@@ -75,7 +75,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: '32px',

@@ -16,7 +16,7 @@ export const Contacts = ({ tabValue, contacts }: { tabValue: number; contacts: C
       <Box
         sx={{
           height: '100%',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderRadius: '24px',
           borderColor: 'divider',
@@ -36,7 +36,7 @@ export const Contacts = ({ tabValue, contacts }: { tabValue: number; contacts: C
         flex: 1,
         border: '1px solid',
         borderColor: 'divider',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         borderRadius: '24px',
         p: { xs: 3, md: 4 },
         display: tabValue === 2 ? 'block' : 'none',

@@ -12,7 +12,7 @@ export const PostItemSkeleton = ({
       gap: 2,
       width: '100%',
       display: 'flex',
-      bgcolor: 'white',
+      bgcolor: 'background.paper',
       p: { xs: 3, lg: 4 },
       borderRadius: '32px',
       flexDirection: { xs: 'column', lg: 'row' },

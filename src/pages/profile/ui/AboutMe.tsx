@@ -52,7 +52,7 @@ export const AboutMe = ({
       <Box
         sx={{
           height: '100%',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderRadius: '24px',
           borderColor: 'divider',
@@ -69,7 +69,7 @@ export const AboutMe = ({
       sx={{
         flex: 1,
         height: '100%',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
         p: { xs: 3, md: 4 },

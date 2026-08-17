@@ -43,6 +43,7 @@ type TaskFormProps = {
   setIsEdit: (isEdit: boolean) => void;
   handleSimpleSaveForm: (values: TaskFormType) => Promise<boolean>;
   onSubmit: (values: TaskFormType, status?: TaskStatus) => Promise<boolean>;
+  onCancelEdit?: () => void;
 };
 
 export const TaskForm = ({
@@ -58,6 +59,7 @@ export const TaskForm = ({
   isExecutorApprove,
   handleSimpleSaveForm,
   canChangeStatus = false,
+  onCancelEdit,
 }: TaskFormProps) => {
   const { id } = useAuthStore();
 
@@ -115,8 +117,9 @@ export const TaskForm = ({
   const handleCancelEdit = useCallback(() => {
     reset(editBaselineRef.current ?? mapTaskToForm(task));
     editBaselineRef.current = null;
+    onCancelEdit?.();
     setIsEdit(false);
-  }, [reset, setIsEdit, task]);
+  }, [onCancelEdit, reset, setIsEdit, task]);
 
   const handleSave = async () => {
     setIsSavingForm(true);
@@ -126,7 +129,7 @@ export const TaskForm = ({
 
       if (!isSaved) return;
 
-      setSnackbarOpen?.(true, 'Данные успешно сохранены');
+      setSnackbarOpen?.(true, 'Данные успешно сохранены', 'success');
       editBaselineRef.current = null;
       setIsEdit(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -166,7 +169,8 @@ export const TaskForm = ({
     if (!imagesLength && status === TASK_STATUS_ENUM.IN_PROGRESS) {
       setSnackbarOpen?.(
         true,
-        'Для проверки необходимо загрузить результат работы'
+        'Для проверки необходимо загрузить результат работы',
+        'warning'
       );
       return;
     }
@@ -215,7 +219,7 @@ export const TaskForm = ({
             status={status}
             isEdit={isEdit}
             isLoading={isLoading}
-            isSaving={isSavingForm}
+            isSaving={isSavingForm || isLoading}
             activities={activities}
             handleEdit={handleEdit}
             handleSave={handleSave}

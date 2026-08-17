@@ -9,6 +9,7 @@ import {
   ListItemAvatar,
   ListItemText,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -22,6 +23,7 @@ import { useAuthStore } from '@/features/auth';
 type MembersListProps = {
   members: ProfileMember[];
   onDelete: (member: ProfileMember) => void;
+  canDelete?: boolean;
 };
 
 const getInitials = (name: string) =>
@@ -42,7 +44,11 @@ const getMemberRoleLabel = (member: ProfileMember) => {
     : ProfileMemberKindLabels.MANAGER;
 };
 
-export const MembersList = ({ members, onDelete }: MembersListProps) => {
+export const MembersList = ({
+  members,
+  onDelete,
+  canDelete = false,
+}: MembersListProps) => {
   const accountId = useAuthStore(state => state.accountId);
 
   if (!members.length) {
@@ -77,14 +83,26 @@ export const MembersList = ({ members, onDelete }: MembersListProps) => {
             }}
             secondaryAction={
               member.membershipRole !== MemberRole.OWNER && (
-                <IconButton
-                  edge="end"
-                  color="error"
-                  aria-label={`Remove ${member.displayName}`}
-                  onClick={() => onDelete(member)}
+                <Tooltip
+                  title={
+                    canDelete
+                      ? ''
+                      : 'Отзывать доступ может только владелец профиля'
+                  }
+                  disableHoverListener={canDelete}
                 >
-                  <DeleteOutlined />
-                </IconButton>
+                  <span>
+                    <IconButton
+                      edge="end"
+                      color="error"
+                      disabled={!canDelete}
+                      aria-label={`Remove ${member.displayName}`}
+                      onClick={() => onDelete(member)}
+                    >
+                      <DeleteOutlined />
+                    </IconButton>
+                  </span>
+                </Tooltip>
               )
             }
           >

@@ -310,6 +310,12 @@ export const serializeTaskListParams = (
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined) continue
 
+    if (Array.isArray(value)) {
+      if (!value.length) continue
+      serialized[key] = value.join(',')
+      continue
+    }
+
     serialized[key] = value === null ? 'null' : String(value)
   }
 
@@ -660,20 +666,6 @@ export const useCreateTaskMutation = () => {
       )
 
       void queryClient.invalidateQueries({ queryKey: taskKeys.all })
-    },
-  })
-}
-
-export const useDeleteTaskMutation = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await mainAxios.delete(`/tasks/${id}`)
-    },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.all })
-      queryClient.removeQueries({ queryKey: taskKeys.detail(id) })
     },
   })
 }

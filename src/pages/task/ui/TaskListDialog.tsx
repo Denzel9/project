@@ -20,6 +20,7 @@ import {
   getUserName,
   usePostTasksQuery,
   type Task,
+  type TaskStatus,
 } from '@/entities';
 import { EmptyBlock } from '@/shared';
 
@@ -39,7 +40,7 @@ const TAB_QUERY_PARAMS: Record<
     limit: number;
     isArchived?: boolean;
     active?: boolean;
-    status?: string;
+    status?: TaskStatus;
   }
 > = {
   active: { page: 1, limit: 100, isArchived: false, active: true },

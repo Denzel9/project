@@ -11,7 +11,7 @@ export const SettingsSidebar = () => {
       sx={{
         p: 4,
         minWidth: 350,
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderRadius: '32px',
         borderColor: 'divider',

@@ -1,7 +1,7 @@
 import { useMediaQuery, useTheme } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   appendMessageToCache,
@@ -29,7 +29,9 @@ import {
   useMarkConversationUnreadMutation,
   useMessagePinsQuery,
   useMessagesQuery,
+  useLoadOlderChatMessages,
   usePinMessageMutation,
+  isMessageWindowDetached,
   validateChatMediaFile,
   type ChatConversation,
   type ChatMessage,
@@ -40,7 +42,7 @@ import {
 import { getUserName, useGetUserByIdQuery } from '@/entities/user'
 import { useAuthStore } from '@/features/auth'
 import chatSocket from '@/shared/api/socket'
-import { ROUTES } from '@/shared/config/routes'
+import { ROUTES, getChatPath } from '@/shared/config/routes'
 
 const CONNECTION_ERROR_MESSAGE =
   'Нет соединения с чатом. Попробуйте ещё раз.'
@@ -136,6 +138,7 @@ export const useMessenger = () => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
   const currentUserId = useAuthStore(state => state.id)
   const navigate = useNavigate()
+  const { id: routeConversationId } = useParams()
   const [searchParams] = useSearchParams()
   const recipientIdParam = searchParams.get('recipientId')
 
@@ -208,6 +211,22 @@ export const useMessenger = () => {
     markRead: false,
   })
 
+  const {
+    hasOlder,
+    hasNewer,
+    isLoadingOlder,
+    isLoadingNewer,
+    loadOlder,
+    loadNewer,
+    jumpToMessage: jumpToMessageInWindow,
+    resetToTail: resetMessageWindowToTail,
+  } = useLoadOlderChatMessages(
+    selectedConversationId,
+    historyMessages,
+    messagesLoading,
+    false,
+  )
+
   const { data: pinnedMessages = [] } =
     useMessagePinsQuery(selectedConversationId)
 
@@ -271,6 +290,11 @@ export const useMessenger = () => {
   const isMessagePinned = useCallback(
     (messageId: string) => pinnedMessageIds.has(messageId),
     [pinnedMessageIds],
+  )
+
+  const getMessagePinScope = useCallback(
+    (messageId: string) => pinnedByMessageId.get(messageId)?.scope ?? null,
+    [pinnedByMessageId],
   )
 
   const canUnpinMessage = useCallback(
@@ -367,6 +391,17 @@ export const useMessenger = () => {
     [queryClient],
   )
 
+  const closeConversation = useCallback(() => {
+    setSelectedConversationId(null)
+    setPendingPeer(null)
+    setLiveMessages([])
+    setPendingFiles([])
+    setDraft('')
+    setReplyToMessage(null)
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+  }, [])
+
   const openDraftChat = useCallback((peer: ChatPeer) => {
     openingUnreadCountRef.current = 0
     openingUnreadAnchorRef.current = null
@@ -416,8 +451,20 @@ export const useMessenger = () => {
     setPendingPeer(null)
     setSelectedConversationId(conversation.id)
     chatSocket.joinConversation(conversation.id)
+
+    if (routeConversationId !== conversation.id) {
+      navigate(getChatPath(conversation.id), { replace: true })
+    }
+
     return conversation.id
-  }, [createConversation, pendingPeer, queryClient, selectedConversationId])
+  }, [
+    createConversation,
+    navigate,
+    pendingPeer,
+    queryClient,
+    routeConversationId,
+    selectedConversationId,
+  ])
 
   useEffect(() => {
     if (!selectedConversationId || messagesLoading || !currentUserId) {
@@ -502,11 +549,17 @@ export const useMessenger = () => {
             : (message.isRead ?? false),
       })
 
-      appendMessageToCache(
-        queryClient,
+      const isDetachedWindow = isMessageWindowDetached(
         normalizedMessage.conversationId,
-        normalizedMessage,
       )
+
+      if (!isDetachedWindow) {
+        appendMessageToCache(
+          queryClient,
+          normalizedMessage.conversationId,
+          normalizedMessage,
+        )
+      }
       updateConversationLastMessage(
         queryClient,
         normalizedMessage.conversationId,
@@ -544,13 +597,15 @@ export const useMessenger = () => {
           }
         }
 
-        setLiveMessages(prev => {
-          if (prev.some(item => item.id === normalizedMessage.id)) {
-            return prev
-          }
+        if (!isDetachedWindow) {
+          setLiveMessages(prev => {
+            if (prev.some(item => item.id === normalizedMessage.id)) {
+              return prev
+            }
 
-          return [...prev, normalizedMessage]
-        })
+            return [...prev, normalizedMessage]
+          })
+        }
 
         return
       }
@@ -696,10 +751,36 @@ export const useMessenger = () => {
   }, [queryClient, currentUserId])
 
   useEffect(() => {
+    if (routeConversationId) {
+      if (routeConversationId !== selectedConversationId) {
+        selectConversation(routeConversationId)
+      }
+      return
+    }
+
+    if (recipientIdParam || isDesktop) {
+      return
+    }
+
+    if (selectedConversationId || pendingPeer) {
+      closeConversation()
+    }
+  }, [
+    closeConversation,
+    isDesktop,
+    pendingPeer,
+    recipientIdParam,
+    routeConversationId,
+    selectConversation,
+    selectedConversationId,
+  ])
+
+  useEffect(() => {
     if (
       isDesktop &&
       !selectedConversationId &&
       !pendingPeer &&
+      !routeConversationId &&
       conversations.length > 0 &&
       !recipientIdParam
     ) {
@@ -716,6 +797,7 @@ export const useMessenger = () => {
     conversations,
     pendingPeer,
     recipientIdParam,
+    routeConversationId,
     selectConversation,
     selectedConversationId,
   ])
@@ -733,10 +815,7 @@ export const useMessenger = () => {
 
     if (existing) {
       handledRecipientRef.current = recipientIdParam
-      setTimeout(() => {
-        selectConversation(existing.id)
-      }, 0)
-      navigate(ROUTES.CHATS, { replace: true })
+      navigate(getChatPath(existing.id), { replace: true })
       return
     }
 
@@ -768,7 +847,9 @@ export const useMessenger = () => {
         avatar: user.avatar ?? null,
         displayName: getUserName(user) || 'Пользователь',
       })
-      navigate(ROUTES.CHATS, { replace: true })
+      if (isDesktop) {
+        navigate(ROUTES.CHATS, { replace: true })
+      }
     }, 0)
   }, [
     recipientIdParam,
@@ -777,7 +858,7 @@ export const useMessenger = () => {
     recipientUserQuery.isLoading,
     recipientUserQuery.isFetching,
     recipientUserQuery.data,
-    selectConversation,
+    isDesktop,
     openDraftChat,
     navigate,
   ])
@@ -806,6 +887,19 @@ export const useMessenger = () => {
     setPendingFiles(prev => prev.filter((_, fileIndex) => fileIndex !== index))
   }, [])
 
+  const jumpToMessage = useCallback(
+    async (messageId: string) => {
+      setLiveMessages([])
+      return jumpToMessageInWindow(messageId)
+    },
+    [jumpToMessageInWindow],
+  )
+
+  const resetToTail = useCallback(async () => {
+    setLiveMessages([])
+    await resetMessageWindowToTail()
+  }, [resetMessageWindowToTail])
+
   const sendTextMessage = useCallback(
     async (
       content: string,
@@ -830,6 +924,10 @@ export const useMessenger = () => {
           return false
         }
 
+        if (isMessageWindowDetached(conversationId)) {
+          await resetToTail()
+        }
+
         chatSocket.connect()
         chatSocket.sendMessage({
           conversationId,
@@ -848,7 +946,7 @@ export const useMessenger = () => {
         setIsSendingMedia(false)
       }
     },
-    [ensureConversationId, pendingPeer, selectedConversationId],
+    [ensureConversationId, pendingPeer, resetToTail, selectedConversationId],
   )
 
   const sendMessage = useCallback(async () => {
@@ -886,6 +984,10 @@ export const useMessenger = () => {
         return
       }
 
+      if (isMessageWindowDetached(conversationId)) {
+        await resetToTail()
+      }
+
       const media = hasFiles
         ? await uploadConversationMediaBatch(conversationId, pendingFiles)
         : undefined
@@ -913,6 +1015,7 @@ export const useMessenger = () => {
     pendingFiles,
     pendingPeer,
     replyToMessage,
+    resetToTail,
     selectedConversationId,
   ])
 
@@ -1225,10 +1328,20 @@ export const useMessenger = () => {
     selectedConversation,
     selectedConversationId,
     selectConversation,
+    closeConversation,
     openDraftChat,
     messages,
+    hasOlderMessages: hasOlder,
+    hasNewerMessages: hasNewer,
+    isLoadingOlderMessages: isLoadingOlder,
+    isLoadingNewerMessages: isLoadingNewer,
+    loadOlderMessages: loadOlder,
+    loadNewerMessages: loadNewer,
+    jumpToMessage,
+    resetToTail,
     pinnedMessages,
     isMessagePinned,
+    getMessagePinScope,
     canUnpinMessage,
     onTogglePinMessage,
     unreadDividerMessageId,

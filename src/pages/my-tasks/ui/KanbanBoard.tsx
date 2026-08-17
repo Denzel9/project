@@ -215,7 +215,7 @@ export const KanbanBoard = forwardRef<KanbanBoardHandle, KanbanBoardProps>(
           minHeight: 0,
           width: '100%',
           display: 'flex',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           p: { xs: 1.5, md: 2 },
           borderRadius: '24px',
         }}

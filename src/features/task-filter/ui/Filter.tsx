@@ -14,7 +14,6 @@ import {
   Drawer,
   FormControlLabel,
   IconButton,
-  MenuItem,
   Popover,
   Stack,
   TextField,
@@ -25,14 +24,14 @@ import {
 import { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 
-import { TASK_STATUS_LABELS } from '@/entities';
+import { TASK_STATUS_LABELS, type TaskStatus } from '@/entities';
 import {
   getPartnerName,
   mapPartnerUserToRow,
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities/partner';
-import { useScroll, DateCalendarFilter, FilterAutocomplete } from '@/shared';
+import { useScroll, DateCalendarFilter, FilterAutocomplete, FilterStatusSelect } from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
@@ -45,8 +44,6 @@ import {
 } from './components/TaskFilterActionsMenu';
 import { TaskViewModeToggle } from './components/TaskViewModeToggle';
 import { MyTasksMobileFilter } from './MyTasksMobileFilter';
-
-import type { TaskStatusFilter } from '../model/utils';
 
 export type { TaskViewMode } from '../model/store';
 export type { FastButtonValueType } from '../model/utils';
@@ -154,7 +151,7 @@ export const MyTaskFilter = ({
       : onlyMyTasks || assigneeAccountId !== 'all';
 
     return (
-      (viewMode === 'grid' && status !== 'all') ||
+      (viewMode === 'grid' && status.length > 0) ||
       (viewMode !== 'table' && postId !== 'all') ||
       (viewMode !== 'table' && executorId !== 'all') ||
       extraFilter !== null ||
@@ -174,14 +171,14 @@ export const MyTaskFilter = ({
   ]);
 
   const hasMobileDrawerFilters =
-    (viewMode === 'grid' && status !== 'all') ||
+    (viewMode === 'grid' && status.length > 0) ||
     postId !== 'all' ||
     executorId !== 'all' ||
     updatedDate !== null ||
     extraFilter === 'urgent';
 
   const handleResetSelectFilters = () => {
-    setStatus('all');
+    setStatus([]);
     setPostId('all');
     setExecutorId('all');
     setExtraFilter(null);
@@ -206,7 +203,7 @@ export const MyTaskFilter = ({
         sx={{
           p: 2,
           mb: 1,
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
@@ -236,24 +233,17 @@ export const MyTaskFilter = ({
             }}
           >
             {isGridMode && (
-              <TextField
-                select
-                label="Статус"
+              <FilterStatusSelect
                 value={status}
-                size="small"
-                onChange={e => setStatus(e.target.value as TaskStatusFilter)}
+                options={Object.entries(TASK_STATUS_LABELS).map(
+                  ([value, label]) => ({
+                    value: value as TaskStatus,
+                    label,
+                  }),
+                )}
+                onChange={setStatus}
                 sx={{ flex: 1, width: '250px' }}
-              >
-                <MenuItem value="all">Все</MenuItem>
-                {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
-                  <MenuItem
-                    key={value}
-                    value={value}
-                  >
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             )}
 
 

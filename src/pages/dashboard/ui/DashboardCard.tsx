@@ -22,7 +22,7 @@ export const DashboardCard = ({
       sx={{
         gap: 1.5,
         width: '100%',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         display: 'flex',
         textAlign: 'left',
         cursor: 'pointer',

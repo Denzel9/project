@@ -83,7 +83,7 @@ export const MediaContent = ({ tabValue, userId, mediaTabValue }: MediaContentPr
         <Box
           sx={{
             height: '100%',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '32px',
             borderColor: 'divider',

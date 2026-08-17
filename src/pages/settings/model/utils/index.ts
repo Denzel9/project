@@ -22,6 +22,7 @@ export const parseRequestCreatorData = (data: AccountSchemaFormType, user: User)
         bio: data.bio || null,
         location: data.location || null,
         phone: getPhone(data.phone || '') || null,
+        email: data.email?.trim() || undefined,
         avatar: data.avatar || null,
         banner: data.banner || null,
         companyProfile: {

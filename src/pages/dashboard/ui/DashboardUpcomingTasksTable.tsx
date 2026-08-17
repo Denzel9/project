@@ -79,13 +79,13 @@ export const DashboardUpcomingTasksTable = ({
   const hasActiveCardsFilters =
     columnFilters.taskId !== 'all' ||
     columnFilters.personId !== 'all' ||
-    columnFilters.status !== 'all' ||
+    columnFilters.status.length > 0 ||
     columnFilters.urgentOnly;
 
   const handleResetCardsFilters = useCallback(() => {
     columnFilters.onTaskIdChange('all');
     columnFilters.onPersonIdChange('all');
-    columnFilters.onStatusChange('all');
+    columnFilters.onStatusChange([]);
     columnFilters.onUrgentOnlyChange(false);
   }, [columnFilters]);
   const { isPrime } = useAuthStore();
@@ -148,7 +148,7 @@ export const DashboardUpcomingTasksTable = ({
   const gridFilterInput = useMemo(
     () => ({
       isCompany,
-      ...(columnFilters.status !== 'all' && {
+      ...(columnFilters.status.length > 0 && {
         status: columnFilters.status,
       }),
       ...(columnFilters.taskId !== 'all' && {
@@ -292,7 +292,7 @@ export const DashboardUpcomingTasksTable = ({
         height: { xs: 'auto', lg: 600 },
         minHeight: { xs: 420, lg: 600 },
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         p: 2,
         borderRadius: '24px',

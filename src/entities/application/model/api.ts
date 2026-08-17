@@ -22,6 +22,17 @@ import type {
   UpdateApplicationStatusDto,
 } from './types'
 
+const serializeApplicationListParams = (params?: ApplicationListParams) => {
+  if (!params) return params
+
+  const { statuses, ...rest } = params
+
+  return {
+    ...rest,
+    ...(statuses?.length ? { statuses: statuses.join(',') } : {}),
+  }
+}
+
 export const applicationKeys = {
   all: ['applications'] as const,
   stats: () => [...applicationKeys.all, 'stats'] as const,
@@ -55,7 +66,7 @@ export const useMyApplicationsQuery = (
     queryFn: async () => {
       const { data } = await mainAxios.get<ApplicationList>(
         '/applications/mine',
-        { params },
+        { params: serializeApplicationListParams(params) },
       )
       return data
     },
@@ -85,7 +96,7 @@ export const useMyApplicationsInfiniteQuery = (
     queryFn: async ({ pageParam }) => {
       const { data } = await mainAxios.get<ApplicationList>(
         '/applications/mine',
-        { params: { ...params, page: pageParam, limit } },
+        { params: serializeApplicationListParams({ ...params, page: pageParam, limit }) },
       )
       return data
     },
@@ -181,7 +192,7 @@ export const useIncomingApplicationsQuery = (
     queryFn: async () => {
       const { data } = await mainAxios.get<ApplicationList>(
         '/applications/incoming',
-        { params },
+        { params: serializeApplicationListParams(params) },
       )
       return data
     },
@@ -194,7 +205,7 @@ export const fetchAllIncomingApplications = async (
   fetchAllPages(async (page, limit) => {
     const { data } = await mainAxios.get<ApplicationList>(
       '/applications/incoming',
-      { params: { ...params, page, limit } },
+      { params: serializeApplicationListParams({ ...params, page, limit }) },
     )
     return data
   })
@@ -205,7 +216,7 @@ export const fetchAllMyApplications = async (
   fetchAllPages(async (page, limit) => {
     const { data } = await mainAxios.get<ApplicationList>(
       '/applications/mine',
-      { params: { ...params, page, limit } },
+      { params: serializeApplicationListParams({ ...params, page, limit }) },
     )
     return data
   })
@@ -220,7 +231,7 @@ export const usePostApplicationsQuery = (
     queryFn: async () => {
       const { data } = await mainAxios.get<ApplicationList>(
         `/posts/${postId}/applications`,
-        { params },
+        { params: serializeApplicationListParams(params) },
       )
       return data
     },

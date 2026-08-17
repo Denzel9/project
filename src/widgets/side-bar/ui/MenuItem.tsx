@@ -12,6 +12,7 @@ import {
   getSidebarItemTextSx,
 } from './sidebarItemStyles';
 
+import { isSidebarRouteActive } from '../model/utils';
 import type { MenuRoute } from '../model/types/types';
 
 type MenuItemProps = {
@@ -45,12 +46,7 @@ export const MenuItem = ({
   onNavigate,
   badge = 0,
 }: MenuItemProps) => {
-  const getActivePath = () => {
-    if (pathname === '/' && route.path === '/') {
-      return '""';
-    }
-    return pathname.includes(route.path) && route.path !== '/' ? '""' : 'none';
-  };
+  const isActive = isSidebarRouteActive(pathname, route.path);
 
   return (
     <ListItemButton
@@ -62,7 +58,7 @@ export const MenuItem = ({
       sx={{
         ...getSidebarItemButtonSx(isOpenSideBar),
         ':after': {
-          content: getActivePath(),
+          content: isActive ? '""' : 'none',
           position: 'absolute',
           right: 0,
           width: '6px',

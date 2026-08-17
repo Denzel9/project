@@ -48,7 +48,15 @@ export const getTaskAnnulmentRequest = (
 export const hasTaskRequestStatusIcons = (
   task: Pick<
     Task,
-    'annulment' | 'annulments' | 'deadlineExtension' | 'deadlineExtensions'
+    | 'annulment'
+    | 'annulments'
+    | 'deadlineExtension'
+    | 'deadlineExtensions'
+    | 'isExecutorApprove'
   >,
 ): boolean =>
-  Boolean(getTaskDeadlineRequest(task) || getTaskAnnulmentRequest(task))
+  Boolean(
+    getTaskDeadlineRequest(task) ||
+      getTaskAnnulmentRequest(task) ||
+      task.isExecutorApprove === false,
+  )

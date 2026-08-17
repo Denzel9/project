@@ -1,17 +1,13 @@
 import { type UseFormGetValues } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 
-import {
-  useDeletePostMutation,
-  useUpdatePostMutation,
-} from '@/entities/post'
+import { useUpdatePostMutation } from '@/entities/post'
 import { ROUTES } from '@/shared'
 import { useSnackbarStore } from '@/widgets'
 
 import { type FormProductType } from '../model/schema/schema'
 
 export const MENU_ACTION = {
-  DELETE: 'Удалить',
   ADD_TO_ARCHIVE: 'Переместить в архив',
   REMOVE_FROM_ARCHIVE: 'Вернуть из архива',
   MAKE_PRIVATE: 'Сделать приватным',
@@ -33,7 +29,6 @@ export const useActions = ({
   isArchived = false,
   isPrivate = false,
 }: Props) => {
-  const { mutate: deleteApplication } = useDeletePostMutation()
   const { mutateAsync: updatePost } = useUpdatePostMutation()
   const { setSnackbarOpen } = useSnackbarStore()
   const navigate = useNavigate()
@@ -48,11 +43,6 @@ export const useActions = ({
 
   const handleOpenConfirmModal = () => {
     // dispatch(openModal({ type: ModalTypes.CONFIRM }))
-  }
-
-  const handleDelete = async () => {
-    if (!id) return
-    deleteApplication(id)
   }
 
   const handleAddToArchive = async () => {
@@ -83,7 +73,6 @@ export const useActions = ({
     if (!isEdit || !id) return []
 
     return [
-      MENU_ACTION.DELETE,
       isArchived
         ? MENU_ACTION.REMOVE_FROM_ARCHIVE
         : MENU_ACTION.ADD_TO_ARCHIVE,
@@ -92,11 +81,6 @@ export const useActions = ({
   })()
 
   const handleMenuAction = (action: string) => {
-    if (action === MENU_ACTION.DELETE) {
-      void handleDelete()
-      return
-    }
-
     if (action === MENU_ACTION.ADD_TO_ARCHIVE) {
       void handleAddToArchive()
       return
@@ -122,6 +106,5 @@ export const useActions = ({
     handleMenuAction,
     handleGoToPreview,
     handleOpenConfirmModal,
-    handleDelete,
   }
 }

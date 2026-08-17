@@ -6,3 +6,5 @@ export { PostItemSkeleton } from './ui/PostItemSkeleton';
 export { PostItemSkeletonList } from './ui/PostItemSkeleton';
 export { default as PostItem } from './ui/PostItem';
 export { Action } from './ui/Action';
+export { PostSelectionBar } from './ui/PostSelectionBar';
+export type { PostSelectionBarAction } from './ui/PostSelectionBar';

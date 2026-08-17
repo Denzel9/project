@@ -85,6 +85,8 @@ export const TaskItem = ({
           <Box
             component={Link}
             to={getTaskPath(task)}
+            target="_blank"
+            rel="noopener noreferrer"
             sx={{
               p: 1.25,
               width: isMultiGroupByPost ? 'calc(100% - 2px)' : '100%',
@@ -92,7 +94,8 @@ export const TaskItem = ({
               color: 'inherit',
               display: 'flex',
               flexDirection: 'column',
-              bgcolor: 'white',
+              justifyContent: 'space-between',
+              bgcolor: 'background.paper',
               borderRadius: '24px',
               textDecoration: 'none',
               border: '1px solid',
@@ -126,10 +129,16 @@ export const TaskItem = ({
                   <Whatshot sx={{ fontSize: 16, color: 'error.main', flexShrink: 0 }} />
                 )}
 
-
-                {groupByPost && multipleTasks > 0 && <NSTooltip title="Количество связанных задач">
-                  <Chip label={`+${multipleTasks}`} size="small" variant="outlined" color="primary" />
-                </NSTooltip>}
+                {groupByPost && multipleTasks > 0 &&
+                  <NSTooltip
+                    title="Количество связанных задач">
+                    <Chip
+                      label={`+${multipleTasks}`}
+                      size="small"
+                      variant="outlined"
+                      color="primary" />
+                  </NSTooltip>
+                }
 
                 <TaskRequestStatusIcons task={task} fontSize={16} spacing={0.5} />
               </Stack>
@@ -147,30 +156,23 @@ export const TaskItem = ({
             </Stack>
 
             <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}
+              direction="column"
             >
               <Typography
                 variant="caption"
                 color="text.secondary"
               >
-                {task.post?.title || 'Без названия'}
+                {(task.post?.title?.length || 0) > 40 ? task.post?.title?.slice(0, 40) + '...' : task.post?.title || 'Без названия'}
               </Typography>
 
-
+              <Tooltip title={task.title}>
+                <Typography
+                  variant="body2"
+                >
+                  {(task.title?.length || 0) > 50 ? task.title?.slice(0, 50) + '...' : task.title || 'Без названия'}
+                </Typography>
+              </Tooltip>
             </Stack>
-
-            <Tooltip title={task.title}>
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: 1,
-                }}
-              >
-                {task.title || 'Без названия'}
-              </Typography>
-            </Tooltip>
 
             <Stack
               direction="row"
@@ -233,7 +235,7 @@ export const TaskItem = ({
     height: isMultiGroupByPost ? 'calc(100% - 2px)' : '100%',
     color: 'inherit',
     display: 'flex',
-    bgcolor: 'white',
+    bgcolor: 'background.paper',
     flexDirection: 'column' as const,
     borderRadius: '24px',
     textDecoration: 'none',
@@ -273,6 +275,8 @@ export const TaskItem = ({
         <Box
           component={isSelectionMode ? 'div' : Link}
           to={isSelectionMode ? undefined : getTaskPath(task)}
+          target={isSelectionMode ? undefined : '_blank'}
+          rel={isSelectionMode ? undefined : 'noopener noreferrer'}
           onClick={handleCardClick}
           sx={cardSx}
         >

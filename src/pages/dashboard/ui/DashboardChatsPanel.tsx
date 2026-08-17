@@ -5,6 +5,7 @@ import {
   ChatOutlined,
   Close,
   FilterList,
+  KeyboardArrowDown,
   PushPinOutlined,
   Search,
 } from '@mui/icons-material';
@@ -58,6 +59,7 @@ import { useDashboardChatThread } from '../model/useDashboardChatThread';
 import type { UserSearchItem } from '@/entities/user';
 
 const DASHBOARD_CHATS_LIMIT = 8;
+const SCROLL_LOAD_THRESHOLD_PX = 80;
 
 export const DashboardChatsPanel = () => {
   const navigate = useNavigate();
@@ -81,6 +83,10 @@ export const DashboardChatsPanel = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevConversationIdRef = useRef<string | null>(null);
   const prevMessagesLengthRef = useRef(0);
+  const scrollRestoreHeightRef = useRef<number | null>(null);
+  const skipAutoScrollRef = useRef(false);
+  const pendingJumpIdRef = useRef<string | null>(null);
+  const pendingScrollToBottomRef = useRef(false);
 
   const hasActiveFilters = peerId !== 'all' || chatFilter !== 'all';
 
@@ -177,6 +183,14 @@ export const DashboardChatsPanel = () => {
 
   const {
     messages,
+    hasOlder,
+    hasNewer,
+    isLoadingOlder,
+    isLoadingNewer,
+    loadOlder,
+    loadNewer,
+    jumpToMessage,
+    resetToTail,
     isLoading: isThreadLoading,
     isError: isThreadError,
     refetch: refetchThread,
@@ -247,6 +261,8 @@ export const DashboardChatsPanel = () => {
   const handleJumpToPinnedMessage = useCallback((messageId: string) => {
     setPinnedDialogOpen(false);
     setIsThreadSearchOpen(false);
+    pendingJumpIdRef.current = messageId;
+    skipAutoScrollRef.current = true;
 
     const container = messagesContainerRef.current;
     const el = container?.querySelector(
@@ -255,8 +271,17 @@ export const DashboardChatsPanel = () => {
 
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pendingJumpIdRef.current = null;
+      return;
     }
-  }, []);
+
+    void jumpToMessage(messageId).then(found => {
+      if (!found) {
+        pendingJumpIdRef.current = null;
+        skipAutoScrollRef.current = false;
+      }
+    });
+  }, [jumpToMessage]);
 
   const handleSelectSearchMessage = useCallback(
     (message: ChatMessage) => {
@@ -285,8 +310,66 @@ export const DashboardChatsPanel = () => {
     });
   };
 
+  const handleLoadOlder = useCallback(() => {
+    const container = messagesContainerRef.current;
+
+    if (
+      !container ||
+      isLoadingOlder ||
+      !hasOlder ||
+      pendingJumpIdRef.current
+    ) {
+      return;
+    }
+
+    scrollRestoreHeightRef.current = container.scrollHeight;
+    skipAutoScrollRef.current = true;
+    void loadOlder();
+  }, [hasOlder, isLoadingOlder, loadOlder]);
+
+  const handleLoadNewer = useCallback(() => {
+    if (isLoadingNewer || !hasNewer || pendingJumpIdRef.current) return;
+
+    skipAutoScrollRef.current = true;
+    void loadNewer();
+  }, [hasNewer, isLoadingNewer, loadNewer]);
+
+  const handleScrollToLatest = useCallback(() => {
+    if (hasNewer) {
+      pendingScrollToBottomRef.current = true;
+      skipAutoScrollRef.current = false;
+      void resetToTail().catch(() => {
+        pendingScrollToBottomRef.current = false;
+      });
+      return;
+    }
+
+    scrollMessagesToBottom('smooth');
+  }, [hasNewer, resetToTail]);
+
   useLayoutEffect(() => {
     if (!selectedConversationId || isThreadLoading) return;
+
+    const container = messagesContainerRef.current;
+    const previousHeight = scrollRestoreHeightRef.current;
+
+    if (container && previousHeight != null && !isLoadingOlder) {
+      container.scrollTop = container.scrollHeight - previousHeight;
+      scrollRestoreHeightRef.current = null;
+      skipAutoScrollRef.current = false;
+      prevConversationIdRef.current = selectedConversationId;
+      prevMessagesLengthRef.current = messages.length;
+      return;
+    }
+
+    if (pendingScrollToBottomRef.current && !isThreadLoading) {
+      pendingScrollToBottomRef.current = false;
+      skipAutoScrollRef.current = false;
+      prevConversationIdRef.current = selectedConversationId;
+      prevMessagesLengthRef.current = messages.length;
+      scrollMessagesToBottom('auto');
+      return;
+    }
 
     const conversationChanged =
       prevConversationIdRef.current !== selectedConversationId;
@@ -295,15 +378,90 @@ export const DashboardChatsPanel = () => {
     prevConversationIdRef.current = selectedConversationId;
     prevMessagesLengthRef.current = messages.length;
 
+    if (skipAutoScrollRef.current) {
+      return;
+    }
+
     if (conversationChanged) {
       scrollMessagesToBottom('auto');
       return;
     }
 
-    if (messagesAdded) {
+    if (messagesAdded && !hasNewer) {
       scrollMessagesToBottom('smooth');
     }
-  }, [selectedConversationId, isThreadLoading, messages]);
+  }, [
+    selectedConversationId,
+    isThreadLoading,
+    isLoadingOlder,
+    hasNewer,
+    messages,
+  ]);
+
+  useLayoutEffect(() => {
+    const messageId = pendingJumpIdRef.current;
+
+    if (!messageId) return;
+
+    const el = messagesContainerRef.current?.querySelector(
+      `#dashboard-chat-message-${messageId}`,
+    ) as HTMLElement | null;
+
+    if (!el) return;
+
+    pendingJumpIdRef.current = null;
+    skipAutoScrollRef.current = false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [messages]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+
+    if (!container || !selectedConversationId) return;
+
+    const handleScroll = () => {
+      if (container.scrollTop <= SCROLL_LOAD_THRESHOLD_PX) {
+        handleLoadOlder();
+      }
+
+      const distanceToBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+
+      if (distanceToBottom <= SCROLL_LOAD_THRESHOLD_PX) {
+        handleLoadNewer();
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleLoadOlder, handleLoadNewer, selectedConversationId, messages.length]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+
+    if (
+      !container ||
+      !hasOlder ||
+      isLoadingOlder ||
+      isThreadLoading ||
+      messages.length === 0
+    ) {
+      return;
+    }
+
+    if (container.scrollHeight <= container.clientHeight + SCROLL_LOAD_THRESHOLD_PX) {
+      handleLoadOlder();
+    }
+  }, [
+    handleLoadOlder,
+    hasOlder,
+    isLoadingOlder,
+    isThreadLoading,
+    messages.length,
+  ]);
 
   useEffect(() => {
     if (selectedConversationId) return;
@@ -369,7 +527,7 @@ export const DashboardChatsPanel = () => {
         width: '100%',
         height: '600px',
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
         border: '1px solid',
         borderRadius: '24px',
@@ -598,6 +756,11 @@ export const DashboardChatsPanel = () => {
                 key={conversation.id}
                 conversation={conversation}
                 onSelect={() => setSelectedConversationId(conversation.id)}
+                onHidden={id => {
+                  if (id === selectedConversationId) {
+                    setSelectedConversationId(null)
+                  }
+                }}
               />
             ))}
         </Box>
@@ -608,11 +771,11 @@ export const DashboardChatsPanel = () => {
           spacing={1.5}
           sx={{ flex: 1, minHeight: 0 }}
         >
+          <Box sx={{ position: 'relative', flex: 1, minHeight: 0 }}>
           <Box
             ref={messagesContainerRef}
             sx={{
-              flex: 1,
-              minHeight: 0,
+              height: '100%',
               overflow: 'auto',
               pr: 0.5,
             }}
@@ -626,7 +789,7 @@ export const DashboardChatsPanel = () => {
                   px: 1.5,
                   py: 1.25,
                   mb: 1,
-                  bgcolor: 'common.white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: '16px',
@@ -684,6 +847,12 @@ export const DashboardChatsPanel = () => {
               </Box>
             )}
 
+            {isLoadingOlder && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 1.5 }}>
+                <CircularProgress size={20} />
+              </Box>
+            )}
+
             {isThreadLoading && (
               <Box
                 sx={{
@@ -737,6 +906,7 @@ export const DashboardChatsPanel = () => {
                     senderAvatar={selectedConversation.peer.avatar}
                     senderName={selectedConversation.peer.displayName}
                     isPinned={pinnedMessageIds.has(message.id)}
+                    pinScope={pinnedByMessageId.get(message.id)?.scope ?? null}
                     canUnpin={
                       pinnedByMessageId.get(message.id)?.pinnedById ===
                       currentUserId
@@ -746,6 +916,34 @@ export const DashboardChatsPanel = () => {
                   />
                 </Box>
               ))}
+
+            {isLoadingNewer && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 1.5 }}>
+                <CircularProgress size={20} />
+              </Box>
+            )}
+          </Box>
+
+          {hasNewer && (
+            <IconButton
+              aria-label="К последним сообщениям"
+              onClick={handleScrollToLatest}
+              sx={{
+                zIndex: 100,
+                position: 'absolute',
+                right: 12,
+                bottom: 12,
+                bgcolor: 'background.paper',
+                boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
+                '&:hover': {
+                  bgcolor: 'background.paper',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+                },
+              }}
+            >
+              <KeyboardArrowDown />
+            </IconButton>
+          )}
           </Box>
 
           <ChatInput

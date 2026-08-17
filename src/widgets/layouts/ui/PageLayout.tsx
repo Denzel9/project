@@ -62,7 +62,7 @@ export const PageLayout = ({
         spacing={{ xs: 1, md: 2 }}
         {...(printHide ? { 'data-print-hide': true } : {})}
         sx={{
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           p: { xs: 2, md: 2 },
           alignItems: 'center',

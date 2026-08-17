@@ -211,7 +211,7 @@ export const Action = ({
             {isSaveEnabled && (
               <Button
                 size="small"
-                sx={{ px: { xs: 2, md: 0 } }}
+                sx={{ px: { xs: 2, md: 'auto' } }}
                 variant="contained"
                 loading={isLoading}
                 disabled={
@@ -227,7 +227,7 @@ export const Action = ({
               <Button
                 size="small"
                 color="error"
-                sx={{ px: { xs: 2, md: 0 } }}
+                sx={{ px: { xs: 2, md: 'auto' } }}
                 variant="outlined"
                 loading={isLoading}
                 disabled={isLoading}
@@ -243,7 +243,7 @@ export const Action = ({
           <Button
             size="small"
             color="error"
-            sx={{ px: { xs: 2, md: 0 } }}
+            sx={{ px: { xs: 2, md: 'auto' } }}
             variant="outlined"
             disabled={isSaving}
             onClick={handleCancel}
@@ -258,7 +258,7 @@ export const Action = ({
               <Button
                 size="small"
                 color="primary"
-                sx={{ px: { xs: 2, md: 0 } }}
+                sx={{ px: { xs: 2, md: 'auto' } }}
                 variant="outlined"
                 loading={isSaving}
                 disabled={isSaving}
@@ -270,7 +270,7 @@ export const Action = ({
               <Button
                 size="small"
                 color="primary"
-                sx={{ px: { xs: 2, md: 0 } }}
+                sx={{ px: { xs: 2, md: 'auto' } }}
                 variant="outlined"
                 onClick={() => handleEdit(true)}
               >

@@ -30,10 +30,11 @@ export const SettingsLayout = () => {
         </Box>
 
         <Box
+          data-settings-scroll
           sx={{
             flex: 1,
             height: '100%',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             overflowY: 'auto',
             p: { xs: 3, md: 4 },
             border: '1px solid',

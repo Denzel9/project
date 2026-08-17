@@ -34,7 +34,7 @@ export const TaskStatusStepper = ({ status }: TaskStatusStepperProps) => {
     <Box
       sx={{
         mb: 1,
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderRadius: '32px',
         borderColor: 'divider',

@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams, Outlet } from 'react-router';
 
 import {
   copyTaskMediaToConversation,
@@ -17,7 +17,7 @@ import {
 import { fetchTaskById, type Task } from '@/entities/task';
 import { type UserSearchItem } from '@/entities/user';
 import { useMessenger, formatTaskTzForChat } from '@/features/chat';
-import { ROUTES, EmptyBlock } from '@/shared';
+import { ROUTES, EmptyBlock, getChatPath } from '@/shared';
 import {
   ChatAttachmentsPanel,
   ChatSearchPanel,
@@ -39,7 +39,6 @@ export const ChatPage = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
   const [isTaskTzOpen, setIsTaskTzOpen] = useState(false);
-  const [mobileShowChat, setMobileShowChat] = useState(false);
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
   const [isPhotoReportOpen, setIsPhotoReportOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
@@ -49,6 +48,7 @@ export const ChatPage = () => {
   const [forwardError, setForwardError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const { id: routeConversationId } = useParams();
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -60,9 +60,18 @@ export const ChatPage = () => {
     unreadDividerMessageId,
     pinnedMessages,
     isMessagePinned,
+    getMessagePinScope,
     canUnpinMessage,
     onTogglePinMessage,
     isLoading,
+    hasOlderMessages,
+    hasNewerMessages,
+    isLoadingOlderMessages,
+    isLoadingNewerMessages,
+    loadOlderMessages,
+    loadNewerMessages,
+    jumpToMessage,
+    resetToTail,
     sendMessage,
     sendTextMessage,
     deleteMessage,
@@ -93,6 +102,7 @@ export const ChatPage = () => {
     recipientIdParam,
     removePendingFile,
     selectConversation,
+    closeConversation,
     selectedConversation,
     isOpeningConversation,
     selectedConversationId,
@@ -127,17 +137,6 @@ export const ChatPage = () => {
     () => extractChatTaskTzMessages(messages).length > 0,
     [messages],
   );
-
-  useEffect(() => {
-    if (
-      (recipientIdParam && selectedConversationId) ||
-      (selectedConversation && !selectedConversationId)
-    ) {
-      setTimeout(() => {
-        setMobileShowChat(true);
-      }, 0);
-    }
-  }, [recipientIdParam, selectedConversation, selectedConversationId]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -192,11 +191,12 @@ export const ChatPage = () => {
   );
 
   const handleSelectConversation = (conversationId: string) => {
-    selectConversation(conversationId);
-
     if (isMobile) {
-      setMobileShowChat(true);
+      navigate(getChatPath(conversationId));
+      return;
     }
+
+    selectConversation(conversationId);
   };
 
   const handleStartChat = useCallback(
@@ -206,26 +206,32 @@ export const ChatPage = () => {
       );
 
       if (existing) {
+        if (isMobile) {
+          navigate(getChatPath(existing.id));
+          return;
+        }
+
         selectConversation(existing.id);
-      } else {
-        openDraftChat({
-          id: user.id,
-          role: user.role,
-          avatar: user.avatar,
-          displayName: user.displayName,
-        });
+        return;
       }
 
       if (isMobile) {
-        setMobileShowChat(true);
+        navigate(`${ROUTES.CHATS}?recipientId=${user.id}`);
+        return;
       }
+
+      openDraftChat({
+        id: user.id,
+        role: user.role,
+        avatar: user.avatar,
+        displayName: user.displayName,
+      });
     },
-    [conversations, isMobile, openDraftChat, selectConversation]
+    [conversations, isMobile, navigate, openDraftChat, selectConversation]
   );
 
   const handleBackToContacts = () => {
-    selectConversation('');
-    setMobileShowChat(false);
+    navigate(ROUTES.CHATS);
   };
 
   const handleOpenProfile = () => {
@@ -298,8 +304,12 @@ export const ChatPage = () => {
     [forwardMessage, forwardMessageIds, setSnackbarOpen],
   );
 
-  const showContacts = !isMobile || !mobileShowChat;
-  const showChatPanel = !isMobile || mobileShowChat;
+  const isMobileConversation = Boolean(
+    isMobile &&
+      (routeConversationId || recipientIdParam || selectedConversation),
+  );
+  const showContacts = !isMobile || !isMobileConversation;
+  const showChatPanel = !isMobile || isMobileConversation;
 
   const contactsConversations = useMemo(() => {
     if (
@@ -319,10 +329,10 @@ export const ChatPage = () => {
   const isEmpty =
     !isLoading &&
     !recipientIdParam &&
+    !routeConversationId &&
     !isOpeningConversation &&
     !selectedConversation &&
     !conversations.length;
-  const isMobileConversation = Boolean(isMobile && selectedConversation);
 
   if (isInitialLoading) {
     return (
@@ -351,7 +361,7 @@ export const ChatPage = () => {
             flex: 1,
             minHeight: 0,
             display: 'flex',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             p: { xs: 2, md: 4 },
             alignItems: 'center',
@@ -373,13 +383,13 @@ export const ChatPage = () => {
   return (
     <PageLayout
       isScreenHeight
-      withHeader={isMobile ? !selectedConversation : true}
+      withHeader={isMobile ? !isMobileConversation : true}
       sx={
         isMobileConversation
           ? {
             gap: 0,
             pr: 0,
-            bgcolor: 'common.white',
+            bgcolor: 'background.paper',
           }
           : undefined
       }
@@ -401,6 +411,18 @@ export const ChatPage = () => {
             selectedPeerId={selectedConversation?.peer.id ?? null}
             onSelect={handleSelectConversation}
             onStartChat={handleStartChat}
+            onConversationHidden={id => {
+              if (id !== selectedConversationId) {
+                return;
+              }
+
+              if (isMobile) {
+                navigate(ROUTES.CHATS);
+                return;
+              }
+
+              closeConversation();
+            }}
             isLoading={isLoading && conversations.length === 0}
           />
         )}
@@ -452,6 +474,7 @@ export const ChatPage = () => {
                 unreadDividerMessageId={unreadDividerMessageId}
                 pinnedMessages={pinnedMessages}
                 isMessagePinned={isMessagePinned}
+                getMessagePinScope={getMessagePinScope}
                 canUnpinMessage={canUnpinMessage}
                 onTogglePinMessage={onTogglePinMessage}
                 onSend={sendMessage}
@@ -486,6 +509,14 @@ export const ChatPage = () => {
                   selectedConversation?.sendBlockedReason ?? null
                 }
                 isLoading={isLoading && Boolean(selectedConversationId)}
+                hasOlder={hasOlderMessages}
+                isLoadingOlder={isLoadingOlderMessages}
+                onLoadOlder={loadOlderMessages}
+                hasNewer={hasNewerMessages}
+                isLoadingNewer={isLoadingNewerMessages}
+                onLoadNewer={loadNewerMessages}
+                onEnsureMessage={jumpToMessage}
+                onResetToTail={resetToTail}
                 onRetryError={retryError}
                 onDismissError={clearError}
                 focusMessageId={focusMessageId}
@@ -559,6 +590,7 @@ export const ChatPage = () => {
           />
         </>
       )}
+      <Outlet />
     </PageLayout>
   );
 };

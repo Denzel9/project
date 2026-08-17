@@ -80,18 +80,32 @@ export const TaskPage = () => {
       task => task.status === TASK_STATUS_ENUM.ANNULLED
     ) || [];
 
-  const groupedTasks = useMemo(
-    () =>
-      activeTasks.reduce(
-        (acc, task) => {
-          const key = getTaskUserKey(task);
-          acc[key] = [...(acc[key] || []), task];
-          return acc;
-        },
-        {} as Record<string, Task[]>
-      ),
-    [activeTasks]
-  );
+  const groupedTasks = useMemo(() => {
+    const groups = activeTasks.reduce(
+      (acc, task) => {
+        const key = getTaskUserKey(task);
+        acc[key] = [...(acc[key] || []), task];
+        return acc;
+      },
+      {} as Record<string, Task[]>
+    );
+
+    if (
+      currentTask &&
+      !currentTask.isArchived &&
+      (currentTask.status === TASK_STATUS_ENUM.ANNULLED ||
+        currentTask.status === TASK_STATUS_ENUM.COMPLETED)
+    ) {
+      const key = getTaskUserKey(currentTask);
+      const existing = groups[key] ?? [];
+
+      if (!existing.some(task => task.id === currentTask.id)) {
+        groups[key] = [...existing, currentTask];
+      }
+    }
+
+    return groups;
+  }, [activeTasks, currentTask]);
 
   const handleChangeExecutor = (executorKey: string) => {
     const executorTasks = groupedTasks[executorKey];

@@ -1,7 +1,8 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Divider, Stack } from '@mui/material';
+import axios from 'axios';
 import { useEffect } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 
 import {
   useGetUserByIdQuery,
@@ -14,6 +15,7 @@ import {
 } from '@/entities';
 import { useAuthStore } from '@/features';
 import { queryClient } from '@/shared/api';
+import { scrollSettingsToTop } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 import {
@@ -86,6 +88,17 @@ export const SettingsAccountPage = () => {
     });
   }, [setValue, user, isManager]);
 
+  const onInvalid = (errors: FieldErrors<AccountSchemaFormType>) => {
+    const firstError = Object.values(errors)[0];
+    const message =
+      typeof firstError?.message === 'string'
+        ? firstError.message
+        : 'Проверьте правильность заполнения полей';
+
+    setSnackbarOpen?.(true, message, 'error');
+    scrollSettingsToTop('smooth');
+  };
+
   const onSubmit = async (data: AccountSchemaFormType) => {
     try {
       if (isManager) {
@@ -97,24 +110,26 @@ export const SettingsAccountPage = () => {
           } as never,
         });
         await queryClient.invalidateQueries({ queryKey: ['profiles'] });
-        setSnackbarOpen?.(true, 'Данные успешно обновлены');
+        setSnackbarOpen?.(true, 'Данные успешно обновлены', 'success');
+        scrollSettingsToTop('smooth');
         return;
       }
 
-      if (user?.data?.companyProfile) {
-        const res = await updateUser(parseRequestCreatorData(data, user?.data));
-        if (res.data) {
-          setSnackbarOpen?.(true, 'Данные успешно обновлены');
-        }
-      } else {
-        const res = await updateUser(
-          parseRequestCreatorData(data, user?.data as User)
-        );
-        if (res.data) {
-          setSnackbarOpen?.(true, 'Данные успешно обновлены');
-        }
-      }
+      await updateUser(parseRequestCreatorData(data, user?.data as User));
+      setSnackbarOpen?.(true, 'Данные успешно обновлены', 'success');
+      scrollSettingsToTop('smooth');
     } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+
+      setSnackbarOpen?.(
+        true,
+        typeof message === 'string'
+          ? message
+          : 'Не удалось сохранить изменения',
+        'error'
+      );
       console.error(error);
     }
   };
@@ -125,7 +140,7 @@ export const SettingsAccountPage = () => {
       divider={<Divider />}
     >
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
           {isManager ? (
             <ManagerAccountSection user={user?.data} />
           ) : (

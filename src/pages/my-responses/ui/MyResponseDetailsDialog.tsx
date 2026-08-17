@@ -28,8 +28,8 @@ import {
 import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { getUserName, UserDisplayName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
-import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
+import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
 
 type MyResponseDetailsDialogProps = {
   open: boolean;
@@ -119,7 +119,7 @@ export const MyResponseDetailsDialog = ({
             bgcolor: 'secondary.main',
             zIndex: 1,
             ':hover': {
-              bgcolor: 'common.white',
+              bgcolor: 'background.paper',
             },
           }}
         >
@@ -141,7 +141,7 @@ export const MyResponseDetailsDialog = ({
               sx={{
                 p: { xs: 2, md: 2.5 },
                 borderRadius: '28px',
-                bgcolor: 'common.white',
+                bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
                 alignItems: { xs: 'stretch', md: 'center' },
@@ -262,7 +262,7 @@ export const MyResponseDetailsDialog = ({
                   px: 2,
                   py: 1.5,
                   borderRadius: '20px',
-                  bgcolor: 'common.white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                   alignItems: 'center',
@@ -289,7 +289,7 @@ export const MyResponseDetailsDialog = ({
                   flex: 1.4,
                   minWidth: 0,
                   borderRadius: '28px',
-                  bgcolor: 'common.white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                 }}
@@ -299,7 +299,7 @@ export const MyResponseDetailsDialog = ({
                   color="text.secondary"
                   sx={{ mb: 2 }}
                 >
-                  Сообщение отклика
+                  Сопроводительное письмо
                 </Typography>
                 <Typography
                   variant="body1"
@@ -320,7 +320,7 @@ export const MyResponseDetailsDialog = ({
                   p: 2,
                   flex: 1,
                   borderRadius: '28px',
-                  bgcolor: 'common.white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                   minWidth: 0,
@@ -392,7 +392,7 @@ export const MyResponseDetailsDialog = ({
                   p: 2,
                   flexWrap: 'wrap',
                   borderRadius: '24px',
-                  bgcolor: 'common.white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                   justifyContent: { xs: 'stretch', sm: 'flex-end' },

@@ -28,7 +28,7 @@ export const ManageApplicationPage = () => {
         sx={{
           p: { xs: 2, md: 4 },
           width: '100%',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: { xs: '24px', md: '32px' },
         }}
       >

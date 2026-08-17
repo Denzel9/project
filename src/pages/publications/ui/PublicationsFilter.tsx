@@ -120,7 +120,7 @@ export const PublicationsFilter = ({
           p: 2,
           gap: 2,
           mb: 1,
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           alignItems: 'center',
           borderRadius: '24px',
           transition: 'all 0.3s ease',
@@ -170,8 +170,6 @@ export const PublicationsFilter = ({
             selectedOption={selectedExecutorOption}
           />
 
-          {linksButton}
-
           {hasActiveFilters && (
             <Chip
               label="Сбросить"
@@ -180,6 +178,8 @@ export const PublicationsFilter = ({
               sx={{ flexShrink: 0 }}
             />
           )}
+
+          {linksButton}
         </Stack>
 
         {isGridMode && (
@@ -205,16 +205,18 @@ export const PublicationsFilter = ({
           </Stack>
         )}
 
-        {isTableMode && linksButton}
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {isTableMode && hasActiveFilters && (
+            <Chip
+              label="Сбросить"
+              variant="outlined"
+              onClick={onResetFilters}
+              sx={{ flexShrink: 0 }}
+            />
+          )}
 
-        {isTableMode && hasActiveFilters && (
-          <Chip
-            label="Сбросить"
-            variant="outlined"
-            onClick={onResetFilters}
-            sx={{ flexShrink: 0 }}
-          />
-        )}
+          {isTableMode && linksButton}
+        </Stack>
 
         <Stack
           direction="row"

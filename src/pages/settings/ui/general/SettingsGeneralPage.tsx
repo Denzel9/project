@@ -1,12 +1,22 @@
-import { Button, Chip, CircularProgress, Stack, Typography } from '@mui/material';
+import {
+  Button,
+  Chip,
+  CircularProgress,
+  Divider,
+  Stack,
+  Switch,
+  Typography,
+} from '@mui/material';
 import axios from 'axios';
 
+import { useThemeMode } from '@/app/providers/ThemeModeProvider';
 import { useAuthStore, useSendConfirmEmailMutation } from '@/features/auth';
 import { useSnackbarStore } from '@/widgets';
 
 import { SettingsRow } from '../SettingsRow';
 
 export const SettingsGeneralPage = () => {
+  const { mode, setMode } = useThemeMode();
   const { isEmailConfirmed } = useAuthStore();
   const { setSnackbarOpen } = useSnackbarStore();
   const { mutateAsync: sendConfirmEmail, isPending } =
@@ -17,7 +27,8 @@ export const SettingsGeneralPage = () => {
       const { data } = await sendConfirmEmail();
       setSnackbarOpen?.(
         true,
-        data.message || 'Письмо для подтверждения почты отправлено'
+        data.message || 'Письмо для подтверждения почты отправлено',
+        'success'
       );
     } catch (error) {
       const message = axios.isAxiosError(error)
@@ -25,7 +36,8 @@ export const SettingsGeneralPage = () => {
         : null;
       setSnackbarOpen?.(
         true,
-        typeof message === 'string' ? message : 'Не удалось отправить письмо'
+        typeof message === 'string' ? message : 'Не удалось отправить письмо',
+        'error'
       );
     }
   };
@@ -82,6 +94,19 @@ export const SettingsGeneralPage = () => {
           >
             Верифицировать
           </Button>
+        }
+      />
+
+      <Divider />
+
+      <SettingsRow
+        title="Тёмная тема"
+        description="Тёмное оформление интерфейса"
+        action={
+          <Switch
+            checked={mode === 'dark'}
+            onChange={(_, checked) => setMode(checked ? 'dark' : 'light')}
+          />
         }
       />
     </Stack>

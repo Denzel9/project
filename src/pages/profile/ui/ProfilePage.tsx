@@ -37,7 +37,6 @@ export const ProfilePage = () => {
   );
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
-  // У менеджера нет своей витрины — только просмотр чужих профилей
   if (isManager && isOwnProfile) {
     return (
       <Navigate

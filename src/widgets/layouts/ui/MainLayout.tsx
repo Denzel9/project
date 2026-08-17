@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { SideBar } from '@widgets/side-bar';
 import { lazy, Suspense, useRef } from 'react';
 
-import { useScrollToTop } from '@/shared';
+import { RouteSuspense, useScrollToTop } from '@/shared';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
 import { ManagerShellRedirect } from './ManagerShellRedirect';
@@ -12,12 +12,6 @@ import type { ReactNode } from 'react';
 const AuthModal = lazy(() =>
   import('@/features/auth/ui/AuthModal').then(module => ({
     default: module.AuthModal,
-  }))
-);
-
-const GlobalDeletePostDialog = lazy(() =>
-  import('@/features/delete-post/ui/GlobalDeletePostDialog').then(module => ({
-    default: module.GlobalDeletePostDialog,
   }))
 );
 
@@ -36,7 +30,7 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
       sx={{
         display: 'flex',
         gap: { xs: 0, md: .5 },
-        bgcolor: 'rgb(244, 244, 244)',
+        bgcolor: 'background.default',
       }}
     >
       <ManagerShellRedirect />
@@ -80,14 +74,13 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
             },
           }}
         >
-          {children}
+          <RouteSuspense>{children}</RouteSuspense>
         </Box>
       </Box>
 
       <Suspense fallback={null}>
         <AuthModal />
         <AddToCollectionDialog />
-        <GlobalDeletePostDialog />
       </Suspense>
     </Box>
   );

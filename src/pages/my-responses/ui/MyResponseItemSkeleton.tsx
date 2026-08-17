@@ -5,7 +5,7 @@ export const MyResponseItemSkeleton = () => (
     sx={{
       height: '100%',
       overflow: 'hidden',
-      bgcolor: 'white',
+      bgcolor: 'background.paper',
       borderRadius: '24px',
       border: '1px solid',
       borderColor: 'divider',

@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { USER_ROLE } from '@/entities';
 import {
+  MemberRole,
   type ProfileMember,
   useGetProfileMembersQuery,
 } from '@/entities/workspace-member';
@@ -22,8 +23,10 @@ export const SettingsMembersPage = () => {
 
   const isPrime = useAuthStore(state => state.isPrime);
   const role = useAuthStore(state => state.role);
+  const membershipRole = useAuthStore(state => state.membershipRole);
   const canAdd =
     role === USER_ROLE.CREATOR || (role === USER_ROLE.COMPANY && isPrime);
+  const canDelete = membershipRole === MemberRole.OWNER;
 
   const { data: members = [], isLoading, isError } =
     useGetProfileMembersQuery();
@@ -73,6 +76,7 @@ export const SettingsMembersPage = () => {
       {!isLoading && !isError && members.length > 0 && (
         <MembersList
           members={members}
+          canDelete={canDelete}
           onDelete={setMemberToDelete}
         />
       )}

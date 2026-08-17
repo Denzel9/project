@@ -32,7 +32,7 @@ import {
 import { useNavigate } from 'react-router';
 
 import { useUpdatePostMutation, type Post } from '@/entities';
-import { useDeletePostDialogStore, useRequireEmailConfirmed } from '@/features';
+import { useRequireEmailConfirmed } from '@/features';
 import {
   TASK_TABLE_MIN_WIDTH,
   TASK_TABLE_PAGE_SIZE,
@@ -107,7 +107,6 @@ const PostRowActions = ({ post }: { post: Post }) => {
   const { mutateAsync: updatePost, isPending } = useUpdatePostMutation();
   const { setSnackbarOpen } = useSnackbarStore();
   const { requireEmailConfirmed } = useRequireEmailConfirmed();
-  const { openDeletePostDialog } = useDeletePostDialogStore();
 
   const closeMenu = () => setAnchorEl(null);
 
@@ -156,17 +155,6 @@ const PostRowActions = ({ post }: { post: Post }) => {
           }}
         >
           Редактировать
-        </MenuItem>
-        <Divider sx={{ my: 0.5 }} />
-        <MenuItem
-          sx={{ fontSize: 14 }}
-          onClick={() => {
-            closeMenu();
-            if (!requireEmailConfirmed()) return;
-            openDeletePostDialog(post.id);
-          }}
-        >
-          Удалить
         </MenuItem>
       </Menu>
     </>
@@ -372,7 +360,7 @@ export const ArchivedPostTable = ({
           height: '100%',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '24px',
           width: '100%',
         }}
@@ -390,7 +378,7 @@ export const ArchivedPostTable = ({
         ...(forPrint
           ? {
             height: 'auto',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             display: 'block',
             overflow: 'visible',
           }
@@ -399,7 +387,7 @@ export const ArchivedPostTable = ({
             minHeight: 0,
             height: '100%',
             display: 'flex',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             overflow: 'hidden',
             flexDirection: 'column',
             borderRadius: '24px',

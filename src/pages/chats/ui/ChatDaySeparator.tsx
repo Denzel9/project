@@ -21,7 +21,7 @@ export const ChatDaySeparator = ({ label }: ChatDaySeparatorProps) => (
         height: 28,
         fontSize: 12,
         fontWeight: 600,
-        bgcolor: 'common.white',
+        bgcolor: 'background.paper',
         color: 'text.secondary',
         border: '1px solid',
         borderColor: 'divider',

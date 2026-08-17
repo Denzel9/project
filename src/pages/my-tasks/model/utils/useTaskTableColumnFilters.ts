@@ -11,7 +11,7 @@ type ControlledField<T> = {
 
 type UseTaskTableColumnFiltersOptions = {
   isCompany: boolean
-  status?: ControlledField<TaskStatus | 'all'>
+  status?: ControlledField<TaskStatus[]>
   personId?: ControlledField<string>
   urgentOnly?: ControlledField<boolean>
   updatedDate?: ControlledField<string | null>
@@ -24,7 +24,7 @@ export const useTaskTableColumnFilters = ({
   urgentOnly: urgentOnlyControl,
   updatedDate: updatedDateControl,
 }: UseTaskTableColumnFiltersOptions) => {
-  const [localStatus, setLocalStatus] = useState<TaskStatus | 'all'>('all')
+  const [localStatus, setLocalStatus] = useState<TaskStatus[]>([])
   const [taskId, setTaskId] = useState('all')
   const [taskQuery, setTaskQuery] = useState('')
   const [localPersonId, setLocalPersonId] = useState('all')
@@ -53,7 +53,7 @@ export const useTaskTableColumnFilters = ({
   }, [])
 
   const resetFilters = useCallback(() => {
-    onStatusChange('all')
+    onStatusChange([])
     setTaskId('all')
     setTaskQuery('')
     onPersonIdChange('all')
@@ -69,7 +69,7 @@ export const useTaskTableColumnFilters = ({
   ])
 
   const hasActiveFilters =
-    status !== 'all' ||
+    status.length > 0 ||
     taskId !== 'all' ||
     Boolean(taskQuery.trim()) ||
     personId !== 'all' ||

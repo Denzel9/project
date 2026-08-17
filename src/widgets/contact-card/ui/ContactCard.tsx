@@ -50,7 +50,7 @@ type ContactCardProps = {
 const cardSx = {
   width: '100%',
   height: 'fit-content',
-  bgcolor: 'white',
+  bgcolor: 'background.paper',
   borderRadius: '32px',
   p: 2,
   border: '1px solid',
@@ -76,6 +76,7 @@ export const ContactCard = ({
   const roleLabel =
     roleLabelProp ?? (isMyPost ? 'Исполнитель' : 'Заказчик');
   const isAwaitingExecutorApproval = isExecutorApprove === null && isMyPost;
+  const isExecutorRejected = isExecutorApprove === false && isMyPost;
 
   if (!contact) {
     if (isContactLoading) {
@@ -256,6 +257,25 @@ export const ContactCard = ({
             sx={{ color: 'primary.main', fontWeight: 500 }}
           >
             Ожидается подтверждение от исполнителя
+          </Typography>
+        </Box>
+      )}
+
+      {isExecutorRejected && (
+        <Box
+          sx={{
+            mb: 2.5,
+            p: 1.5,
+            borderRadius: '16px',
+            bgcolor: 'error.light',
+            textAlign: 'center',
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: 'white', fontWeight: 500 }}
+          >
+            Исполнитель отказался от задачи
           </Typography>
         </Box>
       )}

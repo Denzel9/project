@@ -32,7 +32,16 @@ export const accountSchema = yup.object().shape({
   bio: yup.string().default('').optional().nullable(),
   aboutMe: yup.string().default('').optional().nullable(),
   location: yup.string().default('').optional().nullable(),
-  email: yup.string().email().default('').optional(),
+  email: yup
+    .string()
+    .default('')
+    .optional()
+    .nullable()
+    .test(
+      'email',
+      'Неверный email',
+      value => !value || yup.string().email().isValidSync(value)
+    ),
   phone: yup.string().test('phone', 'Неверный номер телефона', validatePhone).default('').optional().nullable(),
 
   height: yup.string().default('').optional().nullable(),
@@ -51,8 +60,26 @@ export const accountSchema = yup.object().shape({
     .optional()
     .nullable(),
 
-  avatar: yup.string().url().default('').optional().nullable(),
-  banner: yup.string().url().default('').optional().nullable(),
+  avatar: yup
+    .string()
+    .default('')
+    .optional()
+    .nullable()
+    .test(
+      'avatar-url',
+      'Неверный URL аватара',
+      value => !value || yup.string().url().isValidSync(value)
+    ),
+  banner: yup
+    .string()
+    .default('')
+    .optional()
+    .nullable()
+    .test(
+      'banner-url',
+      'Неверный URL баннера',
+      value => !value || yup.string().url().isValidSync(value)
+    ),
 });
 
 export const defaultAccountSchemaValues = accountSchema.getDefault();

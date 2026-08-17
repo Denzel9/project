@@ -12,9 +12,10 @@ import {
   InputAdornment,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material';
 import {
+  lazy,
+  Suspense,
   useRef,
   useState,
   type ChangeEvent,
@@ -24,7 +25,11 @@ import {
 
 import { CHAT_MEDIA_ACCEPT } from '@/entities';
 
-import { ChatEmojiPicker } from './ChatEmojiPicker';
+const ChatEmojiPicker = lazy(() =>
+  import('./ChatEmojiPicker').then(module => ({
+    default: module.ChatEmojiPicker,
+  })),
+);
 
 type ChatInputProps = {
   value: string;
@@ -111,7 +116,7 @@ export const ChatInput = ({
         <Stack
           spacing={2}
           direction="row"
-          sx={{ flexWrap: 'wrap' }}
+          sx={{ overflowX: 'scroll', scrollbarWidth: 'none', pt: 2 }}
         >
           {pendingFiles.map((file, index) => {
             const isImage = file.type.startsWith('image/');
@@ -123,8 +128,8 @@ export const ChatInput = ({
                 direction="row"
                 key={`${file.name}-${index}`}
                 sx={{
-                  py: 1,
-                  px: 1.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
                   maxWidth: 220,
                   borderRadius: '12px',
                   alignItems: 'center',
@@ -152,27 +157,12 @@ export const ChatInput = ({
                   />
                 )}
 
-                <Typography
-                  variant="caption"
-                  title={file.name}
-                  sx={{
-                    minWidth: 0,
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    pr: 2,
-                  }}
-                >
-                  {file.name}
-                </Typography>
-
                 <IconButton
                   size="small"
                   color="inherit"
                   aria-label="Удалить файл"
                   onClick={() => onRemoveFile(index)}
-                  sx={{ position: 'absolute', right: -4, top: -4 }}
+                  sx={{ position: 'absolute', right: -15, top: -15 }}
                 >
                   <DeleteOutlined color="error" />
                 </IconButton>
@@ -250,12 +240,16 @@ export const ChatInput = ({
         }}
       />
 
-      <ChatEmojiPicker
-        anchorEl={emojiAnchor}
-        open={Boolean(emojiAnchor)}
-        onClose={() => setEmojiAnchor(null)}
-        onEmojiSelect={insertEmoji}
-      />
+      {Boolean(emojiAnchor) && (
+        <Suspense fallback={null}>
+          <ChatEmojiPicker
+            anchorEl={emojiAnchor}
+            open
+            onClose={() => setEmojiAnchor(null)}
+            onEmojiSelect={insertEmoji}
+          />
+        </Suspense>
+      )}
     </Stack>
   );
 };

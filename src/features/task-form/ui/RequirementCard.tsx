@@ -65,7 +65,7 @@ export const RequirementCard = ({
             borderRadius: '12px',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             color: error ? 'error.main' : 'primary.main',
             flexShrink: 0,
           }}

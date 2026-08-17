@@ -8,12 +8,16 @@ import {
   mapPartnerUserToRow,
   normalizePartnerUser,
   usePartnerApplicantsQuery,
+  type ApplicationStatus,
 } from '@/entities'
-import { FilterAutocomplete } from '@/shared'
+import { FilterAutocomplete, FilterStatusSelect } from '@/shared'
 
 import { useMyPostFilterStore } from '../model/store'
 
-import type { ApplicationStatusFilter } from '../model/utils'
+import {
+  DEFAULT_APPLICATION_STATUS_FILTER,
+  type ApplicationStatusFilter,
+} from '../model/utils'
 
 type Draft = {
   status: ApplicationStatusFilter
@@ -59,8 +63,8 @@ export const PostsResponsesMobileFilter = ({
 
   const statusOptions = useMemo(
     () =>
-      Object.entries(APPLICATION_STATUS_LABELS).map(([id, label]) => ({
-        id,
+      Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
+        value: value as ApplicationStatus,
         label,
       })),
     [],
@@ -95,12 +99,14 @@ export const PostsResponsesMobileFilter = ({
   }
 
   const handleReset = () => {
+    const nextStatus = [...DEFAULT_APPLICATION_STATUS_FILTER]
+
     setDraft({
-      status: 'all',
+      status: nextStatus,
       postId: 'all',
       userId: 'all',
     })
-    setStatus('all')
+    setStatus(nextStatus)
     setPostId('all')
     setUserId('all')
     onClose()
@@ -131,14 +137,14 @@ export const PostsResponsesMobileFilter = ({
         </Stack>
 
         <Stack spacing={3}>
-          <FilterAutocomplete
+          <FilterStatusSelect
             label="Статус"
             value={draft.status}
             options={statusOptions}
             onChange={value =>
               setDraft(prev => ({
                 ...prev,
-                status: value as ApplicationStatusFilter,
+                status: value,
               }))
             }
             sx={{ width: '100%' }}

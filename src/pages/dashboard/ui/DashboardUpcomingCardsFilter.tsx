@@ -15,25 +15,25 @@ import {
 } from '@/entities/partner';
 import { COLUMN_FILTER_SEARCH_MIN } from '@/pages/my-tasks/model/constants/constants';
 import { getTaskTitle } from '@/pages/my-tasks/model/utils/utils';
-import { FilterAutocomplete, type FilterAutocompleteOption } from '@/shared';
+import { FilterAutocomplete, FilterStatusSelect, type FilterAutocompleteOption } from '@/shared';
 
 type DashboardUpcomingCardsFilterProps = {
   isCompany: boolean;
   open: boolean;
   taskId: string;
   personId: string;
-  status: TaskStatus | 'all';
+  status: TaskStatus[];
   urgentOnly: boolean;
   onTaskIdChange: (taskId: string) => void;
   onPersonIdChange: (personId: string) => void;
-  onStatusChange: (status: TaskStatus | 'all') => void;
+  onStatusChange: (status: TaskStatus[]) => void;
   onUrgentOnlyChange: (urgentOnly: boolean) => void;
   onReset: () => void;
 };
 
-const STATUS_OPTIONS: FilterAutocompleteOption[] = Object.entries(
-  TASK_STATUS_LABELS
-).map(([id, label]) => ({ id, label }));
+const STATUS_OPTIONS = Object.entries(TASK_STATUS_LABELS).map(
+  ([value, label]) => ({ value: value as TaskStatus, label }),
+);
 
 export const DashboardUpcomingCardsFilterToggle = ({
   open,
@@ -125,7 +125,7 @@ export const DashboardUpcomingCardsFilter = ({
   const hasActiveFilters =
     taskId !== 'all' ||
     personId !== 'all' ||
-    status !== 'all' ||
+    status.length > 0 ||
     urgentOnly;
 
   const selectedTaskTitle =
@@ -137,9 +137,6 @@ export const DashboardUpcomingCardsFilter = ({
     selectedPersonOption?.id === personId
       ? selectedPersonOption.label
       : personOptions.find(option => option.id === personId)?.label;
-
-  const selectedStatusLabel =
-    status === 'all' ? null : (TASK_STATUS_LABELS[status] ?? status);
 
   const handleReset = () => {
     setSelectedTaskOption(null);
@@ -215,14 +212,11 @@ export const DashboardUpcomingCardsFilter = ({
           sx={{ flex: 1, minWidth: { xs: '100%', sm: 160 } }}
         />
 
-        <FilterAutocomplete
+        <FilterStatusSelect
           size="small"
-          label="Статус"
           value={status}
           options={STATUS_OPTIONS}
-          onChange={id =>
-            onStatusChange(id === 'all' ? 'all' : (id as TaskStatus))
-          }
+          onChange={onStatusChange}
           sx={{ flex: 1, minWidth: { xs: '100%', sm: 140 } }}
         />
 
@@ -252,7 +246,6 @@ export const DashboardUpcomingCardsFilter = ({
         >
           {taskId !== 'all' && selectedTaskTitle && (
             <Chip
-              size="small"
               label={selectedTaskTitle}
               onDelete={() => {
                 setSelectedTaskOption(null);
@@ -263,7 +256,6 @@ export const DashboardUpcomingCardsFilter = ({
 
           {personId !== 'all' && selectedPersonTitle && (
             <Chip
-              size="small"
               label={`${personLabel}: ${selectedPersonTitle}`}
               onDelete={() => {
                 setSelectedPersonOption(null);
@@ -272,17 +264,18 @@ export const DashboardUpcomingCardsFilter = ({
             />
           )}
 
-          {selectedStatusLabel && (
+          {status.map(item => (
             <Chip
-              size="small"
-              label={selectedStatusLabel}
-              onDelete={() => onStatusChange('all')}
+              key={item}
+              label={TASK_STATUS_LABELS[item] ?? item}
+              onDelete={() =>
+                onStatusChange(status.filter(value => value !== item))
+              }
             />
-          )}
+          ))}
 
           {urgentOnly && (
             <Chip
-              size="small"
               label="Срочные"
               onDelete={() => onUrgentOnlyChange(false)}
             />

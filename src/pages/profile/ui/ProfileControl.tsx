@@ -81,7 +81,7 @@ export const ProfileControl = ({
         p: 2,
         zIndex: 2,
         width: '100%',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         alignItems: 'start',
         border: '1px solid',
         borderRadius: '24px',
@@ -153,7 +153,7 @@ export const ProfileControl = ({
           direction="row"
           sx={{
             width: '100%',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             alignItems: 'center',
             justifyContent: 'space-between',
             display: tabValue === 0 ? 'flex' : 'none',

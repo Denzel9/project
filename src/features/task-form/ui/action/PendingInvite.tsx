@@ -1,4 +1,4 @@
-import { Stack, Button, Typography } from '@mui/material';
+import { Stack, Button } from '@mui/material';
 import axios from 'axios';
 import { useState } from 'react';
 
@@ -17,7 +17,8 @@ type PendingInviteProps = {
 };
 
 export const PendingInvite = ({ taskId, updateTask }: PendingInviteProps) => {
-  const [isOpenAcceptDialog, setIsOpenAcceptDialog] = useState(false);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const { setSnackbarOpen } = useSnackbarStore();
 
@@ -35,12 +36,23 @@ export const PendingInvite = ({ taskId, updateTask }: PendingInviteProps) => {
   };
 
   const handleReject = async () => {
-    await updateTask({
-      id: taskId,
-      body: {
-        isExecutorApprove: false,
-      },
-    });
+    setIsRejecting(true);
+
+    try {
+      await updateTask({
+        id: taskId,
+        body: {
+          isExecutorApprove: false,
+        },
+      });
+      setIsRejectDialogOpen(false);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSnackbarOpen?.(true, String(error.response?.data?.message));
+      }
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   return (
@@ -53,7 +65,7 @@ export const PendingInvite = ({ taskId, updateTask }: PendingInviteProps) => {
         size="small"
         color="error"
         variant="outlined"
-        onClick={handleReject}
+        onClick={() => setIsRejectDialogOpen(true)}
       >
         Отклонить
       </Button>
@@ -67,13 +79,14 @@ export const PendingInvite = ({ taskId, updateTask }: PendingInviteProps) => {
       </Button>
 
       <ConfirmDialog
-        title="Отклонить задачу"
-        onSuccess={() => {}}
-        isOpen={isOpenAcceptDialog}
-        onClose={() => setIsOpenAcceptDialog(false)}
-      >
-        <Typography>Вы точно хотите отклонить приглашение?</Typography>
-      </ConfirmDialog>
+        title="Отказаться от задачи"
+        description="Вы уверены, что хотите отказаться от участия в задаче?"
+        isOpen={isRejectDialogOpen}
+        isPending={isRejecting}
+        successLabel="Отклонить"
+        onSuccess={() => void handleReject()}
+        onClose={() => setIsRejectDialogOpen(false)}
+      />
     </Stack>
   );
 };

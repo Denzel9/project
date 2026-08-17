@@ -351,9 +351,9 @@ export const SettingsNotificationPage = () => {
       setTelegramTypes(next.telegramNotificationTypes ?? []);
       setMaxTypes(next.maxNotificationTypes ?? []);
       close();
-      setSnackbarOpen(true, 'Настройки уведомлений сохранены');
+      setSnackbarOpen(true, 'Настройки уведомлений сохранены', 'success');
     } catch {
-      setSnackbarOpen(true, 'Не удалось сохранить настройки');
+      setSnackbarOpen(true, 'Не удалось сохранить настройки', 'error');
     }
   };
 

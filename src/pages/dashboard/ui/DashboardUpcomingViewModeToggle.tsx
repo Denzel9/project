@@ -30,7 +30,7 @@ export const DashboardUpcomingViewModeToggle = ({
         border: 'none',
         borderRadius: '8px !important',
         '&.Mui-selected': {
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           boxShadow: 1,
         },
       },

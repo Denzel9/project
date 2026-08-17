@@ -9,7 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-import { MarkdownContent, RHFRichTextEditor } from '@/shared';
+import { LazyRHFRichTextEditor, MarkdownContent } from '@/shared';
 
 import type { TaskFormType } from '../../model/schema/schema';
 
@@ -95,7 +95,7 @@ export const TaskTzDescription = ({
 
       <Collapse in={isEdit || isExpanded}>
         {isEdit ? (
-          <RHFRichTextEditor
+          <LazyRHFRichTextEditor
             control={control}
             name="description"
             maxLength={2500}

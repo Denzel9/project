@@ -98,10 +98,7 @@ export const TaskSwitcher = ({
 
   const isCancelledSelected =
     currentTask?.status === TASK_STATUS_ENUM.ANNULLED;
-  const selectedExecutorKey =
-    currentTask && !isCancelledSelected
-      ? getExecutorKey(currentTask)
-      : '';
+  const selectedExecutorKey = currentTask ? getExecutorKey(currentTask) : '';
   const executorTasks = useMemo(() => {
     const tasks = selectedExecutorKey
       ? (groupedTasks[selectedExecutorKey] ?? [])
@@ -110,9 +107,10 @@ export const TaskSwitcher = ({
     return [...tasks]
       .filter(
         task =>
-          task.status !== TASK_STATUS_ENUM.COMPLETED &&
-          task.status !== TASK_STATUS_ENUM.ANNULLED &&
-          !task.isArchived,
+          task.id === currentTask?.id ||
+          (task.status !== TASK_STATUS_ENUM.COMPLETED &&
+            task.status !== TASK_STATUS_ENUM.ANNULLED &&
+            !task.isArchived),
       )
       .sort((a, b) => {
         const aAwaiting = isTaskAwaitingUserAction(a, currentUserId) ? 0 : 1;
@@ -120,7 +118,7 @@ export const TaskSwitcher = ({
 
         return aAwaiting - bAwaiting;
       });
-  }, [currentUserId, groupedTasks, selectedExecutorKey]);
+  }, [currentTask?.id, currentUserId, groupedTasks, selectedExecutorKey]);
 
   const executorEntries = useMemo(
     () =>
@@ -215,7 +213,7 @@ export const TaskSwitcher = ({
       sx={{
         p: 2,
         mb: 1,
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderRadius: '32px',
         borderColor: 'divider',

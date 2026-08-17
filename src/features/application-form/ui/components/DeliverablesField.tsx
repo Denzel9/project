@@ -50,7 +50,7 @@ const DeliverableRow = ({
         overflow: 'hidden',
         p: { xs: 2, sm: 2.5 },
         borderRadius: '20px',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)',

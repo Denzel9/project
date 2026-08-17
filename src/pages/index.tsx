@@ -1,17 +1,18 @@
 import { lazy } from 'react';
 import { Routes, Route, Outlet } from 'react-router';
 
+import { RouteSuspense } from '@/shared/ui/route-fallback/RouteSuspense';
 import { MainLayout, ProtectedRoute } from '@/widgets';
 
 import { ROUTES } from '../shared/config/routes';
 
 const HomePage = lazy(() => import('./home'));
 const AuthPage = lazy(() => import('./auth'));
+const AuthThemeLayout = lazy(() => import('./auth/ui/AuthThemeLayout'));
 const ConfirmEmailPage = lazy(() => import('./auth/ui/ConfirmEmailPage'));
 const ProfilePage = lazy(() => import('./profile'));
 const FavoritePage = lazy(() => import('./favorite'));
 const ChatsPage = lazy(() => import('./chats'));
-const ChatPage = lazy(() => import('./chat'));
 const PostPage = lazy(() => import('./post'));
 const ManageApplicationPage = lazy(() => import('./manage-application'));
 const MyResponsesPage = lazy(() => import('./my-responses'));
@@ -96,12 +97,10 @@ export const Router = () => {
             <Route
               path={ROUTES.CHATS}
               element={<ChatsPage />}
-            />
-
-            <Route
-              path={ROUTES.CHAT}
-              element={<ChatPage />}
-            />
+            >
+              <Route index element={null} />
+              <Route path=":id" element={null} />
+            </Route>
 
             <Route
               path={`${ROUTES.POST}/:id`}
@@ -242,29 +241,43 @@ export const Router = () => {
         }
       />
 
-      <Route
-        path={`${ROUTES.AUTH}`}
-        element={<AuthPage />}
-      />
+      <Route element={<AuthThemeLayout />}>
+        <Route
+          path={`${ROUTES.AUTH}`}
+          element={<AuthPage />}
+        />
 
-      <Route
-        path={ROUTES.AUTH_CONFIRM_EMAIL}
-        element={<ConfirmEmailPage />}
-      />
+        <Route
+          path={ROUTES.AUTH_CONFIRM_EMAIL}
+          element={<ConfirmEmailPage />}
+        />
+      </Route>
 
       <Route
         path={`${ROUTES.INVITE}`}
-        element={<InvitePage />}
+        element={
+          <RouteSuspense>
+            <InvitePage />
+          </RouteSuspense>
+        }
       />
 
       <Route
         path={ROUTES.USER_AGREEMENT}
-        element={<UserAgreementPage />}
+        element={
+          <RouteSuspense>
+            <UserAgreementPage />
+          </RouteSuspense>
+        }
       />
 
       <Route
         path={ROUTES.PRIVACY_POLICY}
-        element={<PrivacyPolicyPage />}
+        element={
+          <RouteSuspense>
+            <PrivacyPolicyPage />
+          </RouteSuspense>
+        }
       />
     </Routes>
   );

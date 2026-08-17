@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Typography } from '@mui/material';
+import { Avatar, Box, Button, CircularProgress, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 
@@ -26,7 +26,8 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
 
   const { setSnackbarOpen } = useSnackbarStore();
 
-  const { control, setValue, watch } = useFormContext();
+  const { control, setValue, watch, formState } = useFormContext();
+  const { isSubmitting } = formState;
 
   const avatarUrl = watch('avatar') || user?.avatar || '';
   const bannerUrl = watch('banner') || user?.banner || '';
@@ -35,20 +36,19 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
     setValue(field, url);
     setSnackbarOpen?.(
       true,
-      field === 'avatar' ? 'Аватар обновлён' : 'Баннер обновлён'
+      field === 'avatar' ? 'Аватар обновлён' : 'Баннер обновлён',
+      'success'
     );
   };
 
   const handleMediaError = (message: string) => {
-    setSnackbarOpen?.(true, message);
+    setSnackbarOpen?.(true, message, 'error');
   };
 
   return (
     <Box
       sx={{
-        overflow: 'scroll',
         position: 'relative',
-        scrollbarWidth: 'none',
       }}
     >
       <Typography
@@ -139,48 +139,51 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         </FormBlock>
       )}
 
-      {!user?.companyProfile && (
-        <FormBlock>
-          <RHFInput
-            name="name"
-            control={control}
-            props={{
-              fullWidth: true,
-              label: 'Имя',
-            }}
-          />
-
-          <RHFInput
-            name="lastName"
-            control={control}
-            props={{
-              fullWidth: true,
-              label: 'Фамилия',
-            }}
-          />
-
-          <FormBlockRowItem>
+      <FormBlock>
+        {!user?.companyProfile && (
+          <>
             <RHFInput
-              name="bio"
+              name="name"
               control={control}
-              maxLength={300}
               props={{
-                rows: 4,
-                multiline: true,
                 fullWidth: true,
-                label: 'О себе',
+                label: 'Имя',
               }}
             />
-          </FormBlockRowItem>
 
+            <RHFInput
+              name="lastName"
+              control={control}
+              props={{
+                fullWidth: true,
+                label: 'Фамилия',
+              }}
+            />  </>)}
+
+        <FormBlockRowItem>
+          <RHFInput
+            name="bio"
+            control={control}
+            maxLength={300}
+            props={{
+              rows: 4,
+              multiline: true,
+              fullWidth: true,
+              label: 'О себе',
+            }}
+          />
+        </FormBlockRowItem>
+
+        {!user?.companyProfile && (
           <FormBlockRowItem>
             <LocationAutocomplete
               name="location"
               control={control}
             />
           </FormBlockRowItem>
-        </FormBlock>
-      )}
+        )}
+      </FormBlock>
+
 
       <FormBlock title="Контактная информация">
         <RHFInput
@@ -237,9 +240,18 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
           size="small"
           type="submit"
           variant="outlined"
+          disabled={isSubmitting}
           sx={{ maxWidth: '140px', flexShrink: 0 }}
+          startIcon={
+            isSubmitting ? (
+              <CircularProgress
+                size={14}
+                color="inherit"
+              />
+            ) : undefined
+          }
         >
-          Сохранить
+          {isSubmitting ? 'Сохранение…' : 'Сохранить'}
         </Button>
       </FormBlock>
     </Box>

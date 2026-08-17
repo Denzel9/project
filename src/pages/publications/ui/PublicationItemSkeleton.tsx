@@ -7,7 +7,7 @@ type PublicationItemSkeletonListProps = {
 const PublicationItemSkeleton = () => (
   <Box
     sx={{
-      bgcolor: 'white',
+      bgcolor: 'background.paper',
       border: '1px solid',
       borderColor: 'divider',
       borderRadius: '24px',

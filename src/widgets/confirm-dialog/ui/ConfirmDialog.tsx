@@ -18,6 +18,8 @@ type ConfirmDialogProps = {
   onClose?: () => void;
   withButtons?: boolean;
   onSuccess?: () => void;
+  successLabel?: string;
+  successColor?: 'error' | 'primary';
   description?: string | React.ReactNode;
 };
 
@@ -31,6 +33,8 @@ export const ConfirmDialog = ({
   withButtons = true,
   onClose = undefined,
   onSuccess = undefined,
+  successLabel = 'Подтвердить',
+  successColor = 'error',
 }: PropsWithChildren<ConfirmDialogProps>) => {
   return (
     <Dialog
@@ -107,7 +111,6 @@ export const ConfirmDialog = ({
             {onClose && (
               <Button
                 onClick={onClose}
-                color="error"
                 disabled={isPending}
               >
                 Отменить
@@ -116,11 +119,11 @@ export const ConfirmDialog = ({
             {onSuccess && (
               <Button
                 onClick={onSuccess}
-                color="success"
+                color={successColor}
                 loading={isPending}
                 disabled={isPending}
               >
-                Подтвердить
+                {successLabel}
               </Button>
             )}
           </Stack>

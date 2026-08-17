@@ -48,7 +48,7 @@ export const UserCard = ({
         p: 4,
         zIndex: 3,
         top: '16px',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         borderRadius: '24px',
         border: '1px solid',
         borderColor: 'divider',

@@ -17,6 +17,7 @@ type ContactsProps = {
   isLoading: boolean;
   onSelect: (conversationId: string) => void;
   onStartChat: (user: UserSearchItem) => void | Promise<void>;
+  onConversationHidden?: (conversationId: string) => void;
 };
 
 export const Contacts = ({
@@ -26,6 +27,7 @@ export const Contacts = ({
   isLoading,
   onSelect,
   onStartChat,
+  onConversationHidden,
 }: ContactsProps) => {
   const role = useAuthStore(state => state.role);
   const canSearchContacts = role !== USER_ROLE.MANAGER;
@@ -50,7 +52,7 @@ export const Contacts = ({
         p: { xs: 2, md: 2 },
         width: { xs: '100%', md: '30%' },
         maxWidth: { md: '30%', xs: '100%' },
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         border: '1px solid',
         borderBottom: theme => ({ xs: 'none', md: `1px solid ${theme.palette.divider}` }),
         borderColor: 'divider',
@@ -110,6 +112,7 @@ export const Contacts = ({
                 }
               }}
               isSelected={isSelected}
+              onHidden={onConversationHidden}
             />
           );
         })}

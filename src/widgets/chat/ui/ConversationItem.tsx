@@ -14,10 +14,12 @@ import { useState, type MouseEvent } from 'react'
 import {
   formatConversationListDayLabel,
   getMessagePreview,
+  useHideConversationMutation,
   useMarkConversationDialogUnreadMutation,
   usePinConversationMutation,
   type ChatConversation,
 } from '@/entities/chat'
+import { ConfirmDialog } from '@/widgets/confirm-dialog'
 
 export const ConversationItem = ({
   conversation,
@@ -25,12 +27,14 @@ export const ConversationItem = ({
   onSelect,
   showActions = true,
   showPinIcon = true,
+  onHidden,
 }: {
   conversation: ChatConversation
   isSelected: boolean
   onSelect: () => void
   showActions?: boolean
   showPinIcon?: boolean
+  onHidden?: (conversationId: string) => void
 }) => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<null | HTMLElement>(
@@ -63,8 +67,11 @@ export const ConversationItem = ({
   )
 
   const { mutateAsync: pinConversation } = usePinConversationMutation()
+  const { mutateAsync: hideConversation, isPending: isHiding } =
+    useHideConversationMutation()
   const { mutateAsync: markDialogUnread, isPending: isMarkingUnread } =
     useMarkConversationDialogUnreadMutation()
+  const [isHideConfirmOpen, setIsHideConfirmOpen] = useState(false)
 
   const handleTogglePin = (event: MouseEvent) => {
     event.stopPropagation()
@@ -88,6 +95,22 @@ export const ConversationItem = ({
 
     void markDialogUnread(conversation.id).then(() => {
       setIsMoreMenuOpen(false)
+    })
+  }
+
+  const handleHide = (event: MouseEvent) => {
+    event.stopPropagation()
+    event.preventDefault()
+    setIsMoreMenuOpen(false)
+    setIsHideConfirmOpen(true)
+  }
+
+  const handleConfirmHide = () => {
+    if (!conversation.id || isHiding) return
+
+    void hideConversation(conversation.id).then(() => {
+      setIsHideConfirmOpen(false)
+      onHidden?.(conversation.id)
     })
   }
 
@@ -221,6 +244,11 @@ export const ConversationItem = ({
                   Пометить непрочитанным
                 </MenuItem>
               )}
+              {Boolean(conversation.id) && (
+                <MenuItem disabled={isHiding} onClick={handleHide}>
+                  Удалить чат
+                </MenuItem>
+              )}
             </Menu>
           </>
         )}
@@ -248,6 +276,17 @@ export const ConversationItem = ({
           </Typography>
         </Stack>
       </Stack>
+
+      <ConfirmDialog
+        width={440}
+        isOpen={isHideConfirmOpen}
+        title="Удалить чат?"
+        description="Чат скроется только у вас. Собеседник его по-прежнему увидит. Если вам напишут снова, диалог появится в списке."
+        successLabel="Удалить"
+        onClose={() => setIsHideConfirmOpen(false)}
+        onSuccess={handleConfirmHide}
+        isPending={isHiding}
+      />
     </Stack>
   )
 }

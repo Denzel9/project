@@ -67,7 +67,7 @@ const SupportChannelItem = ({ channel }: { channel: SupportChannel }) => (
           borderRadius: '12px',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           color: 'primary.main',
         }}
       >

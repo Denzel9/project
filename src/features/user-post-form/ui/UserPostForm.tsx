@@ -28,7 +28,6 @@ import {
   type LocalMediaFile,
 } from '@/shared/lib/media';
 
-import { useActions } from '../hooks/useActions';
 import {
   mapFormToCreatePost,
   mapFormToUpdatePost,
@@ -86,15 +85,7 @@ export const UserPostForm = ({
     resolver: yupResolver(schema),
   });
 
-  const { handleSubmit, setValue, getValues, control } = methods;
-
-  const { handleGoToPreview } = useActions({
-    getValues,
-    id: data?.id || '',
-    isEdit,
-    isArchived: data?.isArchived ?? false,
-    isPrivate: data?.isPrivate ?? false,
-  });
+  const { handleSubmit, setValue, control } = methods;
 
   const handleDeletePhoto = async (key: string) => {
     const photo = images.find(
@@ -335,13 +326,10 @@ export const UserPostForm = ({
         <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
           <Button
             variant="outlined"
-            onClick={
-              saveAsTemplate
-                ? () => navigate(ROUTES.TEMPLATES)
-                : handleGoToPreview
+            onClick={() => navigate(ROUTES.TEMPLATES)
             }
           >
-            {saveAsTemplate ? 'Назад' : 'Предпросмотр'}
+            Назад
           </Button>
           <Button
             type="submit"

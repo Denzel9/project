@@ -18,9 +18,15 @@ import {
 import { type Dayjs } from 'dayjs'
 import { useMemo, useState } from 'react'
 
-import { APPLICATION_STATUS_LABELS } from '@/entities'
-import { FilterAutocomplete, useScroll } from '@/shared'
+import { APPLICATION_STATUS_LABELS, type ApplicationStatus } from '@/entities'
+import { FilterAutocomplete, FilterStatusSelect, useScroll } from '@/shared'
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
+
+import {
+  isDefaultApplicationStatusFilter,
+  type ApplicationStatusFilter,
+  type CompanyFilter,
+} from '../model/utils'
 
 import { MyResponsesMobileFilter } from './MyResponsesMobileFilter'
 import { MyResponsesViewModeToggle } from './MyResponsesViewModeToggle'
@@ -29,7 +35,6 @@ import type {
   MyResponseTableReportControls,
   MyResponseViewMode,
 } from '../model/types'
-import type { ApplicationStatusFilter, CompanyFilter } from '../model/utils'
 
 type CompanyOption = {
   ownerId: string
@@ -76,8 +81,8 @@ const MyResponsesFilter = ({
 
   const statusOptions = useMemo(
     () =>
-      Object.entries(APPLICATION_STATUS_LABELS).map(([id, label]) => ({
-        id,
+      Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
+        value: value as ApplicationStatus,
         label,
       })),
     [],
@@ -112,7 +117,8 @@ const MyResponsesFilter = ({
     onSearchOpenChange(true)
   }
 
-  const hasMobileFilters = status !== 'all' || companyId !== 'all'
+  const hasMobileFilters =
+    !isDefaultApplicationStatusFilter(status) || companyId !== 'all'
 
   return (
     <>
@@ -122,7 +128,7 @@ const MyResponsesFilter = ({
         sx={{
           p: 2,
           mb: 1,
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: '24px',
@@ -136,7 +142,7 @@ const MyResponsesFilter = ({
         }}
       >
         <Stack
-          spacing={2}
+          spacing={1}
           direction="row"
           sx={{
             width: { xs: 'auto', md: '50%' },
@@ -144,12 +150,11 @@ const MyResponsesFilter = ({
             display: { xs: 'none', md: 'flex' },
           }}
         >
-          <FilterAutocomplete
+          <FilterStatusSelect
             size="small"
-            label="Статус"
             value={status}
             options={statusOptions}
-            onChange={value => onStatusChange(value as ApplicationStatusFilter)}
+            onChange={onStatusChange}
             sx={{ flex: 1 }}
           />
 

@@ -26,14 +26,13 @@ import { useAuthStore } from '@/features/auth';
 import { ActionActorCaption } from '@/shared';
 import { ROUTES } from '@/shared/config/routes';
 import { ConfirmDialog } from '@/widgets/confirm-dialog';
-import { useSnackbarStore } from '@/widgets/snackbar';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
+import { useSnackbarStore } from '@/widgets/snackbar';
 
 import { IncomingApplicationDetailsDialog } from './IncomingApplicationDetailsDialog';
 
 type IncomingApplicationItemProps = {
   application: Application;
-  /** Показать превью и название объявления (для списка по всем постам) */
   showPostContext?: boolean;
   onAccepted?: () => void;
 };
@@ -95,7 +94,7 @@ export const IncomingApplicationItem = ({
         sx={{
           height: '100%',
           overflow: 'hidden',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
@@ -178,14 +177,12 @@ export const IncomingApplicationItem = ({
                 />
               </Stack>
 
-              {!previewMedia && (
-                <Chip
-                  size="small"
-                  label={APPLICATION_STATUS_LABELS[application.status]}
-                  color={getStatusColor(application.status)}
-                  sx={{ opacity: 0.8, flexShrink: 0 }}
-                />
-              )}
+              <Chip
+                size="small"
+                label={APPLICATION_STATUS_LABELS[application.status]}
+                color={getStatusColor(application.status)}
+                sx={{ opacity: 0.8, flexShrink: 0 }}
+              />
             </Stack>
 
             {showPostContext && (
@@ -240,7 +237,7 @@ export const IncomingApplicationItem = ({
             <Stack
               spacing={1}
               direction="row"
-              sx={{ alignItems: 'end', flexWrap: 'wrap' }}
+              sx={{ alignItems: 'end', }}
             >
               <Tooltip title="Дата создания отклика">
                 <Stack

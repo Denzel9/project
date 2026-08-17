@@ -171,7 +171,7 @@ export const CurrentUser = ({ isButton = false }: { isButton?: boolean }) => {
         sx={{
           width: '100%',
           borderRadius: '16px',
-          backgroundColor: 'white',
+          backgroundColor: 'background.paper',
         }}
         slotProps={{
           select: {

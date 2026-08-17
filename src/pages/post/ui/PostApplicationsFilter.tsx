@@ -3,7 +3,7 @@ import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/materia
 import { useEffect, useMemo, useState } from 'react';
 
 import { FilterDateField } from '@/features/main-filter';
-import { FilterAutocomplete } from '@/shared';
+import { FilterAutocomplete, FilterStatusSelect } from '@/shared';
 
 import {
   POST_APPLICATION_STATUS_FILTER_LABELS,
@@ -51,8 +51,8 @@ export const PostApplicationsFilter = ({
   const statusOptions = useMemo(
     () =>
       Object.entries(POST_APPLICATION_STATUS_FILTER_LABELS).map(
-        ([id, label]) => ({
-          id,
+        ([value, label]) => ({
+          value: value as PostApplicationStatusFilter[number],
           label,
         })
       ),
@@ -60,7 +60,7 @@ export const PostApplicationsFilter = ({
   );
 
   const hasMobileFilters =
-    status !== 'all' || applicantId !== 'all' || Boolean(createdDate);
+    status.length > 0 || applicantId !== 'all' || Boolean(createdDate);
 
   useEffect(() => {
     if (!isMobileFilterOpen) return;
@@ -78,8 +78,8 @@ export const PostApplicationsFilter = ({
   };
 
   const handleReset = () => {
-    setDraft({ status: 'all', applicantId: 'all', createdDate: null });
-    onStatusChange('all');
+    setDraft({ status: [], applicantId: 'all', createdDate: null });
+    onStatusChange([]);
     onApplicantChange('all');
     onCreatedDateChange(null);
     setIsMobileFilterOpen(false);
@@ -97,14 +97,11 @@ export const PostApplicationsFilter = ({
           display: { xs: 'none', md: 'flex' },
         }}
       >
-        <FilterAutocomplete
-          label="Статус"
+        <FilterStatusSelect
           size="small"
           value={status}
           options={statusOptions}
-          onChange={value =>
-            onStatusChange(value as PostApplicationStatusFilter)
-          }
+          onChange={onStatusChange}
           sx={{ flex: 1, maxWidth: { md: 220 }, minWidth: 250 }}
         />
 
@@ -171,14 +168,13 @@ export const PostApplicationsFilter = ({
               </IconButton>
             </Stack>
 
-            <FilterAutocomplete
-              label="Статус"
+            <FilterStatusSelect
               value={draft.status}
               options={statusOptions}
               onChange={value =>
                 setDraft(prev => ({
                   ...prev,
-                  status: value as PostApplicationStatusFilter,
+                  status: value,
                 }))
               }
               sx={{ width: '100%' }}

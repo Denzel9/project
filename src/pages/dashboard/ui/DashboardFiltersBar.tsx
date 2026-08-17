@@ -115,7 +115,7 @@ export const DashboardFiltersBar = ({
           borderRadius: '24px',
           border: '1px solid',
           borderColor: 'divider',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
@@ -183,6 +183,16 @@ export const DashboardFiltersBar = ({
             justifyContent: { xs: 'flex-end', md: 'flex-start' },
           }}
         >
+          <FilterAutocomplete
+            label="Пост"
+            value={postId}
+            onChange={setPostId}
+            options={postOptions}
+            loading={isPostsLoading}
+            sx={{ width: { sm: 220 } }}
+            size="small"
+          />
+
           <AssigneeFilterMenu isCompany={isCompany} />
 
           <IconButton

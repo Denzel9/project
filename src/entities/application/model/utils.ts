@@ -21,6 +21,17 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   WITHDRAWN: 'Отозван',
 }
 
+export const DEFAULT_APPLICATION_STATUS_FILTER: ApplicationStatus[] = [
+  APPLICATION_STATUS_ENUM.NEW,
+  APPLICATION_STATUS_ENUM.VIEWED,
+]
+
+export const isDefaultApplicationStatusFilter = (
+  status: ApplicationStatus[],
+) =>
+  status.length === DEFAULT_APPLICATION_STATUS_FILTER.length &&
+  DEFAULT_APPLICATION_STATUS_FILTER.every(value => status.includes(value))
+
 export const getApplicantName = (applicant?: ApplicationApplicant) => {
   if (!applicant) return 'Пользователь'
 

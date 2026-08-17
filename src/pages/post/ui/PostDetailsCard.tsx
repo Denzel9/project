@@ -81,7 +81,7 @@ type DetailSectionProps = {
 const sectionSx = {
   p: { xs: 2, md: 3 },
   borderRadius: '32px',
-  bgcolor: 'white',
+  bgcolor: 'background.paper',
   border: '1px solid',
   borderColor: 'divider',
   width: '100%',
@@ -165,7 +165,7 @@ const DeliverableItem = ({ item }: { item: PostDeliverable }) => {
         <Chip
           size="small"
           label={getPlacementFormatLabel(item.format)}
-          sx={{ bgcolor: 'white' }}
+          sx={{ bgcolor: 'background.paper' }}
         />
       </Stack>
 
@@ -595,7 +595,6 @@ export const PostDetailsCard = ({
   isCompanyPost = false,
 }: PostDetailsCardProps) => (
   <Stack
-    spacing={1}
     sx={{ width: '100%' }}
     direction="column"
   >

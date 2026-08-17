@@ -332,8 +332,8 @@ export type PostTasksParams = {
   postId: string
   page?: number
   limit?: number
-  status?: string
-  statuses?: string
+  status?: import('@/entities/task').TaskStatus
+  statuses?: import('@/entities/task').TaskStatus[]
   active?: boolean
   isArchived?: boolean
 }

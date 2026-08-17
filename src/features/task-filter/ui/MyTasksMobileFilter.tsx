@@ -4,7 +4,6 @@ import {
   Button,
   FormControlLabel,
   IconButton,
-  MenuItem,
   Popover,
   Stack,
   Switch,
@@ -16,18 +15,16 @@ import { ru } from 'date-fns/locale'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 
-import { TASK_STATUS_LABELS } from '@/entities'
+import { TASK_STATUS_LABELS, type TaskStatus } from '@/entities'
 import {
   getPartnerName,
   mapPartnerUserToRow,
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities/partner'
-import { DateCalendarFilter, FilterAutocomplete } from '@/shared'
+import { DateCalendarFilter, FilterAutocomplete, FilterStatusSelect } from '@/shared'
 
 import { useMyTaskFilterStore } from '../model/store'
-
-import type { TaskStatusFilter } from '../model/utils'
 
 type MyTasksMobileFilterProps = {
   open: boolean
@@ -38,7 +35,7 @@ type MyTasksMobileFilterProps = {
 }
 
 type Draft = {
-  status: TaskStatusFilter
+  status: TaskStatus[]
   postId: string
   executorId: string
   updatedDate: string | null
@@ -140,14 +137,14 @@ export const MyTasksMobileFilter = ({
 
   const handleReset = () => {
     setDraft({
-      status: 'all',
+      status: [],
       postId: 'all',
       executorId: 'all',
       updatedDate: null,
       urgentOnly: false,
     })
     if (showStatus) {
-      setStatus('all')
+      setStatus([])
     }
     setPostId('all')
     setExecutorId('all')
@@ -182,28 +179,21 @@ export const MyTasksMobileFilter = ({
 
         <Stack spacing={3}>
           {showStatus && (
-            <TextField
-              select
-              fullWidth
-              label="Статус"
+            <FilterStatusSelect
               value={draft.status}
-              onChange={event =>
+              options={Object.entries(TASK_STATUS_LABELS).map(
+                ([value, label]) => ({
+                  value: value as TaskStatus,
+                  label,
+                }),
+              )}
+              onChange={value =>
                 setDraft(prev => ({
                   ...prev,
-                  status: event.target.value as TaskStatusFilter,
+                  status: value,
                 }))
               }
-            >
-              <MenuItem value="all">Все</MenuItem>
-              {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
-                <MenuItem
-                  key={value}
-                  value={value}
-                >
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
           )}
 
           <FilterAutocomplete

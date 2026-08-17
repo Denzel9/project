@@ -13,6 +13,11 @@ import {
 } from '@/shared/lib/media'
 
 import { toChatMessageMedia, sortConversationsByUnread } from './utils'
+import {
+  getMessageWindowState,
+  isMessageWindowDetached,
+  setMessageWindowState,
+} from './messageWindowState'
 
 import type {
   AttachmentsParams,
@@ -128,10 +133,45 @@ const adjustChatUnreadCountInCache = (client: QueryClient, delta: number) => {
   setChatUnreadCountInCache(client, current.count + delta)
 }
 
+export const MESSAGES_PAGE_LIMIT = 50
+
+export type ChatMessagesPage = {
+  items: ChatMessage[]
+  hasOlder: boolean
+  hasNewer: boolean
+}
+
+export type FetchConversationMessagesOptions = {
+  cursor?: string
+  around?: string
+  after?: string
+  limit?: number
+  markRead?: boolean
+}
+
 const sortMessages = (messages: ChatMessage[]) =>
   [...messages].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   )
+
+const isChatMessageOlder = (message: ChatMessage, than: ChatMessage) => {
+  const left = new Date(message.createdAt).getTime()
+  const right = new Date(than.createdAt).getTime()
+
+  if (left !== right) return left < right
+
+  return message.id < than.id
+}
+
+const mergeUniqueMessages = (messages: ChatMessage[]) => {
+  const byId = new Map<string, ChatMessage>()
+
+  for (const message of messages) {
+    byId.set(message.id, message)
+  }
+
+  return sortMessages([...byId.values()])
+}
 
 const normalizeMessage = (message: ChatMessage): ChatMessage => ({
   ...message,
@@ -171,11 +211,130 @@ const normalizeConversation = (conversation: ChatConversation): ChatConversation
   }
 }
 
+const parseMessagesPage = (
+  data: ChatMessage[] | ChatMessagesPage,
+  options?: FetchConversationMessagesOptions,
+): ChatMessagesPage => {
+  if (Array.isArray(data)) {
+    const items = sortMessages(data.map(normalizeMessage))
+
+    return {
+      items,
+      hasOlder: items.length >= (options?.limit ?? MESSAGES_PAGE_LIMIT),
+      hasNewer: Boolean(options?.cursor || options?.around),
+    }
+  }
+
+  return {
+    items: sortMessages((data.items ?? []).map(normalizeMessage)),
+    hasOlder: Boolean(data.hasOlder),
+    hasNewer: Boolean(data.hasNewer),
+  }
+}
+
+export const fetchConversationMessages = async (
+  conversationId: string,
+  options?: FetchConversationMessagesOptions,
+): Promise<ChatMessagesPage> => {
+  const hasWindowParam = Boolean(options?.cursor || options?.around || options?.after)
+  const markRead = options?.markRead ?? !hasWindowParam
+  const { data } = await mainAxios.get<ChatMessage[] | ChatMessagesPage>(
+    `/chat/conversations/${conversationId}/messages`,
+    {
+      params: {
+        ...(options?.cursor ? { cursor: options.cursor } : {}),
+        ...(options?.around ? { around: options.around } : {}),
+        ...(options?.after ? { after: options.after } : {}),
+        limit: options?.limit ?? MESSAGES_PAGE_LIMIT,
+        markRead,
+      },
+    },
+  )
+
+  return parseMessagesPage(data, options)
+}
+
+export const getCachedConversationMessages = (
+  client: QueryClient,
+  conversationId: string,
+) => {
+  const entries = client.getQueriesData<ChatMessage[]>(
+    messagesQueryFilter(conversationId),
+  )
+
+  for (const [, messages] of entries) {
+    if (messages?.length) return messages
+  }
+
+  return []
+}
+
+export const replaceMessagesInCache = (
+  client: QueryClient,
+  conversationId: string,
+  messages: ChatMessage[],
+) => {
+  const next = sortMessages(messages.map(normalizeMessage))
+
+  client.setQueriesData<ChatMessage[]>(
+    messagesQueryFilter(conversationId),
+    () => next,
+  )
+  client.setQueryData<ChatMessage[]>(
+    chatKeys.messages(conversationId, undefined, true),
+    next,
+  )
+  client.setQueryData<ChatMessage[]>(
+    chatKeys.messages(conversationId, undefined, false),
+    next,
+  )
+}
+
+export const prependMessagesToCache = (
+  client: QueryClient,
+  conversationId: string,
+  messages: ChatMessage[],
+) => {
+  if (!messages.length) return
+
+  const updater = (old: ChatMessage[] | undefined) =>
+    mergeUniqueMessages([
+      ...messages.map(normalizeMessage),
+      ...(old ?? []),
+    ])
+
+  client.setQueriesData<ChatMessage[]>(
+    messagesQueryFilter(conversationId),
+    updater,
+  )
+}
+
+export const appendMessagesToCache = (
+  client: QueryClient,
+  conversationId: string,
+  messages: ChatMessage[],
+) => {
+  if (!messages.length) return
+
+  const updater = (old: ChatMessage[] | undefined) =>
+    mergeUniqueMessages([
+      ...(old ?? []),
+      ...messages.map(normalizeMessage),
+    ])
+
+  client.setQueriesData<ChatMessage[]>(
+    messagesQueryFilter(conversationId),
+    updater,
+  )
+}
+
 export const appendMessageToCache = (
   client: QueryClient,
   conversationId: string,
   message: ChatMessage,
 ) => {
+  if (isMessageWindowDetached(conversationId)) return
+
   const normalizedMessage = normalizeMessage(message)
   const updater = (old: ChatMessage[] | undefined) => {
     if (!old?.length) return [normalizedMessage]
@@ -252,6 +411,16 @@ export const updateConversationLastMessage = (
   conversationId: string,
   message: ChatMessage,
 ) => {
+  const exists = client
+    .getQueriesData<ChatConversation[]>(conversationsQueryFilter)
+    .some(([, list]) => list?.some(item => item.id === conversationId))
+
+  if (!exists) {
+    void client.invalidateQueries({ queryKey: chatKeys.conversationsRoot() })
+    void client.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+    return
+  }
+
   updateConversationsCache(client, old =>
     old?.map(conversation =>
       conversation.id === conversationId
@@ -561,7 +730,9 @@ export const useMessagesQuery = (
   conversationId: string | null,
   options?: { cursor?: string; limit?: number; markRead?: boolean },
 ) => {
+  const queryClient = useQueryClient()
   const markRead = options?.markRead ?? !options?.cursor
+  const limit = options?.limit ?? MESSAGES_PAGE_LIMIT
 
   return useQuery({
     queryKey: chatKeys.messages(
@@ -570,18 +741,46 @@ export const useMessagesQuery = (
       markRead,
     ),
     queryFn: async () => {
-      const { data } = await mainAxios.get<ChatMessage[]>(
-        `/chat/conversations/${conversationId}/messages`,
-        {
-          params: {
-            cursor: options?.cursor,
-            limit: options?.limit ?? 50,
-            markRead,
-          },
-        },
+      if (isMessageWindowDetached(conversationId!)) {
+        return getCachedConversationMessages(queryClient, conversationId!)
+      }
+
+      const page = await fetchConversationMessages(conversationId!, {
+        cursor: options?.cursor,
+        limit,
+        markRead,
+      })
+
+      if (isMessageWindowDetached(conversationId!)) {
+        return getCachedConversationMessages(queryClient, conversationId!)
+      }
+
+      if (!options?.cursor && !getMessageWindowState(conversationId!).initialized) {
+        setMessageWindowState(conversationId!, {
+          hasOlder: page.hasOlder,
+          hasNewer: page.hasNewer,
+          detached: page.hasNewer,
+        })
+      }
+
+      if (options?.cursor || !page.items.length) {
+        return page.items
+      }
+
+      const cached = queryClient.getQueryData<ChatMessage[]>(
+        chatKeys.messages(conversationId!, options?.cursor, markRead),
       )
 
-      return sortMessages(data.map(normalizeMessage))
+      if (!cached?.length) {
+        return page.items
+      }
+
+      const oldestFetched = page.items[0]
+      const olderKept = cached.filter(message =>
+        isChatMessageOlder(message, oldestFetched),
+      )
+
+      return mergeUniqueMessages([...olderKept, ...page.items])
     },
     enabled: Boolean(conversationId),
   })
@@ -853,6 +1052,25 @@ export const usePinConversationMutation = () => {
           ),
         )
       })
+    },
+  })
+}
+
+export const useHideConversationMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      await mainAxios.delete(`/chat/conversations/${conversationId}`)
+      return conversationId
+    },
+    onSuccess: conversationId => {
+      updateConversationsCache(queryClient, old => {
+        if (!old) return old
+
+        return old.filter(item => item.id !== conversationId)
+      })
+      void queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
     },
   })
 }

@@ -188,7 +188,6 @@ export const ChangeAssigneeDialog = ({
             <List disablePadding>
               {options.map(option => {
                 const isSelected = selectedAccountId === option.id;
-                console.log(option);
                 return (
                   <ListItemButton
                     key={option.id}

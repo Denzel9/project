@@ -150,10 +150,11 @@ export const ShareButton = ({
         onClick={e => e.stopPropagation()}
       >
         {canUseNativeShare && (
-          <MenuItem onClick={() => void handleNativeShare()}>Ещё…</MenuItem>
+          <MenuItem sx={{ fontSize: 14 }} onClick={() => void handleNativeShare()}>Ещё…</MenuItem>
         )}
 
         <MenuItem
+          sx={{ fontSize: 14 }}
           key="send-to-chat"
           onClick={handleOpenShareToChat}
         >
@@ -164,6 +165,7 @@ export const ShareButton = ({
 
         {SHARE_TARGETS.map(target => (
           <MenuItem
+            sx={{ fontSize: 14 }}
             key={target.id}
             onClick={() => handleShareTarget(target.getShareUrl)}
           >
@@ -173,7 +175,7 @@ export const ShareButton = ({
 
         <Divider />
 
-        <MenuItem onClick={() => void handleCopyLink()}>
+        <MenuItem sx={{ fontSize: 14 }} onClick={() => void handleCopyLink()}>
           Скопировать ссылку
         </MenuItem>
       </Menu>

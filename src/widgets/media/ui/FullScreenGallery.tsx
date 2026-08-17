@@ -319,7 +319,7 @@ export const FullScreenGallery = ({
           height: { xs: 'min(70vh, 560px)', md: 'min(88vh, 720px)' },
           maxWidth: '100%',
           borderRadius: { xs: '24px', md: '28px' },
-          bgcolor: 'common.white',
+          bgcolor: 'background.paper',
           boxShadow: '0 24px 80px rgba(15, 23, 42, 0.28)',
         },
       }}

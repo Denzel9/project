@@ -7,6 +7,7 @@ import {
   List,
   Typography,
   useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -17,7 +18,6 @@ import { useAuthStore } from '@/features';
 import { ROUTES } from '@/shared';
 
 import logoSmall from '../../../../public/logo.png';
-import logo from '../../../../public/Primary.png';
 import { TOP_MENU_ROUTES, BOTTOM_MENU_ROUTES } from '../model/routes/routes';
 import { useSideBarStore } from '../model/store/store';
 import { useSidebarCounters } from '../model/useSidebarCounters';
@@ -37,6 +37,9 @@ export const SideBarContent = ({
   onNavigate,
 }: SideBarContentProps = {}) => {
   const { isOpenSideBar } = useSideBarStore();
+
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
 
   const { isAuth, role, isPrime, primeExpiresAt } = useAuthStore();
   const badges = useSidebarCounters();
@@ -96,8 +99,9 @@ export const SideBarContent = ({
               transition: 'padding 0.3s ease',
             }}
           >
-            <img
-              src={isSidebarExpanded ? logo : logoSmall}
+            <Box
+              component="img"
+              src={isSidebarExpanded ? isDarkMode ? '/splash-logo.png' : '/Primary.png' : logoSmall}
               alt="NIKSSENS"
               width="100%"
               height={isSidebarExpanded ? 50 : 36}

@@ -54,3 +54,11 @@ export const getIsVisibleRoute = (route: MenuRoute, isAuth: boolean, role: USER_
 
     return true;
 };
+
+export const isSidebarRouteActive = (pathname: string, routePath: string) => {
+    if (routePath === '/') {
+        return pathname === '/';
+    }
+
+    return pathname === routePath || pathname.startsWith(`${routePath}/`);
+};

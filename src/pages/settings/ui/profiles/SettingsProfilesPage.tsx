@@ -1,9 +1,12 @@
+import { DeleteOutlined } from '@mui/icons-material';
 import {
   Box,
   Button,
   Chip,
+  IconButton,
   Skeleton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
@@ -13,14 +16,18 @@ import { useNavigate } from 'react-router';
 
 import { USER_ROLE } from '@/entities';
 import {
+  MemberRole,
   ProfileRoleLabels,
   useGetProfilesQuery,
+  type WorkspaceMember,
 } from '@/entities/workspace-member';
 import { useAuthStore, useSwitchActiveProfile } from '@/features/auth';
 import { ROUTES } from '@/shared/config/routes';
 import { useSnackbarStore } from '@/widgets';
 
 import { AddMemberDialog } from '../members/AddMemberDialog';
+
+import { UnlinkProfileDialog } from './UnlinkProfileDialog';
 
 const formatAddedAt = (value?: string) => {
   if (!value) return '—';
@@ -31,11 +38,35 @@ const formatAddedAt = (value?: string) => {
   }
 };
 
+const getUnlinkBlockReason = (
+  profile: WorkspaceMember,
+  isActive: boolean,
+  isProfileOwner: boolean,
+) => {
+  if (profile.linkKind === 'own' || profile.membershipRole === MemberRole.OWNER) {
+    return 'Нельзя отозвать доступ владельца';
+  }
+
+  if (!isProfileOwner || profile.canSwitch !== false) {
+    return 'Отзывать доступ может только владелец профиля';
+  }
+
+  if (isActive) {
+    return 'Сначала переключитесь на свой профиль';
+  }
+
+  return null;
+};
+
 export const SettingsProfilesPage = () => {
   const navigate = useNavigate();
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const { id, role } = useAuthStore();
+  const [profileToUnlink, setProfileToUnlink] = useState<WorkspaceMember | null>(
+    null,
+  );
+  const { id, role, membershipRole } = useAuthStore();
   const isManager = role === USER_ROLE.MANAGER;
+  const isProfileOwner = membershipRole === MemberRole.OWNER;
   const { setSnackbarOpen } = useSnackbarStore();
   const scope = isManager ? 'companies' : 'linked';
   const { data, isLoading, isError } = useGetProfilesQuery(scope);
@@ -56,7 +87,7 @@ export const SettingsProfilesPage = () => {
   const title = isManager ? 'Компании' : 'Профили';
   const description = isManager
     ? 'Компании и исполнители, к управлению которыми вас добавили. Переключитесь, чтобы открыть ленту и функции платформы.'
-    : 'Связанные профили компаний и исполнителей. Добавьте профиль по email или переключитесь на уже связанный.';
+    : 'Добавьте профиль по email или переключитесь на уже связанный.';
 
   return (
     <Stack spacing={3}>
@@ -131,6 +162,15 @@ export const SettingsProfilesPage = () => {
           const roleLabel = profile.role
             ? ProfileRoleLabels[profile.role]
             : 'Профиль';
+          const unlinkBlockReason = getUnlinkBlockReason(
+            profile,
+            isActive,
+            isProfileOwner,
+          );
+          const isOwnProfile =
+            profile.linkKind === 'own' ||
+            profile.membershipRole === MemberRole.OWNER;
+          const canShowUnlink = !isManager && !isOwnProfile;
 
           return (
             <Box
@@ -190,6 +230,7 @@ export const SettingsProfilesPage = () => {
                 <Stack
                   direction="row"
                   spacing={1}
+                  sx={{ flexShrink: 0, flexWrap: 'wrap' }}
                 >
                   {!isActive && profile.canSwitch !== false && (
                     <Button
@@ -212,6 +253,23 @@ export const SettingsProfilesPage = () => {
                       На главную
                     </Button>
                   )}
+                  {canShowUnlink && (
+                    <Tooltip
+                      title={unlinkBlockReason ?? ''}
+                      disableHoverListener={!unlinkBlockReason}
+                    >
+                      <span>
+                        <IconButton
+                          color="error"
+                          disabled={isPending || Boolean(unlinkBlockReason)}
+                          aria-label={`Удалить ${profile.displayName || roleLabel}`}
+                          onClick={() => setProfileToUnlink(profile)}
+                        >
+                          <DeleteOutlined />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
                 </Stack>
               </Stack>
             </Box>
@@ -226,6 +284,11 @@ export const SettingsProfilesPage = () => {
           onClose={() => setIsAddOpen(false)}
         />
       )}
+
+      <UnlinkProfileDialog
+        profile={profileToUnlink}
+        onClose={() => setProfileToUnlink(null)}
+      />
     </Stack>
   );
 };

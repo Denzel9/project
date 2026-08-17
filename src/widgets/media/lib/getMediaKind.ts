@@ -1,7 +1,7 @@
 export type MediaKind = 'image' | 'video' | 'document'
 
 const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogg|avi)(\?|$)/i
-const DOCUMENT_EXT = /\.(pdf|docx?|xlsx?|pptx?)(\?|$)/i
+const DOCUMENT_EXT = /\.(pdf|docx?|xlsx?|csv|zip)(\?|$)/i
 const UUID_FILE_NAME =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -19,10 +19,27 @@ const MIME_TO_EXTENSION: Record<string, string> = {
   'application/msword': 'doc',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
     'docx',
+  'application/zip': 'zip',
+  'application/x-zip-compressed': 'zip',
+  'application/x-zip': 'zip',
+  'text/csv': 'csv',
+  'application/csv': 'csv',
+  'text/comma-separated-values': 'csv',
 }
 
 export const isDocumentMimeType = (mimeType?: string) =>
-  mimeType === 'application/pdf' || Boolean(mimeType?.startsWith('application/vnd.'))
+  Boolean(
+    mimeType &&
+      (mimeType === 'application/pdf' ||
+        mimeType === 'application/msword' ||
+        mimeType === 'application/zip' ||
+        mimeType === 'application/x-zip-compressed' ||
+        mimeType === 'application/x-zip' ||
+        mimeType === 'text/csv' ||
+        mimeType === 'application/csv' ||
+        mimeType === 'text/comma-separated-values' ||
+        mimeType.startsWith('application/vnd.')),
+  )
 
 export const getMediaKind = (src: string, mimeType?: string): MediaKind => {
   if (mimeType?.startsWith('video/')) return 'video'

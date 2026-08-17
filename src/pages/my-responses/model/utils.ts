@@ -1,3 +1,7 @@
+import {
+  DEFAULT_APPLICATION_STATUS_FILTER,
+  isDefaultApplicationStatusFilter,
+} from '@/entities/application';
 import { getUserName, type User } from '@/entities/user';
 
 import type { MyResponseSortField, MyResponseSortOrder } from './types';
@@ -7,8 +11,10 @@ import type {
   ApplicationStatus,
 } from '@/entities';
 
-export type ApplicationStatusFilter = ApplicationStatus | 'all';
+export type ApplicationStatusFilter = ApplicationStatus[];
 export type CompanyFilter = 'all' | string;
+
+export { DEFAULT_APPLICATION_STATUS_FILTER, isDefaultApplicationStatusFilter };
 
 export const filterApplicationsByCompany = (
   applications: Application[],
@@ -32,7 +38,7 @@ export const toMyApplicationsParams = (
 ): ApplicationListParams => ({
   page: pagination?.page ?? 1,
   limit: pagination?.limit ?? 20,
-  ...(filters.status !== 'all' && { status: filters.status }),
+  ...(filters.status.length > 0 && { statuses: filters.status }),
   ...(filters.updatedDate && { createdDate: filters.updatedDate }),
   ...(filters.q?.trim() && { q: filters.q.trim() }),
 });
@@ -43,7 +49,7 @@ export const hasActiveMyResponseFilters = (filters: {
   companyId: CompanyFilter;
   q?: string;
 }) =>
-  filters.status !== 'all' ||
+  !isDefaultApplicationStatusFilter(filters.status) ||
   Boolean(filters.updatedDate) ||
   filters.companyId !== 'all' ||
   Boolean(filters.q?.trim());

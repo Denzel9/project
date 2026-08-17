@@ -5,6 +5,7 @@ import { type Task, type TaskStatus } from '@/entities';
 import { ALL_TASK_STATUSES, MAX_SELECTED_TASKS } from '../constants';
 import { getKanbanColumnsForFastButton } from '../utils';
 
+import type { TaskListUrlFilters } from '../url';
 import type {
     TaskStatusFilter,
     FastButtonFilter,
@@ -83,6 +84,10 @@ type MyTaskFilterStore = {
 
     resetKanbanColumns: () => void;
     resetForProfileSwitch: () => void;
+    applyListFilters: (
+        filters: TaskListUrlFilters,
+        options?: { includePeriod?: boolean },
+    ) => void;
     setPostId: (postId: string) => void;
     setExecutorId: (executorId: string) => void;
     setStatus: (status: TaskStatusFilter) => void;
@@ -114,7 +119,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
     executorId: 'all',
 
-    status: 'all',
+    status: [],
 
     updatedDate: null,
 
@@ -174,14 +179,14 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
             extraFilter,
             fastButtonValue: null,
             activeOnly: false,
-            ...(extraFilter && { status: 'all' as const }),
+            ...(extraFilter && { status: [] as TaskStatusFilter }),
         }),
 
     setActiveOnly: activeOnly =>
         set({
             activeOnly,
             ...(activeOnly && {
-                status: 'all' as const,
+                status: [] as TaskStatusFilter,
                 extraFilter: null,
                 fastButtonValue: null,
             }),
@@ -207,7 +212,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
             return {
                 viewMode,
-                status: 'all' as const,
+                status: [] as TaskStatusFilter,
                 postId: 'all',
                 executorId: 'all',
                 extraFilter: null,
@@ -233,7 +238,7 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
         set(state => ({
             fastButtonValue,
             extraFilter: null,
-            status: 'all' as const,
+            status: [] as TaskStatusFilter,
             activeOnly: false,
             ...(state.viewMode === 'kanban' && {
                 visibleKanbanColumns:
@@ -274,11 +279,58 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
     resetKanbanColumns: () =>
         set({ visibleKanbanColumns: [...ALL_TASK_STATUSES] }),
 
+    applyListFilters: (filters, options) =>
+        set(state => {
+            const period = options?.includePeriod ? filters.period : state.period;
+            const isSearchOpen =
+                Boolean(filters.searchQuery.trim()) || state.isSearchOpen;
+            const visibleKanbanColumns =
+                state.viewMode === 'kanban' &&
+                filters.fastButtonValue !== state.fastButtonValue
+                    ? getKanbanColumnsForFastButton(filters.fastButtonValue)
+                    : state.visibleKanbanColumns;
+
+            if (
+                state.postId === filters.postId &&
+                state.executorId === filters.executorId &&
+                state.status.length === filters.status.length &&
+                state.status.every(item => filters.status.includes(item)) &&
+                state.extraFilter === filters.extraFilter &&
+                state.fastButtonValue === filters.fastButtonValue &&
+                state.activeOnly === filters.activeOnly &&
+                state.onlyMyTasks === filters.onlyMyTasks &&
+                state.assigneeAccountId === filters.assigneeAccountId &&
+                state.updatedDate === filters.updatedDate &&
+                state.searchQuery === filters.searchQuery &&
+                state.period === period &&
+                state.isSearchOpen === isSearchOpen &&
+                state.visibleKanbanColumns === visibleKanbanColumns
+            ) {
+                return state;
+            }
+
+            return {
+                postId: filters.postId,
+                executorId: filters.executorId,
+                status: filters.status,
+                extraFilter: filters.extraFilter,
+                fastButtonValue: filters.fastButtonValue,
+                activeOnly: filters.activeOnly,
+                onlyMyTasks: filters.onlyMyTasks,
+                assigneeAccountId: filters.assigneeAccountId,
+                updatedDate: filters.updatedDate,
+                searchQuery: filters.searchQuery,
+                period,
+                isSearchOpen,
+                visibleKanbanColumns,
+            };
+        }),
+
     resetForProfileSwitch: () =>
         set({
             postId: 'all',
             executorId: 'all',
-            status: 'all',
+            status: [],
             updatedDate: null,
             fastButtonValue: null,
             extraFilter: null,

@@ -7,15 +7,18 @@ import {
 
 export type MediaFileKind = 'image' | 'video' | 'document' | 'unknown'
 
-export const getMediaFileKind = (file: File): MediaFileKind => {
-  if (file.type.startsWith('image/')) return 'image'
-  if (file.type.startsWith('video/')) return 'video'
+const DOCUMENT_EXT = /\.(pdf|docx?|xlsx?|csv|zip)$/i
 
+export const getMediaFileKind = (file: File): MediaFileKind => {
   if (
-    (MEDIA_DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type)
+    (MEDIA_DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type) ||
+    DOCUMENT_EXT.test(file.name)
   ) {
     return 'document'
   }
+
+  if (file.type.startsWith('image/')) return 'image'
+  if (file.type.startsWith('video/')) return 'video'
 
   return 'unknown'
 }

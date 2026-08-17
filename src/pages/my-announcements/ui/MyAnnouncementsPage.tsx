@@ -1,4 +1,4 @@
-import { Add } from '@mui/icons-material';
+import { Add, ArchiveOutlined, LockOutlined } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
   TextField,
 } from '@mui/material';
 import { keepPreviousData } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 
 import {
@@ -18,6 +18,7 @@ import {
   usePostByIdQuery,
   usePostsInfiniteQuery,
   usePostsQuery,
+  useUpdatePostMutation,
 } from '@/entities';
 import { useAuthStore, useRequireEmailConfirmed } from '@/features/auth';
 import {
@@ -34,6 +35,8 @@ import {
   PageLayout,
   PostItem,
   PostItemSkeletonList,
+  PostSelectionBar,
+  useSnackbarStore,
 } from '@/widgets';
 
 enum MEDIA_TAB {
@@ -49,7 +52,6 @@ const getPermissions = (tab: MEDIA_TAB) => {
   if (tab === MEDIA_TAB.ACTIVE) {
     return [
       ACTION_BUTTONS_KEYS.EDIT,
-      ACTION_BUTTONS_KEYS.DELETE,
       ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE,
       ACTION_BUTTONS_KEYS.MAKE_PRIVATE,
     ];
@@ -58,7 +60,6 @@ const getPermissions = (tab: MEDIA_TAB) => {
   if (tab === MEDIA_TAB.ARCHIVED) {
     return [
       ACTION_BUTTONS_KEYS.EDIT,
-      ACTION_BUTTONS_KEYS.DELETE,
       ACTION_BUTTONS_KEYS.REMOVE_FROM_ARCHIVE,
       ACTION_BUTTONS_KEYS.MAKE_PUBLIC,
     ];
@@ -66,7 +67,7 @@ const getPermissions = (tab: MEDIA_TAB) => {
 
   return [
     ACTION_BUTTONS_KEYS.EDIT,
-    ACTION_BUTTONS_KEYS.DELETE,
+    ACTION_BUTTONS_KEYS.ADD_TO_ARCHIVE,
     ACTION_BUTTONS_KEYS.MAKE_PUBLIC,
   ];
 };
@@ -80,8 +81,13 @@ export const MyAnnouncementsPage = () => {
   const [selectedPostOption, setSelectedPostOption] =
     useState<FilterAutocompleteOption | null>(null);
   const [postSearchQuery, setPostSearchQuery] = useState('');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   const { isScrolled, ref: scrollProbeRef } = useScroll(80);
+  const { setSnackbarOpen } = useSnackbarStore();
+  const { mutateAsync: updatePost } = useUpdatePostMutation();
 
   const isCompany = role === USER_ROLE.COMPANY;
   const isActive = mediaTab === MEDIA_TAB.ACTIVE;
@@ -127,6 +133,17 @@ export const MyAnnouncementsPage = () => {
       { enabled: Boolean(id) && canSearchPosts }
     );
 
+  const clearSelection = useCallback(() => {
+    setSelectedIds([]);
+    setIsSelectionMode(false);
+  }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      clearSelection();
+    }, 0);
+  }, [mediaTab, postId, clearSelection]);
+
   const postOptions = useMemo(
     () =>
       (postSearchData?.items ?? []).map(post => ({
@@ -156,10 +173,101 @@ export const MyAnnouncementsPage = () => {
     : isLoading && !listPosts.length;
   const isEmpty = !isInitialLoading && !posts.length;
   const postPermissions = getPermissions(mediaTab);
+  const selectedIdSet = new Set(selectedIds);
+  const allVisibleSelected =
+    posts.length > 0 && posts.every(post => selectedIdSet.has(post.id));
 
   const handleCreate = () => {
     if (!requireEmailConfirmed()) return;
     navigate(ROUTES.MANAGE_APPLICATION);
+  };
+
+  const handleEnterSelectionMode = () => {
+    setIsSelectionMode(true);
+  };
+
+  const handleToggleSelect = (postIdToToggle: string) => {
+    setSelectedIds(prev =>
+      prev.includes(postIdToToggle)
+        ? prev.filter(id => id !== postIdToToggle)
+        : [...prev, postIdToToggle]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+
+    setSelectedIds(posts.map(post => post.id));
+  };
+
+  const applyBulkUpdate = async (
+    body: { isArchived?: boolean; isPrivate?: boolean },
+    successOne: string,
+    successMany: (count: number) => string,
+    failMessage: string
+  ) => {
+    if (!requireEmailConfirmed()) return;
+    if (selectedIds.length === 0 || isBulkUpdating) return;
+
+    setIsBulkUpdating(true);
+
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map(id => updatePost({ id, body }))
+      );
+
+      const successCount = results.filter(
+        result => result.status === 'fulfilled'
+      ).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0 && failCount === 0) {
+        setSnackbarOpen(
+          true,
+          successCount === 1 ? successOne : successMany(successCount)
+        );
+        clearSelection();
+        return;
+      }
+
+      if (successCount > 0) {
+        const failedIds = selectedIds.filter(
+          (_, index) => results[index]?.status === 'rejected'
+        );
+        setSelectedIds(failedIds);
+        setSnackbarOpen(
+          true,
+          `Успешно: ${successCount}, не удалось: ${failCount}`,
+          'error'
+        );
+        return;
+      }
+
+      setSnackbarOpen(true, failMessage, 'error');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkArchive = () => {
+    void applyBulkUpdate(
+      { isArchived: true },
+      'Пост перемещен в архив',
+      count => `В архив перемещено объявлений: ${count}`,
+      'Не удалось переместить объявления в архив'
+    );
+  };
+
+  const handleBulkMakePrivate = () => {
+    void applyBulkUpdate(
+      { isPrivate: true },
+      'Пост сделан приватным',
+      count => `Сделано приватными объявлений: ${count}`,
+      'Не удалось сделать объявления приватными'
+    );
   };
 
   const clearPostFilter = () => {
@@ -199,7 +307,7 @@ export const MyAnnouncementsPage = () => {
           ...stickyFilterSx,
           p: 2,
           mb: 1,
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           border: '1px solid',
           borderRadius: '24px',
           alignItems: 'center',
@@ -279,7 +387,7 @@ export const MyAnnouncementsPage = () => {
           <Button
             size="small"
             variant="contained"
-            sx={{ display: { xs: 'none', sm: 'inline-flex' }, ml: 'auto' }}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             onClick={handleCreate}
           >
             Добавить
@@ -288,7 +396,7 @@ export const MyAnnouncementsPage = () => {
           <IconButton
             size="small"
             aria-label="Добавить объявление"
-            sx={{ display: { xs: 'inline-flex', sm: 'none' }, ml: 'auto' }}
+            sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
             onClick={handleCreate}
           >
             <Add />
@@ -321,6 +429,7 @@ export const MyAnnouncementsPage = () => {
             sx={{
               transition: 'opacity 120ms ease',
               opacity: isPlaceholderData && !isPostSelected ? 0.72 : 1,
+              pb: isSelectionMode ? 12 : 0,
             }}
           >
             {posts.map(post => (
@@ -332,6 +441,10 @@ export const MyAnnouncementsPage = () => {
                 permissions={postPermissions}
                 isMyPost
                 isCompany
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIdSet.has(post.id)}
+                onToggleSelect={() => handleToggleSelect(post.id)}
+                onEnterSelectionMode={handleEnterSelectionMode}
               />
             ))}
           </Stack>
@@ -341,6 +454,11 @@ export const MyAnnouncementsPage = () => {
           <Box
             sx={{
               py: 6,
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'background.paper',
               border: '1px solid',
               borderRadius: '24px',
               borderColor: 'divider',
@@ -362,6 +480,40 @@ export const MyAnnouncementsPage = () => {
           />
         )}
       </Stack>
+
+      {isSelectionMode && (
+        <PostSelectionBar
+          selectedCount={selectedIds.length}
+          totalCount={posts.length}
+          isUpdating={isBulkUpdating}
+          onClose={clearSelection}
+          onSelectAll={handleSelectAll}
+          actions={[
+            ...(!isArchived
+              ? [
+                {
+                  label: 'В архив',
+                  icon: <ArchiveOutlined />,
+                  variant: 'outlined' as const,
+                  color: 'inherit' as const,
+                  onClick: handleBulkArchive,
+                },
+              ]
+              : []),
+            ...(!isPrivate
+              ? [
+                {
+                  label: 'Сделать приватным',
+                  icon: <LockOutlined />,
+                  variant: 'contained' as const,
+                  color: 'primary' as const,
+                  onClick: handleBulkMakePrivate,
+                },
+              ]
+              : []),
+          ]}
+        />
+      )}
     </PageLayout>
   );
 };

@@ -20,11 +20,11 @@ import {
   Typography,
   Alert,
   alpha,
+  useTheme,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { theme } from '@/app/index';
 import {
   TASK_STATUS_LABELS,
   type Task,
@@ -69,6 +69,7 @@ export const ChatAddTaskDialog = ({
   error = null,
   onAddTask,
 }: ChatAddTaskDialogProps) => {
+  const theme = useTheme();
   const [filters, setFilters] = useState<ChatAddTaskFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(0);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -126,18 +127,21 @@ export const ChatAddTaskDialog = ({
     setPage(0);
   }, []);
 
-  const tableShellSx = {
-    flex: 1,
-    minHeight: CONTENT_MIN_HEIGHT,
-    maxHeight: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    borderRadius: '20px',
-    border: `1px solid ${theme.palette.secondary.main}`,
-    bgcolor: 'common.white',
-    overflow: 'hidden',
-    boxShadow: `0 4px 24px ${alpha(theme.palette.primary.main, 0.06)}`,
-  };
+  const tableShellSx = useMemo(
+    () => ({
+      flex: 1,
+      minHeight: CONTENT_MIN_HEIGHT,
+      maxHeight: '100%',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      borderRadius: '20px',
+      border: `1px solid ${theme.palette.secondary.main}`,
+      bgcolor: 'background.paper',
+      overflow: 'hidden',
+      boxShadow: `0 4px 24px ${alpha(theme.palette.primary.main, 0.06)}`,
+    }),
+    [theme]
+  );
 
   const tableScrollSx = {
     flex: 1,
@@ -333,7 +337,7 @@ export const ChatAddTaskDialog = ({
             sx={{
               flex: 1.4,
               minWidth: 0,
-              '& .MuiOutlinedInput-root': { bgcolor: 'common.white' },
+              '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' },
             }}
           />
 
@@ -351,7 +355,7 @@ export const ChatAddTaskDialog = ({
             sx={{
               flex: 1,
               minWidth: 160,
-              '& .MuiOutlinedInput-root': { bgcolor: 'common.white' },
+              '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' },
             }}
           >
             <MenuItem value="all">Все</MenuItem>
@@ -377,7 +381,7 @@ export const ChatAddTaskDialog = ({
             sx={{
               flex: 1,
               minWidth: 160,
-              '& .MuiOutlinedInput-root': { bgcolor: 'common.white' },
+              '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' },
             }}
           />
         </Stack>
@@ -491,7 +495,7 @@ export const ChatAddTaskDialog = ({
                           bgcolor:
                             rowIndex % 2 === 1
                               ? 'secondary.light'
-                              : 'common.white',
+                              : 'background.paper',
                           '&:hover': {
                             bgcolor: theme =>
                               alpha(theme.palette.primary.main, 0.06),

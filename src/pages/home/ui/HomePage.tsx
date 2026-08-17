@@ -20,12 +20,13 @@ import {
   PostItem,
   PostItemSkeletonList,
   PageLayout,
+  PwaInstallBanner,
 } from '@/widgets';
 
 const searchMessageBoxSx = {
   flex: 1,
   display: 'flex',
-  bgcolor: 'white',
+  bgcolor: 'background.paper',
   alignItems: 'center',
   borderRadius: '32px',
   justifyContent: 'center',
@@ -219,6 +220,8 @@ export const HomePage = () => {
   return (
     <PageLayout>
       <Box ref={scrollProbeRef} />
+
+      <PwaInstallBanner />
 
       <Box sx={stickyFilterSx}>
         <MainFilter />

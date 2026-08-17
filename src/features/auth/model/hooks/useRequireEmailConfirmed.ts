@@ -20,7 +20,7 @@ export const useRequireEmailConfirmed = () => {
       return true
     }
 
-    setSnackbarOpen?.(true, EMAIL_CONFIRM_MESSAGE)
+    setSnackbarOpen?.(true, EMAIL_CONFIRM_MESSAGE, 'warning')
     navigate(ROUTES.SETTINGS_GENERAL)
     return false
   }, [isEmailConfirmed, navigate, setSnackbarOpen])

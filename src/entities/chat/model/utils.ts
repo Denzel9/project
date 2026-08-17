@@ -1,15 +1,15 @@
 import { format, isSameDay, isToday, isYesterday, startOfDay } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
-import { validateMediaFile } from '@/shared/lib/media'
+import { MEDIA_FILE_TEMPLATE_ACCEPT, validateMediaFile } from '@/shared/lib/media'
 
+import { getChatApplicationPreview } from './applicationMessage'
 import { getChatTaskTzPreview } from './taskTzMessage'
 
 import type { ChatConversation, ChatMessage, ChatMessageMedia } from './types'
 import type { UploadMediaResponse } from '@/entities/post'
 
-export const CHAT_MEDIA_ACCEPT =
-  'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation'
+export const CHAT_MEDIA_ACCEPT = MEDIA_FILE_TEMPLATE_ACCEPT
 
 export const toChatMessageMedia = (
   upload: UploadMediaResponse,
@@ -39,6 +39,12 @@ export const getMessagePreview = (
       return `${prefix}${tzPreview}`
     }
 
+    const applicationPreview = getChatApplicationPreview(trimmed)
+
+    if (applicationPreview) {
+      return `${prefix}${applicationPreview}`
+    }
+
     return `${prefix}${trimmed}`
   }
 
@@ -47,38 +53,41 @@ export const getMessagePreview = (
   const hasVideo = media.some(item => item.mimeType.startsWith('video/'))
   const hasImage = media.some(item => item.mimeType.startsWith('image/'))
   const hasPdf = media.some(item => item.mimeType.startsWith('application/pdf'))
-  const hasSpreadsheet = media.some(item =>
-    item.mimeType.startsWith(
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ),
+  const hasSpreadsheet = media.some(
+    item =>
+      item.mimeType.includes('excel') || item.mimeType.includes('spreadsheet'),
   )
-  const hasWord = media.some(item =>
-    item.mimeType.startsWith(
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ),
+  const hasWord = media.some(
+    item =>
+      item.mimeType.includes('word') || item.mimeType === 'application/msword',
   )
-  const hasPresentation = media.some(item =>
-    item.mimeType.startsWith(
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    ),
+  const hasZip = media.some(
+    item =>
+      item.mimeType === 'application/zip' ||
+      item.mimeType.includes('zip'),
+  )
+
+  const hasCsv = media.some(
+    item =>
+      item.mimeType === 'text/csv' ||
+      item.mimeType.includes('csv') ||
+      item.mimeType === 'text/comma-separated-values',
   )
 
   if (
     hasVideo &&
     hasImage &&
-    hasPdf &&
-    hasSpreadsheet &&
-    hasWord &&
-    hasPresentation
+    (hasPdf || hasSpreadsheet || hasWord || hasZip || hasCsv)
   ) {
     return `${prefix}Медиа`
   }
   if (hasVideo) return `${prefix}Видео`
   if (hasImage) return `${prefix}Фото`
   if (hasPdf) return `${prefix}PDF`
-  if (hasSpreadsheet) return `${prefix}Spreadsheet`
+  if (hasSpreadsheet) return `${prefix}Excel`
+  if (hasCsv) return `${prefix}CSV`
   if (hasWord) return `${prefix}Word`
-  if (hasPresentation) return `${prefix}Presentation`
+  if (hasZip) return `${prefix}ZIP`
 
   return `${prefix}Медиа`
 }

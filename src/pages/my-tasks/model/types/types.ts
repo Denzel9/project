@@ -16,7 +16,7 @@ export type FilterOption = {
 };
 
 export type TaskTableColumnFilters = {
-  status: TaskStatus | 'all';
+  status: TaskStatus[];
   manager: string | 'all';
   taskId: string;
   taskQuery: string;
@@ -25,7 +25,7 @@ export type TaskTableColumnFilters = {
   updatedDate: string | null;
   deadlineDate: string | null;
   personLabel: string;
-  onStatusChange: (value: TaskStatus | 'all') => void;
+  onStatusChange: (value: TaskStatus[]) => void;
   onTaskIdChange: (value: string) => void;
   onTaskQueryChange: (value: string) => void;
   onPersonIdChange: (value: string) => void;

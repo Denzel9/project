@@ -53,7 +53,7 @@ const buildArchiveTasksParams = ({
   assigneeAccountId,
 }: {
   isCompany: boolean;
-  status: TaskStatus | 'all';
+  status: TaskStatus[];
   personId: string;
   urgentOnly: boolean;
   updatedDate: string | null;
@@ -65,7 +65,7 @@ const buildArchiveTasksParams = ({
 }): Omit<TaskListParams, 'page'> => ({
   isArchived: true,
   limit: ARCHIVE_TABLE_PAGE_SIZE,
-  ...(status !== 'all' && { status }),
+  ...(status.length > 0 && { statuses: status }),
   ...(personId !== 'all' &&
     (isCompany ? { executorId: personId } : { ownerId: personId })),
   ...(urgentOnly && { urgent: true }),
@@ -345,7 +345,7 @@ export const ArchivedTasksTab = ({
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
           }}
         >
           <CircularProgress size={32} />
@@ -358,7 +358,7 @@ export const ArchivedTasksTab = ({
             border: '1px solid',
             borderRadius: '24px',
             borderColor: 'divider',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
           }}
         >
           <EmptyBlock title="Архивных задач нет" />
@@ -412,7 +412,7 @@ export const ArchivedTasksTab = ({
                     <Grid
                       key={task.id}
                       size={{ xs: 12, sm: 6, md: 4 }}
-                      sx={{ bgcolor: 'white', borderRadius: '24px' }}
+                      sx={{ bgcolor: 'background.paper', borderRadius: '24px' }}
                     >
                       <TaskItem
                         task={task}

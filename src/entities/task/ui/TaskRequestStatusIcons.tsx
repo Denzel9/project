@@ -1,4 +1,4 @@
-import { EventBusy, EventRepeat } from '@mui/icons-material';
+import { EventBusy, EventRepeat, PersonOff } from '@mui/icons-material';
 import { Stack, Tooltip, type StackProps } from '@mui/material';
 
 import {
@@ -13,7 +13,11 @@ import type { Task } from '../model/types';
 type TaskRequestStatusIconsProps = {
   task: Pick<
     Task,
-    'annulment' | 'annulments' | 'deadlineExtension' | 'deadlineExtensions'
+    | 'annulment'
+    | 'annulments'
+    | 'deadlineExtension'
+    | 'deadlineExtensions'
+    | 'isExecutorApprove'
   >;
   fontSize?: number;
   spacing?: StackProps['spacing'];
@@ -26,11 +30,26 @@ export const TaskRequestStatusIcons = ({
 }: TaskRequestStatusIconsProps) => {
   const deadlineRequest = getTaskDeadlineRequest(task);
   const annulmentRequest = getTaskAnnulmentRequest(task);
+  const isExecutorRejected = task.isExecutorApprove === false;
 
-  if (!deadlineRequest && !annulmentRequest) return null;
+  if (!deadlineRequest && !annulmentRequest && !isExecutorRejected) {
+    return null;
+  }
 
   return (
     <Stack direction="row" spacing={spacing} sx={{ alignItems: 'center' }}>
+      {isExecutorRejected && (
+        <Tooltip title="Исполнитель отказался от задачи">
+          <PersonOff
+            sx={{
+              fontSize,
+              flexShrink: 0,
+              color: 'error.main',
+            }}
+          />
+        </Tooltip>
+      )}
+
       {deadlineRequest && (
         <Tooltip title={TASK_DEADLINE_REQUEST_TITLE[deadlineRequest.status]}>
           <EventRepeat

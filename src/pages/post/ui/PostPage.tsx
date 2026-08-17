@@ -1,3 +1,4 @@
+import { Add } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -17,16 +18,18 @@ import {
   useGetUserByIdQuery,
   useMyApplicationsMap,
   usePostApplicationsQuery,
+  usePostTasksQuery,
   useUpdatePostMutation,
   USER_ROLE,
 } from '@/entities';
-import { useAuthStore } from '@/features';
+import { useAuthStore, useRequireEmailConfirmed } from '@/features';
 import { EmptyBlock, ROUTES } from '@/shared';
 import { PageLayout, ContactCard, useSnackbarStore } from '@/widgets';
 
 import {
   getPostApplicationApplicantOptions,
   hasActivePostApplicationFilters,
+  POST_PAGE_TAB,
   toPostApplicationsQueryParams,
   type PostApplicationApplicantFilter,
   type PostApplicationStatusFilter,
@@ -36,11 +39,12 @@ import { IncomingApplications } from './IncomingApplications';
 import { MainCard } from './MainCard';
 import { PostApplicationsFilter } from './PostApplicationsFilter';
 import { PostDetailsCard } from './PostDetailsCard';
+import { PostTasks } from './PostTasks';
 
 export const PostPage = () => {
   const [tabValue, setTabValue] = useState(0);
   const [applicationStatusFilter, setApplicationStatusFilter] =
-    useState<PostApplicationStatusFilter>('all');
+    useState<PostApplicationStatusFilter>([]);
   const [applicantId, setApplicantId] =
     useState<PostApplicationApplicantFilter>('all');
   const [createdDate, setCreatedDate] = useState<string | null>(null);
@@ -52,7 +56,9 @@ export const PostPage = () => {
 
   const { id } = useParams<{ id: string }>();
 
-  const { id: currentUserId, role } = useAuthStore();
+  const { id: currentUserId, role, isPrime } = useAuthStore();
+  const { requireEmailConfirmed } = useRequireEmailConfirmed();
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
   const { data: post, isLoading } = usePostByIdQuery(id ?? null);
   const { mutateAsync: updatePost, isPending: isUpdatingPost } =
@@ -120,17 +126,35 @@ export const PostPage = () => {
     myApplicationsMap.delete(postId);
   };
 
-  useEffect(() => {
-    if (tab) {
-      setTimeout(() => {
-        setTabValue(Number(tab));
-      }, 0);
-    }
-  }, [tab]);
-
   const isOwner = Boolean(post?.owner?.id === currentUserId);
   const isCompanyPost = post?.type === 'COMPANY';
+  const showOwnerCompanyTabs =
+    isOwner && isCompanyPost && role === USER_ROLE.COMPANY;
+  const showTasksTab = showOwnerCompanyTabs && isPrime;
   const application = myApplicationsMap.get(post?.id ?? '');
+
+  const { data: postTasks, isLoading: isPostTasksLoading } = usePostTasksQuery(
+    post?.id || null,
+    { page: 1, limit: 100, isArchived: false },
+    !showTasksTab
+  );
+
+  useEffect(() => {
+    if (!tab) return;
+
+    const nextTab = Number(tab);
+    if (!Number.isFinite(nextTab)) return;
+    if (nextTab === POST_PAGE_TAB.TASKS && !isPrime) return;
+
+    setTimeout(() => {
+      setTabValue(nextTab);
+    }, 0);
+  }, [tab, isPrime]);
+
+  const handleOpenCreateTask = () => {
+    if (!requireEmailConfirmed()) return;
+    setIsCreateTaskOpen(true);
+  };
 
   const handleUnarchive = async () => {
     if (!post || !isOwner || isUpdatingPost) return;
@@ -169,7 +193,7 @@ export const PostPage = () => {
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: 320,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
           }}
         >
@@ -188,7 +212,7 @@ export const PostPage = () => {
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: 320,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
           }}
         >
@@ -208,7 +232,7 @@ export const PostPage = () => {
         spacing={1}
         sx={{ flex: 1 }}
       >
-        {isOwner && isCompanyPost && role === USER_ROLE.COMPANY && (
+        {showOwnerCompanyTabs && (
           <Stack
             direction="row"
             sx={{
@@ -216,7 +240,7 @@ export const PostPage = () => {
               width: '100%',
               justifyContent: 'space-between',
               alignItems: 'center',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               borderRadius: '24px',
               border: '1px solid',
               borderColor: 'divider',
@@ -224,7 +248,14 @@ export const PostPage = () => {
           >
             <Tabs
               value={tabValue}
-              onChange={(_, newValue) => setTabValue(newValue)}
+              onChange={(_, newValue) => {
+                setTabValue(newValue);
+                if (newValue !== POST_PAGE_TAB.TASKS) {
+                  setIsCreateTaskOpen(false);
+                }
+              }}
+              variant="scrollable"
+              scrollButtons="auto"
               sx={{
                 minHeight: 44,
                 '& .MuiTab-root': {
@@ -235,11 +266,11 @@ export const PostPage = () => {
               }}
             >
               <Tab
-                value={0}
+                value={POST_PAGE_TAB.DESCRIPTION}
                 label="Описание"
               />
               <Tab
-                value={1}
+                value={POST_PAGE_TAB.APPLICATIONS}
                 label={
                   <Stack
                     direction="row"
@@ -255,9 +286,28 @@ export const PostPage = () => {
                   </Stack>
                 }
               />
+              {showTasksTab && (
+                <Tab
+                  value={POST_PAGE_TAB.TASKS}
+                  label={
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <span>Задачи</span>
+                      <Chip
+                        size="small"
+                        color="primary"
+                        label={postTasks?.total ?? postTasks?.items?.length ?? 0}
+                      />
+                    </Stack>
+                  }
+                />
+              )}
             </Tabs>
 
-            {isOwner && isCompanyPost && role === USER_ROLE.COMPANY && tabValue === 1 && (
+            {tabValue === POST_PAGE_TAB.APPLICATIONS && (
               <PostApplicationsFilter
                 status={applicationStatusFilter}
                 applicantId={applicantId}
@@ -268,10 +318,20 @@ export const PostPage = () => {
                 onCreatedDateChange={setCreatedDate}
               />
             )}
+
+            {showTasksTab && tabValue === POST_PAGE_TAB.TASKS && (
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleOpenCreateTask}
+              >
+                Добавить задачу
+              </Button>
+            )}
           </Stack>
         )}
 
-        {tabValue === 0 && (
+        {tabValue === POST_PAGE_TAB.DESCRIPTION && (
           <Stack spacing={1}>
             {post.isArchived && (
               <Stack
@@ -279,7 +339,7 @@ export const PostPage = () => {
                 direction="row"
                 sx={{
                   p: 2,
-                  bgcolor: 'white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderRadius: '24px',
                   alignItems: 'center',
@@ -311,7 +371,7 @@ export const PostPage = () => {
                 direction="row"
                 sx={{
                   p: 2,
-                  bgcolor: 'white',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderRadius: '24px',
                   alignItems: 'center',
@@ -351,7 +411,7 @@ export const PostPage = () => {
                 sx={{
                   px: 3,
                   py: 2,
-                  bgcolor: 'white',
+                  bgcolor: 'background.paper',
                   borderRadius: '24px',
                   border: '1px solid',
                   borderColor: 'divider',
@@ -408,7 +468,7 @@ export const PostPage = () => {
           </Stack>
         )}
 
-        {isOwner && tabValue === 1 && (
+        {isOwner && tabValue === POST_PAGE_TAB.APPLICATIONS && (
           <IncomingApplications
             applications={postApplications}
             isLoading={isPostApplicationsLoading}
@@ -419,8 +479,18 @@ export const PostPage = () => {
             }
           />
         )}
+
+        {showTasksTab && tabValue === POST_PAGE_TAB.TASKS && (
+          <PostTasks
+            postId={post.id}
+            tasks={postTasks}
+            isLoading={isPostTasksLoading}
+            isCreateOpen={isCreateTaskOpen}
+            onCreateOpenChange={setIsCreateTaskOpen}
+          />
+        )}
       </Stack>
-    </PageLayout >
+    </PageLayout>
   );
 };
 

@@ -6,7 +6,7 @@ import {
   Stack,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import {
   usePublicationsInfiniteQuery,
@@ -34,6 +34,7 @@ import {
   getPublicationTitleOptions,
   hasActivePublicationFilters,
   parsePublicationSearchParams,
+  writePublicationSearchParams,
   PUBLICATION_PLATFORM_FILTER_OPTIONS,
   toPublicationsParams,
   type PublicationExecutorFilter,
@@ -65,39 +66,31 @@ const getInitialViewMode = (): PublicationViewMode => {
 
 export const PublicationsPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const contentRef = useRef<HTMLDivElement>(null);
-  const [searchParams] = useSearchParams();
-  const deepLinkFilters = useMemo(
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(
     () => parsePublicationSearchParams(searchParams),
     [searchParams]
   );
-  const deepLinkPostTitle = useMemo(() => {
-    const state = location.state as { postTitle?: string } | null;
-
-    return state?.postTitle?.trim() || undefined;
-  }, [location.state]);
+  const { q, postId, executorId, platform, createdDate } = filters;
 
   const [viewMode, setViewMode] =
     useState<PublicationViewMode>(getInitialViewMode);
-  const [q, setQ] = useState('');
-  const [postId, setPostId] = useState<PublicationPostFilter>(
-    deepLinkFilters.postId ?? 'all'
-  );
-  const [executorId, setExecutorId] = useState<PublicationExecutorFilter>(
-    deepLinkFilters.executorId ?? 'all'
-  );
-  const [platform, setPlatform] = useState<PublicationPlatformFilter>('all');
-  const [createdDate, setCreatedDate] = useState<string | null>(null);
   const [postSearchQuery, setPostSearchQuery] = useState('');
   const [executorSearchQuery, setExecutorSearchQuery] = useState('');
   const [titleSearchQuery, setTitleSearchQuery] = useState('');
   const [selectedPostOption, setSelectedPostOption] =
-    useState<FilterAutocompleteOption | null>(null);
+    useState<FilterAutocompleteOption | null>(
+      filters.postId !== 'all' && filters.postTitle
+        ? { id: filters.postId, label: filters.postTitle }
+        : null
+    );
   const [selectedExecutorOption, setSelectedExecutorOption] =
     useState<FilterAutocompleteOption | null>(null);
   const [selectedTitleOption, setSelectedTitleOption] =
-    useState<FilterAutocompleteOption | null>(null);
+    useState<FilterAutocompleteOption | null>(
+      q.trim() ? { id: q, label: q } : null
+    );
   const [isTableFilterRowOpen, setIsTableFilterRowOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -106,26 +99,54 @@ export const PublicationsPage = () => {
   >(null);
   const [pendingPrint, setPendingPrint] = useState(false);
 
+  const patchFilters = useCallback(
+    (patch: Partial<typeof filters>) => {
+      setSearchParams(
+        current =>
+          writePublicationSearchParams(current, {
+            ...parsePublicationSearchParams(current),
+            ...patch,
+          }),
+        { replace: true, preventScrollReset: true }
+      );
+    },
+    [setSearchParams]
+  );
+
   useEffect(() => {
-    if (deepLinkFilters.postId) {
-      setTimeout(() => {
-        setPostId(deepLinkFilters.postId ?? 'all');
-        if (deepLinkFilters.postId && deepLinkPostTitle) {
-          setSelectedPostOption({
-            id: deepLinkFilters.postId,
-            label: deepLinkPostTitle,
-          });
-        }
-      }, 0);
+    if (filters.postId !== 'all' && filters.postTitle) {
+      setSelectedPostOption({
+        id: filters.postId,
+        label: filters.postTitle,
+      });
+      return;
     }
 
-    if (deepLinkFilters.executorId) {
-      setTimeout(() => {
-        setExecutorId(deepLinkFilters.executorId ?? 'all');
-        setViewMode('table');
-      }, 0);
+    if (filters.postId === 'all') {
+      setSelectedPostOption(null);
     }
-  }, [deepLinkFilters.executorId, deepLinkFilters.postId, deepLinkPostTitle]);
+  }, [filters.postId, filters.postTitle]);
+
+  useEffect(() => {
+    if (!q.trim()) {
+      setSelectedTitleOption(null);
+      return;
+    }
+
+    setSelectedTitleOption(current =>
+      current?.id === q ? current : { id: q, label: q }
+    );
+  }, [q]);
+
+  const didForceExecutorTableRef = useRef(false);
+
+  useEffect(() => {
+    if (didForceExecutorTableRef.current) return;
+    if (filters.executorId === 'all') return;
+
+    didForceExecutorTableRef.current = true;
+    setViewMode('table');
+  }, [filters.executorId]);
 
   const isTableView = viewMode === 'table';
   const useServerTablePagination = isTableView;
@@ -137,10 +158,10 @@ export const PublicationsPage = () => {
         postId,
         executorId,
         platform,
-        taskId: deepLinkFilters.taskId,
+        taskId: filters.taskId,
         createdDate,
       }),
-    [q, postId, executorId, platform, deepLinkFilters.taskId, createdDate]
+    [q, postId, executorId, platform, filters.taskId, createdDate]
   );
 
   const paginationResetKey = useMemo(
@@ -152,10 +173,10 @@ export const PublicationsPage = () => {
         executorId,
         platform,
         createdDate ?? '',
-        deepLinkFilters.taskId ?? '',
-        deepLinkFilters.postId ?? '',
+        filters.taskId ?? '',
+        filters.postId,
       ].join('|'),
-    [viewMode, q, postId, executorId, platform, createdDate, deepLinkFilters]
+    [viewMode, q, postId, executorId, platform, createdDate, filters]
   );
 
   const [tablePageState, setTablePageState] = useState({
@@ -301,25 +322,29 @@ export const PublicationsPage = () => {
 
   const handlePostChange = useCallback(
     (value: PublicationPostFilter) => {
-      setPostId(value);
-
       if (value === 'all') {
+        patchFilters({ postId: 'all', postTitle: undefined });
         setSelectedPostOption(null);
         return;
       }
 
-      setSelectedPostOption(current => {
-        const fromSearch = postOptions.find(option => option.id === value);
+      const fromSearch = postOptions.find(option => option.id === value);
+      const nextOption = fromSearch ?? (selectedPostOption?.id === value
+        ? selectedPostOption
+        : null);
 
-        return fromSearch ?? (current?.id === value ? current : null);
+      setSelectedPostOption(nextOption);
+      patchFilters({
+        postId: value,
+        postTitle: nextOption?.label,
       });
     },
-    [postOptions],
+    [patchFilters, postOptions, selectedPostOption],
   );
 
   const handleExecutorChange = useCallback(
     (value: PublicationExecutorFilter) => {
-      setExecutorId(value);
+      patchFilters({ executorId: value });
 
       if (value === 'all') {
         setSelectedExecutorOption(null);
@@ -332,32 +357,39 @@ export const PublicationsPage = () => {
         return fromSearch ?? (current?.id === value ? current : null);
       });
     },
-    [executorOptions],
+    [executorOptions, patchFilters],
   );
 
   const handleTitleChange = useCallback(
     (value: string) => {
       if (value === 'all') {
-        setQ('');
+        patchFilters({ q: '' });
         setSelectedTitleOption(null);
         return;
       }
 
-      setQ(value);
+      patchFilters({ q: value });
       setSelectedTitleOption(current => {
         const fromSearch = titleOptions.find(option => option.id === value);
 
         return fromSearch ?? (current?.id === value ? current : { id: value, label: value });
       });
     },
-    [titleOptions],
+    [patchFilters, titleOptions],
   );
 
   const handlePlatformChange = useCallback((value: string) => {
-    setPlatform(
-      value === 'all' ? 'all' : (value as PublicationPlatformFilter),
-    );
-  }, []);
+    patchFilters({
+      platform: value === 'all' ? 'all' : (value as PublicationPlatformFilter),
+    });
+  }, [patchFilters]);
+
+  const handleCreatedDateChange = useCallback(
+    (value: string | null) => {
+      patchFilters({ createdDate: value });
+    },
+    [patchFilters],
+  );
 
   const hasActiveFilters = hasActivePublicationFilters({
     q,
@@ -391,9 +423,9 @@ export const PublicationsPage = () => {
       executorId,
       platform,
       createdDate,
-      taskId: deepLinkFilters.taskId,
+      taskId: filters.taskId,
     }),
-    [q, postId, executorId, platform, createdDate, deepLinkFilters.taskId]
+    [q, postId, executorId, platform, createdDate, filters.taskId]
   );
 
   const printPublications = reportPublications ?? visiblePublications;
@@ -522,7 +554,7 @@ export const PublicationsPage = () => {
         onChange: handleExecutorChange,
       },
       createdDate,
-      onCreatedDateChange: setCreatedDate,
+      onCreatedDateChange: handleCreatedDateChange,
     }),
     [
       allowOptionSearch,
@@ -536,6 +568,7 @@ export const PublicationsPage = () => {
       handlePlatformChange,
       handlePostChange,
       handleTitleChange,
+      handleCreatedDateChange,
       isExecutorSearchFetching,
       isTitlePostSearchFetching,
       platform,
@@ -553,11 +586,15 @@ export const PublicationsPage = () => {
   );
 
   const handleResetFilters = () => {
-    setQ('');
-    setPostId('all');
-    setExecutorId('all');
-    setPlatform('all');
-    setCreatedDate(null);
+    patchFilters({
+      q: '',
+      postId: 'all',
+      executorId: 'all',
+      platform: 'all',
+      createdDate: null,
+      taskId: undefined,
+      postTitle: undefined,
+    });
     setSelectedTitleOption(null);
     setSelectedPostOption(null);
     setSelectedExecutorOption(null);
@@ -624,7 +661,7 @@ export const PublicationsPage = () => {
               }
               hasActiveFilters={hasActiveFilters}
               tableReport={tableReport}
-              onQueryChange={setQ}
+              onQueryChange={value => patchFilters({ q: value })}
               onPostChange={handlePostChange}
               onExecutorChange={handleExecutorChange}
               onPostSearch={setPostSearchQuery}
@@ -651,7 +688,7 @@ export const PublicationsPage = () => {
               py: 6,
               display: 'flex',
               justifyContent: 'center',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               borderRadius: '32px',
               border: '1px solid',
               borderColor: 'divider',
@@ -673,7 +710,7 @@ export const PublicationsPage = () => {
               flex: 1,
               height: '100%',
               display: 'flex',
-              bgcolor: 'white',
+              bgcolor: 'background.paper',
               borderRadius: '32px',
               border: '1px solid',
               borderColor: 'divider',

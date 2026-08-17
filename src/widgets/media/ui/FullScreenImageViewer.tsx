@@ -6,6 +6,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
+import { getMediaKind } from '../lib/getMediaKind'
 import { MediaItem } from './MediaItem'
 
 import type { MediaItemType } from '../model/types'
@@ -80,6 +81,9 @@ export const FullScreenImageViewer = ({
                 mimeType={item.mimeType}
                 fit="contain"
                 loading="eager"
+                withControls={
+                  getMediaKind(item.url, item.mimeType) === 'video'
+                }
               />
             </Box>
           </SwiperSlide>

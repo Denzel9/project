@@ -45,7 +45,7 @@ export const FavoriteUserItemCard = ({
         display: 'flex',
         gap: 2,
         color: 'inherit',
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         borderRadius: '24px',
         textDecoration: 'none',
         border: '1px solid',

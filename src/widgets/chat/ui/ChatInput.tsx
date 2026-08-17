@@ -1,1 +1,1 @@
-export { ChatInput } from '@/shared/ui/messenger'
+export { LazyChatInput as ChatInput } from '@/shared/ui/messenger/LazyChatInput';

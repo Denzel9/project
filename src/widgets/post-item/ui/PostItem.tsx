@@ -1,6 +1,7 @@
 import { MoreVert, Whatshot } from '@mui/icons-material';
 import {
   Box,
+  Checkbox,
   Chip,
   Divider,
   IconButton,
@@ -37,6 +38,10 @@ const PostItem = ({
   isPrivate = false,
   applicationStatus,
   isFavorite = false,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
+  onEnterSelectionMode,
   removePostFromCollection,
 }: PostItemProps) => {
   const navigate = useNavigate();
@@ -61,6 +66,7 @@ const PostItem = ({
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setAnchorEl(e.currentTarget);
   };
 
@@ -82,23 +88,41 @@ const PostItem = ({
     return theme.palette.secondary.main;
   };
 
+  const handleSelectClick = () => {
+    if (!isSelectionMode) return;
+    onToggleSelect?.();
+  };
+
+  const preventNavigationInSelection = (
+    event: MouseEvent<HTMLElement>
+  ) => {
+    if (!isSelectionMode) return;
+    event.preventDefault();
+  };
+
   return (
     <Box
+      onClick={handleSelectClick}
       sx={{
         gap: 2,
         width: '100%',
         display: 'flex',
-        bgcolor: 'white',
+        bgcolor: isSelected ? 'action.hover' : 'background.paper',
         p: { md: 4 },
         borderRadius: '24px',
         transition: 'all 0.3s ease',
         flexDirection: { xs: 'column', lg: 'row' },
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: isSelected ? 'primary.main' : 'divider',
+        cursor: isSelectionMode ? 'pointer' : 'default',
         borderLeft: theme =>
           isApplied
             ? `4px solid ${getBorderColor(theme)}`
-            : `1px solid ${theme.palette.secondary.main}`,
+            : `1px solid ${
+                isSelected
+                  ? theme.palette.primary.main
+                  : theme.palette.secondary.main
+              }`,
         ':hover': {
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
         },
@@ -147,6 +171,7 @@ const PostItem = ({
                   target="_blank"
                   component={Link}
                   to={`${ROUTES.POST}/${post.id}`}
+                  onClick={preventNavigationInSelection}
                   sx={{
                     color: 'inherit',
                     textDecoration: 'none',
@@ -168,6 +193,7 @@ const PostItem = ({
                     color="primary"
                     onClick={e => {
                       e.preventDefault();
+                      if (isSelectionMode) return;
                       navigate(`${ROUTES.POST}/${post.id}?tab=1`);
                     }}
                     label={getApplicationsCountLabel(
@@ -191,38 +217,78 @@ const PostItem = ({
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              {!isPrivate && (
+              {!isSelectionMode && !isPrivate && (
                 <ShareButton
                   postId={post.id}
                   title={post.title}
                 />
               )}
 
-              <IconButton onClick={handleClick}>
-                <MoreVert />
-              </IconButton>
+              {isSelectionMode ? (
+                <Box
+                  component="span"
+                  onClick={event => event.stopPropagation()}
+                  onMouseDown={event => event.stopPropagation()}
+                >
+                  <Checkbox
+                    size="small"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect?.()}
+                    slotProps={{
+                      input: {
+                        'aria-label': isSelected
+                          ? 'Снять выбор с объявления'
+                          : 'Выбрать объявление',
+                      },
+                    }}
+                  />
+                </Box>
+              ) : (
+                <>
+                  <IconButton onClick={handleClick}>
+                    <MoreVert />
+                  </IconButton>
 
-              <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-              >
-                {allowedActions.map((action, index) => (
-                  <>
-                    <MenuItem
-                      key={action.key}
-                      sx={{ fontSize: 14 }}
-                      onClick={() => {
-                        handleAction(action.key);
-                        handleClose();
-                      }}
-                    >
-                      {action.label}
-                    </MenuItem>
-                    {index < allowedActions.length - 1 && <Divider key={action.key} />}
-                  </>
-                ))}
-              </Menu>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={open}
+                    onClose={handleClose}
+                  >
+                    {isMyPost && onEnterSelectionMode && (
+                      <>
+                        <MenuItem
+                          sx={{ fontSize: 14 }}
+                          onClick={() => {
+                            onEnterSelectionMode();
+                            handleClose();
+                          }}
+                        >
+                          Выбрать
+                        </MenuItem>
+                        {allowedActions.length > 0 && <Divider />}
+                      </>
+                    )}
+
+                    {allowedActions.map((action, index) => (
+                      <>
+                        <MenuItem
+                          key={action.key}
+                          sx={{ fontSize: 14 }}
+                          onClick={() => {
+                            handleAction(action.key);
+                            handleClose();
+                          }}
+                        >
+                          {action.label}
+                        </MenuItem>
+                        {index < allowedActions.length - 1 && (
+                          <Divider key={action.key} />
+                        )}
+                      </>
+                    ))}
+                  </Menu>
+                </>
+              )}
             </Box>
           </Box>
 
@@ -231,6 +297,7 @@ const PostItem = ({
               target="_blank"
               component={Link}
               to={`${ROUTES.PROFILE}?userId=${post?.owner?.id}`}
+              onClick={preventNavigationInSelection}
               sx={{
                 gap: 1,
                 display: 'flex',
@@ -268,6 +335,7 @@ const PostItem = ({
               {isCompact && post?.description?.length > 200 && (
                 <span
                   onClick={() => {
+                    if (isSelectionMode) return;
                     navigate(`${ROUTES.POST}/${post.id}`);
                   }}
                   style={{

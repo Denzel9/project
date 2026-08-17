@@ -24,6 +24,7 @@ import {
   filterApplicationsByCompany,
   hasActiveMyResponseFilters,
   toMyApplicationsParams,
+  DEFAULT_APPLICATION_STATUS_FILTER,
   type ApplicationStatusFilter,
   type CompanyFilter,
 } from '../model/utils';
@@ -45,7 +46,9 @@ const getInitialViewMode = (): MyResponseViewMode => {
 };
 
 export const MyResponses = () => {
-  const [status, setStatus] = useState<ApplicationStatusFilter>('all');
+  const [status, setStatus] = useState<ApplicationStatusFilter>([
+    ...DEFAULT_APPLICATION_STATUS_FILTER,
+  ]);
   const [updatedDate, setUpdatedDate] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<CompanyFilter>('all');
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
@@ -181,9 +184,6 @@ export const MyResponses = () => {
     q: searchQ,
   });
 
-  const isFilterEmpty =
-    !updatedDate && status === 'all' && companyId === 'all' && !searchQ;
-
   const feedIsLoading = useServerTablePagination ? isTableLoading : isLoading;
   const feedIsError = useServerTablePagination ? isTableError : isError;
   const feedRefetch = useServerTablePagination ? refetchTable : refetch;
@@ -191,13 +191,6 @@ export const MyResponses = () => {
   const isInitialLoading = feedIsLoading && !visibleApplications.length;
   const isEmpty =
     !isInitialLoading && !feedIsError && !visibleApplications.length;
-  const showFilter = Boolean(
-    applications.length ||
-    tableApplications.length ||
-    !isFilterEmpty ||
-    isSearchOpen ||
-    isTableView
-  );
   const tableReportDisabled = feedIsLoading || isEmpty;
   const printApplications = reportApplications ?? visibleApplications;
 
@@ -321,7 +314,7 @@ export const MyResponses = () => {
   ]);
 
   const handleResetFilters = () => {
-    setStatus('all');
+    setStatus([]);
     setUpdatedDate(null);
     setCompanyId('all');
     setSearchQuery('');
@@ -357,32 +350,30 @@ export const MyResponses = () => {
       isScreenHeight={isTableView}
       printHide={isTableView}
     >
-      {showFilter && (
-        <Box
-          className="print-no-print"
-          sx={{
-            ...stickyFilterSx,
-            flexShrink: 0,
-          }}
-        >
-          <MyResponsesFilter
-            status={status}
-            companyId={companyId}
-            updatedDate={updatedDate}
-            companyOptions={companyOptions}
-            onStatusChange={setStatus}
-            onCompanyChange={setCompanyId}
-            onUpdatedDateChange={setUpdatedDate}
-            searchQuery={searchQuery}
-            isSearchOpen={isSearchOpen}
-            onSearchQueryChange={setSearchQuery}
-            onSearchOpenChange={setIsSearchOpen}
-            viewMode={viewMode}
-            onViewModeChange={handleViewModeChange}
-            tableReport={tableReport}
-          />
-        </Box>
-      )}
+      <Box
+        className="print-no-print"
+        sx={{
+          ...stickyFilterSx,
+          flexShrink: 0,
+        }}
+      >
+        <MyResponsesFilter
+          status={status}
+          companyId={companyId}
+          updatedDate={updatedDate}
+          companyOptions={companyOptions}
+          onStatusChange={setStatus}
+          onCompanyChange={setCompanyId}
+          onUpdatedDateChange={setUpdatedDate}
+          searchQuery={searchQuery}
+          isSearchOpen={isSearchOpen}
+          onSearchQueryChange={setSearchQuery}
+          onSearchOpenChange={setIsSearchOpen}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          tableReport={tableReport}
+        />
+      </Box>
 
       {isInitialLoading && !isTableView && (
         <MyResponseItemSkeletonList count={6} />
@@ -393,7 +384,7 @@ export const MyResponses = () => {
           sx={{
             flex: 1,
             minHeight: 0,
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
             border: '1px solid',
             borderColor: 'divider',
@@ -406,7 +397,7 @@ export const MyResponses = () => {
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             borderRadius: '32px',
             border: '1px solid',
             borderColor: 'divider',
@@ -426,7 +417,7 @@ export const MyResponses = () => {
           sx={{
             flex: 1,
             display: 'flex',
-            bgcolor: 'white',
+            bgcolor: 'background.paper',
             border: '1px solid',
             borderRadius: '32px',
             alignItems: 'center',

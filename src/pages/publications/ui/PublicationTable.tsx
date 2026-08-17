@@ -26,7 +26,6 @@ import { ru } from 'date-fns/locale';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
-import { theme } from '@/app/index';
 import { getPlatformLabel, type Platform } from '@/entities/post';
 import {
   executorToUserPartial,
@@ -103,7 +102,7 @@ export const PublicationTable = ({
   onFilterRowOpenChange,
 }: PublicationTableProps) => {
   const navigate = useNavigate();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const [galleryItems, setGalleryItems] = useState<MediaItemType[] | null>(
@@ -283,7 +282,7 @@ export const PublicationTable = ({
           minHeight: 0,
           height: forPrint ? 'auto' : '100%',
           display: 'flex',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           overflow: forPrint ? 'visible' : 'hidden',
           flexDirection: 'column',
           borderRadius: forPrint ? 0 : { xs: '16px', md: '32px' },

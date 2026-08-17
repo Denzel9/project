@@ -98,7 +98,7 @@ export const TaskAssigneeCard = ({
       <Box
         sx={{
           height: 'fit-content',
-          bgcolor: 'white',
+          bgcolor: 'background.paper',
           borderRadius: '32px',
           p: 2,
           border: '1px solid',

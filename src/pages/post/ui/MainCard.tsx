@@ -21,7 +21,7 @@ import {
   type User,
   type Application,
 } from '@/entities';
-import { DeletePostDialog, useRequireEmailConfirmed } from '@/features';
+import { useRequireEmailConfirmed } from '@/features';
 import { ShareButton, ROUTES } from '@/shared';
 import {
   Media,
@@ -52,7 +52,6 @@ export const MainCard = ({
   application,
   removePostFromCollection,
 }: MainCardProps) => {
-  const [isOpenDeleteDialog, setIsOpenDeleteDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const { setOpenAddToCollectionDialog } = useApplicationItemStore();
@@ -132,7 +131,7 @@ export const MainCard = ({
     <Box
       sx={{
         gap: 3,
-        bgcolor: 'white',
+        bgcolor: 'background.paper',
         display: 'flex',
         p: { xs: 2, md: 4 },
         flexDirection: 'column',
@@ -248,7 +247,7 @@ export const MainCard = ({
                     >
                       Редактировать
                     </MenuItem>
-                    <Divider sx={{ my: .5 }} />
+                    <Divider />
                     <MenuItem
                       sx={{ fontSize: '14px' }}
                       disabled={isUpdatingPost}
@@ -258,7 +257,7 @@ export const MainCard = ({
                         ? 'Вернуть из архива'
                         : 'Переместить в архив'}
                     </MenuItem>
-                    <Divider sx={{ my: .5 }} />
+                    <Divider />
                     <MenuItem
                       sx={{ fontSize: '14px' }}
                       disabled={isUpdatingPost}
@@ -267,15 +266,6 @@ export const MainCard = ({
                       {post?.isPrivate
                         ? 'Сделать публичным'
                         : 'Сделать приватным'}
-                    </MenuItem>
-                    <Divider sx={{ my: .5 }} />
-                    <MenuItem
-                      sx={{ fontSize: '14px' }}
-                      onClick={() => {
-                        runOwnerAction(() => setIsOpenDeleteDialog(true));
-                      }}
-                    >
-                      Удалить
                     </MenuItem>
                   </>
                 )}
@@ -349,13 +339,6 @@ export const MainCard = ({
           )}
         </Stack>
       </Box>
-
-      <DeletePostDialog
-        open={isOpenDeleteDialog}
-        postId={post?.id ?? null}
-        onClose={() => setIsOpenDeleteDialog(false)}
-        onSuccess={() => navigate(ROUTES.MY_ANNOUNCEMENTS)}
-      />
     </Box>
   );
 };

@@ -10,7 +10,6 @@ import {
 } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
-import { useMyPostOptionsQuery } from '@/entities'
 import {
   getPartnerName,
   mapPartnerUserToRow,
@@ -63,8 +62,6 @@ export const DashboardMobileFilter = ({
     }, 0)
   }, [open, postId, executorId, period])
 
-  const { data: postsData, isLoading: isPostsLoading } =
-    useMyPostOptionsQuery()
   const { data: executorsData, isLoading: isExecutorsLoading } =
     usePartnerExecutorsQuery(
       { sort: 'name', limit: 100 },
@@ -75,15 +72,6 @@ export const DashboardMobileFilter = ({
       { sort: 'name', limit: 100 },
       { enabled: open && !isCompany },
     )
-
-  const postOptions = useMemo(
-    () =>
-      (postsData?.items ?? []).map(post => ({
-        id: post.id,
-        label: post.title?.trim() || 'Без названия',
-      })),
-    [postsData?.items],
-  )
 
   const partnerOptions = useMemo(() => {
     const items = isCompany
@@ -142,20 +130,6 @@ export const DashboardMobileFilter = ({
         </Stack>
 
         <Stack spacing={3}>
-          <FilterAutocomplete
-            label="Пост"
-            value={draft.postId}
-            onChange={value =>
-              setDraft(prev => ({
-                ...prev,
-                postId: value,
-              }))
-            }
-            options={postOptions}
-            loading={isPostsLoading}
-            sx={{ width: '100%' }}
-          />
-
           <FilterAutocomplete
             value={draft.executorId}
             options={partnerOptions}

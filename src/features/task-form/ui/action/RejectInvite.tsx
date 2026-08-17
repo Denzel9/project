@@ -1,4 +1,4 @@
-import { Button, Stack, Typography } from '@mui/material';
+import { Button, Stack } from '@mui/material';
 import axios from 'axios';
 
 import { type UpdateTaskDto, type Task, TASK_STATUS_ENUM } from '@/entities';
@@ -23,7 +23,7 @@ export const RejectInvite = ({
 }: RejectInviteProps) => {
   const { setSnackbarOpen } = useSnackbarStore();
 
-  const handleAccept = async () => {
+  const handleResend = async () => {
     try {
       await updateTask({
         id: taskId,
@@ -36,27 +36,23 @@ export const RejectInvite = ({
     }
   };
 
+  if (!isMe) {
+    return null;
+  }
+
   return (
     <Stack
       spacing={2}
       sx={{ mt: 4, alignItems: 'start' }}
       direction="column"
     >
-      <Typography>
-        {isMe
-          ? 'Исполнитель отклонил приглашение на выполнение задачи.'
-          : 'Вы не можете принять участие в задаче, так как вы отклонили приглашение.'}
-      </Typography>
-
-      {isMe && (
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={handleAccept}
-        >
-          Отправить повторно
-        </Button>
-      )}
+      <Button
+        size="small"
+        variant="outlined"
+        onClick={handleResend}
+      >
+        Отправить повторно
+      </Button>
     </Stack>
   );
 };

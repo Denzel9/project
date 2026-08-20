@@ -3,11 +3,15 @@ import { alpha, type Theme } from '@mui/material'
 import type { SnackbarSeverity } from './store'
 
 type SeverityStyle = {
-  bgcolor: string
-  borderColor: string
+  bgcolor: string | { xs: string; md: string }
+  borderColor: string | { xs: string; md: string }
   iconColor: string
   textColor: string
 }
+
+/** Opaque soft tint for mobile (no see-through over content). */
+const solidSoft = (color: string, amount: number, paper: string) =>
+  `color-mix(in srgb, ${color} ${Math.round(amount * 100)}%, ${paper})`
 
 const getSeverityStyle = (
   severity: SnackbarSeverity,
@@ -15,13 +19,25 @@ const getSeverityStyle = (
 ): SeverityStyle => {
   const isDark = theme.palette.mode === 'dark'
   const textColor = theme.palette.text.primary
+  const paper = theme.palette.background.paper
 
-  const soft = (color: string, bgAlpha: number, borderAlpha: number) => ({
-    bgcolor: alpha(color, isDark ? bgAlpha + 0.04 : bgAlpha),
-    borderColor: alpha(color, isDark ? borderAlpha : borderAlpha - 0.04),
-    iconColor: alpha(color, isDark ? 0.92 : 0.88),
-    textColor,
-  })
+  const soft = (color: string, bgAlpha: number, borderAlpha: number) => {
+    const resolvedBg = isDark ? bgAlpha + 0.04 : bgAlpha
+    const resolvedBorder = isDark ? borderAlpha : borderAlpha - 0.04
+
+    return {
+      bgcolor: {
+        xs: solidSoft(color, resolvedBg, paper),
+        md: alpha(color, resolvedBg),
+      },
+      borderColor: {
+        xs: solidSoft(color, resolvedBorder, paper),
+        md: alpha(color, resolvedBorder),
+      },
+      iconColor: alpha(color, isDark ? 0.92 : 0.88),
+      textColor,
+    }
+  }
 
   switch (severity) {
     case 'success':
@@ -48,7 +64,8 @@ export const getSnackbarAlertSx = (
     borderRadius: '14px',
     bgcolor: style.bgcolor,
     color: style.textColor,
-    border: `1px solid ${style.borderColor}`,
+    border: '1px solid',
+    borderColor: style.borderColor,
     boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, isDark ? 0.22 : 0.08)}`,
     alignItems: 'center',
     py: 0.25,

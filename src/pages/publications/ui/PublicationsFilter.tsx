@@ -1,5 +1,6 @@
 import {
   DownloadOutlined,
+  Link,
   PrintOutlined,
   Tune,
 } from '@mui/icons-material'
@@ -103,7 +104,7 @@ export const PublicationsFilter = ({
 
   const linksButton = (
     <Button
-      sx={{ px: 2, flexShrink: 0 }}
+      sx={{ px: 2, flexShrink: 0, display: { xs: 'none', md: 'block' } }}
       onClick={() => setIsLinksOpen(true)}
     >
       Посмотреть ссылки
@@ -181,6 +182,8 @@ export const PublicationsFilter = ({
           )}
 
           {linksButton}
+
+
         </Stack>
 
         {isGridMode && (
@@ -194,7 +197,10 @@ export const PublicationsFilter = ({
               minWidth: 0,
             }}
           >
-            {linksButton}
+            <IconButton onClick={() => setIsLinksOpen(true)}>
+              <Link />
+            </IconButton>
+
             {hasActiveFilters && (
               <Chip
                 label="Сбросить"

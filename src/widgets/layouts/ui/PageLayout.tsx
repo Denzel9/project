@@ -57,6 +57,23 @@ export const PageLayout = ({
         ...sx,
       }}
     >
+      {/* Solid fill under status bar / notch — scrolling content must not show through */}
+      <Box
+        aria-hidden
+        data-print-hide
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          height: SAFE_AREA.top,
+          bgcolor: 'background.paper',
+          pointerEvents: 'none',
+          '@media print': { display: 'none' },
+        }}
+      />
+
       <Stack
         direction="row"
         spacing={{ xs: 1, md: 2 }}

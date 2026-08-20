@@ -97,7 +97,7 @@ export const stickyFilterSx = {
     right: 0,
     bottom: '100%',
     height: SAFE_AREA.top,
-    bgcolor: 'inherit',
+    bgcolor: 'background.paper',
     pointerEvents: 'none',
   },
 } as const satisfies SxProps<Theme>

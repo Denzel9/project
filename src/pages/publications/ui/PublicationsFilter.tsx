@@ -128,9 +128,10 @@ export const PublicationsFilter = ({
           transition: 'all 0.3s ease',
           border: '1px solid',
           borderColor: 'divider',
+          borderTopColor: isScrolled ? 'transparent' : 'divider',
           justifyContent: 'space-between',
-          borderTopLeftRadius: isScrolled ? '0' : '24px',
-          borderTopRightRadius: isScrolled ? '0' : '24px',
+          borderTopLeftRadius: isScrolled ? 0 : '24px',
+          borderTopRightRadius: isScrolled ? 0 : '24px',
           boxShadow: isScrolled ? '0 0 10px 0 rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >

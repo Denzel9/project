@@ -38,7 +38,8 @@ export const PageLayout = ({
         position: 'relative',
         gap: 1,
         boxSizing: 'border-box',
-        pt: SAFE_AREA.top,
+        // Without header, page itself clears the status bar
+        ...(!withHeader && { pt: SAFE_AREA.top }),
         ...(isScreenHeight && {
           height: '100%',
           flex: 1,
@@ -57,23 +58,6 @@ export const PageLayout = ({
         ...sx,
       }}
     >
-      {/* Solid fill under status bar / notch — scrolling content must not show through */}
-      <Box
-        aria-hidden
-        data-print-hide
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1100,
-          height: SAFE_AREA.top,
-          bgcolor: 'background.paper',
-          pointerEvents: 'none',
-          '@media print': { display: 'none' },
-        }}
-      />
-
       <Stack
         direction="row"
         spacing={{ xs: 1, md: 2 }}
@@ -81,7 +65,10 @@ export const PageLayout = ({
         sx={{
           bgcolor: 'background.paper',
           border: '1px solid',
-          p: { xs: 2, md: 2 },
+          // Do not use shorthand `p` — it would override safe-area pt
+          px: 2,
+          pb: 2,
+          pt: `calc(16px + ${SAFE_AREA.top})`,
           alignItems: 'center',
           borderColor: 'divider',
           justifyContent: 'space-between',

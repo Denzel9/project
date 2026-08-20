@@ -23,7 +23,7 @@ import {
   usePartnerApplicantsQuery,
   type ApplicationStatus,
 } from '@/entities'
-import { FilterAutocomplete, FilterStatusSelect, useScroll } from '@/shared'
+import { FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared'
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
 import { useMyPostFilterStore } from '../model/store'
@@ -288,8 +288,8 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
+            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

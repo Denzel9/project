@@ -172,7 +172,7 @@ export const ChatContactSearch = ({
       />
 
       {withFilter && <>
-        <IconButton onClick={(event) => setMenuAnchorEl(event.currentTarget)}>
+        <IconButton color={filter !== 'all' ? 'primary' : 'default'} onClick={(event) => setMenuAnchorEl(event.currentTarget)}>
           <FilterList />
         </IconButton>
 

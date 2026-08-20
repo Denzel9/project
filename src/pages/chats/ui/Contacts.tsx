@@ -1,4 +1,5 @@
-import { Box, CircularProgress, Stack } from '@mui/material';
+import { ChatOutlined } from '@mui/icons-material';
+import { Box, CircularProgress, Stack, } from '@mui/material';
 import { useMemo, useState } from 'react';
 
 import {
@@ -8,6 +9,7 @@ import {
 import { USER_ROLE, type UserSearchItem } from '@/entities/user';
 import { useAuthStore } from '@/features/auth';
 import { ChatContactSearch, type ChatFilter } from '@/features/chat';
+import { EmptyBlock } from '@/shared';
 import { ConversationItem } from '@/widgets/chat';
 
 type ContactsProps = {
@@ -77,6 +79,14 @@ export const Contacts = ({
             onFilterChange={setChatFilter}
           />
         </Stack>
+      )}
+
+      {!filteredConversations?.length && (
+        <EmptyBlock
+          title="Диалоги не найдены"
+          icon={<ChatOutlined fontSize="large" color="info" />}
+          description="Попробуйте изменить фильтр"
+        />
       )}
 
       <Stack

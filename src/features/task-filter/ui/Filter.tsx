@@ -31,7 +31,7 @@ import {
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities/partner';
-import { useScroll, DateCalendarFilter, FilterAutocomplete, FilterStatusSelect } from '@/shared';
+import { useScroll, DateCalendarFilter, FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx } from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
@@ -279,7 +279,13 @@ export const MyTaskFilter = ({
           <Stack
             spacing={1}
             direction="row"
-            sx={{ alignItems: 'center', justifyContent: isTableMode ? 'space-between' : 'flex-end', width: '100%', minHeight: 40 }}
+            sx={{
+              alignItems: 'center',
+              justifyContent: isTableMode ? 'space-between' : 'flex-end',
+              flex: 1,
+              minWidth: 0,
+              minHeight: 40,
+            }}
           >
             {(isSearchOpen || isTableMode || isMobile) && (
               <TextField
@@ -330,13 +336,15 @@ export const MyTaskFilter = ({
                   anchor="right"
                   open={isMobileFilterOpen}
                   onClose={() => setIsMobileFilterOpen(false)}
-                  sx={{
-                    display: { xs: 'block', md: 'none' },
-                    '& .MuiDrawer-paper': {
-                      p: { xs: 2, sm: 3 },
-                      width: { xs: '100%', sm: '80%' },
+                  sx={[
+                    { display: { xs: 'block', md: 'none' } },
+                    {
+                      '& .MuiDrawer-paper': {
+                        width: { xs: '100%', sm: '80%' },
+                        ...safeAreaFullWidthDrawerPaperSx(),
+                      },
                     },
-                  }}
+                  ]}
                 >
                   <MyTasksMobileFilter
                     open={isMobileFilterOpen}

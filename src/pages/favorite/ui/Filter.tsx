@@ -25,7 +25,7 @@ import {
   type FavoriteType,
 } from '@/entities/favorite'
 import { useAuthStore } from '@/features'
-import { useScroll } from '@/shared'
+import { safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared'
 import { useSnackbarStore } from '@/widgets'
 
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog'
@@ -327,8 +327,8 @@ const FavoriteFilter = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
+            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

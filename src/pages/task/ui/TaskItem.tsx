@@ -306,8 +306,7 @@ export const TaskItem = ({
     if (
       !task?.executorId ||
       task.isArchived ||
-      isSendingTz ||
-      status !== TASK_STATUS_ENUM.PENDING_APPROVAL
+      isSendingTz
     ) {
       return;
     }
@@ -338,7 +337,6 @@ export const TaskItem = ({
     createConversation,
     isSendingTz,
     setSnackbarOpen,
-    status,
     task,
   ]);
 
@@ -609,6 +607,7 @@ export const TaskItem = ({
               ) && (
                   <TaskResultDropzone
                     status={status}
+                    withCollapse={true}
                     files={reportFiles}
                     images={reportImages}
                     deadline={task.finalDate}
@@ -652,7 +651,6 @@ export const TaskItem = ({
 
                   {!isCancelled &&
                     !task.isArchived &&
-                    status === TASK_STATUS_ENUM.PENDING_APPROVAL &&
                     isOwner &&
                     Boolean(task.executorId) &&
                     task.isExecutorApprove === true && (

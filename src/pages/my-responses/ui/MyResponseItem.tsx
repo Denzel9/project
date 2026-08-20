@@ -11,14 +11,15 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import {
-  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_ENUM,
   type Application,
 } from '@/entities/application';
-import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { getUserName, UserDisplayName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
+
+import { getMyResponseChipColor, getMyResponseChipLabel, isApplicationPostArchived } from '../model/utils';
 
 import { MyResponseDetailsDialog } from './MyResponseDetailsDialog';
 
@@ -28,14 +29,6 @@ type MyResponseItemProps = {
   application: Application;
   taskId?: string | null;
   onWithdraw: (applicationId: string) => void;
-};
-
-const getStatusColor = (status: Application['status']) => {
-  if (status === APPLICATION_STATUS_ENUM.ACCEPTED) return 'success';
-  if (status === APPLICATION_STATUS_ENUM.REJECTED) return 'error';
-  if (status === APPLICATION_STATUS_ENUM.WITHDRAWN) return 'default';
-  if (status === APPLICATION_STATUS_ENUM.VIEWED) return 'info';
-  return 'primary';
 };
 
 const isGalleryMedia = (mimeType: string) =>
@@ -114,7 +107,15 @@ export const MyResponseItem = ({
   const companyUser = post?.owner as Partial<User> | undefined;
   const companyName = getUserName(companyUser);
   const isUpdated = application.createdAt !== application.updatedAt;
-  const statusHint = getStatusHint(application.status);
+  const isArchived = isApplicationPostArchived(application);
+  const statusHint = isArchived
+    ? 'Объявление в архиве'
+    : getStatusHint(application.status);
+  const canWithdraw =
+    !isArchived && application.status === APPLICATION_STATUS_ENUM.NEW;
+  const isAccepted =
+    !isArchived && application.status === APPLICATION_STATUS_ENUM.ACCEPTED;
+  const showActions = canWithdraw || isAccepted;
 
   const handleConfirmWithdraw = () => {
     onWithdraw(application.id);
@@ -172,8 +173,8 @@ export const MyResponseItem = ({
             >
               <Chip
                 size="small"
-                label={APPLICATION_STATUS_LABELS[application.status]}
-                color={getStatusColor(application.status)}
+                label={getMyResponseChipLabel(application)}
+                color={getMyResponseChipColor(application)}
               />
             </Box>
           </Box>
@@ -235,8 +236,8 @@ export const MyResponseItem = ({
 
               <Chip
                 size="small"
-                label={APPLICATION_STATUS_LABELS[application.status]}
-                color={getStatusColor(application.status)}
+                label={getMyResponseChipLabel(application)}
+                color={getMyResponseChipColor(application)}
                 sx={{ flexShrink: 0 }}
               />
             </Stack>
@@ -321,6 +322,7 @@ export const MyResponseItem = ({
             </Box>
           </Stack>
 
+          {showActions && (
           <Box
             sx={{ flexShrink: 0, pt: 1.5 }}
             onClick={event => event.stopPropagation()}
@@ -342,7 +344,7 @@ export const MyResponseItem = ({
                 spacing={0.75}
                 sx={{ flexWrap: 'wrap', gap: 0.75 }}
               >
-                {application.status === APPLICATION_STATUS_ENUM.NEW && (
+                {canWithdraw && (
                   <Button
                     size="small"
                     color="error"
@@ -354,7 +356,7 @@ export const MyResponseItem = ({
                   </Button>
                 )}
 
-                {application.status === APPLICATION_STATUS_ENUM.ACCEPTED && (
+                {isAccepted && (
                   <>
                     {taskId && (
                       <Button
@@ -381,6 +383,7 @@ export const MyResponseItem = ({
               </Stack>
             </Stack>
           </Box>
+          )}
         </Stack>
       </Stack>
 

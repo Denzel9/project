@@ -100,9 +100,9 @@ export const MyAnnouncementsPage = () => {
     () => ({
       ownerId: id || '',
       isArchived,
-      isPrivate: isPrivate ? true : undefined,
+      isPrivate: isPrivate ? true : isActive ? false : undefined,
     }),
-    [id, isArchived, isPrivate]
+    [id, isArchived, isPrivate, isActive]
   );
 
   const {

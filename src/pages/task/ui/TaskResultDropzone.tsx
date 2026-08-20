@@ -4,6 +4,7 @@ import {
   Close,
   CloudUploadOutlined,
   DeleteOutlined,
+  DescriptionOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
   PlayCircleOutlined,
@@ -16,6 +17,7 @@ import {
   Chip,
   CircularProgress,
   Collapse,
+  Grid,
   IconButton,
   Stack,
   Tooltip,
@@ -50,8 +52,11 @@ import {
   type LocalMediaFile,
 } from '@/shared/lib/media';
 import { useSnackbarStore } from '@/widgets';
-import { FullScreenGallery } from '@/widgets/media/ui/FullScreenGallery';
-import { MediaItem } from '@/widgets/media/ui/MediaItem';
+import {
+  FullScreenGallery,
+  getMediaDisplayName,
+  MediaItem,
+} from '@/widgets/media';
 
 import {
   getGallerySlideIndex,
@@ -65,6 +70,7 @@ import type { PostDeliverable } from '@/entities/post';
 const ACCEPT = MEDIA_FILE_TEMPLATE_ACCEPT;
 
 type TaskResultDropzoneProps = {
+  withCollapse?: boolean;
   deadline: string | null;
   files: LocalMediaFile[];
   images: Photo[];
@@ -72,9 +78,13 @@ type TaskResultDropzoneProps = {
   postTitle?: string | null;
   deliverables?: PostDeliverable[] | null;
   isSaving?: boolean;
-  onSave: () => void;
+  onSave: () => void | Promise<unknown>;
   status: TaskStatus;
   canUpload?: boolean;
+  /** Подпись кнопки сохранения. На странице задачи — «Сохранить». */
+  saveLabel?: string;
+  /** Показать кнопку сохранения, даже если нет новых файлов (чат → «На проверку»). */
+  showSaveWhenReady?: boolean;
   onCancel: () => void;
   setFiles: Dispatch<SetStateAction<LocalMediaFile[]>>;
   setImages: Dispatch<SetStateAction<Photo[]>>;
@@ -123,11 +133,16 @@ const formatPublicationLinkLabel = (count: number) => {
 const getStatusHint = (
   status: TaskStatus,
   canUpload: boolean,
-  hasMedia: boolean
+  hasMedia: boolean,
+  saveLabel: string,
 ) => {
-  if (status === TASK_STATUS_ENUM.IN_PROGRESS && canUpload) {
+  if (
+    (status === TASK_STATUS_ENUM.IN_PROGRESS ||
+      status === TASK_STATUS_ENUM.REVISION) &&
+    canUpload
+  ) {
     return hasMedia
-      ? 'Загрузите все материалы и нажмите «Сохранить», когда будете готовы отправить на проверку.'
+      ? `Загрузите все материалы и нажмите «${saveLabel}», когда будете готовы отправить на проверку.`
       : 'Перетащите фото или видео сюда — заказчик увидит результат после сохранения.';
   }
 
@@ -147,21 +162,24 @@ const getStatusHint = (
 };
 
 export const TaskResultDropzone = ({
-  deadline,
   files,
   images,
   postId,
-  postTitle,
-  deliverables,
   status,
   onSave,
   onCancel,
+  deadline,
   setFiles,
+  postTitle,
   setImages,
+  onRetryLocal,
+  deliverables,
   canUpload = true,
   isSaving = false,
+  saveLabel = 'Сохранить',
+  showSaveWhenReady = false,
   onRemoveUploaded,
-  onRetryLocal,
+  withCollapse = false,
 }: TaskResultDropzoneProps) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -177,8 +195,19 @@ export const TaskResultDropzone = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
-  const canEdit = canUpload && status === TASK_STATUS_ENUM.IN_PROGRESS;
+  const canEdit =
+    canUpload &&
+    (status === TASK_STATUS_ENUM.IN_PROGRESS ||
+      status === TASK_STATUS_ENUM.REVISION);
   const hasMedia = images.length > 0;
+  const visualImages = useMemo(
+    () => images.filter(image => isGalleryMedia(image.mimeType)),
+    [images],
+  );
+  const documentImages = useMemo(
+    () => images.filter(image => !isGalleryMedia(image.mimeType)),
+    [images],
+  );
   const hasPendingFiles = files.length > 0;
   const isPreparing = hasPreparingMedia(images);
   const mediaCount = images.length;
@@ -189,7 +218,9 @@ export const TaskResultDropzone = ({
     !isAtFileLimit &&
     (isAdding || !hasMedia || hasPendingFiles);
   const showEditControls = canEdit && hasMedia && !hasPendingFiles;
-  const statusHint = getStatusHint(status, canUpload, hasMedia);
+  const showSaveActions =
+    hasPendingFiles || (showSaveWhenReady && canEdit && hasMedia);
+  const statusHint = getStatusHint(status, canUpload, hasMedia, saveLabel);
   const showVideoHint = hasVideoMedia(files);
 
   const addFiles = useCallback(
@@ -455,7 +486,7 @@ export const TaskResultDropzone = ({
                         {isAdding ? <Close /> : <Add />}
                       </IconButton>}
 
-                      <Tooltip title={isCollapsed ? 'Показать' : 'Скрыть'}>
+                      {withCollapse && <Tooltip title={isCollapsed ? 'Показать' : 'Скрыть'}>
                         <IconButton
                           size="small"
                           aria-expanded={!isCollapsed}
@@ -465,7 +496,7 @@ export const TaskResultDropzone = ({
                         >
                           {isCollapsed ? <KeyboardArrowDown /> : <KeyboardArrowUp />}
                         </IconButton>
-                      </Tooltip>
+                      </Tooltip>}
                     </Stack>
                   </Stack>
 
@@ -550,7 +581,7 @@ export const TaskResultDropzone = ({
             </IconButton>
           )}
 
-          <Tooltip title={isCollapsed ? 'Показать' : 'Скрыть'}>
+          {withCollapse && <Tooltip title={isCollapsed ? 'Показать' : 'Скрыть'}>
             <IconButton
               size="small"
               aria-expanded={!isCollapsed}
@@ -560,7 +591,7 @@ export const TaskResultDropzone = ({
             >
               {isCollapsed ? <KeyboardArrowDown /> : <KeyboardArrowUp />}
             </IconButton>
-          </Tooltip>
+          </Tooltip>}
         </Stack>
 
         <Collapse
@@ -572,222 +603,433 @@ export const TaskResultDropzone = ({
 
             {
               hasMedia && (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: {
-                      xs: 'repeat(2, minmax(0, 1fr))',
-                      sm: 'repeat(3, minmax(0, 1fr))',
-                      md: 'repeat(4, minmax(0, 1fr))',
-                    },
-                    gap: 1.5,
-                  }}
-                >
-                  {images.map((image, index) => {
-                    const isVideo = image.mimeType.startsWith('video/');
-                    const canOpenGallery = isGalleryMedia(image.mimeType);
-                    const isPending = Boolean(image.localId) || image.url.startsWith('blob:');
-                    const canRemove =
-                      canEdit &&
-                      (isAdding || isPending) &&
-                      !isSaving &&
-                      image.uploadStatus !== 'uploading';
+                <Stack spacing={1.5}>
+                  {visualImages.length > 0 && (
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                          xs: 'repeat(2, minmax(0, 1fr))',
+                          sm: 'repeat(3, minmax(0, 1fr))',
+                          md: 'repeat(4, minmax(0, 1fr))',
+                        },
+                        gap: 1.5,
+                      }}
+                    >
+                      {visualImages.map((image, index) => {
+                        const isVideo = image.mimeType.startsWith('video/');
+                        const canOpenGallery = isGalleryMedia(image.mimeType);
+                        const isPending = Boolean(image.localId) || image.url.startsWith('blob:');
+                        const canRemove =
+                          canEdit &&
+                          (isAdding || isPending) &&
+                          !isSaving &&
+                          image.uploadStatus !== 'uploading';
+                        const sourceIndex = images.findIndex(
+                          item =>
+                            (item.localId ?? item.key) ===
+                            (image.localId ?? image.key),
+                        );
 
-                    return (
-                      <Box
-                        key={image.localId ?? image.key}
-                        sx={{
-                          position: 'relative',
-                          aspectRatio: '4 / 5',
-                          borderRadius: '16px',
-                          overflow: 'hidden',
-                          bgcolor: 'secondary.light',
-                          border: '1px solid',
-                          borderColor: isPending ? 'primary.main' : 'divider',
-                          boxShadow: isPending
-                            ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}`
-                            : 'none',
-                        }}
-                      >
-                        <Box
-                          onClick={() => handleOpenGallery(index)}
-                          sx={{
-                            width: '100%',
-                            height: '100%',
-                            cursor: canOpenGallery ? 'pointer' : 'default',
-                          }}
-                        >
-                          <MediaItem
-                            src={image.url}
-                            alt={image.filename || image.key}
-                            mimeType={image.mimeType}
-                          />
-                        </Box>
-
-                        {image.uploadStatus === 'preparing' ||
-                          image.uploadStatus === 'uploading' ? (
+                        return (
                           <Box
+                            key={image.localId ?? image.key}
                             sx={{
-                              position: 'absolute',
-                              inset: 0,
-                              zIndex: 1,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 0.75,
-                              bgcolor: alpha('#000', 0.5),
-                              color: 'common.white',
+                              position: 'relative',
+                              aspectRatio: '4 / 5',
+                              borderRadius: '16px',
+                              overflow: 'hidden',
+                              bgcolor: 'secondary.light',
+                              border: '1px solid',
+                              borderColor: isPending ? 'primary.main' : 'divider',
+                              boxShadow: isPending
+                                ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}`
+                                : 'none',
                             }}
                           >
-                            <CircularProgress
-                              size={28}
-                              variant={
-                                image.uploadStatus === 'uploading' &&
-                                  image.uploadProgress
-                                  ? 'determinate'
-                                  : 'indeterminate'
-                              }
-                              value={image.uploadProgress ?? 0}
-                              sx={{ color: 'common.white' }}
-                            />
-                            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                              {image.uploadStatus === 'preparing'
-                                ? 'Сжатие…'
-                                : `${image.uploadProgress ?? 0}%`}
-                            </Typography>
-                          </Box>
-                        ) : null}
-
-                        {image.uploadStatus === 'error' ? (
-                          <Box
-                            sx={{
-                              position: 'absolute',
-                              inset: 0,
-                              zIndex: 1,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 0.5,
-                              px: 1,
-                              bgcolor: alpha('#000', 0.55),
-                              color: 'common.white',
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{ textAlign: 'center', lineHeight: 1.2 }}
-                            >
-                              {image.uploadError || 'Ошибка'}
-                            </Typography>
-                            {image.localId && onRetryLocal ? (
-                              <IconButton
-                                size="small"
-                                onClick={event => {
-                                  event.stopPropagation();
-                                  onRetryLocal(image.localId!);
-                                }}
-                                sx={{ color: 'common.white' }}
-                              >
-                                <RefreshOutlined fontSize="small" />
-                              </IconButton>
-                            ) : null}
-                          </Box>
-                        ) : null}
-
-                        {isPending && image.uploadStatus === 'ready' && (
-                          <Chip
-                            size="small"
-                            label="Новый"
-                            color="primary"
-                            sx={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 8,
-                              height: 22,
-                              fontSize: 11,
-                            }}
-                          />
-                        )}
-
-                        {isVideo && (
-                          <Box
-                            sx={{
-                              position: 'absolute',
-                              left: 8,
-                              top: isPending ? 36 : 8,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5,
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: '999px',
-                              bgcolor: alpha('#000', 0.55),
-                              color: 'white',
-                            }}
-                          >
-                            <PlayCircleOutlined sx={{ fontSize: 16 }} />
-                            <Typography variant="caption">Видео</Typography>
-                          </Box>
-                        )}
-
-                        {canRemove && (
-                          <IconButton
-                            size="small"
-                            aria-label="Удалить файл"
-                            onClick={event => {
-                              event.stopPropagation();
-                              handleRemovePending(image.localId ?? image.key);
-                            }}
-                            sx={{
-                              position: 'absolute',
-                              top: 6,
-                              right: 6,
-                              zIndex: 2,
-                              bgcolor: alpha(theme.palette.background.paper, 0.92),
-                              boxShadow: 1,
-                              '&:hover': {
-                                bgcolor: 'error.light',
-                                color: 'error.main',
-                              },
-                            }}
-                          >
-                            <DeleteOutlined fontSize="small" />
-                          </IconButton>
-                        )}
-
-                        {image.filename && !isVideo && (
-                          <Box
-                            sx={{
-                              position: 'absolute',
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              px: 1,
-                              py: 0.75,
-                              background: `linear-gradient(transparent, ${alpha('#000', 0.65)})`,
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
+                            <Box
+                              onClick={() => handleOpenGallery(sourceIndex >= 0 ? sourceIndex : index)}
                               sx={{
-                                display: 'block',
-                                color: 'white',
-                                fontWeight: 500,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
+                                width: '100%',
+                                height: '100%',
+                                cursor: canOpenGallery ? 'pointer' : 'default',
                               }}
                             >
-                              {image.filename}
-                            </Typography>
+                              <MediaItem
+                                src={image.url}
+                                alt={image.filename || image.key}
+                                mimeType={image.mimeType}
+                                fileName={image.filename}
+                              />
+                            </Box>
+
+                            {image.uploadStatus === 'preparing' ||
+                              image.uploadStatus === 'uploading' ? (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  zIndex: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 0.75,
+                                  bgcolor: alpha('#000', 0.5),
+                                  color: 'common.white',
+                                }}
+                              >
+                                <CircularProgress
+                                  size={28}
+                                  variant={
+                                    image.uploadStatus === 'uploading' &&
+                                      image.uploadProgress
+                                      ? 'determinate'
+                                      : 'indeterminate'
+                                  }
+                                  value={image.uploadProgress ?? 0}
+                                  sx={{ color: 'common.white' }}
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                  {image.uploadStatus === 'preparing'
+                                    ? 'Сжатие…'
+                                    : `${image.uploadProgress ?? 0}%`}
+                                </Typography>
+                              </Box>
+                            ) : null}
+
+                            {image.uploadStatus === 'error' ? (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  zIndex: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 0.5,
+                                  px: 1,
+                                  bgcolor: alpha('#000', 0.55),
+                                  color: 'common.white',
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{ textAlign: 'center', lineHeight: 1.2 }}
+                                >
+                                  {image.uploadError || 'Ошибка'}
+                                </Typography>
+                                {image.localId && onRetryLocal ? (
+                                  <IconButton
+                                    size="small"
+                                    onClick={event => {
+                                      event.stopPropagation();
+                                      onRetryLocal(image.localId!);
+                                    }}
+                                    sx={{ color: 'common.white' }}
+                                  >
+                                    <RefreshOutlined fontSize="small" />
+                                  </IconButton>
+                                ) : null}
+                              </Box>
+                            ) : null}
+
+                            {isPending && image.uploadStatus === 'ready' && (
+                              <Chip
+                                size="small"
+                                label="Новый"
+                                color="primary"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 8,
+                                  zIndex: 2,
+                                  height: 22,
+                                  fontSize: 11,
+                                }}
+                              />
+                            )}
+
+                            {isVideo && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  left: 8,
+                                  top: isPending ? 36 : 8,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  px: 1,
+                                  py: 0.25,
+                                  borderRadius: '999px',
+                                  bgcolor: alpha('#000', 0.55),
+                                  color: 'white',
+                                }}
+                              >
+                                <PlayCircleOutlined sx={{ fontSize: 16 }} />
+                                <Typography variant="caption">Видео</Typography>
+                              </Box>
+                            )}
+
+                            {canRemove && (
+                              <IconButton
+                                size="small"
+                                aria-label="Удалить файл"
+                                onClick={event => {
+                                  event.stopPropagation();
+                                  handleRemovePending(image.localId ?? image.key);
+                                }}
+                                sx={{
+                                  position: 'absolute',
+                                  top: 6,
+                                  right: 6,
+                                  zIndex: 2,
+                                  bgcolor: alpha(theme.palette.background.paper, 0.92),
+                                  boxShadow: 1,
+                                  '&:hover': {
+                                    bgcolor: 'error.light',
+                                    color: 'error.main',
+                                  },
+                                }}
+                              >
+                                <DeleteOutlined fontSize="small" />
+                              </IconButton>
+                            )}
+
+                            {image.filename && !isVideo && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  px: 1,
+                                  py: 0.75,
+                                  background: `linear-gradient(transparent, ${alpha('#000', 0.65)})`,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    display: 'block',
+                                    color: 'white',
+                                    fontWeight: 500,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {image.filename}
+                                </Typography>
+                              </Box>
+                            )}
                           </Box>
-                        )}
-                      </Box>
-                    );
-                  })}
-                </Box>
+                        );
+                      })}
+                    </Box>
+                  )}
+
+                  {documentImages.length > 0 && (
+                    <Grid container spacing={1}>
+                      {documentImages.map(image => {
+                        const isPending =
+                          Boolean(image.localId) ||
+                          image.url.startsWith('blob:');
+                        const canRemove =
+                          canEdit &&
+                          (isAdding || isPending) &&
+                          !isSaving &&
+                          image.uploadStatus !== 'uploading';
+                        const displayName = getMediaDisplayName(
+                          image.filename,
+                          image.key,
+                          image.mimeType,
+                        );
+
+                        return (
+                          <Grid
+                            size={{ xs: 12, md: 6, lg: 4 }}
+                            key={image.localId ?? image.key}
+                            sx={{
+                              position: 'relative',
+                              borderRadius: '16px',
+                              overflow: 'hidden',
+                              bgcolor: 'background.paper',
+                              border: '1px solid',
+                              borderColor: isPending
+                                ? 'primary.main'
+                                : 'divider',
+                              boxShadow: isPending
+                                ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.2)}`
+                                : 'none',
+                            }}
+                          >
+                            <Box
+                              href={image.url}
+                              component="a"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                minHeight: 64,
+                                px: 1.5,
+                                py: 1.25,
+                                pr: canRemove ? 6 : 1.5,
+                                textDecoration: 'none',
+                                color: 'text.primary',
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  flexShrink: 0,
+                                  borderRadius: '10px',
+                                  bgcolor: 'secondary.light',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <DescriptionOutlined color="action" />
+                              </Box>
+
+                              <Typography
+                                variant="body2"
+                                title={displayName}
+                                sx={{
+                                  flex: 1,
+                                  minWidth: 0,
+                                  fontWeight: 500,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {displayName}
+                              </Typography>
+
+                              {isPending && image.uploadStatus === 'ready' && (
+                                <Chip
+                                  size="small"
+                                  label="Новый"
+                                  color="primary"
+                                  sx={{ height: 22, fontSize: 11, flexShrink: 0 }}
+                                />
+                              )}
+                            </Box>
+
+                            {image.uploadStatus === 'preparing' ||
+                              image.uploadStatus === 'uploading' ? (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  zIndex: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  px: 1.5,
+                                  bgcolor: alpha('#000', 0.45),
+                                  color: 'common.white',
+                                }}
+                              >
+                                <CircularProgress
+                                  size={20}
+                                  variant={
+                                    image.uploadStatus === 'uploading' &&
+                                      image.uploadProgress
+                                      ? 'determinate'
+                                      : 'indeterminate'
+                                  }
+                                  value={image.uploadProgress ?? 0}
+                                  sx={{ color: 'common.white' }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  {image.uploadStatus === 'preparing'
+                                    ? 'Сжатие…'
+                                    : `${image.uploadProgress ?? 0}%`}
+                                </Typography>
+                              </Box>
+                            ) : null}
+
+                            {image.uploadStatus === 'error' ? (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  zIndex: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  px: 1.5,
+                                  bgcolor: alpha('#000', 0.5),
+                                  color: 'common.white',
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{ flex: 1, minWidth: 0 }}
+                                >
+                                  {image.uploadError || 'Ошибка'}
+                                </Typography>
+                                {image.localId && onRetryLocal ? (
+                                  <IconButton
+                                    size="small"
+                                    onClick={event => {
+                                      event.stopPropagation();
+                                      onRetryLocal(image.localId!);
+                                    }}
+                                    sx={{ color: 'common.white' }}
+                                  >
+                                    <RefreshOutlined fontSize="small" />
+                                  </IconButton>
+                                ) : null}
+                              </Box>
+                            ) : null}
+
+                            {canRemove && (
+                              <IconButton
+                                size="small"
+                                aria-label="Удалить файл"
+                                onClick={event => {
+                                  event.stopPropagation();
+                                  handleRemovePending(
+                                    image.localId ?? image.key,
+                                  );
+                                }}
+                                sx={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  right: 8,
+                                  zIndex: 2,
+                                  transform: 'translateY(-50%)',
+                                  bgcolor: alpha(
+                                    theme.palette.background.paper,
+                                    0.92,
+                                  ),
+                                  boxShadow: 1,
+                                  '&:hover': {
+                                    bgcolor: 'error.light',
+                                    color: 'error.main',
+                                  },
+                                }}
+                              >
+                                <DeleteOutlined fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Grid>
+                        );
+                      })}
+                    </Grid>
+                  )}
+                </Stack>
               )
             }
 
@@ -910,7 +1152,7 @@ export const TaskResultDropzone = ({
 
 
             {
-              hasPendingFiles && (
+              showSaveActions && (
                 <Box
                   sx={{
                     p: 2,
@@ -930,27 +1172,31 @@ export const TaskResultDropzone = ({
                         variant="subtitle2"
                         sx={{ fontWeight: 600 }}
                       >
-                        {formatFileCount(files.length)} к сохранению
+                        {hasPendingFiles
+                          ? `${formatFileCount(files.length)} к сохранению`
+                          : 'Материалы готовы к отправке'}
                       </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        {showVideoHint
-                          ? 'Видео загружается без сжатия. '
-                          : ''}
-                        {files
-                          .slice(0, 2)
-                          .map(item => {
-                            const size = formatFileSize(String(item.file.size));
+                      {hasPendingFiles && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {showVideoHint
+                            ? 'Видео загружается без сжатия. '
+                            : ''}
+                          {files
+                            .slice(0, 2)
+                            .map(item => {
+                              const size = formatFileSize(String(item.file.size));
 
-                            return size
-                              ? `${item.file.name} · ${size}`
-                              : item.file.name;
-                          })
-                          .join(', ')}
-                        {files.length > 2 ? ` и ещё ${files.length - 2}` : ''}
-                      </Typography>
+                              return size
+                                ? `${item.file.name} · ${size}`
+                                : item.file.name;
+                            })
+                            .join(', ')}
+                          {files.length > 2 ? ` и ещё ${files.length - 2}` : ''}
+                        </Typography>
+                      )}
                     </Box>
 
                     <Stack
@@ -958,27 +1204,29 @@ export const TaskResultDropzone = ({
                       spacing={1}
                       sx={{ flexShrink: 0 }}
                     >
-                      <Button
-                        size="small"
-                        color="inherit"
-                        variant="outlined"
-                        onClick={handleCancel}
-                        disabled={isSaving}
-                        sx={{ borderRadius: '12px' }}
-                      >
-                        Отменить
-                      </Button>
+                      {hasPendingFiles && (
+                        <Button
+                          size="small"
+                          color="inherit"
+                          variant="outlined"
+                          onClick={handleCancel}
+                          disabled={isSaving}
+                          sx={{ borderRadius: '12px' }}
+                        >
+                          Отменить
+                        </Button>
+                      )}
 
                       <Button
                         size="small"
                         variant="contained"
                         loading={isSaving}
                         disabled={isPreparing}
-                        startIcon={<SaveOutlined />}
+                        startIcon={hasPendingFiles ? <SaveOutlined /> : undefined}
                         onClick={handleSave}
                         sx={{ borderRadius: '12px' }}
                       >
-                        Сохранить
+                        {saveLabel}
                       </Button>
                     </Stack>
                   </Stack>

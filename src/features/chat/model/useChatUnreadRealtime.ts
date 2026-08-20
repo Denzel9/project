@@ -3,12 +3,14 @@ import { useEffect } from 'react'
 
 import {
   appendMessageToCache,
+  applyPeerPresenceInCache,
   claimIncomingChatMessage,
   incrementConversationUnreadCount,
   shouldCountIncomingChatUnread,
   unlockConversationSendPermission,
   updateConversationLastMessage,
   type ChatMessage,
+  type ChatPresenceEvent,
 } from '@/entities/chat'
 import { useAuthStore } from '@/features/auth'
 import chatSocket from '@/shared/api/socket'
@@ -53,10 +55,20 @@ export const useChatUnreadRealtime = () => {
       }
     }
 
+    const handlePresence = (event: ChatPresenceEvent) => {
+      if (!event?.userId || event.userId === userId) {
+        return
+      }
+
+      applyPeerPresenceInCache(queryClient, event)
+    }
+
     const unsubscribeMessage = chatSocket.onMessage(handleMessage)
+    const unsubscribePresence = chatSocket.onPresence(handlePresence)
 
     return () => {
       unsubscribeMessage()
+      unsubscribePresence()
     }
   }, [isAuth, userId, queryClient])
 }

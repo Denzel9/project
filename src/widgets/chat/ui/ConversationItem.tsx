@@ -8,6 +8,7 @@ import {
   Tooltip,
   Menu,
   MenuItem,
+  Divider,
 } from '@mui/material'
 import { useState, type MouseEvent } from 'react'
 
@@ -57,10 +58,10 @@ export const ConversationItem = ({
     Boolean(conversation.id) && !hasMessageUnread && !isMarkedUnread
   const preview = lastMessage
     ? getMessagePreview(
-        lastMessage.content,
-        lastMessage.media ?? [],
-        lastMessage.isRedirected,
-      )
+      lastMessage.content,
+      lastMessage.media ?? [],
+      lastMessage.isRedirected,
+    )
     : 'Нет сообщений'
   const timeLabel = formatConversationListDayLabel(
     lastMessage?.createdAt ?? updatedAt,
@@ -150,12 +151,12 @@ export const ConversationItem = ({
         sx={
           showUnreadDot
             ? {
-                '& .MuiBadge-badge': {
-                  minWidth: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                },
-              }
+              '& .MuiBadge-badge': {
+                minWidth: 10,
+                height: 10,
+                borderRadius: '50%',
+              },
+            }
             : undefined
         }
       >
@@ -237,17 +238,23 @@ export const ConversationItem = ({
                 {isPinned ? 'Открепить' : 'Закрепить'}
               </MenuItem>
               {canMarkDialogUnread && (
-                <MenuItem
-                  disabled={isMarkingUnread}
-                  onClick={handleMarkUnread}
-                >
-                  Пометить непрочитанным
-                </MenuItem>
+                <>
+                  <Divider />
+                  <MenuItem
+                    disabled={isMarkingUnread}
+                    onClick={handleMarkUnread}
+                  >
+                    Пометить непрочитанным
+                  </MenuItem>
+                </>
               )}
               {Boolean(conversation.id) && (
-                <MenuItem disabled={isHiding} onClick={handleHide}>
-                  Удалить чат
-                </MenuItem>
+                <>
+                  <Divider />
+                  <MenuItem disabled={isHiding} onClick={handleHide}>
+                    Удалить чат
+                  </MenuItem>
+                </>
               )}
             </Menu>
           </>

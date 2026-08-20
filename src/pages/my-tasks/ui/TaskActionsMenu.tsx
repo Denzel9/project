@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 
 import {
   buildCreateTaskPayload,
+  canArchiveTask,
   isTaskExecutor,
   isTaskOwner,
   TASK_STATUS_ENUM,
@@ -166,6 +167,14 @@ export const TaskActionsMenu = ({
     closeMenu();
     const nextArchived = !task.isArchived;
 
+    if (nextArchived && !canArchiveTask(task)) {
+      setSnackbarOpen(
+        true,
+        'В архив можно переместить только завершённую, аннулированную задачу или задачу на стадии подготовки, пока исполнитель не подтвердил участие',
+      );
+      return;
+    }
+
     try {
       await updateTask({
         id: task.id,
@@ -298,18 +307,22 @@ export const TaskActionsMenu = ({
             >
               Сохранить как шаблон
             </MenuItem>
-            <Divider sx={{ my: 0.5 }} />
-            <MenuItem
-              sx={{ minWidth: 160, fontSize: 14 }}
-              disabled={isUpdatingArchive}
-              onClick={runMenuAction(() => {
-                void handleToggleArchive();
-              })}
-            >
-              {task.isArchived
-                ? 'Вернуть из архива'
-                : 'Переместить в архив'}
-            </MenuItem>
+            {(task.isArchived || canArchiveTask(task)) && (
+              <>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem
+                  sx={{ minWidth: 160, fontSize: 14 }}
+                  disabled={isUpdatingArchive}
+                  onClick={runMenuAction(() => {
+                    void handleToggleArchive();
+                  })}
+                >
+                  {task.isArchived
+                    ? 'Вернуть из архива'
+                    : 'Переместить в архив'}
+                </MenuItem>
+              </>
+            )}
           </>
         )}
       </Menu>

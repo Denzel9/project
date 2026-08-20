@@ -1,4 +1,6 @@
 import {
+  getChatTaskInvitePreview,
+  getChatTaskRequestPreview,
   getChatTaskTzPreview,
   isTaskExecutor,
   TASK_STATUS_ENUM,
@@ -29,7 +31,8 @@ export const canUploadChatPhotoReport = (
   Boolean(
     currentUserId &&
     isTaskExecutor(task, currentUserId) &&
-    task.status === TASK_STATUS_ENUM.IN_PROGRESS,
+    (task.status === TASK_STATUS_ENUM.IN_PROGRESS ||
+      task.status === TASK_STATUS_ENUM.REVISION),
   )
 
 export const getChatTaskLabel = (task: Task) =>
@@ -103,7 +106,11 @@ export const getPinnedMessagePreview = (pin: ChatMessagePin) => {
   const trimmed = pin.content.trim()
 
   if (trimmed) {
-    const preview = getChatTaskTzPreview(trimmed) ?? trimmed
+    const preview =
+      getChatTaskTzPreview(trimmed) ??
+      getChatTaskInvitePreview(trimmed) ??
+      getChatTaskRequestPreview(trimmed) ??
+      trimmed
     const max = 90
 
     return preview.length > max ? `${preview.slice(0, max)}…` : preview

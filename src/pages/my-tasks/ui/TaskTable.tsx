@@ -941,7 +941,7 @@ export const TaskTable = ({
                 </TableCell>
               )}
 
-              {showActionsColumn && <TableCell />}
+              {showActionsColumn && <TableCell sx={headerCellSx(TASK_TABLE_COLUMN_WIDTHS.actions)} />}
             </TableRow>
 
             {showColumnFilters && columnFilters && (

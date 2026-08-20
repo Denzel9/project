@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useMemo } from 'react';
 
-import { getTaskStatsCount, USER_ROLE, useTaskStatsQuery } from '@/entities';
+import { getTaskStatsCount, USER_ROLE, useTaskStatsQuery, type TaskStatsParams } from '@/entities';
 import { useAuthStore } from '@/features';
 
 import { useMyTaskFilterStore } from '../../model/store';
@@ -58,6 +58,7 @@ export const FastButtonGroup = ({
     fastButtonValue,
     setFastButtonValue,
     postId,
+    executorId,
     onlyMyTasks,
     assigneeAccountId,
   } = useMyTaskFilterStore();
@@ -71,14 +72,18 @@ export const FastButtonGroup = ({
   const menuOptions = fastButtonOptions.slice(FAST_BUTTON_PRIMARY_COUNT);
 
   const statsParams = useMemo(() => {
-    const params: {
-      postId?: string;
-      assigneeMine?: boolean;
-      assigneeAccountId?: string;
-    } = {};
+    const params: TaskStatsParams = {};
 
     if (postId !== 'all') {
       params.postId = postId;
+    }
+
+    if (executorId !== 'all') {
+      if (isCompany) {
+        params.executorId = executorId;
+      } else {
+        params.ownerId = executorId;
+      }
     }
 
     // Счётчики должны совпадать с активным фильтром ответственного
@@ -89,7 +94,7 @@ export const FastButtonGroup = ({
     }
 
     return Object.keys(params).length > 0 ? params : undefined;
-  }, [postId, onlyMyTasks, assigneeAccountId]);
+  }, [postId, executorId, onlyMyTasks, assigneeAccountId, isCompany]);
 
   const { data: stats } = useTaskStatsQuery(statsParams);
 

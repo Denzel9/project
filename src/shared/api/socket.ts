@@ -7,6 +7,7 @@ import type {
   ChatMessageMedia,
   ChatMessagesHiddenEvent,
   ChatMessagesReadEvent,
+  ChatPresenceEvent,
 } from '@/entities/chat'
 
 type SendMessagePayload = {
@@ -43,6 +44,7 @@ class ChatSocketService {
   private onMessageEditedCallback:
     | ((message: ChatMessageEditedEvent) => void)
     | null = null
+  private onPresenceCallbacks = new Set<(event: ChatPresenceEvent) => void>()
   private onErrorCallback: ((error: SocketErrorPayload) => void) | null = null
   private onConnectCallback: (() => void) | null = null
   private onDisconnectCallback: (() => void) | null = null
@@ -90,6 +92,7 @@ class ChatSocketService {
     this.socket.off('message_deleted')
     this.socket.off('messages_hidden')
     this.socket.off('message_edited')
+    this.socket.off('presence')
     this.socket.off('error')
 
     this.socket.on('message', (message: ChatMessage) => {
@@ -110,6 +113,10 @@ class ChatSocketService {
 
     this.socket.on('message_edited', (message: ChatMessageEditedEvent) => {
       this.onMessageEditedCallback?.(message)
+    })
+
+    this.socket.on('presence', (event: ChatPresenceEvent) => {
+      this.onPresenceCallbacks.forEach(callback => callback(event))
     })
 
     this.socket.on('error', (error: SocketErrorPayload) => {
@@ -216,6 +223,14 @@ class ChatSocketService {
     this.onMessageEditedCallback = callback
   }
 
+  onPresence(callback: (event: ChatPresenceEvent) => void): () => void {
+    this.onPresenceCallbacks.add(callback)
+
+    return () => {
+      this.onPresenceCallbacks.delete(callback)
+    }
+  }
+
   onError(callback: (error: SocketErrorPayload) => void) {
     this.onErrorCallback = callback
   }
@@ -234,6 +249,7 @@ class ChatSocketService {
     this.onMessageDeletedCallback = null
     this.onMessagesHiddenCallback = null
     this.onMessageEditedCallback = null
+    this.onPresenceCallbacks.clear()
     this.onErrorCallback = null
     this.onConnectCallback = null
     this.onDisconnectCallback = null
@@ -244,6 +260,7 @@ class ChatSocketService {
       this.socket.off('message_deleted')
       this.socket.off('messages_hidden')
       this.socket.off('message_edited')
+      this.socket.off('presence')
       this.socket.off('error')
       this.socket.off('connect')
       this.socket.off('disconnect')

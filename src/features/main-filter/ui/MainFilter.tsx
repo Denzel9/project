@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { useEffect, useRef } from 'react';
 
-import { scrollMainToTop, useScroll } from '@/shared';
+import { scrollMainToTop, safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared';
 
 import { FILTERS, FILTERS_VALUES } from '../model/constants';
 import { useMainFilterStore } from '../model/store';
@@ -168,10 +168,10 @@ export const MainFilter = () => {
         onClose={() => setIsOpenMainFilter(false)}
         sx={{
           '& .MuiDrawer-paper': {
-            p: { xs: 2, md: 4 },
             borderTopLeftRadius: { xs: 0, md: 32 },
             borderBottomLeftRadius: { xs: 0, md: 32 },
             width: { xs: '100%', sm: '80%', md: '25%' },
+            ...safeAreaFullWidthDrawerPaperSx({ xs: 2, sm: 2, md: 4 }),
           },
         }}
       >

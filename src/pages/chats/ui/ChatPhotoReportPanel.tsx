@@ -7,14 +7,20 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { useState, type ChangeEvent } from 'react';
 
 import {
+  getIsCompanyAction,
+  TASK_STATUS_ENUM,
   TASK_STATUS_LABELS,
+  useUpdateTaskMutation,
   type Task,
 } from '@/entities/task';
 import { useTaskMediaSave } from '@/pages/task/model/hooks/useTaskMediaSave';
 import { TaskResultDropzone } from '@/pages/task/ui/TaskResultDropzone';
+import { hasPreparingMedia } from '@/shared/lib/media';
+import { useSnackbarStore } from '@/widgets';
 
 import { canUploadChatPhotoReport, getChatTaskLabel } from '../model/utils';
 
@@ -36,6 +42,10 @@ export const ChatPhotoReportPanel = ({
     ? canUploadChatPhotoReport(selectedTask, currentUserId)
     : false;
 
+  const { setSnackbarOpen } = useSnackbarStore();
+  const { mutateAsync: updateTask, isPending: isUpdatingStatus } =
+    useUpdateTaskMutation();
+
   const {
     files,
     images,
@@ -52,6 +62,8 @@ export const ChatPhotoReportPanel = ({
     kind: 'report',
   });
 
+  const isSaving = isPending || isUpdatingStatus;
+
   const handleTaskChange = (event: ChangeEvent<HTMLInputElement>) => {
     handleCancel();
     setSelectedTaskId(event.target.value);
@@ -62,49 +74,112 @@ export const ChatPhotoReportPanel = ({
     onClose();
   };
 
+  const handleSendToReview = async () => {
+    if (!selectedTask || !canEdit || isSaving) return;
+    if (hasPreparingMedia(images)) return;
+
+    const hasUploadedMedia = images.some(
+      image => !image.localId && !image.url.startsWith('blob:'),
+    );
+    const hasPendingFiles = files.length > 0;
+
+    if (!hasUploadedMedia && !hasPendingFiles) {
+      setSnackbarOpen?.(
+        true,
+        'Для проверки необходимо загрузить результат работы',
+        'warning',
+      );
+      return;
+    }
+
+    try {
+      if (hasPendingFiles) {
+        const uploaded = await handleSaveMedia();
+
+        if (!uploaded) {
+          setSnackbarOpen?.(
+            true,
+            'Не удалось загрузить материалы. Попробуйте ещё раз',
+            'error',
+          );
+          return;
+        }
+      }
+
+      await updateTask({
+        id: selectedTask.id,
+        body: {
+          status: TASK_STATUS_ENUM.CHECKING,
+          isCompanyAction: getIsCompanyAction(
+            selectedTask,
+            false,
+            TASK_STATUS_ENUM.CHECKING,
+          ),
+        },
+      });
+
+      setSnackbarOpen?.(true, 'Результаты отправлены на проверку');
+      handleClose();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setSnackbarOpen?.(true, String(error.response?.data?.message));
+        return;
+      }
+
+      setSnackbarOpen?.(
+        true,
+        'Не удалось отправить на проверку. Попробуйте позже',
+        'error',
+      );
+    }
+  };
+
   return (
     <Stack
       sx={{
+        p: 2,
         gap: 2,
         flex: 1,
         minHeight: 0,
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '32px',
+        borderRadius: '24px',
         bgcolor: 'background.paper',
-        p: { xs: 2, md: 4 },
       }}
     >
       <Stack
-        direction="row"
-        spacing={1}
-        sx={{ alignItems: 'center' }}
+        direction={{ xs: "column", md: "row" }}
+        spacing={2}
+        sx={{ alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', }}
       >
-        <IconButton onClick={handleClose}>
-          <ArrowBack />
-        </IconButton>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <IconButton onClick={handleClose}>
+            <ArrowBack />
+          </IconButton>
 
-        <Typography variant="h6">Результаты работы</Typography>
+          <Typography variant="h6">Результаты работы</Typography>
+        </Stack>
+
+        <TextField
+          select
+          size="small"
+          label="Задача"
+          value={selectedTaskId}
+          onChange={handleTaskChange}
+          sx={{
+            width: { xs: '100%', md: '40%' },
+          }}
+        >
+          {tasks.map(task => (
+            <MenuItem
+              key={task.id}
+              value={task.id}
+            >
+              {getChatTaskLabel(task)} · {TASK_STATUS_LABELS[task.status]}
+            </MenuItem>
+          ))}
+        </TextField>
       </Stack>
-
-      <TextField
-        select
-        label="Задача"
-        value={selectedTaskId}
-        onChange={handleTaskChange}
-        sx={{
-          width: { xs: '100%', md: '50%' },
-        }}
-      >
-        {tasks.map(task => (
-          <MenuItem
-            key={task.id}
-            value={task.id}
-          >
-            {getChatTaskLabel(task)} · {TASK_STATUS_LABELS[task.status]}
-          </MenuItem>
-        ))}
-      </TextField>
 
       <Box
         sx={{
@@ -121,9 +196,11 @@ export const ChatPhotoReportPanel = ({
             deadline={selectedTask.finalDate}
             setFiles={setFiles}
             setImages={setImages}
-            isSaving={isPending}
+            isSaving={isSaving}
             canUpload={canEdit}
-            onSave={handleSaveMedia}
+            saveLabel="На проверку"
+            showSaveWhenReady
+            onSave={() => void handleSendToReview()}
             onCancel={handleCancel}
             onRetryLocal={handleRetryLocal}
             onRemoveUploaded={handleRemoveImage}

@@ -62,6 +62,19 @@ export const isTaskTerminal = (task: Task) =>
   task.status === TASK_STATUS_ENUM.COMPLETED ||
   task.status === TASK_STATUS_ENUM.ANNULLED
 
+export const canArchiveTask = (
+  task: Pick<Task, 'status' | 'isExecutorApprove' | 'isArchived'>,
+) => {
+  if (task.isArchived) return false
+
+  if (isTaskTerminal(task as Task)) return true
+
+  return (
+    task.status === TASK_STATUS_ENUM.PREPARING &&
+    task.isExecutorApprove !== true
+  )
+}
+
 const DEADLINE_SOON_DAYS = 2
 
 export type TaskDeadlineUrgency = 'overdue' | 'today' | 'soon'

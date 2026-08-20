@@ -3,7 +3,7 @@ import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/materia
 import { useEffect, useMemo, useState } from 'react';
 
 import { FilterDateField } from '@/features/main-filter';
-import { FilterAutocomplete, FilterStatusSelect } from '@/shared';
+import { FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx } from '@/shared';
 
 import {
   POST_APPLICATION_STATUS_FILTER_LABELS,
@@ -141,8 +141,8 @@ export const PostApplicationsFilter = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
+            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

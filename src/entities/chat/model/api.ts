@@ -27,6 +27,8 @@ import type {
   ChatMessagePin,
   ChatMessagePinScope,
   ChatMessageMedia,
+  ChatPeer,
+  ChatPresenceEvent,
   ChatUnreadCount,
   ConversationsParams,
   CreateConversationDto,
@@ -46,6 +48,7 @@ export {
   isMessageEditable,
   MESSAGE_DELETE_WINDOW_MS,
   sortConversationsByUnread,
+  formatPeerPresenceLabel,
 } from './utils'
 
 export const chatKeys = {
@@ -190,6 +193,12 @@ const normalizeMessage = (message: ChatMessage): ChatMessage => ({
   redirectedFromDisplayName: message.redirectedFromDisplayName ?? null,
 })
 
+const normalizePeer = (peer: ChatPeer): ChatPeer => ({
+  ...peer,
+  isOnline: peer.isOnline ?? false,
+  lastSeenAt: peer.lastSeenAt ?? null,
+})
+
 const normalizeConversation = (conversation: ChatConversation): ChatConversation => {
   const isNotes = conversation.isNotes ?? false
 
@@ -203,8 +212,8 @@ const normalizeConversation = (conversation: ChatConversation): ChatConversation
     canSendMessages: conversation.canSendMessages ?? true,
     sendBlockedReason: conversation.sendBlockedReason ?? null,
     peer: isNotes
-      ? { ...conversation.peer, displayName: 'Заметки' }
-      : conversation.peer,
+      ? { ...normalizePeer(conversation.peer), displayName: 'Заметки' }
+      : normalizePeer(conversation.peer),
     lastMessage: conversation.lastMessage
       ? normalizeMessage(conversation.lastMessage)
       : null,
@@ -428,6 +437,26 @@ export const updateConversationLastMessage = (
             ...conversation,
             lastMessage: normalizeMessage(message),
             updatedAt: message.createdAt,
+          }
+        : conversation,
+    ),
+  )
+}
+
+export const applyPeerPresenceInCache = (
+  client: QueryClient,
+  event: ChatPresenceEvent,
+) => {
+  updateConversationsCache(client, old =>
+    old?.map(conversation =>
+      conversation.peer.id === event.userId
+        ? {
+            ...conversation,
+            peer: {
+              ...conversation.peer,
+              isOnline: event.isOnline,
+              lastSeenAt: event.lastSeenAt,
+            },
           }
         : conversation,
     ),

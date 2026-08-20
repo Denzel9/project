@@ -21,6 +21,7 @@ type ChatHeaderProps = {
   isMobile: boolean;
   headerTime?: string;
   hasActiveTasks?: boolean;
+  hasPeerTasks?: boolean;
   hasTaskTzMessages?: boolean;
   isSearchOpen: boolean;
   conversationId: string | null;
@@ -32,6 +33,7 @@ type ChatHeaderProps = {
   onOpenAttachments: () => void;
   onOpenPhotoReport?: () => void;
   onOpenAddTask?: () => void;
+  onOpenTasks?: () => void;
 };
 
 export const ChatHeader = ({
@@ -40,6 +42,7 @@ export const ChatHeader = ({
   headerTime,
   isMobile,
   hasActiveTasks = false,
+  hasPeerTasks = false,
   hasTaskTzMessages = false,
   isSearchOpen,
   conversationId,
@@ -51,6 +54,7 @@ export const ChatHeader = ({
   onOpenAttachments,
   onOpenPhotoReport,
   onOpenAddTask,
+  onOpenTasks,
 }: ChatHeaderProps) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
@@ -82,6 +86,11 @@ export const ChatHeader = ({
   const handleOpenAddTask = () => {
     handleCloseMenu();
     onOpenAddTask?.();
+  };
+
+  const handleOpenTasks = () => {
+    handleCloseMenu();
+    onOpenTasks?.();
   };
 
   const displayName = isNotes ? 'Заметки' : peer?.displayName;
@@ -166,7 +175,7 @@ export const ChatHeader = ({
           {headerTime && (
             <Typography
               variant="body2"
-              color="text.secondary"
+              color={headerTime === 'в сети' ? 'success.main' : 'text.secondary'}
             >
               {headerTime}
             </Typography>
@@ -201,24 +210,33 @@ export const ChatHeader = ({
           onClose={handleCloseMenu}
         >
           {!isNotes && (
-            <MenuItem
-              component="a"
-              target="_blank"
-              rel="noopener noreferrer"
-              href={`${ROUTES.PROFILE}?userId=${peer?.id}`}
-            >
-              Перейти к профилю
-            </MenuItem>
+            <>
+              <MenuItem
+                component="a"
+                target="_blank"
+                rel="noopener noreferrer"
+                href={`${ROUTES.PROFILE}?userId=${peer?.id}`}
+              >
+                Перейти к профилю
+              </MenuItem>
+              <Divider />
+            </>
           )}
-
-          <Divider />
 
           <MenuItem onClick={handleOpenAttachments}>Вложения</MenuItem>
 
-          <Divider />
+          {!isNotes && hasPeerTasks && (
+            <>
+              <Divider />
+              <MenuItem onClick={handleOpenTasks}>Задачи</MenuItem>
+            </>
+          )}
 
           {hasTaskTzMessages && (
-            <MenuItem onClick={handleOpenTaskTz}>Посмотреть ТЗ</MenuItem>
+            <>
+              <Divider />
+              <MenuItem onClick={handleOpenTaskTz}>Технические задания</MenuItem>
+            </>
           )}
 
           {role === USER_ROLE.COMPANY && (
@@ -228,12 +246,13 @@ export const ChatHeader = ({
             </>
           )}
 
-          <Divider />
-
           {role === USER_ROLE.CREATOR && hasActiveTasks && (
-            <MenuItem onClick={handleOpenPhotoReport}>
-              Результаты работы
-            </MenuItem>
+            <>
+              <Divider />
+              <MenuItem onClick={handleOpenPhotoReport}>
+                Прикрепить результаты работы
+              </MenuItem>
+            </>
           )}
         </Menu>
       </Stack>

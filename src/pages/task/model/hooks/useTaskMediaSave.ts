@@ -224,12 +224,13 @@ export const useTaskMediaSave = ({
     }
   }
 
-  const handleSaveMedia = async () => {
-    if (!task || !canEditMedia || files.length === 0) return
-    if (hasPreparingMedia(images)) return
+  const handleSaveMedia = async (): Promise<boolean> => {
+    if (!task || !canEditMedia) return false
+    if (hasPreparingMedia(images)) return false
+    if (files.length === 0) return true
 
     const readyFiles = files.filter(file => file.prepared)
-    if (!readyFiles.length) return
+    if (!readyFiles.length) return false
 
     const succeeded = new Set<string>()
 
@@ -297,6 +298,8 @@ export const useTaskMediaSave = ({
         ...serverAndFailed.filter(photo => Boolean(photo.localId)),
       ]
     })
+
+    return succeeded.size === readyFiles.length
   }
 
   const handleCancel = () => {

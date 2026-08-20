@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 
+import { safeAreaMobileFullWidthDrawerPadding } from '@/shared';
+
 type PublicationSearchPanelProps = {
   open: boolean;
   query: string;
@@ -46,16 +48,21 @@ export const PublicationSearchPanel = ({
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={{
-        '& .MuiDrawer-paper': {
-          p: { xs: 3, md: 4 },
-          display: 'flex',
-          flexDirection: 'column',
-          width: isMobile ? '100%' : 400,
-          borderTopLeftRadius: { xs: 0, md: 32 },
-          borderBottomLeftRadius: { xs: 0, md: 32 },
+      sx={[
+        {
+          '& .MuiDrawer-paper': {
+            display: 'flex',
+            flexDirection: 'column',
+            width: isMobile ? '100%' : 400,
+            borderTopLeftRadius: { xs: 0, md: 32 },
+            borderBottomLeftRadius: { xs: 0, md: 32 },
+            ...(isMobile ? {} : { p: { md: 4 } }),
+          },
         },
-      }}
+        isMobile
+          ? { '& .MuiDrawer-paper': safeAreaMobileFullWidthDrawerPadding(true, 3) }
+          : {},
+      ]}
     >
       <Stack
         direction="row"

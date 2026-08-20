@@ -21,10 +21,9 @@ import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
-  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_ENUM,
   type Application,
 } from '@/entities/application';
-import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { UserDisplayName, type User } from '@/entities/user';
 import { ROUTES, scrollMainToTop } from '@/shared';
 import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
@@ -33,7 +32,12 @@ import {
   MY_RESPONSE_TABLE_COLUMN_WIDTHS,
   MY_RESPONSE_TABLE_PAGE_SIZE,
 } from '../model/constants';
-import { getMyResponseStatusColor, sortMyResponses } from '../model/utils';
+import {
+  getMyResponseChipColor,
+  getMyResponseChipLabel,
+  isApplicationPostArchived,
+  sortMyResponses,
+} from '../model/utils';
 
 import { MyResponseDetailsDialog } from './MyResponseDetailsDialog';
 
@@ -68,8 +72,11 @@ const ResponseRowActions = ({
   const isWithdrawing = withdrawingId === application.id;
   const post = application.post;
 
-  const canWithdraw = application.status === APPLICATION_STATUS_ENUM.NEW;
-  const isAccepted = application.status === APPLICATION_STATUS_ENUM.ACCEPTED;
+  const isArchived = isApplicationPostArchived(application);
+  const canWithdraw =
+    !isArchived && application.status === APPLICATION_STATUS_ENUM.NEW;
+  const isAccepted =
+    !isArchived && application.status === APPLICATION_STATUS_ENUM.ACCEPTED;
 
   if (!canWithdraw && !isAccepted) return null;
 
@@ -408,8 +415,8 @@ export const MyResponsesTable = ({
                   >
                     <Chip
                       size="small"
-                      label={APPLICATION_STATUS_LABELS[application.status]}
-                      color={getMyResponseStatusColor(application.status)}
+                      label={getMyResponseChipLabel(application)}
+                      color={getMyResponseChipColor(application)}
                       sx={{ opacity: 0.9 }}
                     />
                   </TableCell>

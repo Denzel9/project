@@ -15,7 +15,7 @@ import {
   useMyTaskFilterStore,
   type DashboardPeriod,
 } from '@/features'
-import { FilterAutocomplete } from '@/shared'
+import { FilterAutocomplete, safeAreaFullWidthDrawerPaperSx } from '@/shared'
 
 import { DASHBOARD_PERIOD_OPTIONS } from '../model/constants'
 
@@ -123,7 +123,13 @@ export const DashboardFiltersBar = ({
         <Stack
           direction="row"
           spacing={1}
-          sx={{ display: { xs: 'none', md: 'flex' }, minWidth: 0 }}
+          sx={{
+            display: { xs: 'none', md: 'flex' },
+            minWidth: 0,
+            flex: 1,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
         >
           <FilterAutocomplete
             label="Пост"
@@ -189,8 +195,12 @@ export const DashboardFiltersBar = ({
             onChange={setPostId}
             options={postOptions}
             loading={isPostsLoading}
-            sx={{ width: { sm: 220 } }}
             size="small"
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: { xs: 'flex', md: 'none' },
+            }}
           />
 
           <AssigneeFilterMenu isCompany={isCompany} />
@@ -216,8 +226,8 @@ export const DashboardFiltersBar = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
+            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

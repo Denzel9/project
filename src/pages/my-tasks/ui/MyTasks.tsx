@@ -369,14 +369,6 @@ export const MyTasks = () => {
     setIsSearchOpen,
   ]);
 
-  const prevViewModeRef = useRef(viewMode);
-
-  useEffect(() => {
-    if (prevViewModeRef.current === viewMode) return;
-    prevViewModeRef.current = viewMode;
-    resetColumnFilters();
-  }, [viewMode, resetColumnFilters]);
-
   useEffect(() => {
     const column = pendingKanbanScrollRef.current;
 

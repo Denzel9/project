@@ -4,12 +4,12 @@ import {
   Stack,
   useMediaQuery,
 } from '@mui/material';
-import { format } from 'date-fns';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, Outlet } from 'react-router';
 
 import {
   copyTaskMediaToConversation,
+  formatPeerPresenceLabel,
   wrapChatTaskTzMessage,
   getMessagePreview,
   type ChatMessage,
@@ -17,6 +17,11 @@ import {
 import { fetchTaskById, type Task } from '@/entities/task';
 import { type UserSearchItem } from '@/entities/user';
 import { useMessenger, formatTaskTzForChat } from '@/features/chat';
+import { useAuthStore } from '@/features/auth';
+import { getTaskPath } from '@/pages/my-tasks/model/utils/utils';
+import { TaskListDialog } from '@/pages/task/ui/TaskListDialog';
+import { RequestCancelTaskDialog } from '@/pages/task/ui/RequestCancelTaskDialog';
+import { RequestDeadlineExtensionDialog } from '@/pages/task/ui/RequestDeadlineExtensionDialog';
 import { ROUTES, EmptyBlock, getChatPath } from '@/shared';
 import {
   ChatAttachmentsPanel,
@@ -42,6 +47,10 @@ export const ChatPage = () => {
   const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
   const [isPhotoReportOpen, setIsPhotoReportOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isTasksOpen, setIsTasksOpen] = useState(false);
+  const [requestTask, setRequestTask] = useState<Task | null>(null);
+  const [isAnnulmentOpen, setIsAnnulmentOpen] = useState(false);
+  const [isDeadlineOpen, setIsDeadlineOpen] = useState(false);
   const [addingTaskId, setAddingTaskId] = useState<string | null>(null);
   const [addTaskError, setAddTaskError] = useState<string | null>(null);
   const [forwardMessageIds, setForwardMessageIds] = useState<string[]>([]);
@@ -51,6 +60,7 @@ export const ChatPage = () => {
   const { id: routeConversationId } = useParams();
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { setSnackbarOpen } = useSnackbarStore();
+  const isPrime = useAuthStore(state => state.isPrime);
 
   const {
     error,
@@ -127,11 +137,9 @@ export const ChatPage = () => {
     isLoading: isPeerTasksLoading,
   } = useChatPeerTasks(selectedConversation?.peer?.id);
 
-  const headerTime = selectedConversation?.lastMessage
-    ? format(new Date(selectedConversation.lastMessage.createdAt), 'HH:mm')
-    : selectedConversation
-      ? format(new Date(selectedConversation.updatedAt), 'HH:mm')
-      : '';
+  const headerTime = selectedConversation?.isNotes
+    ? ''
+    : formatPeerPresenceLabel(selectedConversation?.peer);
 
   const hasTaskTzMessages = useMemo(
     () => extractChatTaskTzMessages(messages).length > 0,
@@ -142,6 +150,10 @@ export const ChatPage = () => {
     setTimeout(() => {
       setIsPhotoReportOpen(false);
       setIsAddTaskOpen(false);
+      setIsTasksOpen(false);
+      setIsAnnulmentOpen(false);
+      setIsDeadlineOpen(false);
+      setRequestTask(null);
       setIsTaskTzOpen(false);
       setIsSearchOpen(false);
     }, 0);
@@ -444,6 +456,7 @@ export const ChatPage = () => {
               peer={selectedConversation?.peer}
               isNotes={selectedConversation?.isNotes}
               hasActiveTasks={canAddPhotoReport}
+              hasPeerTasks={peerAssignedTasks.length > 0}
               hasTaskTzMessages={hasTaskTzMessages}
               isSearchOpen={isSearchOpen}
               conversationId={selectedConversationId}
@@ -458,6 +471,7 @@ export const ChatPage = () => {
                 setAddTaskError(null);
                 setIsAddTaskOpen(true);
               }}
+              onOpenTasks={() => setIsTasksOpen(true)}
             />
 
             {isPhotoReportOpen ? (
@@ -561,6 +575,51 @@ export const ChatPage = () => {
             onClose={() => {
               setAddTaskError(null);
               setIsAddTaskOpen(false);
+            }}
+          />
+
+          <TaskListDialog
+            open={isTasksOpen}
+            tasks={peerAssignedTasks}
+            isLoading={isPeerTasksLoading}
+            title="Задачи"
+            currentUserId={currentUserId}
+            onClose={() => setIsTasksOpen(false)}
+            onSelectTask={
+              isPrime
+                ? task => {
+                    navigate(getTaskPath(task));
+                  }
+                : undefined
+            }
+            onRequestAnnulment={task => {
+              setRequestTask(task);
+              setIsAnnulmentOpen(true);
+              setIsTasksOpen(false);
+            }}
+            onRequestDeadlineExtension={task => {
+              setRequestTask(task);
+              setIsDeadlineOpen(true);
+              setIsTasksOpen(false);
+            }}
+          />
+
+          <RequestCancelTaskDialog
+            open={isAnnulmentOpen}
+            taskId={requestTask?.id}
+            onClose={() => {
+              setIsAnnulmentOpen(false);
+              setRequestTask(null);
+            }}
+          />
+
+          <RequestDeadlineExtensionDialog
+            open={isDeadlineOpen}
+            taskId={requestTask?.id}
+            currentFinalDate={requestTask?.finalDate}
+            onClose={() => {
+              setIsDeadlineOpen(false);
+              setRequestTask(null);
             }}
           />
 

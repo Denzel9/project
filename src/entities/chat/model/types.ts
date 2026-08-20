@@ -5,6 +5,14 @@ export type ChatPeer = {
   role: ChatPeerRole
   avatar: string | null
   displayName: string
+  isOnline?: boolean
+  lastSeenAt?: string | null
+}
+
+export type ChatPresenceEvent = {
+  userId: string
+  isOnline: boolean
+  lastSeenAt: string | null
 }
 
 export type ChatMessageMedia = {

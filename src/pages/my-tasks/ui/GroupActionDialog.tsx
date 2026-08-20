@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 
 import {
     buildCreateTaskPayload,
+    canArchiveTask,
     isTaskExecutor,
     isTaskOwner,
     TASK_STATUS_ENUM,
@@ -108,7 +109,7 @@ const isTaskEligibleForAction = (
     }
 
     if (action === 'archive') {
-        return isTaskOwner(task, currentUserId) && !task.isArchived;
+        return isTaskOwner(task, currentUserId) && canArchiveTask(task);
     }
 
     if (action === 'unarchive') {

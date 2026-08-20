@@ -1,4 +1,5 @@
 import {
+  LinkOff,
   LinkOutlined,
   OpenInNewOutlined,
   ScheduleOutlined,
@@ -18,7 +19,7 @@ import { ru } from 'date-fns/locale'
 import { useState, type MouseEvent } from 'react'
 import { Link } from 'react-router'
 
-import { getPlatformChipSx, getPlatformLabel } from '@/entities/post'
+import { getPlatformChipSx, getPlatformColor, getPlatformLabel } from '@/entities/post'
 import {
   executorToUserPartial,
   UserDisplayName,
@@ -39,8 +40,8 @@ import {
 
 import { AttachPublicationLinkDialog } from './AttachPublicationLinkDialog'
 
-import type { Publication } from '@/entities/publication'
 import type { Platform } from '@/entities/post'
+import type { Publication } from '@/entities/publication'
 
 type PublicationItemProps = {
   publication: Publication
@@ -181,15 +182,29 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               flexWrap: 'wrap',
             }}
           >
-            {platformChips.map(platform => (
-              <Chip
-                key={platform}
-                size="small"
-                variant="outlined"
-                label={getPlatformLabel(platform)}
-                sx={getPlatformChipSx(platform)}
-              />
-            ))}
+            {platformChips.map(platform => {
+              const url = platformLinks[platform]
+
+              return (
+                <Chip
+                  href={url}
+                  size="small"
+                  component="a"
+                  key={platform}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  label={getPlatformLabel(platform)}
+                  icon={url ?
+                    <LinkOutlined
+                      fontSize="small"
+                      sx={{ fill: getPlatformColor(platform) }} /> :
+                    <LinkOff
+                      fontSize="small"
+                      sx={{ fill: getPlatformColor(platform) }} />}
+                  sx={{ ...getPlatformChipSx(platform), cursor: url ? 'pointer' : 'default' }}
+                />
+              )
+            })}
           </Stack>
         </Stack>
 
@@ -224,10 +239,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
               </Typography>
             </Stack>
 
-            <Stack spacing={0.5}>
-              <Typography variant="body2" color="text.secondary">
-                Ссылки:
-              </Typography>
+            {/* <Stack spacing={0.5}>
               {(platformChips.length > 0
                 ? platformChips
                 : (['OTHER'] as Platform[])
@@ -238,7 +250,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
                     key={platform}
                     direction="row"
                     spacing={0.5}
-                    sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
+                    sx={{ alignItems: 'center', flexWrap: 'wrap' }}
                   >
                     <Typography
                       variant="body2"
@@ -247,23 +259,10 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
                     >
                       {getPlatformLabel(platform)}:
                     </Typography>
-                    {url ? (
-                      <Typography
-                        component="a"
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        variant="body2"
-                        onClick={event => event.stopPropagation()}
-                        sx={{
-                          color: 'info.main',
-                          textDecoration: 'none',
-                          wordBreak: 'break-all',
-                          '&:hover': { color: 'primary.main' },
-                        }}
-                      >
-                        {url}
-                      </Typography>
+                    {!url ? (
+                      <IconButton >
+                        <OpenInNewOutlined fontSize="small" />
+                      </IconButton>
                     ) : (
                       <Typography variant="body2" color="text.disabled">
                         не указана
@@ -272,7 +271,7 @@ export const PublicationItem = ({ publication }: PublicationItemProps) => {
                   </Stack>
                 )
               })}
-            </Stack>
+            </Stack> */}
 
             <Stack
               direction="row"

@@ -4,9 +4,11 @@ import { ru } from 'date-fns/locale'
 import { MEDIA_FILE_TEMPLATE_ACCEPT, validateMediaFile } from '@/shared/lib/media'
 
 import { getChatApplicationPreview } from './applicationMessage'
+import { getChatTaskInvitePreview } from './taskInviteMessage'
+import { getChatTaskRequestPreview } from './taskRequestMessage'
 import { getChatTaskTzPreview } from './taskTzMessage'
 
-import type { ChatConversation, ChatMessage, ChatMessageMedia } from './types'
+import type { ChatConversation, ChatMessage, ChatMessageMedia, ChatPeer } from './types'
 import type { UploadMediaResponse } from '@/entities/post'
 
 export const CHAT_MEDIA_ACCEPT = MEDIA_FILE_TEMPLATE_ACCEPT
@@ -37,6 +39,18 @@ export const getMessagePreview = (
 
     if (tzPreview) {
       return `${prefix}${tzPreview}`
+    }
+
+    const invitePreview = getChatTaskInvitePreview(trimmed)
+
+    if (invitePreview) {
+      return `${prefix}${invitePreview}`
+    }
+
+    const requestPreview = getChatTaskRequestPreview(trimmed)
+
+    if (requestPreview) {
+      return `${prefix}${requestPreview}`
     }
 
     const applicationPreview = getChatApplicationPreview(trimmed)
@@ -209,4 +223,27 @@ export const formatConversationListDayLabel = (dateInput: string | Date) => {
   }
 
   return format(date, 'dd.MM.yy')
+}
+
+export const formatPeerPresenceLabel = (
+  peer?: Pick<ChatPeer, 'isOnline' | 'lastSeenAt'> | null,
+) => {
+  if (!peer) return ''
+  if (peer.isOnline) return 'в сети'
+
+  if (!peer.lastSeenAt) return ''
+
+  const date = new Date(peer.lastSeenAt)
+
+  if (Number.isNaN(date.getTime())) return ''
+
+  if (isToday(date)) {
+    return `был(а) в ${format(date, 'HH:mm')}`
+  }
+
+  if (isYesterday(date)) {
+    return `был(а) вчера в ${format(date, 'HH:mm')}`
+  }
+
+  return `был(а) ${format(date, 'd MMM в HH:mm', { locale: ru })}`
 }

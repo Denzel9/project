@@ -18,12 +18,12 @@ import {
 import { type Dayjs } from 'dayjs'
 import { useMemo, useState } from 'react'
 
-import { APPLICATION_STATUS_LABELS, type ApplicationStatus } from '@/entities'
-import { FilterAutocomplete, FilterStatusSelect, useScroll } from '@/shared'
+import { FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared'
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
 import {
   isDefaultApplicationStatusFilter,
+  MY_RESPONSE_STATUS_OPTIONS,
   type ApplicationStatusFilter,
   type CompanyFilter,
 } from '../model/utils'
@@ -79,15 +79,6 @@ const MyResponsesFilter = ({
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
 
-  const statusOptions = useMemo(
-    () =>
-      Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
-        value: value as ApplicationStatus,
-        label,
-      })),
-    [],
-  )
-
   const companyAutocompleteOptions = useMemo(
     () =>
       companyOptions.map(({ ownerId, companyName }) => ({
@@ -118,7 +109,10 @@ const MyResponsesFilter = ({
   }
 
   const hasMobileFilters =
-    !isDefaultApplicationStatusFilter(status) || companyId !== 'all'
+    !isDefaultApplicationStatusFilter(status) ||
+    companyId !== 'all' ||
+    Boolean(updatedDate) ||
+    Boolean(searchQuery.trim())
 
   return (
     <>
@@ -153,7 +147,7 @@ const MyResponsesFilter = ({
           <FilterStatusSelect
             size="small"
             value={status}
-            options={statusOptions}
+            options={MY_RESPONSE_STATUS_OPTIONS}
             onChange={onStatusChange}
             sx={{ flex: 1 }}
           />
@@ -185,14 +179,6 @@ const MyResponsesFilter = ({
             justifyContent: { xs: 'flex-end', md: 'flex-start' },
           }}
         >
-          <IconButton
-            color={updatedDate ? 'primary' : 'default'}
-            onClick={event => setAnchorEl(event.currentTarget)}
-            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-          >
-            <CalendarMonthOutlined />
-          </IconButton>
-
           {isSearchOpen && (
             <TextField
               autoFocus
@@ -201,11 +187,17 @@ const MyResponsesFilter = ({
               variant="outlined"
               value={searchQuery}
               onChange={event => onSearchQueryChange(event.target.value)}
-              sx={{ width: { xs: 160, sm: 220, md: 300 } }}
+              sx={{
+                width: { sm: 220, md: 300 },
+                display: { xs: 'none', md: 'block' },
+              }}
             />
           )}
 
-          <IconButton onClick={handleToggleSearch}>
+          <IconButton
+            onClick={handleToggleSearch}
+            sx={{ display: { xs: 'none', md: 'inline-flex' } }}
+          >
             {isSearchOpen ? <Close /> : <Search />}
           </IconButton>
 
@@ -290,8 +282,8 @@ const MyResponsesFilter = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
+            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >
@@ -303,6 +295,11 @@ const MyResponsesFilter = ({
           onStatusChange={onStatusChange}
           onCompanyChange={onCompanyChange}
           companyOptions={companyOptions}
+          searchQuery={searchQuery}
+          onSearchQueryChange={onSearchQueryChange}
+          onSearchOpenChange={onSearchOpenChange}
+          updatedDate={updatedDate}
+          onUpdatedDateChange={onUpdatedDateChange}
         />
       </Drawer>
     </>

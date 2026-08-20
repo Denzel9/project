@@ -1,12 +1,23 @@
 import { Close } from '@mui/icons-material'
-import { Box, Button, IconButton, Stack, Typography } from '@mui/material'
+import {
+  Box,
+  Button,
+  IconButton,
+  Popover,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale'
+import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 
-import { APPLICATION_STATUS_LABELS, type ApplicationStatus } from '@/entities'
-import { FilterAutocomplete, FilterStatusSelect } from '@/shared'
+import { DateCalendarFilter, FilterAutocomplete, FilterStatusSelect } from '@/shared'
 
 import {
   DEFAULT_APPLICATION_STATUS_FILTER,
+  MY_RESPONSE_STATUS_OPTIONS,
   type ApplicationStatusFilter,
   type CompanyFilter,
 } from '../model/utils'
@@ -24,11 +35,18 @@ type MyResponsesMobileFilterProps = {
   onStatusChange: (value: ApplicationStatusFilter) => void
   onCompanyChange: (value: CompanyFilter) => void
   companyOptions: CompanyOption[]
+  searchQuery: string
+  onSearchQueryChange: (value: string) => void
+  onSearchOpenChange: (open: boolean) => void
+  updatedDate: string | null
+  onUpdatedDateChange: (value: string | null) => void
 }
 
 type Draft = {
   status: ApplicationStatusFilter
   companyId: CompanyFilter
+  searchQuery: string
+  updatedDate: string | null
 }
 
 export const MyResponsesMobileFilter = ({
@@ -39,25 +57,27 @@ export const MyResponsesMobileFilter = ({
   onStatusChange,
   onCompanyChange,
   companyOptions,
+  searchQuery,
+  onSearchQueryChange,
+  onSearchOpenChange,
+  updatedDate,
+  onUpdatedDateChange,
 }: MyResponsesMobileFilterProps) => {
-  const [draft, setDraft] = useState<Draft>({ status, companyId })
+  const [draft, setDraft] = useState<Draft>({
+    status,
+    companyId,
+    searchQuery,
+    updatedDate,
+  })
+  const [dateAnchorEl, setDateAnchorEl] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!open) return
 
     setTimeout(() => {
-      setDraft({ status, companyId })
+      setDraft({ status, companyId, searchQuery, updatedDate })
     }, 0)
-  }, [open, status, companyId])
-
-  const statusOptions = useMemo(
-    () =>
-      Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
-        value: value as ApplicationStatus,
-        label,
-      })),
-    [],
-  )
+  }, [open, status, companyId, searchQuery, updatedDate])
 
   const companyAutocompleteOptions = useMemo(
     () =>
@@ -68,17 +88,47 @@ export const MyResponsesMobileFilter = ({
     [companyOptions],
   )
 
+  const dateDisplayValue = draft.updatedDate
+    ? format(dayjs(draft.updatedDate).toDate(), 'dd.MM.yyyy', { locale: ru })
+    : ''
+
+  const handleDateChange = (date: Dayjs | null) => {
+    setDraft(prev => ({
+      ...prev,
+      updatedDate: date?.isValid() ? date.format('YYYY-MM-DD') : null,
+    }))
+    setDateAnchorEl(null)
+  }
+
+  const handleDateClear = () => {
+    setDraft(prev => ({ ...prev, updatedDate: null }))
+    setDateAnchorEl(null)
+  }
+
   const handleApply = () => {
+    const nextQuery = draft.searchQuery.trim()
+
     onStatusChange(draft.status)
     onCompanyChange(draft.companyId)
+    onUpdatedDateChange(draft.updatedDate)
+    onSearchQueryChange(nextQuery)
+    onSearchOpenChange(Boolean(nextQuery))
     onClose()
   }
 
   const handleReset = () => {
     const nextStatus = [...DEFAULT_APPLICATION_STATUS_FILTER]
-    setDraft({ status: nextStatus, companyId: 'all' })
+    setDraft({
+      status: nextStatus,
+      companyId: 'all',
+      searchQuery: '',
+      updatedDate: null,
+    })
     onStatusChange(nextStatus)
     onCompanyChange('all')
+    onUpdatedDateChange(null)
+    onSearchQueryChange('')
+    onSearchOpenChange(false)
     onClose()
   }
 
@@ -107,9 +157,22 @@ export const MyResponsesMobileFilter = ({
         </Stack>
 
         <Stack spacing={3}>
+          <TextField
+            fullWidth
+            label="Поиск"
+            value={draft.searchQuery}
+            onChange={event =>
+              setDraft(prev => ({
+                ...prev,
+                searchQuery: event.target.value,
+              }))
+            }
+          />
+
           <FilterStatusSelect
+            size="medium"
             value={draft.status}
-            options={statusOptions}
+            options={MY_RESPONSE_STATUS_OPTIONS}
             onChange={value =>
               setDraft(prev => ({
                 ...prev,
@@ -131,6 +194,52 @@ export const MyResponsesMobileFilter = ({
             }
             sx={{ width: '100%' }}
           />
+
+          <Box>
+            <TextField
+              fullWidth
+              label="Дата"
+              value={dateDisplayValue}
+              onClick={event => setDateAnchorEl(event.currentTarget)}
+              slotProps={{
+                input: {
+                  readOnly: true,
+                  sx: { cursor: 'pointer' },
+                  endAdornment: draft.updatedDate ? (
+                    <IconButton
+                      size="small"
+                      aria-label="Сбросить дату"
+                      onClick={event => {
+                        event.stopPropagation()
+                        handleDateClear()
+                      }}
+                    >
+                      <Close fontSize="small" />
+                    </IconButton>
+                  ) : undefined,
+                },
+              }}
+            />
+
+            <Popover
+              open={Boolean(dateAnchorEl)}
+              anchorEl={dateAnchorEl}
+              onClose={() => setDateAnchorEl(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+              sx={{
+                '& .MuiPopover-paper': {
+                  borderRadius: '32px',
+                },
+              }}
+            >
+              <DateCalendarFilter
+                value={draft.updatedDate}
+                onChange={handleDateChange}
+                onClear={handleDateClear}
+              />
+            </Popover>
+          </Box>
         </Stack>
       </Box>
 

@@ -115,27 +115,35 @@ export const PublicationsPage = () => {
 
   useEffect(() => {
     if (filters.postId !== 'all' && filters.postTitle) {
-      setSelectedPostOption({
-        id: filters.postId,
-        label: filters.postTitle,
-      });
+      setTimeout(() => {
+        setSelectedPostOption({
+          id: filters.postId,
+          label: filters.postTitle || '',
+        });
+      }, 0);
       return;
     }
 
     if (filters.postId === 'all') {
-      setSelectedPostOption(null);
+      setTimeout(() => {
+        setSelectedPostOption(null);
+      }, 0);
     }
   }, [filters.postId, filters.postTitle]);
 
   useEffect(() => {
     if (!q.trim()) {
-      setSelectedTitleOption(null);
+      setTimeout(() => {
+        setSelectedTitleOption(null);
+      }, 0);
       return;
     }
 
-    setSelectedTitleOption(current =>
-      current?.id === q ? current : { id: q, label: q }
-    );
+    setTimeout(() => {
+      setSelectedTitleOption(current =>
+        current?.id === q ? current : { id: q, label: q }
+      );
+    }, 0);
   }, [q]);
 
   const didForceExecutorTableRef = useRef(false);
@@ -145,7 +153,9 @@ export const PublicationsPage = () => {
     if (filters.executorId === 'all') return;
 
     didForceExecutorTableRef.current = true;
-    setViewMode('table');
+    setTimeout(() => {
+      setViewMode('table');
+    }, 0);
   }, [filters.executorId]);
 
   const isTableView = viewMode === 'table';
@@ -686,8 +696,11 @@ export const PublicationsPage = () => {
           <Box
             sx={{
               py: 6,
+              flex: 1,
               display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'center',
+              alignItems: 'center',
               bgcolor: 'background.paper',
               borderRadius: '32px',
               border: '1px solid',

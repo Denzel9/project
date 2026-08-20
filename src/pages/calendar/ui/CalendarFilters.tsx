@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import { useEffect, useState } from 'react';
 
-import { useScroll } from '@/shared';
+import { safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared';
 
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
 import { hasActiveCalendarFilters, toCalendarDateKey, type CalendarEvent } from '../model/utils';
@@ -147,11 +147,11 @@ export const CalendarFilters = ({
           onClose={() => setIsDrawerOpen(false)}
           sx={{
             '& .MuiDrawer-paper': {
-              p: 3,
               maxWidth: 420,
               display: 'flex',
               flexDirection: 'column',
               width: { xs: '100%', sm: '80%' },
+              ...safeAreaFullWidthDrawerPaperSx({ xs: 3, sm: 3 }),
             },
           }}
         >

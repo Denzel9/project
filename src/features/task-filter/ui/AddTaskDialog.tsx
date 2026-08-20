@@ -74,7 +74,9 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
     if (!open) return;
     if (templateId === NO_TEMPLATE_ID) return;
     if (!templates.some(item => item.id === templateId)) {
-      setTemplateId(NO_TEMPLATE_ID);
+      setTimeout(() => {
+        setTemplateId(NO_TEMPLATE_ID);
+      }, 0);
     }
   }, [open, templateId, templates]);
 
@@ -365,10 +367,9 @@ export const AddTaskDialog = ({ open, onClose }: AddTaskDialogProps) => {
             color="primary"
             onClick={() =>
               navigate(
-                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${
-                  executorId !== EXECUTOR_UNASSIGNED_ID
-                    ? `&userId=${executorId}`
-                    : '&userId=unassigned'
+                `${ROUTES.TASK}/${newPostId ?? newTaskId}?taskId=${newTaskId}${executorId !== EXECUTOR_UNASSIGNED_ID
+                  ? `&userId=${executorId}`
+                  : '&userId=unassigned'
                 }`
               )
             }

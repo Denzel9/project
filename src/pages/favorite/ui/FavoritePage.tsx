@@ -370,6 +370,8 @@ export const FavoritePage = () => {
               bgcolor: 'background.paper',
               borderRadius: '32px',
               justifyContent: 'center',
+              border: '1px solid',
+              borderColor: 'divider',
             }}
           >
             <EmptyBlock

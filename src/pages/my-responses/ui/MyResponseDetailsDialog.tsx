@@ -22,14 +22,19 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 
 import {
-  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_ENUM,
   type Application,
 } from '@/entities/application';
-import { APPLICATION_STATUS_ENUM } from '@/entities/application/model/utils';
 import { getUserName, UserDisplayName, type User } from '@/entities/user';
 import { ROUTES } from '@/shared/config/routes';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 import { WithdrawDialog } from '@/widgets/post-item/ui/WithdrawDialog';
+
+import {
+  getMyResponseChipColor,
+  getMyResponseChipLabel,
+  isApplicationPostArchived,
+} from '../model/utils';
 
 type MyResponseDetailsDialogProps = {
   open: boolean;
@@ -38,14 +43,6 @@ type MyResponseDetailsDialogProps = {
   withdrawingId?: string | null;
   onClose: () => void;
   onWithdraw: (applicationId: string) => void;
-};
-
-const getStatusColor = (status: Application['status']) => {
-  if (status === APPLICATION_STATUS_ENUM.ACCEPTED) return 'success';
-  if (status === APPLICATION_STATUS_ENUM.REJECTED) return 'error';
-  if (status === APPLICATION_STATUS_ENUM.WITHDRAWN) return 'default';
-  if (status === APPLICATION_STATUS_ENUM.VIEWED) return 'info';
-  return 'primary';
 };
 
 const getStatusHint = (status: Application['status']) => {
@@ -85,9 +82,14 @@ export const MyResponseDetailsDialog = ({
   const companyUser = post?.owner as Partial<User> | undefined;
   const companyName = getUserName(companyUser);
   const isUpdated = application.createdAt !== application.updatedAt;
-  const statusHint = getStatusHint(application.status);
-  const canWithdraw = application.status === APPLICATION_STATUS_ENUM.NEW;
-  const isAccepted = application.status === APPLICATION_STATUS_ENUM.ACCEPTED;
+  const isArchived = isApplicationPostArchived(application);
+  const statusHint = isArchived
+    ? 'Объявление в архиве'
+    : getStatusHint(application.status);
+  const canWithdraw =
+    !isArchived && application.status === APPLICATION_STATUS_ENUM.NEW;
+  const isAccepted =
+    !isArchived && application.status === APPLICATION_STATUS_ENUM.ACCEPTED;
 
   return (
     <>
@@ -179,8 +181,8 @@ export const MyResponseDetailsDialog = ({
                     </Typography>
                     <Chip
                       size="small"
-                      label={APPLICATION_STATUS_LABELS[application.status]}
-                      color={getStatusColor(application.status)}
+                      label={getMyResponseChipLabel(application)}
+                      color={getMyResponseChipColor(application)}
                     />
                   </Stack>
 

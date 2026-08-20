@@ -9,6 +9,8 @@ import {
   useTheme,
 } from '@mui/material'
 
+import { safeAreaMobileFullWidthDrawerPadding } from '@/shared'
+
 import type { ChatMessage } from '@/entities/chat'
 
 import { ChatMessageSearchAutocomplete } from './ChatMessageSearchAutocomplete'
@@ -34,16 +36,21 @@ export const ChatSearchPanel = ({
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={{
-        '& .MuiDrawer-paper': {
-          borderTopLeftRadius: { xs: 0, md: 32 },
-          borderBottomLeftRadius: { xs: 0, md: 32 },
-          p: { xs: 2, md: 4 },
-          display: 'flex',
-          flexDirection: 'column',
-          width: isMobile ? '100%' : 400,
+      sx={[
+        {
+          '& .MuiDrawer-paper': {
+            borderTopLeftRadius: { xs: 0, md: 32 },
+            borderBottomLeftRadius: { xs: 0, md: 32 },
+            display: 'flex',
+            flexDirection: 'column',
+            width: isMobile ? '100%' : 400,
+            ...(isMobile ? {} : { p: { md: 4 } }),
+          },
         },
-      }}
+        isMobile
+          ? { '& .MuiDrawer-paper': safeAreaMobileFullWidthDrawerPadding(true, 2) }
+          : {},
+      ]}
     >
       <Stack
         direction="row"

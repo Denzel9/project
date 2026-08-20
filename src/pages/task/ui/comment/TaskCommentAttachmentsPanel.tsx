@@ -18,6 +18,7 @@ import {
   useTaskCommentAttachmentsQuery,
   type TaskCommentAttachment,
 } from '@/entities/task';
+import { safeAreaMobileFullWidthDrawerPadding } from '@/shared';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
 
 import {
@@ -111,16 +112,21 @@ export const TaskCommentAttachmentsPanel = ({
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={{
-        '& .MuiDrawer-paper': {
-          display: 'flex',
-          p: { xs: 2, md: 4 },
-          flexDirection: 'column',
-          width: isMobile ? '100%' : 420,
-          borderTopLeftRadius: { xs: 0, md: 32 },
-          borderBottomLeftRadius: { xs: 0, md: 32 },
+      sx={[
+        {
+          '& .MuiDrawer-paper': {
+            display: 'flex',
+            flexDirection: 'column',
+            width: isMobile ? '100%' : 420,
+            borderTopLeftRadius: { xs: 0, md: 32 },
+            borderBottomLeftRadius: { xs: 0, md: 32 },
+            ...(isMobile ? {} : { p: { md: 4 } }),
+          },
         },
-      }}
+        isMobile
+          ? { '& .MuiDrawer-paper': safeAreaMobileFullWidthDrawerPadding(true, 2) }
+          : {},
+      ]}
     >
       <Stack
         direction="row"

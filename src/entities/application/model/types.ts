@@ -12,6 +12,7 @@ export type ApplicationPostSummary = {
   title: string
   type: 'CREATOR' | 'COMPANY'
   ownerId: string
+  isArchived?: boolean
   owner: {
     id: string
     creatorProfile: {
@@ -91,6 +92,7 @@ export type ApplicationListParams = {
   statuses?: ApplicationStatus[]
   type?: ApplicationPostSummary['type']
   createdDate?: string
+  isArchived?: boolean
   page?: number
   limit?: number
   q?: string

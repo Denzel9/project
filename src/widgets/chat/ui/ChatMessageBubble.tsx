@@ -19,7 +19,14 @@ import { format } from 'date-fns'
 import { useMemo, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router'
 
-import { parseChatApplicationMessage, parseChatTaskTzMessage, type ChatMessage, type ChatMessagePinScope } from '@/entities/chat'
+import {
+  parseChatApplicationMessage,
+  parseChatTaskInviteMessage,
+  parseChatTaskRequestMessage,
+  parseChatTaskTzMessage,
+  type ChatMessage,
+  type ChatMessagePinScope,
+} from '@/entities/chat'
 import { ROUTES, LinkifiedText, MarkdownContent } from '@/shared'
 import { ActionActorCaption } from '@/shared/ui/action-actor-caption/ActionActorCaption'
 import { FullScreenImageViewer, getMediaKind, isGalleryMedia } from '@/widgets/media'
@@ -27,6 +34,9 @@ import { FullScreenImageViewer, getMediaKind, isGalleryMedia } from '@/widgets/m
 import { useIsMessageDeletable } from '../model/hooks/useIsMessageDeletable'
 
 import { ChatMediaAlbum } from './ChatMediaAlbum'
+import { ChatTaskInviteCard } from './ChatTaskInviteCard'
+import { ChatTaskRequestCard } from './ChatTaskRequestCard'
+import { ChatTaskTzActions } from './ChatTaskTzActions'
 
 type ChatMessageBubbleProps = {
   message: ChatMessage
@@ -196,7 +206,17 @@ export const ChatMessageBubble = ({
     () => parseChatApplicationMessage(text),
     [text],
   )
-  const hasResponse = Boolean(applicationMessage)
+  const taskInviteMessage = useMemo(
+    () => parseChatTaskInviteMessage(text),
+    [text],
+  )
+  const taskRequestMessage = useMemo(
+    () => parseChatTaskRequestMessage(text),
+    [text],
+  )
+  const hasResponse = Boolean(
+    applicationMessage || taskInviteMessage || taskRequestMessage,
+  )
   const taskTzMessage = useMemo(() => parseChatTaskTzMessage(text), [text])
   const isTaskTzMessage = Boolean(taskTzMessage)
   const canEdit =
@@ -665,6 +685,30 @@ export const ChatMessageBubble = ({
           </Box>
         )}
 
+        {taskInviteMessage && (
+          <ChatTaskInviteCard
+            taskId={taskInviteMessage.taskId}
+            taskTitle={taskInviteMessage.taskTitle}
+            currentUserId={currentUserId}
+            isOutgoing={isOutgoing}
+            showActions={!isRedirected}
+          />
+        )}
+
+        {taskRequestMessage && (
+          <ChatTaskRequestCard
+            kind={taskRequestMessage.kind}
+            taskId={taskRequestMessage.taskId}
+            requestId={taskRequestMessage.requestId}
+            taskTitle={taskRequestMessage.taskTitle}
+            reason={taskRequestMessage.reason}
+            proposedDate={taskRequestMessage.proposedDate}
+            currentUserId={currentUserId}
+            isOutgoing={isOutgoing}
+            showActions={!isRedirected}
+          />
+        )}
+
         {hasResponse && applicationMessage && (
           <Stack direction="column" spacing={1.5} sx={{ pt: 0.25 }}>
             <Typography
@@ -682,6 +726,7 @@ export const ChatMessageBubble = ({
               </Typography>
             )}
 
+            {!isRedirected && (
             <Button
               color={isOutgoing ? 'secondary' : 'primary'}
               variant="contained"
@@ -710,6 +755,7 @@ export const ChatMessageBubble = ({
             >
               Посмотреть
             </Button>
+            )}
           </Stack>
         )}
 
@@ -794,39 +840,48 @@ export const ChatMessageBubble = ({
           ) : (
             <>
               {!hasResponse && hasText && isTaskTzMessage && taskTzMessage && (
-                <MarkdownContent
-                  content={taskTzMessage.content}
-                  sx={{
-                    fontSize: '0.875rem',
-                    lineHeight: 1.45,
-                    color: isOutgoing ? 'common.white' : 'text.primary',
-                    '& p, & li, & h1, & h2, & strong': {
-                      color: isOutgoing ? 'common.white' : 'text.primary',
-                    },
-                    '& h1': {
-                      fontSize: '1rem',
-                      fontWeight: 700,
-                      mb: 1,
-                    },
-                    '& h2': {
+                <Stack spacing={0} sx={{ minWidth: 0, width: '100%' }}>
+                  <MarkdownContent
+                    content={taskTzMessage.content}
+                    sx={{
                       fontSize: '0.875rem',
-                      fontWeight: 600,
-                      mt: 1.25,
-                      mb: 0.5,
-                    },
-                    '& a': {
-                      color: isOutgoing ? 'common.white' : 'primary.main',
-                      textDecoration: 'underline',
-                    },
-                    '& code': {
-                      bgcolor: isOutgoing
-                        ? 'rgba(255, 255, 255, 0.15)'
-                        : 'action.hover',
-                      px: 0.5,
-                      borderRadius: 0.5,
-                    },
-                  }}
-                />
+                      lineHeight: 1.45,
+                      color: isOutgoing ? 'common.white' : 'text.primary',
+                      '& p, & li, & h1, & h2, & strong': {
+                        color: isOutgoing ? 'common.white' : 'text.primary',
+                      },
+                      '& h1': {
+                        fontSize: '1rem',
+                        fontWeight: 700,
+                        mb: 1,
+                      },
+                      '& h2': {
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        mt: 1.25,
+                        mb: 0.5,
+                      },
+                      '& a': {
+                        color: isOutgoing ? 'common.white' : 'primary.main',
+                        textDecoration: 'underline',
+                      },
+                      '& code': {
+                        bgcolor: isOutgoing
+                          ? 'rgba(255, 255, 255, 0.15)'
+                          : 'action.hover',
+                        px: 0.5,
+                        borderRadius: 0.5,
+                      },
+                    }}
+                  />
+                  {!isRedirected && (
+                    <ChatTaskTzActions
+                      taskId={taskTzMessage.taskId}
+                      currentUserId={currentUserId}
+                      isOutgoing={isOutgoing}
+                    />
+                  )}
+                </Stack>
               )}
 
               {!hasResponse && hasText && !isTaskTzMessage && (

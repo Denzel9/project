@@ -1,7 +1,6 @@
 import { Close } from '@mui/icons-material';
 import {
   Box,
-  Button,
   Drawer,
   IconButton,
   MenuItem,
@@ -15,6 +14,7 @@ import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
 
 import { type Task } from '@/entities/task';
+import { safeAreaMobileFullWidthDrawerPadding } from '@/shared';
 
 import {
   extractChatTaskTzMessages,
@@ -124,17 +124,22 @@ export const ChatTaskTzPanel = ({
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={{
-        zIndex: theme => theme.zIndex.modal + 1,
-        '& .MuiDrawer-paper': {
-          borderTopLeftRadius: { xs: 0, md: 32 },
-          borderBottomLeftRadius: { xs: 0, md: 32 },
-          p: { xs: 2, md: 4 },
-          display: 'flex',
-          flexDirection: 'column',
-          width: isMobile ? '100%' : 560,
+      sx={[
+        { zIndex: theme => theme.zIndex.modal + 1 },
+        {
+          '& .MuiDrawer-paper': {
+            borderTopLeftRadius: { xs: 0, md: 32 },
+            borderBottomLeftRadius: { xs: 0, md: 32 },
+            display: 'flex',
+            flexDirection: 'column',
+            width: isMobile ? '100%' : 560,
+            ...(isMobile ? {} : { p: { md: 4 } }),
+          },
         },
-      }}
+        isMobile
+          ? { '& .MuiDrawer-paper': safeAreaMobileFullWidthDrawerPadding(true, 2) }
+          : {},
+      ]}
     >
       <Stack
         direction="row"
@@ -209,18 +214,6 @@ export const ChatTaskTzPanel = ({
 
         {filteredItems.map(renderItem)}
 
-        <Button
-          sx={{
-            width: 'fit-content',
-            position: 'fixed',
-            bottom: { xs: 16, md: 32 },
-            right: { xs: 16, md: 32 },
-          }}
-          variant="outlined"
-          onClick={onClose}
-        >
-          Закрыть
-        </Button>
       </Box>
     </Drawer>
   );

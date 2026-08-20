@@ -212,22 +212,11 @@ export const useMyTaskFilterStore = create<MyTaskFilterStore>((set) => ({
 
             return {
                 viewMode,
-                status: [] as TaskStatusFilter,
-                postId: 'all',
-                executorId: 'all',
-                extraFilter: null,
-                updatedDate: null,
-                fastButtonValue: null,
-                activeOnly: false,
-                onlyMyTasks: false,
-                assigneeAccountId: 'all',
-                isSearchOpen: false,
-                searchQuery: '',
-                isTaskSelectionMode: false,
-                selectedTaskIds: [],
-                selectedTasks: [],
-                ...(viewMode === 'kanban' && {
-                    visibleKanbanColumns: getKanbanColumnsForFastButton(null),
+                ...(viewMode === 'kanban' &&
+                    state.fastButtonValue && {
+                    visibleKanbanColumns: getKanbanColumnsForFastButton(
+                        state.fastButtonValue,
+                    ),
                 }),
             };
         }),

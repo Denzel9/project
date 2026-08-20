@@ -54,7 +54,6 @@ export const PartnersRowActionsMenu = ({
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <MenuItem onClick={handleWrite}>Написать</MenuItem>
-        <MenuItem disabled>Статистика</MenuItem>
       </Menu>
     </>
   );

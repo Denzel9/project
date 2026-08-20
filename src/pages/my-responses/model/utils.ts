@@ -1,6 +1,7 @@
 import {
+  APPLICATION_STATUS_LABELS,
   DEFAULT_APPLICATION_STATUS_FILTER,
-  isDefaultApplicationStatusFilter,
+  isDefaultApplicationStatusFilter as isDefaultApplicationStatuses,
 } from '@/entities/application';
 import { getUserName, type User } from '@/entities/user';
 
@@ -11,10 +12,44 @@ import type {
   ApplicationStatus,
 } from '@/entities';
 
-export type ApplicationStatusFilter = ApplicationStatus[];
+export const MY_RESPONSE_ARCHIVED_STATUS = 'ARCHIVED' as const;
+
+export type MyResponseStatusFilterValue =
+  | ApplicationStatus
+  | typeof MY_RESPONSE_ARCHIVED_STATUS;
+
+export type ApplicationStatusFilter = MyResponseStatusFilterValue[];
 export type CompanyFilter = 'all' | string;
 
-export { DEFAULT_APPLICATION_STATUS_FILTER, isDefaultApplicationStatusFilter };
+export const MY_RESPONSE_STATUS_OPTIONS: {
+  value: MyResponseStatusFilterValue;
+  label: string;
+}[] = [
+  ...Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => ({
+    value: value as ApplicationStatus,
+    label,
+  })),
+  { value: MY_RESPONSE_ARCHIVED_STATUS, label: 'В архиве' },
+];
+
+export { DEFAULT_APPLICATION_STATUS_FILTER };
+
+export const isDefaultApplicationStatusFilter = (
+  status: ApplicationStatusFilter,
+) =>
+  !status.includes(MY_RESPONSE_ARCHIVED_STATUS) &&
+  isDefaultApplicationStatuses(
+    status.filter(
+      (value): value is ApplicationStatus =>
+        value !== MY_RESPONSE_ARCHIVED_STATUS,
+    ),
+  );
+
+const toApplicationStatuses = (status: ApplicationStatusFilter) =>
+  status.filter(
+    (value): value is ApplicationStatus =>
+      value !== MY_RESPONSE_ARCHIVED_STATUS,
+  );
 
 export const filterApplicationsByCompany = (
   applications: Application[],
@@ -35,13 +70,19 @@ export const toMyApplicationsParams = (
     q?: string;
   },
   pagination?: { page?: number; limit?: number },
-): ApplicationListParams => ({
-  page: pagination?.page ?? 1,
-  limit: pagination?.limit ?? 20,
-  ...(filters.status.length > 0 && { statuses: filters.status }),
-  ...(filters.updatedDate && { createdDate: filters.updatedDate }),
-  ...(filters.q?.trim() && { q: filters.q.trim() }),
-});
+): ApplicationListParams => {
+  const statuses = toApplicationStatuses(filters.status);
+  const isArchived = filters.status.includes(MY_RESPONSE_ARCHIVED_STATUS);
+
+  return {
+    page: pagination?.page ?? 1,
+    limit: pagination?.limit ?? 20,
+    ...(statuses.length > 0 && { statuses }),
+    ...(isArchived && { isArchived: true }),
+    ...(filters.updatedDate && { createdDate: filters.updatedDate }),
+    ...(filters.q?.trim() && { q: filters.q.trim() }),
+  };
+};
 
 export const hasActiveMyResponseFilters = (filters: {
   status: ApplicationStatusFilter;
@@ -128,3 +169,16 @@ export const getMyResponseStatusColor = (status: Application['status']) => {
   if (status === 'VIEWED') return 'info';
   return 'primary';
 };
+
+export const isApplicationPostArchived = (application: Application) =>
+  Boolean(application.post?.isArchived);
+
+export const getMyResponseChipLabel = (application: Application) =>
+  isApplicationPostArchived(application)
+    ? 'В архиве'
+    : APPLICATION_STATUS_LABELS[application.status];
+
+export const getMyResponseChipColor = (application: Application) =>
+  isApplicationPostArchived(application)
+    ? 'default'
+    : getMyResponseStatusColor(application.status);

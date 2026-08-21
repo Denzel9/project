@@ -19,7 +19,7 @@ const manualChunks = (id: string) => {
     return 'mui-core'
   }
   if (id.includes('@tiptap') || id.includes('prosemirror')) return 'tiptap'
-  if (id.includes('emoji-picker-react')) return 'emoji-picker'
+  if (id.includes('frimousse')) return 'emoji-picker'
   if (id.includes('socket.io-client')) return 'socket'
   if (id.includes('swiper')) return 'swiper'
   if (
@@ -107,6 +107,7 @@ export default defineConfig({
     }),
   ],
   server: {
+    host: true,
     open: true,
     port: 3000,
   },

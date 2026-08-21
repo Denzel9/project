@@ -14,8 +14,6 @@ import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
 
 import { type Task } from '@/entities/task';
-import { safeAreaMobileFullWidthDrawerPadding } from '@/shared';
-
 import {
   extractChatTaskTzMessages,
   type ChatTaskTzItem,
@@ -113,6 +111,7 @@ export const ChatTaskTzPanel = ({
       </Typography>
       <ChatMessageBubble
         fullWidth
+        readOnly
         message={item.message}
         currentUserId={currentUserId}
       />
@@ -132,13 +131,10 @@ export const ChatTaskTzPanel = ({
             borderBottomLeftRadius: { xs: 0, md: 32 },
             display: 'flex',
             flexDirection: 'column',
+            p: { xs: 2, md: 4 },
             width: isMobile ? '100%' : 560,
-            ...(isMobile ? {} : { p: { md: 4 } }),
           },
         },
-        isMobile
-          ? { '& .MuiDrawer-paper': safeAreaMobileFullWidthDrawerPadding(true, 2) }
-          : {},
       ]}
     >
       <Stack

@@ -2,7 +2,6 @@ import {
   CalendarMonthOutlined,
   Close,
   Search,
-  Tune,
   ViewColumn,
   Whatshot,
 } from '@mui/icons-material';
@@ -31,7 +30,13 @@ import {
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities/partner';
-import { useScroll, DateCalendarFilter, FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx } from '@/shared';
+import {
+  useScroll,
+  DateCalendarFilter,
+  FilterAutocomplete,
+  FilterStatusSelect,
+  MobileFilterOpenButton,
+} from '@/shared';
 
 import { KANBAN_COLUMNS } from '../model/constants';
 import { useMyTaskFilterStore } from '../model/store';
@@ -319,18 +324,10 @@ export const MyTaskFilter = ({
 
             {isDrawerFilterMode && (
               <>
-                <IconButton
-                  size="small"
+                <MobileFilterOpenButton
+                  active={isMobileFilterOpen || hasMobileDrawerFilters}
                   onClick={() => setIsMobileFilterOpen(true)}
-                  sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-                  color={
-                    isMobileFilterOpen || hasMobileDrawerFilters
-                      ? 'primary'
-                      : 'default'
-                  }
-                >
-                  <Tune fontSize="small" />
-                </IconButton>
+                />
 
                 <Drawer
                   anchor="right"
@@ -340,8 +337,8 @@ export const MyTaskFilter = ({
                     { display: { xs: 'block', md: 'none' } },
                     {
                       '& .MuiDrawer-paper': {
+                        p: { xs: 2, sm: 3 },
                         width: { xs: '100%', sm: '80%' },
-                        ...safeAreaFullWidthDrawerPaperSx(),
                       },
                     },
                   ]}

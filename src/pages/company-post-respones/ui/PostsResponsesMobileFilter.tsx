@@ -10,10 +10,13 @@ import {
   usePartnerApplicantsQuery,
   type ApplicationStatus,
 } from '@/entities'
-import { FilterAutocomplete, FilterStatusSelect } from '@/shared'
+import {
+  FilterAutocomplete,
+  FilterStatusSelect,
+  mobileFilterActionsSx,
+} from '@/shared'
 
 import { useMyPostFilterStore } from '../model/store'
-
 import {
   DEFAULT_APPLICATION_STATUS_FILTER,
   type ApplicationStatusFilter,
@@ -182,7 +185,7 @@ export const PostsResponsesMobileFilter = ({
       <Stack
         direction="row"
         spacing={2}
-        sx={{ mt: 4 }}
+        sx={mobileFilterActionsSx}
       >
         <Button
           fullWidth

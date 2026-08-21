@@ -1,15 +1,11 @@
-import { Close } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Dialog,
-  IconButton,
   MenuItem,
   Stack,
   Tab,
   Tabs,
   TextField,
-  Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 
@@ -18,6 +14,7 @@ import {
   useCreateFavoriteGroupMutation,
   useFavoriteGroupsQuery,
 } from '@/entities/favorite';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 
 import { useApplicationItemStore } from '../model/store';
 
@@ -29,7 +26,7 @@ export const AddToCollectionDialog = () => {
   } = useApplicationItemStore();
 
   const { data: groups, isLoading: isGroupsLoading } = useFavoriteGroupsQuery(
-    isOpenAddToCollectionDialog
+    isOpenAddToCollectionDialog,
   );
 
   const { mutateAsync: addFavorite, isPending: isAddingFavorite } =
@@ -84,122 +81,94 @@ export const AddToCollectionDialog = () => {
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={isOpenAddToCollectionDialog}
       onClose={handleClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          minWidth: 560,
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-        },
-      }}
+      title="Добавить в подборку"
     >
-      <IconButton
-        onClick={handleClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': {
-            bgcolor: 'secondary.light',
-          },
-        }}
+      <Tabs
+        value={tab}
+        onChange={(_, value) => setTab(value)}
+        sx={{ mt: 2 }}
       >
-        <Close />
-      </IconButton>
+        <Tab label="Выбрать" />
+        <Tab label="Создать" />
+      </Tabs>
 
-      <Box sx={{ p: 4, minWidth: 360 }}>
-        <Typography variant="h6">Добавить в подборку</Typography>
-
-        <Tabs
-          value={tab}
-          onChange={(_, value) => setTab(value)}
-          sx={{ mt: 2 }}
-        >
-          <Tab label="Выбрать" />
-          <Tab label="Создать" />
-        </Tabs>
-
-        {tab === 0 && (
-          <Box sx={{ mt: 3 }}>
-            <TextField
-              select
-              fullWidth
-              label="Подборка"
-              value={selectedGroupId}
-              disabled={isGroupsLoading || isPending}
-              onChange={e => setSelectedGroupId(e.target.value)}
-            >
-              <MenuItem value="">Без группы</MenuItem>
-              {groups?.map(group => (
-                <MenuItem
-                  key={group.id}
-                  value={group.id}
-                >
-                  {group.name} ({group.count})
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Stack
-              direction="row"
-              sx={{ mt: 4, justifyContent: 'flex-end', gap: 1 }}
-            >
-              <Button
-                disabled={isPending}
-                onClick={handleClose}
+      {tab === 0 && (
+        <Box sx={{ mt: 3 }}>
+          <TextField
+            select
+            fullWidth
+            label="Подборка"
+            value={selectedGroupId}
+            disabled={isGroupsLoading || isPending}
+            onChange={e => setSelectedGroupId(e.target.value)}
+          >
+            <MenuItem value="">Без группы</MenuItem>
+            {groups?.map(group => (
+              <MenuItem
+                key={group.id}
+                value={group.id}
               >
-                Отменить
-              </Button>
-              <Button
-                variant="contained"
-                disabled={isPending || !addToCollectionPostId}
-                onClick={handleAddToSelected}
-              >
-                Добавить
-              </Button>
-            </Stack>
-          </Box>
-        )}
+                {group.name} ({group.count})
+              </MenuItem>
+            ))}
+          </TextField>
 
-        {tab === 1 && (
-          <Box sx={{ mt: 3 }}>
-            <TextField
-              fullWidth
-              label="Название подборки"
-              value={newGroupName}
+          <Stack
+            direction="row"
+            sx={appDialogActionsSx}
+          >
+            <Button
               disabled={isPending}
-              onChange={e => setNewGroupName(e.target.value)}
-            />
-
-            <Stack
-              direction="row"
-              sx={{ mt: 4, justifyContent: 'flex-end', gap: 1 }}
+              onClick={handleClose}
             >
-              <Button
-                disabled={isPending}
-                onClick={handleClose}
-              >
-                Отменить
-              </Button>
-              <Button
-                variant="contained"
-                disabled={
-                  isPending || !addToCollectionPostId || !newGroupName.trim()
-                }
-                onClick={handleCreateAndAdd}
-              >
-                Создать и добавить
-              </Button>
-            </Stack>
-          </Box>
-        )}
-      </Box>
-    </Dialog>
+              Отменить
+            </Button>
+            <Button
+              variant="contained"
+              disabled={isPending || !addToCollectionPostId}
+              onClick={handleAddToSelected}
+            >
+              Добавить
+            </Button>
+          </Stack>
+        </Box>
+      )}
+
+      {tab === 1 && (
+        <Box sx={{ mt: 3 }}>
+          <TextField
+            fullWidth
+            label="Название подборки"
+            value={newGroupName}
+            disabled={isPending}
+            onChange={e => setNewGroupName(e.target.value)}
+          />
+
+          <Stack
+            direction="row"
+            sx={appDialogActionsSx}
+          >
+            <Button
+              disabled={isPending}
+              onClick={handleClose}
+            >
+              Отменить
+            </Button>
+            <Button
+              variant="contained"
+              disabled={
+                isPending || !addToCollectionPostId || !newGroupName.trim()
+              }
+              onClick={handleCreateAndAdd}
+            >
+              Создать и добавить
+            </Button>
+          </Stack>
+        </Box>
+      )}
+    </AppDialog>
   );
 };

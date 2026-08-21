@@ -1,5 +1,4 @@
-import { Tune } from '@mui/icons-material'
-import { Chip, Drawer, IconButton, MenuItem, Stack, TextField } from '@mui/material'
+import { Chip, Drawer, MenuItem, Stack, TextField } from '@mui/material'
 import { useMemo, useState } from 'react'
 
 import { useMyPostOptionsQuery } from '@/entities'
@@ -15,7 +14,7 @@ import {
   useMyTaskFilterStore,
   type DashboardPeriod,
 } from '@/features'
-import { FilterAutocomplete, safeAreaFullWidthDrawerPaperSx } from '@/shared'
+import { FilterAutocomplete, MobileFilterOpenButton } from '@/shared'
 
 import { DASHBOARD_PERIOD_OPTIONS } from '../model/constants'
 
@@ -205,17 +204,10 @@ export const DashboardFiltersBar = ({
 
           <AssigneeFilterMenu isCompany={isCompany} />
 
-          <IconButton
+          <MobileFilterOpenButton
+            active={isMobileFilterOpen || hasMobileDrawerFilters}
             onClick={() => setIsMobileFilterOpen(true)}
-            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-            color={
-              isMobileFilterOpen || hasMobileDrawerFilters
-                ? 'primary'
-                : 'default'
-            }
-          >
-            <Tune />
-          </IconButton>
+          />
         </Stack>
       </Stack>
 
@@ -226,8 +218,8 @@ export const DashboardFiltersBar = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
-            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

@@ -1,7 +1,6 @@
 import { Chat } from '@mui/icons-material';
 import { Box, Button, IconButton, Tooltip } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   APPLICATION_STATUS_ENUM,
@@ -38,7 +37,6 @@ export const Action = ({
   removePostFromCollection,
   isApplied: isAppliedProp = false,
 }: ActionProps) => {
-  const navigate = useNavigate();
   const role = useAuthStore(state => state.role);
   const isManager = role === USER_ROLE.MANAGER;
 
@@ -114,17 +112,18 @@ export const Action = ({
 
   const handleOpenChat = () => {
     if (!requireEmailConfirmed()) return;
-    navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
+    window.open(
+      `${ROUTES.CHATS}?recipientId=${encodeURIComponent(ownerId)}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   };
 
   const mainButton = isManager ? (
     <Button
       size="small"
       variant="outlined"
-      onClick={() => {
-        if (!requireEmailConfirmed()) return;
-        navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
-      }}
+      onClick={handleOpenChat}
     >
       Написать
     </Button>
@@ -143,10 +142,7 @@ export const Action = ({
     <Button
       size="small"
       variant="outlined"
-      onClick={() => {
-        if (!requireEmailConfirmed()) return;
-        navigate(`${ROUTES.CHATS}?recipientId=${ownerId}`);
-      }}
+      onClick={handleOpenChat}
     >
       Написать
     </Button>

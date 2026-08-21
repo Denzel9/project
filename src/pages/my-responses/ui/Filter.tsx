@@ -4,7 +4,6 @@ import {
   DownloadOutlined,
   PrintOutlined,
   Search,
-  Tune,
 } from '@mui/icons-material'
 import {
   CircularProgress,
@@ -18,7 +17,12 @@ import {
 import { type Dayjs } from 'dayjs'
 import { useMemo, useState } from 'react'
 
-import { FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared'
+import {
+  FilterAutocomplete,
+  FilterStatusSelect,
+  MobileFilterOpenButton,
+  useScroll,
+} from '@/shared'
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
 import {
@@ -244,15 +248,10 @@ const MyResponsesFilter = ({
             onChange={onViewModeChange}
           />
 
-          <IconButton
+          <MobileFilterOpenButton
+            active={isMobileFilterOpen || hasMobileFilters}
             onClick={() => setIsMobileFilterOpen(true)}
-            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-            color={
-              isMobileFilterOpen || hasMobileFilters ? 'primary' : 'default'
-            }
-          >
-            <Tune />
-          </IconButton>
+          />
         </Stack>
       </Stack>
 
@@ -282,8 +281,8 @@ const MyResponsesFilter = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
-            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

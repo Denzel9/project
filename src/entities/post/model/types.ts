@@ -282,6 +282,8 @@ export type PostListParams = {
   title?: string
   urgent?: boolean
   hasPhoto?: boolean
+  /** Posts with at least one image or video attachment */
+  hasMedia?: boolean
   chips?: string[]
   categories?: string[]
   platforms?: Platform[]

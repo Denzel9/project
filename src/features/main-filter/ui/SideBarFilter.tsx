@@ -192,14 +192,6 @@ export const SideBarFilter = () => {
         <Stack spacing={4}>
           <FilterSection>
             <Stack spacing={2}>
-              <TextField
-                fullWidth
-                label="Поиск"
-                placeholder="Название, компания или имя"
-                value={draft.title}
-                onChange={event => setField('title', event.target.value)}
-              />
-
               {showCompanyAdFilters && (
                 <TextField
                   fullWidth
@@ -729,6 +721,7 @@ export const SideBarFilter = () => {
           pt: 2,
           mt: 2,
           flexShrink: 0,
+          pb: { xs: 2, md: 0 },
           borderTop: '1px solid',
           borderColor: 'divider',
         }}

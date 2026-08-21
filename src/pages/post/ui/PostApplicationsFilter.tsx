@@ -1,9 +1,14 @@
-import { Close, Tune } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import { FilterDateField } from '@/features/main-filter';
-import { FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx } from '@/shared';
+import {
+  FilterAutocomplete,
+  FilterStatusSelect,
+  MobileFilterOpenButton,
+  mobileFilterActionsSx,
+} from '@/shared';
 
 import {
   POST_APPLICATION_STATUS_FILTER_LABELS,
@@ -124,15 +129,10 @@ export const PostApplicationsFilter = ({
         </Box>
       </Stack>
 
-      <IconButton
+      <MobileFilterOpenButton
+        active={isMobileFilterOpen || hasMobileFilters}
         onClick={() => setIsMobileFilterOpen(true)}
-        sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-        color={
-          isMobileFilterOpen || hasMobileFilters ? 'primary' : 'default'
-        }
-      >
-        <Tune />
-      </IconButton>
+      />
 
       <Drawer
         anchor="right"
@@ -141,8 +141,8 @@ export const PostApplicationsFilter = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
-            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >
@@ -208,7 +208,7 @@ export const PostApplicationsFilter = ({
           <Stack
             direction="row"
             spacing={2}
-            sx={{ mt: 4 }}
+            sx={mobileFilterActionsSx}
           >
             <Button
               fullWidth

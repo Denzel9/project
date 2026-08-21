@@ -11,7 +11,7 @@ import {
   ResetPasswordForm,
 } from '@/features';
 import { WHITE_COLOR, AUTH_BACKGROUND } from '@/features/auth/model/constants';
-import { ROUTES, SAFE_AREA } from '@/shared';
+import { ROUTES } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 export const AuthPage = () => {
@@ -61,10 +61,6 @@ export const AuthPage = () => {
         flexDirection: 'row',
         bgcolor: AUTH_BACKGROUND,
         boxSizing: 'border-box',
-        pt: SAFE_AREA.top,
-        pb: SAFE_AREA.bottom,
-        pl: SAFE_AREA.left,
-        pr: SAFE_AREA.right,
       }}
     >
       <Box

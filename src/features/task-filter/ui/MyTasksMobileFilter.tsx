@@ -22,7 +22,12 @@ import {
   usePartnerCustomersQuery,
   usePartnerExecutorsQuery,
 } from '@/entities/partner'
-import { DateCalendarFilter, FilterAutocomplete, FilterStatusSelect } from '@/shared'
+import {
+  DateCalendarFilter,
+  FilterAutocomplete,
+  FilterStatusSelect,
+  mobileFilterActionsSx,
+} from '@/shared'
 
 import { useMyTaskFilterStore } from '../model/store'
 
@@ -290,7 +295,7 @@ export const MyTasksMobileFilter = ({
       <Stack
         direction="row"
         spacing={2}
-        sx={{ mt: 4 }}
+        sx={mobileFilterActionsSx}
       >
         <Button
           fullWidth

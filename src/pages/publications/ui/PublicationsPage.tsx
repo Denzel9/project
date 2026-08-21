@@ -17,7 +17,6 @@ import {
   EmptyBlock,
   InfiniteScrollSentinel,
   ROUTES,
-  stickyFilterSx,
   type FilterAutocompleteOption,
 } from '@/shared';
 import { PageLayout } from '@/widgets';
@@ -646,7 +645,7 @@ export const PublicationsPage = () => {
       >
         {showFilter && (
           <Box
-            sx={stickyFilterSx}
+            sx={{ position: 'sticky', top: 0, zIndex: 1000 }}
           >
             <PublicationsFilter
               q={q}

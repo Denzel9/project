@@ -4,7 +4,7 @@ import { type PropsWithChildren, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { CurrentUser } from '@/features/current-user';
-import { ROUTES, SAFE_AREA } from '@/shared';
+import { ROUTES } from '@/shared';
 import { SideBarButton } from '@/widgets/side-bar/ui/SideBarButton';
 
 import { HelpDialog } from './HelpDialog';
@@ -38,7 +38,6 @@ export const PageLayout = ({
         position: 'relative',
         gap: 1,
         boxSizing: 'border-box',
-        pt: SAFE_AREA.top,
         ...(isScreenHeight && {
           height: '100%',
           flex: 1,

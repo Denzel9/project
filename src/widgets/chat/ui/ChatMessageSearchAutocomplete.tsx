@@ -72,7 +72,7 @@ export const ChatMessageSearchAutocomplete = ({
       isOptionEqualToValue={(option, value) => option.id === value.id}
       slotProps={{
         paper: {
-          sx: { borderRadius: '16px', minWidth: 320 },
+          sx: { borderRadius: '16px', minWidth: { xs: 0, sm: 320 } },
         },
       }}
       sx={{ width: 240, ...sx }}

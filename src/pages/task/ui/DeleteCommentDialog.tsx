@@ -1,14 +1,7 @@
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Dialog,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 
 import { useDeleteTaskCommentMutation } from '@/entities/task';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 
 type DeleteCommentDialogProps = {
   open: boolean;
@@ -37,63 +30,37 @@ export const DeleteCommentDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={onClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-        },
-      }}
+      title="Удалить"
+      minWidth={400}
     >
-      <IconButton
-        onClick={onClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': {
-            bgcolor: 'secondary.light',
-          },
-        }}
+      <Typography
+        variant="body1"
+        sx={{ mt: 2 }}
       >
-        <Close />
-      </IconButton>
+        Вы уверены, что хотите удалить комментарий?
+      </Typography>
 
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Удалить</Typography>
-
-        <Typography
-          variant="body1"
-          sx={{ mt: 2 }}
+      <Stack
+        direction="row"
+        sx={appDialogActionsSx}
+      >
+        <Button
+          onClick={onClose}
+          disabled={isPending}
         >
-          Вы уверены, что хотите удалить комментарий?
-        </Typography>
-
-        <Stack
-          direction="row"
-          sx={{ mt: 4, justifyContent: 'flex-end' }}
+          Отменить
+        </Button>
+        <Button
+          onClick={() => void handleDelete()}
+          color="error"
+          disabled={isPending}
         >
-          <Button
-            onClick={onClose}
-            disabled={isPending}
-          >
-            Отменить
-          </Button>
-          <Button
-            onClick={() => void handleDelete()}
-            color="error"
-            disabled={isPending}
-          >
-            Удалить
-          </Button>
-        </Stack>
-      </Box>
-    </Dialog>
+          Удалить
+        </Button>
+      </Stack>
+    </AppDialog>
   );
 };

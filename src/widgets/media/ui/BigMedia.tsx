@@ -16,6 +16,7 @@ import type { Swiper as SwiperType } from 'swiper/types'
 
 type BigMediaProps = {
   isDialog?: boolean
+  isMobile?: boolean
   isGalleryOpen?: boolean
   initialSlide?: number
   items: MediaItemType[]
@@ -30,6 +31,7 @@ type BigMediaProps = {
 export const BigMedia = ({
   items,
   isDialog = false,
+  isMobile = false,
   isGalleryOpen = true,
   thumbsSwiper,
   handleClickOpen,
@@ -106,6 +108,8 @@ export const BigMedia = ({
     >
       {items.map((item, index) => {
         const isVideo = getMediaKind(item.url, item.mimeType) === 'video'
+        const playInline = !isDialog && isMobile && isVideo
+        const openFullscreenOnTap = !isDialog && !isMobile && isVideo
 
         return (
           <SwiperSlide
@@ -127,12 +131,18 @@ export const BigMedia = ({
               onError={() => handleImageReady(index)}
               key={`${item.url}-${item.mimeType ?? ''}-${fit}`}
               loading={index === initialSlide ? 'eager' : 'lazy'}
-              withControls={isDialog && isVideo}
-              showPlayOverlay={!isDialog && isVideo}
-              isActive={isGalleryOpen && (!isDialog || activeIndex === index)}
+              withControls={(isDialog || playInline) && isVideo}
+              autoPlay={isDialog && isVideo}
+              showPlayOverlay={openFullscreenOnTap}
+              isActive={
+                isGalleryOpen &&
+                (playInline
+                  ? activeIndex === index
+                  : !isDialog || activeIndex === index)
+              }
             />
 
-            {!isDialog && isVideo && (
+            {openFullscreenOnTap && (
               <Box
                 onClick={event => {
                   event.stopPropagation()

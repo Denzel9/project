@@ -18,6 +18,7 @@ import {
   type FavoriteType,
 } from '@/entities/favorite'
 import { useAuthStore } from '@/features'
+import { mobileFilterActionsSx } from '@/shared'
 import { useSnackbarStore } from '@/widgets'
 
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog'
@@ -254,7 +255,7 @@ export const FavoriteMobileFilter = ({
         <Stack
           direction="row"
           spacing={2}
-          sx={{ mt: 4 }}
+          sx={mobileFilterActionsSx}
         >
           <Button
             fullWidth

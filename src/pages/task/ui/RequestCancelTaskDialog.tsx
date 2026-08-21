@@ -1,20 +1,11 @@
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Dialog,
-  IconButton,
-  MenuItem,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Button, MenuItem, Stack, TextField } from '@mui/material';
 import { useMemo, useState } from 'react';
 
 import {
   useRequestTaskAnnulmentMutation,
   type TaskAnnulmentInitiator,
 } from '@/entities';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 const INITIATOR_OPTIONS: { value: TaskAnnulmentInitiator; label: string }[] = [
@@ -69,7 +60,9 @@ export const RequestCancelTaskDialog = ({
         ),
       );
 
-      const successCount = results.filter(result => result.status === 'fulfilled').length;
+      const successCount = results.filter(
+        result => result.status === 'fulfilled',
+      ).length;
       const failCount = results.length - successCount;
 
       if (successCount > 0 && failCount === 0) {
@@ -110,89 +103,69 @@ export const RequestCancelTaskDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          borderRadius: '32px',
-          width: { xs: '100%', md: 560 },
-          m: 2,
-        },
-      }}
+      title={
+        ids.length > 1
+          ? `Запросить аннулирование (${ids.length})`
+          : 'Запросить аннулирование задачи'
+      }
+      width={560}
     >
+      <Stack
+        spacing={2}
+        sx={{ mt: 3 }}
+      >
+        <TextField
+          fullWidth
+          multiline
+          minRows={3}
+          label="Причина"
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+        />
 
-
-      <Box sx={{ p: 3 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'start', justifyContent: 'space-between' }}>
-          <Typography variant="h6">
-            {ids.length > 1
-              ? `Запросить аннулирование (${ids.length})`
-              : 'Запросить аннулирование задачи'}
-          </Typography>
-          <IconButton
-            onClick={handleClose}
-          >
-            <Close />
-          </IconButton>
-        </Stack>
-
-
-        <Stack
-          spacing={2}
-          sx={{ mt: 3 }}
+        <TextField
+          select
+          fullWidth
+          label="Инициатор"
+          value={initiator}
+          onChange={e =>
+            setInitiator(e.target.value as TaskAnnulmentInitiator)
+          }
         >
-          <TextField
-            fullWidth
-            multiline
-            minRows={3}
-            label="Причина"
-            value={reason}
-            onChange={e => setReason(e.target.value)}
-          />
+          {INITIATOR_OPTIONS.map(option => (
+            <MenuItem
+              key={option.value}
+              value={option.value}
+            >
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Stack>
 
-          <TextField
-            select
-            fullWidth
-            label="Инициатор"
-            value={initiator}
-            onChange={e =>
-              setInitiator(e.target.value as TaskAnnulmentInitiator)
-            }
-          >
-            {INITIATOR_OPTIONS.map(option => (
-              <MenuItem
-                key={option.value}
-                value={option.value}
-              >
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Stack>
-
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ mt: 4, justifyContent: 'flex-end' }}
+      <Stack
+        direction="row"
+        sx={appDialogActionsSx}
+      >
+        <Button
+          onClick={handleClose}
+          disabled={isPending}
         >
-          <Button
-            onClick={handleClose}
-            disabled={isPending}
-          >
-            Отменить
-          </Button>
-          <Button
-            color="primary"
-            variant="contained"
-            loading={isPending}
-            disabled={!reason.trim() || !initiator || isPending || ids.length === 0}
-            onClick={() => void handleSubmit()}
-          >
-            Запросить
-          </Button>
-        </Stack>
-      </Box>
-    </Dialog>
+          Отменить
+        </Button>
+        <Button
+          color="primary"
+          variant="contained"
+          loading={isPending}
+          disabled={!reason.trim() || !initiator || isPending || ids.length === 0}
+          onClick={() => void handleSubmit()}
+        >
+          Запросить
+        </Button>
+      </Stack>
+    </AppDialog>
   );
 };

@@ -1,11 +1,4 @@
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Dialog,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 
 import {
   getTaskActivityActorParts,
@@ -13,7 +6,7 @@ import {
   TaskActivityType,
   type TaskActivity,
 } from '@/entities/task';
-import { ActionActorCaption } from '@/shared';
+import { ActionActorCaption, AppDialog } from '@/shared';
 
 import { ActivityFieldDiffView } from './ActivityFieldDiffView';
 import { ActivityMediaView } from './ActivityMediaView';
@@ -46,141 +39,105 @@ export const ActivityDetailDialog = ({
 
   const actorParts = activity
     ? getTaskActivityActorParts(
-      activity.actorId,
-      { ownerId, executorId },
-      activity
-    )
+        activity.actorId,
+        { ownerId, executorId },
+        activity
+      )
     : null;
 
   return (
-    <Dialog
+    <AppDialog
       open={isOpen}
       onClose={onClose}
-      maxWidth="md"
+      title={detail?.title}
+      width={560}
       fullWidth
-      sx={{
-        '& .MuiDialog-paper': {
-          borderRadius: '32px',
-          maxHeight: '90vh',
-          overflow: 'visible',
-          display: 'flex',
-          flexDirection: 'column',
-          m: 0,
-          width: { xs: '100%', md: 560 },
-          maxWidth: { xs: '100%', md: '90%' },
-        },
+      paperSx={{ maxHeight: '90vh' }}
+      contentSx={{
+        overflowY: 'auto',
+        maxHeight: '90vh',
       }}
     >
-      <IconButton
-        onClick={onClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': { bgcolor: 'secondary.light' },
-        }}
-      >
-        <Close />
-      </IconButton>
-
-      <Box
-        sx={{
-          p: { xs: 2.5, md: 4 },
-          overflowY: 'auto',
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 600 }}
+      {activity && (
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ mt: 1, flexWrap: 'wrap', gap: 0.5 }}
         >
-          {detail?.title}
-        </Typography>
-
-        {activity && (
-          <Stack
-            direction="row"
-            spacing={1.5}
-            sx={{ mt: 1, flexWrap: 'wrap', gap: 0.5 }}
+          <Typography
+            variant="caption"
+            color="text.secondary"
           >
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              {formatFullDateTime(activity.createdAt)}
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-            >
-              ·
-            </Typography>
-            {actorParts ? <ActionActorCaption actor={activity} /> : null}
-          </Stack>
-        )}
+            {formatFullDateTime(activity.createdAt)}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            ·
+          </Typography>
+          {actorParts ? <ActionActorCaption actor={activity} /> : null}
+        </Stack>
+      )}
 
-        {detail && activity && detail.variant === 'status' && (
-          <ActivityStatusChangeView
-            from={detail.from}
-            to={detail.to}
+      {detail && activity && detail.variant === 'status' && (
+        <ActivityStatusChangeView
+          from={detail.from}
+          to={detail.to}
+        />
+      )}
+
+      {detail && activity && detail.variant === 'field' && detail.showDiff && (
+        <ActivityFieldDiffView
+          field={detail.field}
+          from={detail.from}
+          to={detail.to}
+          isOpen={isOpen}
+        />
+      )}
+
+      {detail &&
+        activity &&
+        detail.variant === 'media' &&
+        (activity.type === TaskActivityType.MEDIA_ADDED ||
+          activity.type === TaskActivityType.MEDIA_REMOVED) && (
+          <ActivityMediaView
+            type={activity.type}
+            payload={activity.payload}
           />
         )}
 
-        {detail && activity && detail.variant === 'field' && detail.showDiff && (
-          <ActivityFieldDiffView
-            field={detail.field}
-            from={detail.from}
-            to={detail.to}
-            isOpen={isOpen}
-          />
-        )}
-
-        {detail &&
-          activity &&
-          detail.variant === 'media' &&
-          (activity.type === TaskActivityType.MEDIA_ADDED ||
-            activity.type === TaskActivityType.MEDIA_REMOVED) && (
-            <ActivityMediaView
-              type={activity.type}
-              payload={activity.payload}
-            />
+      {detail && activity && detail.variant === 'request' && (
+        <Stack
+          spacing={1.5}
+          sx={{ mt: 3 }}
+        >
+          {detail.reason && (
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Причина
+              </Typography>
+              <Typography variant="body1">{detail.reason}</Typography>
+            </Box>
           )}
-
-        {detail && activity && detail.variant === 'request' && (
-          <Stack
-            spacing={1.5}
-            sx={{ mt: 3 }}
-          >
-            {detail.reason && (
-              <Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Причина
-                </Typography>
-                <Typography variant="body1">{detail.reason}</Typography>
-              </Box>
-            )}
-            {detail.proposedFinalDate && (
-              <Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Новая дата
-                </Typography>
-                <Typography variant="body1">
-                  {detail.proposedFinalDate}
-                </Typography>
-              </Box>
-            )}
-          </Stack>
-        )}
-      </Box>
-    </Dialog>
+          {detail.proposedFinalDate && (
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Новая дата
+              </Typography>
+              <Typography variant="body1">
+                {detail.proposedFinalDate}
+              </Typography>
+            </Box>
+          )}
+        </Stack>
+      )}
+    </AppDialog>
   );
 };

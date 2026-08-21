@@ -23,6 +23,8 @@ type MediaItemProps = {
   onError?: () => void
   errorMessage?: string
   withControls?: boolean
+  /** Auto-start when active (dialog fullscreen). Default false. */
+  autoPlay?: boolean
   /** Stretch document placeholder to fill a square tile */
   fill?: boolean
   /** cover — grids/thumbs; contain — main viewer / fullscreen */
@@ -41,6 +43,7 @@ export const MediaItem = ({
   fileName,
   loading = 'lazy',
   withControls = false,
+  autoPlay = false,
   showPlayOverlay = false,
   isActive = true,
   fit = 'cover',
@@ -122,10 +125,10 @@ export const MediaItem = ({
       return
     }
 
-    if (withControls) {
+    if (withControls && autoPlay) {
       void video.play().catch(() => undefined)
     }
-  }, [isActive, kind, src, withControls])
+  }, [autoPlay, isActive, kind, src, withControls])
 
   if (kind === 'document') {
     const displayName = getMediaDisplayName(fileName, src, mimeType)

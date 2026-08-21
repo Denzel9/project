@@ -2,7 +2,6 @@ import {
   CalendarMonthOutlined,
   DownloadOutlined,
   PrintOutlined,
-  Tune,
 } from '@mui/icons-material'
 import {
   CircularProgress,
@@ -23,7 +22,12 @@ import {
   usePartnerApplicantsQuery,
   type ApplicationStatus,
 } from '@/entities'
-import { FilterAutocomplete, FilterStatusSelect, safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared'
+import {
+  FilterAutocomplete,
+  FilterStatusSelect,
+  MobileFilterOpenButton,
+  useScroll,
+} from '@/shared'
 import { DateCalendarFilter } from '@/shared/ui/date-picker/DateCalendarFilter'
 
 import { useMyPostFilterStore } from '../model/store'
@@ -248,17 +252,10 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
 
           <MyPostViewModeToggle />
 
-          <IconButton
+          <MobileFilterOpenButton
+            active={isMobileFilterOpen || hasMobileDrawerFilters}
             onClick={() => setIsMobileFilterOpen(true)}
-            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-            color={
-              isMobileFilterOpen || hasMobileDrawerFilters
-                ? 'primary'
-                : 'default'
-            }
-          >
-            <Tune />
-          </IconButton>
+          />
         </Stack>
       </Stack>
 
@@ -288,8 +285,8 @@ const MyPostFilter = ({ tableReport }: MyPostFilterProps) => {
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
-            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

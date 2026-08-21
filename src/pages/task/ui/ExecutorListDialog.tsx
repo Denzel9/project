@@ -1,18 +1,7 @@
-import { Close } from '@mui/icons-material';
-import {
-  Avatar,
-  Box,
-  Dialog,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Avatar, Box, Stack, Typography } from '@mui/material';
 
-import {
-  executorToUserPartial,
-  getUserName,
-  type Task,
-} from '@/entities';
+import { executorToUserPartial, getUserName, type Task } from '@/entities';
+import { AppDialog } from '@/shared';
 
 type ExecutorListItem = {
   id: string;
@@ -54,32 +43,16 @@ export const ExecutorListDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={onClose}
+      title="Все исполнители"
+      width={560}
       fullWidth
-      maxWidth="sm"
-      slotProps={{
-        paper: {
-          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 }, width: '100%', m: 2 },
-        },
-      }}
     >
-      <Stack
-        direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
-      >
-        <Typography variant="h6">Все исполнители</Typography>
-        <IconButton
-          aria-label="Закрыть"
-          onClick={onClose}
-        >
-          <Close />
-        </IconButton>
-      </Stack>
-
       <Box
         sx={{
+          mt: 2,
           maxHeight: 420,
           overflowY: 'auto',
           border: '1px solid',
@@ -172,6 +145,6 @@ export const ExecutorListDialog = ({
           })}
         </Stack>
       </Box>
-    </Dialog>
+    </AppDialog>
   );
 };

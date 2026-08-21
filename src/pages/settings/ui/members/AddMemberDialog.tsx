@@ -1,14 +1,5 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Dialog,
-  IconButton,
-  MenuItem,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Button, MenuItem, Stack, Typography } from '@mui/material';
 import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -19,7 +10,7 @@ import {
   useAddInviteMutation,
 } from '@/entities/workspace-member';
 import { useAuthStore } from '@/features/auth';
-import { RHFInput } from '@/shared/ui/rhf';
+import { AppDialog, appDialogActionsSx, RHFInput } from '@/shared';
 
 import {
   addMemberSchema,
@@ -78,120 +69,90 @@ export const AddMemberDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-          minWidth: 400,
-        },
-      }}
+      title={isCross ? 'Добавить профиль' : 'Добавить менеджера'}
+      minWidth={400}
     >
-      <IconButton
-        onClick={handleClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': { bgcolor: 'secondary.light' },
-        }}
-      >
-        <Close />
-      </IconButton>
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack
+            spacing={2}
+            sx={{ mt: 3 }}
+          >
+            <RHFInput
+              name="email"
+              regex={/^[a-zA-Z0-9@._+-]*$/}
+              control={control}
+              props={{
+                label: 'Почта',
+                fullWidth: true,
+                type: 'email',
+                helperText: 'Только латинские буквы, цифры и символы @._+-',
+              }}
+            />
 
-      <Box sx={{ p: 4 }}>
-        <Typography
-          variant="h6"
-          sx={{ mb: 3 }}
-        >
-          {isCross ? 'Добавить профиль' : 'Добавить менеджера'}
-        </Typography>
-
-        <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Stack spacing={2}>
+            {!isCross && (
               <RHFInput
-                name="email"
-                regex={/^[a-zA-Z0-9@._+-]*$/}
+                name="role"
                 control={control}
                 props={{
-                  label: 'Почта',
+                  label: 'Роль',
                   fullWidth: true,
-                  type: 'email',
-                  helperText: 'Только латинские буквы, цифры и символы @._+-',
+                  select: true,
+                  sx: { mt: 1 },
                 }}
-              />
-
-              {!isCross && (
-                <RHFInput
-                  name="role"
-                  control={control}
-                  props={{
-                    label: 'Роль',
-                    fullWidth: true,
-                    select: true,
-                    sx: { mt: 1 },
-                  }}
-                >
-                  <MenuItem value={MemberRole.ADMIN}>Менеджер</MenuItem>
-                </RHFInput>
-              )}
-
-              <Stack
-                spacing={1}
-                sx={{ p: 4, bgcolor: 'secondary.main', borderRadius: 4 }}
               >
-                <Typography
-                  variant="body2"
-                  color="info"
-                >
-                  {isCross
-                    ? 'Связанный профиль компании или исполнителя получит доступ к этому рабочему пространству.'
-                    : 'Менеджер получает полный доступ к рабочему пространству профиля.'}
-                </Typography>
-              </Stack>
+                <MenuItem value={MemberRole.ADMIN}>Менеджер</MenuItem>
+              </RHFInput>
+            )}
 
-              {error && (
-                <Stack spacing={1}>
-                  <Typography
-                    variant="body2"
-                    color="error"
-                  >
-                    {error}
-                  </Typography>
-                </Stack>
-              )}
-
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{ mt: 8, justifyContent: 'flex-end' }}
+            <Stack
+              spacing={1}
+              sx={{ p: 4, bgcolor: 'secondary.main', borderRadius: 4 }}
+            >
+              <Typography
+                variant="body2"
+                color="info"
               >
-                <Button
-                  onClick={handleClose}
-                  disabled={isPending}
-                >
-                  Отменить
-                </Button>
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={isPending}
-                >
-                  Добавить
-                </Button>
-              </Stack>
+                {isCross
+                  ? 'Связанный профиль компании или исполнителя получит доступ к этому рабочему пространству.'
+                  : 'Менеджер получает полный доступ к рабочему пространству профиля.'}
+              </Typography>
             </Stack>
-          </form>
-        </FormProvider>
-      </Box>
-    </Dialog>
+
+            {error && (
+              <Typography
+                variant="body2"
+                color="error"
+              >
+                {error}
+              </Typography>
+            )}
+
+            <Stack
+              direction="row"
+              sx={appDialogActionsSx}
+            >
+              <Button
+                onClick={handleClose}
+                disabled={isPending}
+              >
+                Отменить
+              </Button>
+
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isPending}
+              >
+                Добавить
+              </Button>
+            </Stack>
+          </Stack>
+        </form>
+      </FormProvider>
+    </AppDialog>
   );
 };

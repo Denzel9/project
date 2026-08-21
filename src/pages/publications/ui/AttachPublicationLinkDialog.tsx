@@ -1,17 +1,9 @@
-import { Close } from '@mui/icons-material'
-import {
-  Box,
-  Button,
-  Dialog,
-  IconButton,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Button, Stack, TextField, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
 import { getPlatformLabel, type Platform } from '@/entities/post'
 import { useUpdatePublicationMutation } from '@/entities/publication'
+import { AppDialog, appDialogActionsSx } from '@/shared'
 
 import {
   getPublicationPlatformLinks,
@@ -96,85 +88,53 @@ export const AttachPublicationLinkDialog = ({
   }
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-          width: 520,
-          maxWidth: '90%',
-        },
-      }}
+      title="Ссылки на публикацию"
+      width={520}
     >
-      <IconButton
-        onClick={handleClose}
-        color="primary"
-        disabled={isPending}
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': {
-            bgcolor: 'secondary.light',
-          },
-        }}
-      >
-        <Close />
-      </IconButton>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        Одна ссылка на каждую площадку
+      </Typography>
 
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Ссылки на публикацию</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Одна ссылка на каждую площадку
-        </Typography>
-
-        <Stack spacing={2} sx={{ mt: 3 }}>
-          {platforms.map(platform => (
-            <TextField
-              key={platform}
-              fullWidth
-              label={getPlatformLabel(platform)}
-              placeholder="https://"
-              value={urls[platform] ?? ''}
-              onChange={event => {
-                setUrls(prev => ({ ...prev, [platform]: event.target.value }))
-                if (error) setError(null)
-              }}
-              disabled={isPending}
-            />
-          ))}
-
-          {error && (
-            <Typography variant="body2" color="error">
-              {error}
-            </Typography>
-          )}
-        </Stack>
-
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ mt: 4, justifyContent: 'flex-end' }}
-        >
-          <Button onClick={handleClose} disabled={isPending}>
-            Отменить
-          </Button>
-          <Button
-            color="primary"
-            variant="contained"
-            loading={isPending}
+      <Stack spacing={2} sx={{ mt: 3 }}>
+        {platforms.map(platform => (
+          <TextField
+            key={platform}
+            fullWidth
+            label={getPlatformLabel(platform)}
+            placeholder="https://"
+            value={urls[platform] ?? ''}
+            onChange={event => {
+              setUrls(prev => ({ ...prev, [platform]: event.target.value }))
+              if (error) setError(null)
+            }}
             disabled={isPending}
-            onClick={() => void handleSubmit()}
-          >
-            Сохранить
-          </Button>
-        </Stack>
-      </Box>
-    </Dialog>
+          />
+        ))}
+
+        {error && (
+          <Typography variant="body2" color="error">
+            {error}
+          </Typography>
+        )}
+      </Stack>
+
+      <Stack direction="row" sx={appDialogActionsSx}>
+        <Button onClick={handleClose} disabled={isPending}>
+          Отменить
+        </Button>
+        <Button
+          color="primary"
+          variant="contained"
+          loading={isPending}
+          disabled={isPending}
+          onClick={() => void handleSubmit()}
+        >
+          Сохранить
+        </Button>
+      </Stack>
+    </AppDialog>
   )
 }

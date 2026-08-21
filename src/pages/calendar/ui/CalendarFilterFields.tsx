@@ -1,9 +1,7 @@
 import { Whatshot } from '@mui/icons-material';
 import { Chip, IconButton, MenuItem, Stack, TextField } from '@mui/material';
 
-import {
-  AssigneeFilterMenu
-} from '@/features';
+import { AssigneeFilterMenu } from '@/features';
 import { FilterAutocomplete } from '@/shared';
 
 import { hasActiveCalendarFilters } from '../model/utils';
@@ -14,7 +12,6 @@ import type {
 } from '../model/types';
 
 const SELECT_WIDTH = 240;
-
 
 type CalendarFilterFieldsProps = {
   value: CalendarFiltersState;
@@ -41,31 +38,31 @@ export const CalendarFilterFields = ({
   const showReset =
     showInlineReset && onReset && hasActiveCalendarFilters(value);
 
-  return (
-    <Stack
-      spacing={stacked ? 2 : 0}
-      direction={stacked ? 'column' : 'row'}
-      useFlexGap={!stacked}
-      sx={
-        stacked
-          ? undefined
-          : { flexWrap: 'wrap', alignItems: 'center', gap: 2, justifyContent: 'space-between' }
+  const urgentButton = (
+    <IconButton
+      aria-label={
+        value.urgentOnly ? 'Показать все задачи' : 'Только срочные задачи'
       }
-    ><Stack
-      direction="row"
-      spacing={1}
-      sx={{
-        alignItems: 'center',
-        ...(stacked && { pt: 0.5 }),
-      }}
+      aria-pressed={value.urgentOnly}
+      onClick={() => onChange({ urgentOnly: !value.urgentOnly })}
+      sx={stacked ? { alignSelf: 'flex-start' } : undefined}
     >
+      <Whatshot color={value.urgentOnly ? 'error' : 'action'} />
+    </IconButton>
+  );
+
+  if (stacked) {
+    return (
+      <Stack
+        spacing={3}
+        direction="column"
+      >
         <TextField
           select
-          fullWidth={stacked}
+          fullWidth
           size="small"
           label="Тип событий"
           value={value.eventType}
-          sx={stacked ? undefined : { width: SELECT_WIDTH }}
           onChange={event =>
             onChange({
               eventType: event.target.value as CalendarFiltersState['eventType'],
@@ -84,20 +81,60 @@ export const CalendarFilterFields = ({
           options={companyOptions}
           loading={isLoadingCompanies}
           onChange={companyId => onChange({ companyId })}
-          sx={stacked ? undefined : { width: SELECT_WIDTH, flex: '0 0 auto' }}
+          sx={{ width: '100%' }}
         />
 
+        {urgentButton}
 
-        <IconButton
-          aria-label={
-            value.urgentOnly ? 'Показать все задачи' : 'Только срочные задачи'
+        <AssigneeFilterMenu isCompany={isCompany} />
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack
+      direction="row"
+      useFlexGap
+      sx={{
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 2,
+        justifyContent: 'space-between',
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center' }}
+      >
+        <TextField
+          select
+          size="small"
+          label="Тип событий"
+          value={value.eventType}
+          sx={{ width: SELECT_WIDTH }}
+          onChange={event =>
+            onChange({
+              eventType: event.target.value as CalendarFiltersState['eventType'],
+            })
           }
-          aria-pressed={value.urgentOnly}
-          onClick={() => onChange({ urgentOnly: !value.urgentOnly })}
         >
-          <Whatshot color={value.urgentOnly ? 'error' : 'action'} />
-        </IconButton>
+          <MenuItem value="all">Все</MenuItem>
+          <MenuItem value="created">Создано в этот день</MenuItem>
+          <MenuItem value="deadline">Дедлайн в этот день</MenuItem>
+        </TextField>
 
+        <FilterAutocomplete
+          size="small"
+          label={companyLabel}
+          value={value.companyId}
+          options={companyOptions}
+          loading={isLoadingCompanies}
+          onChange={companyId => onChange({ companyId })}
+          sx={{ width: SELECT_WIDTH, flex: '0 0 auto' }}
+        />
+
+        {urgentButton}
 
         {showReset && (
           <Chip

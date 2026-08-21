@@ -4,7 +4,6 @@ import {
   DownloadOutlined,
   PrintOutlined,
   Search,
-  Tune,
 } from '@mui/icons-material'
 import {
   CircularProgress,
@@ -25,7 +24,7 @@ import {
   type FavoriteType,
 } from '@/entities/favorite'
 import { useAuthStore } from '@/features'
-import { safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared'
+import { MobileFilterOpenButton, useScroll } from '@/shared'
 import { useSnackbarStore } from '@/widgets'
 
 import { DeleteFavoriteGroupDialog } from './DeleteFavoriteGroupDialog'
@@ -301,15 +300,10 @@ const FavoriteFilter = ({
             onChange={onViewModeChange}
           />
 
-          <IconButton
+          <MobileFilterOpenButton
+            active={isMobileFilterOpen || hasMobileFilters}
             onClick={() => setIsMobileFilterOpen(true)}
-            sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-            color={
-              isMobileFilterOpen || hasMobileFilters ? 'primary' : 'default'
-            }
-          >
-            <Tune />
-          </IconButton>
+          />
         </Stack>
       </Stack>
 
@@ -327,8 +321,8 @@ const FavoriteFilter = ({
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
+            p: { xs: 2, sm: 3 },
             width: { xs: '100%', sm: '80%' },
-            ...safeAreaFullWidthDrawerPaperSx(),
           },
         }}
       >

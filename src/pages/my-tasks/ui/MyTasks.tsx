@@ -25,7 +25,7 @@ import {
   pickRepresentativeTasksByPost,
   countTasksByPostId,
 } from '@/features';
-import { EmptyBlock, ROUTES, stickyFilterSx } from '@/shared';
+import { EmptyBlock, ROUTES } from '@/shared';
 import { ConfirmDialog, PageLayout } from '@/widgets';
 
 import { TASK_TABLE_PAGE_SIZE } from '../model/constants/constants';
@@ -526,7 +526,7 @@ export const MyTasks = () => {
         }}
       >
         {showFilter && (
-          <Box sx={stickyFilterSx}>
+          <Box sx={{ position: 'sticky', top: 0, zIndex: 1000 }}>
             <MyTaskFilter
               tableReport={tableReport}
               initialPosts={initialPosts}

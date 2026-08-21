@@ -1,13 +1,4 @@
-import { Close } from '@mui/icons-material';
-import {
-  Button,
-  Dialog,
-  IconButton,
-  MenuItem,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useMyPostOptionsQuery, type TaskTemplate } from '@/entities';
@@ -15,7 +6,7 @@ import {
   EXECUTOR_UNASSIGNED_ID,
   useExecutorPickerOptions,
 } from '@/features/task-filter/model/useExecutorPickerOptions';
-import { FilterAutocomplete } from '@/shared';
+import { AppDialog, appDialogActionsSx, FilterAutocomplete } from '@/shared';
 
 type UseTemplateDialogProps = {
   open: boolean;
@@ -55,7 +46,7 @@ export const UseTemplateDialog = ({
       setTimeout(() => {
         setPostId(null);
         setExecutorId(EXECUTOR_UNASSIGNED_ID);
-      }, 0)
+      }, 0);
     }
   }, [open]);
 
@@ -76,38 +67,17 @@ export const UseTemplateDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
+      title="Создать задачу из шаблона"
+      width={560}
       fullWidth
-      maxWidth="sm"
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: '24px',
-            p: { xs: 2, sm: 3 },
-            m: 0,
-            width: { xs: '100%', md: 560 },
-            maxWidth: { xs: '100%', md: '90%' },
-          },
-        },
-      }}
     >
       <Stack
-        direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+        spacing={2}
+        sx={{ mt: 2 }}
       >
-        <Typography variant="h6">Создать задачу из шаблона</Typography>
-        <IconButton
-          aria-label="Закрыть"
-          disabled={isPending}
-          onClick={handleClose}
-        >
-          <Close />
-        </IconButton>
-      </Stack>
-
-      <Stack spacing={2}>
         <Typography
           variant="body2"
           color="text.secondary"
@@ -143,8 +113,7 @@ export const UseTemplateDialog = ({
 
       <Stack
         direction="row"
-        spacing={2}
-        sx={{ mt: 3, justifyContent: 'flex-end' }}
+        sx={appDialogActionsSx}
       >
         <Button
           variant="outlined"
@@ -166,6 +135,6 @@ export const UseTemplateDialog = ({
           Создать задачу
         </Button>
       </Stack>
-    </Dialog>
+    </AppDialog>
   );
 };

@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { SideBar } from '@widgets/side-bar';
 import { lazy, Suspense, useRef } from 'react';
 
+import { BACKGROUND_COLOR } from '@/app/index';
 import { RouteSuspense, useScrollToTop } from '@/shared';
 import { MobileNavDrawer } from '@/widgets/side-bar/ui/MobileNavDrawer';
 
@@ -30,13 +31,15 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
       sx={{
         display: 'flex',
         gap: { xs: 0, md: .5 },
-        bgcolor: 'background.default',
+        bgcolor: BACKGROUND_COLOR
       }}
     >
       <ManagerShellRedirect />
-      <Box data-print-hide>
+
+      <Box data-print-hide >
         <SideBar />
       </Box>
+
       <Box data-print-hide>
         <MobileNavDrawer />
       </Box>
@@ -65,6 +68,7 @@ export const MainLayout = ({ children }: { children: ReactNode }) => {
           data-main-scroll
           sx={{
             flex: 1,
+            bgcolor: BACKGROUND_COLOR,
             minHeight: 0,
             overflowY: 'auto',
             overflowX: 'hidden',

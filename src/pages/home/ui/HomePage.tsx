@@ -1,5 +1,5 @@
 import { KeyboardArrowUp } from '@mui/icons-material';
-import { Box, Fade, IconButton, Stack, useMediaQuery } from '@mui/material';
+import { Box, Fade, IconButton, Stack } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useMyApplicationsMapForPosts } from '@/entities/application';
@@ -14,7 +14,7 @@ import {
   useMainFilterStore,
   hasActivePostFilters,
 } from '@/features/main-filter';
-import { EmptyBlock, InfiniteScrollSentinel, scrollMainToTop, stickyFilterSx, useScroll } from '@/shared';
+import { EmptyBlock, InfiniteScrollSentinel, scrollMainToTop, useScroll } from '@/shared';
 import {
   ACTION_BUTTONS_KEYS,
   PostItem,
@@ -33,7 +33,6 @@ const searchMessageBoxSx = {
 } as const;
 
 export const HomePage = () => {
-  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const { isScrolled, ref: scrollProbeRef } = useScroll(80);
 
   const {
@@ -43,8 +42,6 @@ export const HomePage = () => {
     isSearchOpen,
     searchQuery,
   } = useMainFilterStore();
-
-  const isDesktopSearch = isSearchOpen && !isMobile;
 
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
@@ -57,14 +54,14 @@ export const HomePage = () => {
   }, [searchQuery]);
 
   useEffect(() => {
-    if (!isDesktopSearch) {
+    if (!isSearchOpen) {
       setTimeout(() => {
         setDebouncedQuery('');
       }, 0);
     }
-  }, [isDesktopSearch]);
+  }, [isSearchOpen]);
 
-  const canSearch = isDesktopSearch && debouncedQuery.length >= 2;
+  const canSearch = isSearchOpen && debouncedQuery.length >= 2;
 
   const listParams = useMemo(
     () => toPostInfiniteListParams({ filters, postFilters }),
@@ -223,7 +220,7 @@ export const HomePage = () => {
 
       <PwaInstallBanner />
 
-      <Box sx={stickyFilterSx}>
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 1000 }}>
         <MainFilter />
       </Box>
 

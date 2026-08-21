@@ -1,10 +1,8 @@
-import { Check, Close } from '@mui/icons-material';
+import { Check } from '@mui/icons-material';
 import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
@@ -20,6 +18,7 @@ import {
   MemberRoleLabels,
   useGetProfileMembersQuery,
 } from '@/entities/workspace-member';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 type ChangeAssigneeDialogProps = {
@@ -75,7 +74,7 @@ export const ChangeAssigneeDialog = ({
       if (
         !existing ||
         getOptionPriority(option, currentAssigneeAccountId) <
-        getOptionPriority(existing, currentAssigneeAccountId)
+          getOptionPriority(existing, currentAssigneeAccountId)
       ) {
         uniqueByLabel.set(key, option);
       }
@@ -128,109 +127,78 @@ export const ChangeAssigneeDialog = ({
     !isPending;
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-          width: { md: 480, xs: '100%' },
-          maxWidth: { xs: '100%', md: '90%' },
-        },
-      }}
+      title="Сменить ответственного"
+      width={480}
     >
-      <IconButton
-        onClick={handleClose}
-        color="primary"
-        disabled={isPending}
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': {
-            bgcolor: 'secondary.light',
-          },
-        }}
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ mt: 1 }}
       >
-        <Close />
-      </IconButton>
+        Выберите участника профиля, который будет отвечать за задачу
+      </Typography>
 
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Сменить ответственного</Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mt: 1 }}
-        >
-          Выберите участника профиля, который будет отвечать за задачу
-        </Typography>
-
-        <Box sx={{ mt: 3, maxHeight: 320, overflowY: 'auto' }}>
-          {isLoading ? (
-            <Stack
-              sx={{ alignItems: 'center', py: 4 }}
-            >
-              <CircularProgress size={28} />
-            </Stack>
-          ) : options.length === 0 ? (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ py: 2 }}
-            >
-              Нет доступных участников
-            </Typography>
-          ) : (
-            <List disablePadding>
-              {options.map(option => {
-                const isSelected = selectedAccountId === option.id;
-                return (
-                  <ListItemButton
-                    key={option.id}
-                    selected={isSelected}
-                    onClick={() => setSelectedAccountId(option.id)}
-                    sx={{ borderRadius: '16px', mb: 0.5 }}
-                  >
-                    <ListItemText
-                      primary={option.label}
-                      secondary={option.roleLabel}
-                    />
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      {isSelected ? <Check fontSize="small" /> : null}
-                    </ListItemIcon>
-                  </ListItemButton>
-                );
-              })}
-            </List>
-          )}
-        </Box>
-
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ mt: 4, justifyContent: 'flex-end' }}
-        >
-          <Button
-            onClick={handleClose}
-            disabled={isPending}
+      <Box sx={{ mt: 3, maxHeight: 320, overflowY: 'auto' }}>
+        {isLoading ? (
+          <Stack sx={{ alignItems: 'center', py: 4 }}>
+            <CircularProgress size={28} />
+          </Stack>
+        ) : options.length === 0 ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ py: 2 }}
           >
-            Отменить
-          </Button>
-          <Button
-            color="primary"
-            variant="contained"
-            loading={isPending}
-            disabled={!canSubmit}
-            onClick={() => void handleSubmit()}
-          >
-            Сохранить
-          </Button>
-        </Stack>
+            Нет доступных участников
+          </Typography>
+        ) : (
+          <List disablePadding>
+            {options.map(option => {
+              const isSelected = selectedAccountId === option.id;
+              return (
+                <ListItemButton
+                  key={option.id}
+                  selected={isSelected}
+                  onClick={() => setSelectedAccountId(option.id)}
+                  sx={{ borderRadius: '16px', mb: 0.5 }}
+                >
+                  <ListItemText
+                    primary={option.label}
+                    secondary={option.roleLabel}
+                  />
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    {isSelected ? <Check fontSize="small" /> : null}
+                  </ListItemIcon>
+                </ListItemButton>
+              );
+            })}
+          </List>
+        )}
       </Box>
-    </Dialog>
+
+      <Stack
+        direction="row"
+        sx={appDialogActionsSx}
+      >
+        <Button
+          onClick={handleClose}
+          disabled={isPending}
+        >
+          Отменить
+        </Button>
+        <Button
+          color="primary"
+          variant="contained"
+          loading={isPending}
+          disabled={!canSubmit}
+          onClick={() => void handleSubmit()}
+        >
+          Сохранить
+        </Button>
+      </Stack>
+    </AppDialog>
   );
 };

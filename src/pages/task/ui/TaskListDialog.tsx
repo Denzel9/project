@@ -5,6 +5,7 @@ import {
   CircularProgress,
   Dialog,
   Divider,
+  Drawer,
   IconButton,
   InputAdornment,
   Menu,
@@ -92,6 +93,8 @@ type TaskListDialogProps = {
   currentUserId?: string | null;
   onRequestAnnulment?: (task: Task) => void;
   onRequestDeadlineExtension?: (task: Task) => void;
+  /** `drawer` — боковая панель (чат), `dialog` — модалка (CRM) */
+  variant?: 'dialog' | 'drawer';
 };
 
 const getExecutorLabel = (task: Task) =>
@@ -339,14 +342,17 @@ export const TaskListDialog = ({
   currentUserId,
   onRequestAnnulment,
   onRequestDeadlineExtension,
+  variant = 'dialog',
 }: TaskListDialogProps) => {
   const isPostMode = Boolean(postId);
+  const isDrawer = variant === 'drawer';
   const [tab, setTab] = useState<TaskListTab>('active');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const skipTabQueries = !open || !isPostMode;
 
   const isMobile = useMediaQuery(theme => theme.breakpoints.down('sm'));
+  const isDrawerMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
 
   useEffect(() => {
     if (!open) {
@@ -418,27 +424,12 @@ export const TaskListDialog = ({
       !listItems.length) ||
     (!isPostMode && isLoading && !listItems.length);
 
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="sm"
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: '24px',
-            p: { xs: 2, sm: 3 },
-            width: '100%',
-            m: 2,
-          },
-        },
-      }}
-    >
+  const content = (
+    <>
       <Stack
         direction="row"
         spacing={1}
-        sx={{ alignItems: 'center', mb: 2 }}
+        sx={{ alignItems: 'center', mb: 2, flexShrink: 0 }}
       >
         {isSearchOpen ? (
           <TextField
@@ -510,8 +501,8 @@ export const TaskListDialog = ({
           value={tab}
           onChange={(_, value: TaskListTab) => setTab(value)}
           aria-label="Фильтр задач поста"
-          variant={isMobile ? "scrollable" : "standard"}
-          sx={{ mb: 2, minHeight: 40 }}
+          variant={isMobile ? 'scrollable' : 'standard'}
+          sx={{ mb: 2, minHeight: 40, flexShrink: 0 }}
         >
           {TAB_ITEMS.map(item => (
             <Tab
@@ -537,10 +528,18 @@ export const TaskListDialog = ({
 
       <Box
         sx={{
-          height: 420,
-          minHeight: 420,
-          maxHeight: 420,
-          overflowY: 'auto',
+          ...(isDrawer
+            ? {
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+              }
+            : {
+                height: 420,
+                minHeight: 420,
+                maxHeight: 420,
+                overflowY: 'auto',
+              }),
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: '16px',
@@ -552,6 +551,7 @@ export const TaskListDialog = ({
           <Stack
             sx={{
               height: '100%',
+              minHeight: isDrawer ? 200 : undefined,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -583,6 +583,49 @@ export const TaskListDialog = ({
           </Stack>
         )}
       </Box>
+    </>
+  );
+
+  if (isDrawer) {
+    return (
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        sx={{
+          '& .MuiDrawer-paper': {
+            display: 'flex',
+            flexDirection: 'column',
+            p: { xs: 2, md: 4 },
+            width: isDrawerMobile ? '100%' : 420,
+            borderTopLeftRadius: { xs: 0, md: 32 },
+            borderBottomLeftRadius: { xs: 0, md: 32 },
+          },
+        }}
+      >
+        {content}
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '24px',
+            p: { xs: 2, sm: 3 },
+            width: '100%',
+            m: 2,
+          },
+        },
+      }}
+    >
+      {content}
     </Dialog>
   );
 };

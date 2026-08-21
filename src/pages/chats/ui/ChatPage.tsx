@@ -16,16 +16,15 @@ import {
 } from '@/entities/chat';
 import { fetchTaskById, type Task } from '@/entities/task';
 import { type UserSearchItem } from '@/entities/user';
-import { useMessenger, formatTaskTzForChat } from '@/features/chat';
 import { useAuthStore } from '@/features/auth';
+import { useMessenger, formatTaskTzForChat } from '@/features/chat';
 import { getTaskPath } from '@/pages/my-tasks/model/utils/utils';
-import { TaskListDialog } from '@/pages/task/ui/TaskListDialog';
 import { RequestCancelTaskDialog } from '@/pages/task/ui/RequestCancelTaskDialog';
 import { RequestDeadlineExtensionDialog } from '@/pages/task/ui/RequestDeadlineExtensionDialog';
+import { TaskListDialog } from '@/pages/task/ui/TaskListDialog';
 import { ROUTES, EmptyBlock, getChatPath } from '@/shared';
 import {
   ChatAttachmentsPanel,
-  ChatSearchPanel,
   ChatTaskTzPanel,
   extractChatTaskTzMessages,
   PageLayout,
@@ -318,7 +317,7 @@ export const ChatPage = () => {
 
   const isMobileConversation = Boolean(
     isMobile &&
-      (routeConversationId || recipientIdParam || selectedConversation),
+    (routeConversationId || recipientIdParam || selectedConversation),
   );
   const showContacts = !isMobile || !isMobileConversation;
   const showChatPanel = !isMobile || isMobileConversation;
@@ -401,7 +400,6 @@ export const ChatPage = () => {
           ? {
             gap: 0,
             pr: 0,
-            bgcolor: 'background.paper',
           }
           : undefined
       }
@@ -543,13 +541,6 @@ export const ChatPage = () => {
 
       {selectedConversationId && (
         <>
-          <ChatSearchPanel
-            open={isSearchOpen && isMobile}
-            onClose={() => setIsSearchOpen(false)}
-            conversationId={selectedConversationId}
-            onSelectMessage={handleSelectSearchMessage}
-          />
-
           <ChatAttachmentsPanel
             open={isAttachmentsOpen}
             conversationId={selectedConversationId}
@@ -583,13 +574,14 @@ export const ChatPage = () => {
             tasks={peerAssignedTasks}
             isLoading={isPeerTasksLoading}
             title="Задачи"
+            variant="drawer"
             currentUserId={currentUserId}
             onClose={() => setIsTasksOpen(false)}
             onSelectTask={
               isPrime
                 ? task => {
-                    navigate(getTaskPath(task));
-                  }
+                  navigate(getTaskPath(task));
+                }
                 : undefined
             }
             onRequestAnnulment={task => {

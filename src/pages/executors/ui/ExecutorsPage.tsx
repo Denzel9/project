@@ -13,7 +13,7 @@ import {
   usePartnerExecutorsQuery,
 } from '@/entities';
 import { useAuthStore } from '@/features';
-import { type FilterAutocompleteOption, ROUTES, stickyFilterSx } from '@/shared';
+import { type FilterAutocompleteOption, ROUTES } from '@/shared';
 import { PageLayout } from '@/widgets';
 
 import {
@@ -416,7 +416,9 @@ export const ExecutorsPage = () => {
           direction="row"
           spacing={2}
           sx={{
-            ...stickyFilterSx,
+            position: 'sticky',
+            top: 0,
+            zIndex: 1000,
             p: 2,
             mb: 1,
             bgcolor: 'background.paper',

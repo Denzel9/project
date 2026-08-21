@@ -1,18 +1,11 @@
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Dialog,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 import { isAxiosError } from 'axios';
 
 import {
   useDeleteMembershipMutation,
   type WorkspaceMember,
 } from '@/entities/workspace-member';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 import { useSnackbarStore } from '@/widgets';
 
 type UnlinkProfileDialogProps = {
@@ -51,85 +44,61 @@ export const UnlinkProfileDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={Boolean(profile)}
       onClose={onClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-        },
-      }}
+      title="Удалить связь"
+      minWidth={400}
     >
-      <IconButton
-        onClick={onClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': { bgcolor: 'secondary.light' },
-        }}
+      <Typography
+        variant="body1"
+        sx={{ mt: 2 }}
       >
-        <Close />
-      </IconButton>
-
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Удалить связь</Typography>
-
-        <Typography
-          variant="body1"
-          sx={{ mt: 2 }}
-        >
-          {isOutgoing ? (
-            <>
-              У профиля
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, display: 'inline-block', mx: 1 }}
-              >
-                {displayName}
-              </Typography>
-              пропадёт доступ к вашему рабочему пространству. Продолжить?
-            </>
-          ) : (
-            <>
-              Удалить
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, display: 'inline-block', mx: 1 }}
-              >
-                {displayName}
-              </Typography>
-              из связанных профилей? Вы потеряете доступ к этому профилю.
-            </>
-          )}
-        </Typography>
-
-        <Stack
-          direction="row"
-          sx={{ mt: 4, justifyContent: 'flex-end', gap: 1 }}
-        >
-          <Button
-            onClick={onClose}
-            disabled={isPending}
-          >
-            Отменить
-          </Button>
-
-          <Button
-            color="error"
-            onClick={() => void handleRemove()}
-            disabled={isPending}
-            loading={isPending}
-          >
+        {isOutgoing ? (
+          <>
+            У профиля
+            <Typography
+              color="primary"
+              sx={{ fontWeight: 500, display: 'inline-block', mx: 1 }}
+            >
+              {displayName}
+            </Typography>
+            пропадёт доступ к вашему рабочему пространству. Продолжить?
+          </>
+        ) : (
+          <>
             Удалить
-          </Button>
-        </Stack>
-      </Box>
-    </Dialog>
+            <Typography
+              color="primary"
+              sx={{ fontWeight: 500, display: 'inline-block', mx: 1 }}
+            >
+              {displayName}
+            </Typography>
+            из связанных профилей? Вы потеряете доступ к этому профилю.
+          </>
+        )}
+      </Typography>
+
+      <Stack
+        direction="row"
+        sx={appDialogActionsSx}
+      >
+        <Button
+          onClick={onClose}
+          disabled={isPending}
+        >
+          Отменить
+        </Button>
+
+        <Button
+          color="error"
+          onClick={() => void handleRemove()}
+          disabled={isPending}
+          loading={isPending}
+        >
+          Удалить
+        </Button>
+      </Stack>
+    </AppDialog>
   );
 };

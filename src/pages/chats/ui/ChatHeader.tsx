@@ -120,8 +120,10 @@ export const ChatHeader = ({
         onClick={isNotes ? undefined : onOpenProfile}
         sx={{
           minWidth: 0,
+          flex: 1,
           alignItems: 'center',
           cursor: isNotes ? 'default' : 'pointer',
+          display: isSearchOpen && isMobile ? 'none' : 'flex',
         }}
       >
         {isMobile && (
@@ -186,13 +188,23 @@ export const ChatHeader = ({
       <Stack
         spacing={1}
         direction="row"
-        sx={{ alignItems: 'center', flexShrink: 0 }}
+        sx={{
+          alignItems: 'center',
+          flexShrink: 0,
+          flex: isSearchOpen && isMobile ? 1 : undefined,
+          minWidth: 0,
+        }}
       >
-        {isSearchOpen && !isMobile && (
+        {isSearchOpen && (
           <ChatMessageSearchAutocomplete
             autoFocus
             conversationId={conversationId}
             onSelect={onSelectSearchMessage}
+            sx={{
+              width: { xs: '100%', md: 240 },
+              minWidth: 0,
+              flex: { xs: 1, md: 'none' },
+            }}
           />
         )}
 
@@ -200,9 +212,11 @@ export const ChatHeader = ({
           {isSearchOpen ? <Close /> : <Search />}
         </IconButton>
 
-        <IconButton onClick={handleOpenMenu}>
-          <MoreVert />
-        </IconButton>
+        {!isSearchOpen && (
+          <IconButton onClick={handleOpenMenu}>
+            <MoreVert />
+          </IconButton>
+        )}
 
         <Menu
           anchorEl={menuAnchor}

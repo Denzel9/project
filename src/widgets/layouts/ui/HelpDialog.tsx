@@ -1,19 +1,13 @@
 import {
-  Close,
   EmailOutlined,
   ForumOutlined,
   MenuBookOutlined,
   OpenInNew,
   Telegram,
 } from '@mui/icons-material';
-import {
-  Box,
-  Dialog,
-  IconButton,
-  Link,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Link, Stack, Typography } from '@mui/material';
+
+import { AppDialog } from '@/shared';
 
 import { SUPPORT_CHANNELS } from '../model/support';
 
@@ -98,62 +92,33 @@ const SupportChannelItem = ({ channel }: { channel: SupportChannel }) => (
 );
 
 export const HelpDialog = ({ open, onClose }: HelpDialogProps) => (
-  <Dialog
+  <AppDialog
     open={open}
     onClose={onClose}
-    sx={{
-      '& .MuiDialog-paper': {
-        outline: 'none',
-        overflow: 'visible',
-        position: 'relative',
-        borderRadius: '32px',
-        width: '100%',
-        maxWidth: 520,
-      },
-    }}
+    title="Нужна помощь?"
+    width={520}
   >
-    <IconButton
-      onClick={onClose}
-      color="primary"
-      aria-label="Закрыть"
-      sx={{
-        top: 0,
-        right: -60,
-        position: 'absolute',
-        bgcolor: 'secondary.main',
-        ':hover': {
-          bgcolor: 'secondary.light',
-        },
-      }}
+    <Typography
+      variant="body1"
+      color="text.secondary"
+      sx={{ mt: 2 }}
     >
-      <Close />
-    </IconButton>
+      Вы можете написать нам в социальные сети — Telegram или MAX, на нашу
+      электронную почту или найти ответ в базе знаний.
+    </Typography>
 
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h6">Нужна помощь?</Typography>
-
-      <Typography
-        variant="body1"
-        color="text.secondary"
-        sx={{ mt: 2 }}
-      >
-        Вы можете написать нам в социальные сети — Telegram или MAX, на нашу
-        электронную почту или найти ответ в базе знаний.
-      </Typography>
-
-      <Stack
-        spacing={1.5}
-        sx={{ mt: 3 }}
-      >
-        {SUPPORT_CHANNELS.map(channel => (
-          <SupportChannelItem
-            key={channel.id}
-            channel={channel}
-          />
-        ))}
-      </Stack>
-    </Box>
-  </Dialog>
+    <Stack
+      spacing={1.5}
+      sx={{ mt: 3 }}
+    >
+      {SUPPORT_CHANNELS.map(channel => (
+        <SupportChannelItem
+          key={channel.id}
+          channel={channel}
+        />
+      ))}
+    </Stack>
+  </AppDialog>
 );
 
 export default HelpDialog;

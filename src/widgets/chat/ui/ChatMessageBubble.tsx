@@ -50,6 +50,8 @@ type ChatMessageBubbleProps = {
   isDeleting?: boolean
   isEditing?: boolean
   fullWidth?: boolean
+  /** Без аватара, меню сообщения и кнопок действий по ТЗ (превью в панелях) */
+  readOnly?: boolean
   isHighlighted?: boolean
   selectionMode?: boolean
   selected?: boolean
@@ -167,6 +169,7 @@ export const ChatMessageBubble = ({
   isDeleting = false,
   isEditing: isSavingEdit = false,
   fullWidth = false,
+  readOnly = false,
   selectionMode = false,
   selected = false,
   onToggleSelect,
@@ -233,6 +236,7 @@ export const ChatMessageBubble = ({
   const canUnpinPin = Boolean(onPin) && isPinned && canUnpin
   const showPinActions = canPinPersonal || canPinShared || canUnpinPin
   const showMenu =
+    !readOnly &&
     !selectionMode &&
     (canEdit ||
       canDelete ||
@@ -467,7 +471,7 @@ export const ChatMessageBubble = ({
         />
       )}
 
-      {!isOutgoing && !selectionMode && (
+      {!isOutgoing && !selectionMode && !readOnly && (
         <Avatar
           alt={senderName ?? undefined}
           src={senderAvatar ?? undefined}
@@ -874,7 +878,7 @@ export const ChatMessageBubble = ({
                       },
                     }}
                   />
-                  {!isRedirected && (
+                  {!isRedirected && !readOnly && (
                     <ChatTaskTzActions
                       taskId={taskTzMessage.taskId}
                       currentUserId={currentUserId}

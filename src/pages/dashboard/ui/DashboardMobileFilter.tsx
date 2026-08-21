@@ -20,7 +20,7 @@ import {
   useMyTaskFilterStore,
   type DashboardPeriod,
 } from '@/features'
-import { FilterAutocomplete } from '@/shared'
+import { FilterAutocomplete, mobileFilterActionsSx } from '@/shared'
 
 import { DASHBOARD_PERIOD_OPTIONS } from '../model/constants'
 
@@ -171,7 +171,7 @@ export const DashboardMobileFilter = ({
       <Stack
         direction="row"
         spacing={2}
-        sx={{ mt: 4 }}
+        sx={mobileFilterActionsSx}
       >
         <Button
           fullWidth

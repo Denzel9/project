@@ -1,22 +1,26 @@
-import { Close, Search, Tune } from '@mui/icons-material';
+import { Close, Search } from '@mui/icons-material';
 import {
   Box,
   Chip,
   Drawer,
   IconButton,
+  MenuItem,
   Stack,
   TextField,
   useMediaQuery,
 } from '@mui/material';
 import { useEffect, useRef } from 'react';
 
-import { scrollMainToTop, safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared';
+import {
+  MobileFilterOpenButton,
+  scrollMainToTop,
+  useScroll,
+} from '@/shared';
 
 import { FILTERS, FILTERS_VALUES } from '../model/constants';
 import { useMainFilterStore } from '../model/store';
 import { hasActivePostFilters } from '../model/utils';
 
-import { PostSearchPanel } from './PostSearchPanel';
 import { SideBarFilter } from './SideBarFilter';
 
 export const MainFilter = () => {
@@ -57,11 +61,24 @@ export const MainFilter = () => {
     }
   };
 
+  const handleFastFiltersSelect = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { value } = event.target;
+    setFilters(
+      typeof value === 'string'
+        ? value
+          ? (value.split(',') as FILTERS_VALUES[])
+          : []
+        : (value as unknown as FILTERS_VALUES[]),
+    );
+  };
+
   const renderFastFilterChip = (label: string, value: FILTERS_VALUES) => (
     <Chip
       key={value}
       label={label}
-      size={isMobile ? "small" : "medium"}
+      size={isMobile ? 'small' : 'medium'}
       sx={{ cursor: 'pointer', flexShrink: 0 }}
       onClick={() => handleFilter(value)}
       color={filters.includes(value) ? 'primary' : 'default'}
@@ -100,14 +117,14 @@ export const MainFilter = () => {
             sx={{
               gap: 1,
               flex: 1,
-              display: 'flex',
               minWidth: 0,
               overflowX: 'auto',
               alignItems: 'center',
+              display: { xs: 'none', md: 'flex' },
             }}
           >
             {FILTERS.map(({ label, value }) =>
-              renderFastFilterChip(label, value)
+              renderFastFilterChip(label, value),
             )}
 
             {hasAnyFilters && (
@@ -115,17 +132,61 @@ export const MainFilter = () => {
                 label="Сбросить"
                 variant="outlined"
                 onClick={resetAllFilters}
-                sx={{ flexShrink: 0, display: { xs: 'none', md: 'flex' }, }}
+                sx={{ flexShrink: 0 }}
               />
             )}
           </Box>
 
+          <TextField
+            select
+            size="small"
+            label="Быстрый фильтр"
+            value={filters}
+            onChange={handleFastFiltersSelect}
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: {
+                xs: isSearchOpen ? 'none' : 'flex',
+                md: 'none',
+              },
+            }}
+            slotProps={{
+              inputLabel: { shrink: true },
+              select: {
+                multiple: true,
+                displayEmpty: true,
+                renderValue: selected => {
+                  const values = selected as FILTERS_VALUES[];
+                  if (!values.length) return 'Не выбрано';
+                  return FILTERS.filter(item => values.includes(item.value))
+                    .map(item => item.label)
+                    .join(', ');
+                },
+              },
+            }}
+          >
+            {FILTERS.map(({ label, value }) => (
+              <MenuItem
+                key={value}
+                value={value}
+              >
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
           <Stack
             spacing={1}
             direction="row"
-            sx={{ alignItems: 'center' }}
+            sx={{
+              alignItems: 'center',
+              flexShrink: 0,
+              flex: isSearchOpen && isMobile ? 1 : undefined,
+              minWidth: 0,
+            }}
           >
-            {isSearchOpen && !isMobile && (
+            {isSearchOpen && (
               <TextField
                 autoFocus
                 label="Поиск"
@@ -133,34 +194,26 @@ export const MainFilter = () => {
                 variant="outlined"
                 value={searchQuery}
                 onChange={event => setSearchQuery(event.target.value)}
-                sx={{ width: 300 }}
+                sx={{
+                  width: { xs: '100%', md: 300 },
+                  minWidth: 0,
+                  flex: { xs: 1, md: 'none' },
+                }}
               />
             )}
 
-            <IconButton
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              sx={{ display: { xs: 'none', md: 'flex' } }}
-            >
+            <IconButton onClick={() => setIsSearchOpen(!isSearchOpen)}>
               {isSearchOpen ? <Close /> : <Search />}
             </IconButton>
 
-            <IconButton
+            <MobileFilterOpenButton
+              active={isOpenMainFilter || hasAnyFilters}
               onClick={() => setIsOpenMainFilter(!isOpenMainFilter)}
-            >
-              {isOpenMainFilter || hasAnyFilters ? (
-                <Tune color="primary" />
-              ) : (
-                <Tune />
-              )}
-            </IconButton>
+              sx={{ display: 'inline-flex' }}
+            />
           </Stack>
         </Stack>
       </Stack>
-
-      <PostSearchPanel
-        open={isSearchOpen && isMobile}
-        onClose={() => setIsSearchOpen(false)}
-      />
 
       <Drawer
         anchor="right"
@@ -168,10 +221,10 @@ export const MainFilter = () => {
         onClose={() => setIsOpenMainFilter(false)}
         sx={{
           '& .MuiDrawer-paper': {
+            p: { xs: 2, md: 4 },
             borderTopLeftRadius: { xs: 0, md: 32 },
             borderBottomLeftRadius: { xs: 0, md: 32 },
             width: { xs: '100%', sm: '80%', md: '25%' },
-            ...safeAreaFullWidthDrawerPaperSx({ xs: 2, sm: 2, md: 4 }),
           },
         }}
       >

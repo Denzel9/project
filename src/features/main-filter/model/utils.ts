@@ -194,8 +194,8 @@ export const fastFiltersToListParams = (
     params.workFormat = 'REMOTE';
   }
 
-  if (filters.includes(FILTERS_VALUES.WITH_PHOTO)) {
-    params.hasPhoto = true;
+  if (filters.includes(FILTERS_VALUES.WITH_MEDIA)) {
+    params.hasMedia = true;
   }
 
   return params;

@@ -22,7 +22,6 @@ import {
   isGalleryMedia,
 } from '@/widgets/media/lib/getMediaKind';
 import { MediaItem } from '@/widgets/media/ui/MediaItem';
-import { safeAreaMobileFullWidthDrawerPadding } from '@/shared';
 
 type AttachmentFilter = 'all' | 'image' | 'video' | 'document';
 
@@ -120,19 +119,14 @@ export const ChatAttachmentsPanel = ({
       anchor="right"
       open={open}
       onClose={onClose}
-      sx={[
-        {
-          '& .MuiDrawer-paper': {
-            width: isMobile ? '100%' : 420,
-            borderTopLeftRadius: { xs: 0, md: 32 },
-            borderBottomLeftRadius: { xs: 0, md: 32 },
-            ...(isMobile ? {} : { p: { md: 4 } }),
-          },
+      sx={{
+        '& .MuiDrawer-paper': {
+          p: { xs: 2, md: 4 },
+          width: isMobile ? '100%' : 420,
+          borderTopLeftRadius: { xs: 0, md: 32 },
+          borderBottomLeftRadius: { xs: 0, md: 32 },
         },
-        isMobile
-          ? { '& .MuiDrawer-paper': safeAreaMobileFullWidthDrawerPadding(true, 2) }
-          : {},
-      ]}
+      }}
     >
       <Stack
         direction="row"
@@ -290,19 +284,6 @@ export const ChatAttachmentsPanel = ({
           </Button>
         )}
       </Box>
-
-      <Button
-        sx={{
-          width: 'fit-content',
-          position: 'fixed',
-          bottom: { xs: 16, md: 32 },
-          right: { xs: 16, md: 32 },
-        }}
-        variant="outlined"
-        onClick={onClose}
-      >
-        Закрыть
-      </Button>
     </Drawer>
   );
 };

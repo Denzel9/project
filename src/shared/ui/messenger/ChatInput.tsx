@@ -12,6 +12,7 @@ import {
   InputAdornment,
   Stack,
   TextField,
+  useMediaQuery,
 } from '@mui/material';
 import {
   lazy,
@@ -58,6 +59,7 @@ export const ChatInput = ({
   isSending = false,
   placeholder = 'Введите сообщение…',
 }: ChatInputProps) => {
+  const isMobile = useMediaQuery(theme => theme.breakpoints.down('md'));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLTextAreaElement>(null);
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
@@ -107,11 +109,16 @@ export const ChatInput = ({
   };
 
   const handleOpenEmojiPicker = (event: MouseEvent<HTMLButtonElement>) => {
+    if (isMobile) {
+      textInputRef.current?.focus();
+      return;
+    }
+
     setEmojiAnchor(event.currentTarget);
   };
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing={1} sx={{ pb: { xs: 2, md: 0 } }}>
       {pendingFiles.length > 0 && (
         <Stack
           spacing={2}

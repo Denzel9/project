@@ -1,10 +1,7 @@
-import { Close } from '@mui/icons-material'
 import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  IconButton,
   Stack,
   Typography,
 } from '@mui/material'
@@ -12,7 +9,7 @@ import { useMemo } from 'react'
 
 import { type Task } from '@/entities'
 import { formatTaskTzForChat } from '@/features/chat'
-import { MarkdownContent } from '@/shared'
+import { AppDialog, appDialogActionsSx, MarkdownContent } from '@/shared'
 import { MediaItem } from '@/widgets'
 
 type SendTzPreviewDialogProps = {
@@ -43,48 +40,24 @@ export const SendTzPreviewDialog = ({
   }
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          m: 2,
-          outline: 'none',
-          position: 'relative',
-          borderRadius: '32px',
-          width: { md: 640, xs: '100%' },
-          maxWidth: { xs: '100%', md: '92%' },
-          maxHeight: '85vh',
-          display: 'flex',
-          flexDirection: 'column',
-          p: { xs: 2.5, sm: 3 },
-        },
+      title="Отправить ТЗ исполнителю"
+      width={640}
+      paperSx={{ maxHeight: '85vh' }}
+      contentSx={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: '85vh',
+        overflow: 'hidden',
       }}
     >
-      <IconButton
-        aria-label="Закрыть"
-        onClick={handleClose}
-        disabled={isSending}
-        sx={{
-          position: 'absolute',
-          top: 12,
-          right: 12,
-          zIndex: 1,
-        }}
-      >
-        <Close />
-      </IconButton>
-
-      <Stack spacing={0.5} sx={{ mb: 2, pr: 5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Отправить ТЗ исполнителю
+      {media.length > 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Вместе с текстом будут прикреплены медиа ТЗ ({media.length})
         </Typography>
-        {media.length > 0 && (
-          <Typography variant="body2" color="text.secondary">
-            Вместе с текстом будут прикреплены медиа ТЗ ({media.length})
-          </Typography>
-        )}
-      </Stack>
+      )}
 
       {media.length > 0 && (
         <Box
@@ -92,6 +65,7 @@ export const SendTzPreviewDialog = ({
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
             gap: 1,
+            mt: 2,
             mb: 2,
           }}
         >
@@ -128,6 +102,7 @@ export const SendTzPreviewDialog = ({
           borderRadius: '24px',
           bgcolor: 'grey.50',
           p: 2,
+          mt: media.length > 0 ? 0 : 2,
           mb: 2,
         }}
       >
@@ -150,7 +125,7 @@ export const SendTzPreviewDialog = ({
         />
       </Box>
 
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" sx={{ ...appDialogActionsSx, mt: 0 }}>
         <Button variant="outlined" onClick={handleClose} disabled={isSending}>
           Отмена
         </Button>
@@ -168,6 +143,6 @@ export const SendTzPreviewDialog = ({
           Отправить
         </Button>
       </Stack>
-    </Dialog>
+    </AppDialog>
   )
 }

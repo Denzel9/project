@@ -1,4 +1,4 @@
-import { Close, FilterList } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import { useEffect, useState } from 'react';
 
-import { safeAreaFullWidthDrawerPaperSx, useScroll } from '@/shared';
+import { MobileFilterOpenButton, mobileFilterActionsSx, useScroll } from '@/shared';
 
 import { DEFAULT_CALENDAR_FILTERS } from '../model/constants';
 import { hasActiveCalendarFilters, toCalendarDateKey, type CalendarEvent } from '../model/utils';
@@ -131,14 +131,12 @@ export const CalendarFilters = ({
             )}
           </Stack>
 
-          <IconButton
-            aria-label="Фильтры"
-            aria-pressed={isDrawerOpen}
+          <MobileFilterOpenButton
+            active={isActive || isDrawerOpen}
             onClick={() => setIsDrawerOpen(true)}
-            color={isActive ? 'primary' : 'default'}
-          >
-            <FilterList />
-          </IconButton>
+            aria-pressed={isDrawerOpen}
+            sx={{ display: 'inline-flex' }}
+          />
         </Stack>
 
         <Drawer
@@ -147,11 +145,11 @@ export const CalendarFilters = ({
           onClose={() => setIsDrawerOpen(false)}
           sx={{
             '& .MuiDrawer-paper': {
+              p: 3,
               maxWidth: 420,
               display: 'flex',
               flexDirection: 'column',
               width: { xs: '100%', sm: '80%' },
-              ...safeAreaFullWidthDrawerPaperSx({ xs: 3, sm: 3 }),
             },
           }}
         >
@@ -190,12 +188,13 @@ export const CalendarFilters = ({
             direction="row"
             spacing={1}
             sx={{
-              pt: 2,
+              ...mobileFilterActionsSx,
               flexShrink: 0,
               justifyContent: 'flex-end',
               alignItems: 'center',
               borderTop: '1px solid',
               borderColor: 'divider',
+              pt: 2,
             }}
           >
             {draftHasFilters && (

@@ -2,7 +2,6 @@ import {
   DownloadOutlined,
   Link,
   PrintOutlined,
-  Tune,
 } from '@mui/icons-material'
 import {
   Button,
@@ -18,7 +17,7 @@ import { useMemo, useState } from 'react'
 
 import {
   FilterAutocomplete,
-  safeAreaFullWidthDrawerPaperSx,
+  MobileFilterOpenButton,
   useScroll,
   type FilterAutocompleteOption,
 } from '@/shared'
@@ -279,17 +278,10 @@ export const PublicationsFilter = ({
           />
 
           {isGridMode && (
-            <IconButton
+            <MobileFilterOpenButton
+              active={isMobileFilterOpen || hasMobileDrawerFilters}
               onClick={() => setIsMobileFilterOpen(true)}
-              sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-              color={
-                isMobileFilterOpen || hasMobileDrawerFilters
-                  ? 'primary'
-                  : 'default'
-              }
-            >
-              <Tune />
-            </IconButton>
+            />
           )}
         </Stack>
       </Stack>
@@ -302,8 +294,8 @@ export const PublicationsFilter = ({
           sx={{
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': {
+              p: { xs: 2, sm: 3 },
               width: { xs: '100%', sm: '80%' },
-              ...safeAreaFullWidthDrawerPaperSx(),
             },
           }}
         >

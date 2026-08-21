@@ -1,17 +1,10 @@
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Dialog,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 
 import {
   useDeleteMembershipMutation,
   type ProfileMember,
 } from '@/entities/workspace-member';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 
 type DeleteMemberDialogProps = {
   member: ProfileMember | null;
@@ -37,69 +30,45 @@ export const DeleteMemberDialog = ({
   };
 
   return (
-    <Dialog
+    <AppDialog
       open={Boolean(member)}
       onClose={onClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          outline: 'none',
-          overflow: 'visible',
-          position: 'relative',
-          borderRadius: '32px',
-        },
-      }}
+      title="Удалить участника"
+      minWidth={400}
     >
-      <IconButton
-        onClick={onClose}
-        color="primary"
-        sx={{
-          top: 0,
-          right: -60,
-          position: 'absolute',
-          bgcolor: 'secondary.main',
-          ':hover': { bgcolor: 'secondary.light' },
-        }}
+      <Typography
+        variant="body1"
+        sx={{ mt: 2 }}
       >
-        <Close />
-      </IconButton>
-
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h6">Удалить участника</Typography>
-
+        Удалить
         <Typography
-          variant="body1"
-          sx={{ mt: 2 }}
+          color="primary"
+          sx={{ fontWeight: 500, display: 'inline-block', mx: 1 }}
+        >
+          {member?.displayName}
+        </Typography>
+        из команды?
+      </Typography>
+
+      <Stack
+        direction="row"
+        sx={appDialogActionsSx}
+      >
+        <Button
+          onClick={onClose}
+          disabled={isPending}
+        >
+          Отменить
+        </Button>
+
+        <Button
+          color="error"
+          onClick={handleRemove}
+          disabled={isPending}
         >
           Удалить
-          <Typography
-            color="primary"
-            sx={{ fontWeight: 500, display: 'inline-block', mx: 1 }}
-          >
-            {member?.displayName}
-          </Typography>
-          из команды?
-        </Typography>
-
-        <Stack
-          direction="row"
-          sx={{ mt: 4, justifyContent: 'flex-end', gap: 1 }}
-        >
-          <Button
-            onClick={onClose}
-            disabled={isPending}
-          >
-            Отменить
-          </Button>
-
-          <Button
-            color="error"
-            onClick={handleRemove}
-            disabled={isPending}
-          >
-            Удалить
-          </Button>
-        </Stack>
-      </Box>
-    </Dialog>
+        </Button>
+      </Stack>
+    </AppDialog>
   );
 };

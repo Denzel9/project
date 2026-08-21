@@ -13,7 +13,12 @@ import { ru } from 'date-fns/locale'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 
-import { DateCalendarFilter, FilterAutocomplete, FilterStatusSelect } from '@/shared'
+import {
+  DateCalendarFilter,
+  FilterAutocomplete,
+  FilterStatusSelect,
+  mobileFilterActionsSx,
+} from '@/shared'
 
 import {
   DEFAULT_APPLICATION_STATUS_FILTER,
@@ -246,7 +251,7 @@ export const MyResponsesMobileFilter = ({
       <Stack
         direction="row"
         spacing={2}
-        sx={{ mt: 4 }}
+        sx={mobileFilterActionsSx}
       >
         <Button
           fullWidth

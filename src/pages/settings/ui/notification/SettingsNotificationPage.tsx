@@ -388,8 +388,8 @@ export const SettingsNotificationPage = () => {
 
       {vapid?.enabled && (
         <SettingsRow
-          title="Push в браузере"
-          description="Системные уведомления, когда вкладка закрыта. Типы совпадают с «В приложении»."
+          title="Нативные уведомления"
+          description="Системные уведомления, когда вкладка закрыта"
           action={
             <Switch
               checked={Boolean(pushStatus?.subscribed)}
@@ -427,7 +427,7 @@ export const SettingsNotificationPage = () => {
 
       <ChannelSection
         title="В приложении"
-        description="Показываются в колокольчике в шапке и приходят в реальном времени, пока вы в системе."
+        description="Показываются в колокольчике в шапке и приходят в реальном времени, пока вы в системе"
         selectedTypes={inAppTypes}
         savedTypes={data.inAppNotificationTypes ?? []}
         groups={visibleGroups}
@@ -451,7 +451,7 @@ export const SettingsNotificationPage = () => {
 
       <ChannelSection
         title="На почту"
-        description="Письма о новых откликах, задачах, сообщениях в чате и изменениях доступа."
+        description="Письма о новых откликах, задачах, сообщениях в чате и изменениях доступа"
         selectedTypes={emailTypes}
         savedTypes={data.emailNotificationTypes ?? []}
         groups={visibleGroups}
@@ -476,7 +476,7 @@ export const SettingsNotificationPage = () => {
 
       <ChannelSection
         title="Telegram"
-        description="Сообщения бота после подключения в разделе «Приложения»."
+        description="Сообщения бота после подключения в разделе «Приложения»"
         selectedTypes={telegramTypes}
         savedTypes={data.telegramNotificationTypes ?? []}
         groups={visibleGroups}
@@ -505,7 +505,7 @@ export const SettingsNotificationPage = () => {
 
       <ChannelSection
         title="MAX"
-        description="Сообщения бота MAX после подключения в разделе «Приложения»."
+        description="Сообщения бота MAX после подключения в разделе «Приложения»"
         selectedTypes={maxTypes}
         savedTypes={data.maxNotificationTypes ?? []}
         groups={visibleGroups}

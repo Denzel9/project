@@ -1,16 +1,8 @@
-import { Close } from '@mui/icons-material';
-import {
-  Button,
-  Dialog,
-  IconButton,
-  MenuItem,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Button, MenuItem, Stack, TextField } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useTaskTemplatesQuery } from '@/entities';
+import { AppDialog, appDialogActionsSx } from '@/shared';
 
 export type CreateTaskExecutorOption = {
   id: string;
@@ -94,32 +86,17 @@ export const CreateTaskDialog = ({
     : [{ id: UNASSIGNED_ID, label: 'Не назначен' }, ...executorOptions];
 
   return (
-    <Dialog
+    <AppDialog
       open={open}
       onClose={handleClose}
+      title="Новая задача"
+      width={560}
       fullWidth
-      maxWidth="sm"
-      slotProps={{
-        paper: {
-          sx: { borderRadius: '24px', p: { xs: 2, sm: 3 } },
-        },
-      }}
     >
       <Stack
-        direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+        spacing={2}
+        sx={{ mt: 2 }}
       >
-        <Typography variant="h6">Новая задача</Typography>
-        <IconButton
-          aria-label="Закрыть"
-          disabled={isPending}
-          onClick={handleClose}
-        >
-          <Close />
-        </IconButton>
-      </Stack>
-
-      <Stack spacing={2}>
         <TextField
           select
           fullWidth
@@ -175,8 +152,7 @@ export const CreateTaskDialog = ({
 
       <Stack
         direction="row"
-        spacing={2}
-        sx={{ mt: 3 }}
+        sx={appDialogActionsSx}
       >
         <Button
           variant="outlined"
@@ -197,6 +173,6 @@ export const CreateTaskDialog = ({
           Создать
         </Button>
       </Stack>
-    </Dialog>
+    </AppDialog>
   );
 };

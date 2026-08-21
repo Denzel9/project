@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 import {
   FilterAutocomplete,
+  mobileFilterActionsSx,
   type FilterAutocompleteOption,
 } from '@/shared'
 
@@ -178,7 +179,7 @@ export const PublicationsMobileFilter = ({
       <Stack
         direction="row"
         spacing={2}
-        sx={{ mt: 4 }}
+        sx={mobileFilterActionsSx}
       >
         <Button
           fullWidth

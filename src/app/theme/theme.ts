@@ -4,6 +4,8 @@ export type ThemeMode = 'light' | 'dark';
 
 export const THEME_MODE_STORAGE_KEY = 'nikssens-theme-mode';
 
+export const BACKGROUND_COLOR = 'rgb(244, 244, 244)';
+
 export const BASE_COLOR = 'rgb(77, 144, 142)';
 export const BASE_LIGHT_COLOR = 'rgba(94, 174, 171, 0.83)';
 export const BASE_EXTRA_LIGHT_COLOR = 'rgba(99, 182, 179, 0.23)';
@@ -189,7 +191,7 @@ export const createAppTheme = (mode: ThemeMode = 'light') =>
         : {
           mode: 'light',
           background: {
-            default: 'rgb(244, 244, 244)',
+            default: 'white',
             paper: '#FFFFFF',
           },
           text: {

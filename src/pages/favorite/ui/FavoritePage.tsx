@@ -11,7 +11,7 @@ import {
   type FavoriteListItem,
   type FavoriteType,
 } from '@/entities';
-import { EmptyBlock, InfiniteScrollSentinel, ROUTES, stickyFilterSx } from '@/shared';
+import { EmptyBlock, InfiniteScrollSentinel, ROUTES } from '@/shared';
 import {
   ACTION_BUTTONS_KEYS,
   PostItem,
@@ -296,7 +296,7 @@ export const FavoritePage = () => {
       ) && (
           <Box
             className="print-no-print"
-            sx={stickyFilterSx}
+            sx={{ position: 'sticky', top: 0, zIndex: 1000 }}
           >
             <FavoriteFilter
               value={groupFilter}

@@ -32,9 +32,9 @@ export const Media = ({
   const showThumbnails = withThumbnails && items.length > 1
 
   const handleOpenFullscreen = useCallback(() => {
-    if (!enableFullscreen) return
+    if (!enableFullscreen || isMobile) return
     setIsFullscreenOpen(true)
-  }, [enableFullscreen])
+  }, [enableFullscreen, isMobile])
 
   const handleCloseFullscreen = useCallback(() => {
     setIsFullscreenOpen(false)
@@ -97,7 +97,7 @@ export const Media = ({
             borderRadius: '24px',
             overflow: 'hidden',
             bgcolor: 'common.black',
-            cursor: enableFullscreen ? 'zoom-in' : 'default',
+            cursor: enableFullscreen && !isMobile ? 'zoom-in' : 'default',
             '& .swiper-slide': {
               borderRadius: '24px',
             },
@@ -105,6 +105,7 @@ export const Media = ({
         >
           <BigMedia
             items={items}
+            isMobile={isMobile}
             thumbsSwiper={showThumbnails ? thumbsSwiper : null}
             handleClickOpen={handleOpenFullscreen}
             onActiveIndexChange={setActiveIndex}
@@ -136,7 +137,7 @@ export const Media = ({
         </Box>
       </Stack>
 
-      {enableFullscreen && (
+      {enableFullscreen && !isMobile && (
         <FullScreenGallery
           items={items}
           isMobile={isMobile}

@@ -38,8 +38,7 @@ export const PageLayout = ({
         position: 'relative',
         gap: 1,
         boxSizing: 'border-box',
-        // Without header, page itself clears the status bar
-        ...(!withHeader && { pt: SAFE_AREA.top }),
+        pt: SAFE_AREA.top,
         ...(isScreenHeight && {
           height: '100%',
           flex: 1,
@@ -65,10 +64,7 @@ export const PageLayout = ({
         sx={{
           bgcolor: 'background.paper',
           border: '1px solid',
-          // Do not use shorthand `p` — it would override safe-area pt
-          px: 2,
-          pb: 2,
-          pt: `calc(16px + ${SAFE_AREA.top})`,
+          p: { xs: 2, md: 2 },
           alignItems: 'center',
           borderColor: 'divider',
           justifyContent: 'space-between',
